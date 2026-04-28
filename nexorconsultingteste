@@ -1,0 +1,124 @@
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import jsPDF from "jspdf";
+
+const services = [
+  { name: "Firewall Gerenciado", price: 497 },
+  { name: "Monitoramento de Ameaças", price: 297 },
+  { name: "Antivírus Corporativo", price: 25 },
+  { name: "Backup Gerenciado", price: 299 },
+  { name: "Suporte Remoto", price: 49 },
+  { name: "Monitoramento de Máquinas", price: 20 },
+  { name: "Gestão de Rede", price: 297 },
+  { name: "Wi-Fi Corporativo", price: 197 },
+  { name: "Servidor Monitorado", price: 297 },
+  { name: "Monitoramento de Câmeras", price: 197 },
+  { name: "Controle de Acesso", price: 147 },
+  { name: "Backup em Nuvem", price: 199 },
+  { name: "Gestão de Cloud", price: 297 },
+  { name: "E-mail Corporativo", price: 25 },
+];
+
+export default function NexorSimulator() {
+  const [selected, setSelected] = useState({});
+
+  const toggleService = (name) => {
+    setSelected((prev) => ({
+      ...prev,
+      [name]: prev[name] ? undefined : { qty: 1 },
+    }));
+  };
+
+  const updateQty = (name, qty) => {
+    setSelected((prev) => ({
+      ...prev,
+      [name]: { qty: Number(qty) },
+    }));
+  };
+
+  const total = Object.entries(selected).reduce((acc, [name, data]) => {
+    const service = services.find((s) => s.name === name);
+    return acc + service.price * data.qty;
+  }, 0);
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text("Proposta Comercial - Nexor Consulting", 10, 10);
+
+    doc.setFontSize(12);
+    let y = 20;
+
+    Object.entries(selected).forEach(([name, data]) => {
+      const service = services.find((s) => s.name === name);
+      const line = `${name} - Qtd: ${data.qty} - R$ ${(
+        service.price * data.qty
+      ).toFixed(2)}`;
+
+      doc.text(line, 10, y);
+      y += 8;
+    });
+
+    y += 5;
+    doc.setFontSize(14);
+    doc.text(`Total Mensal: R$ ${total.toFixed(2)}`, 10, y);
+
+    y += 10;
+    doc.setFontSize(10);
+    doc.text(
+      "A Nexor Consulting garante estabilidade, segurança e continuidade para sua empresa.",
+      10,
+      y
+    );
+
+    doc.save("Proposta_Nexor.pdf");
+  };
+
+  return (
+    <div className="p-6 grid gap-6">
+      <h1 className="text-2xl font-bold">Simulador Nexor</h1>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        {services.map((service) => (
+          <Card key={service.name} className="rounded-2xl shadow">
+            <CardContent className="p-4 flex justify-between items-center">
+              <div>
+                <p className="font-semibold">{service.name}</p>
+                <p className="text-sm text-gray-500">R$ {service.price}</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button onClick={() => toggleService(service.name)}>
+                  {selected[service.name] ? "Remover" : "Adicionar"}
+                </Button>
+
+                {selected[service.name] && (
+                  <input
+                    type="number"
+                    min="1"
+                    value={selected[service.name].qty}
+                    onChange={(e) => updateQty(service.name, e.target.value)}
+                    className="w-16 border rounded px-2"
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="rounded-2xl shadow">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-bold">Total Mensal</h2>
+          <p className="text-3xl mt-2 font-semibold">R$ {total.toFixed(2)}</p>
+
+          <Button className="mt-4 w-full" onClick={generatePDF}>
+            Gerar Proposta em PDF
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
