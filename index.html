@@ -3,58 +3,56 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nexor Consulting | Tecnologia que gera resultados</title>
-  <meta name="description" content="Nexor Consulting: infraestrutura de TI, segurança da informação, cloud & backup, suporte, automação e consultoria. Com ou sem TI, a Nexor atende. Diagnóstico gratuito.">
-  <meta name="theme-color" content="#050b16">
-  <meta property="og:title" content="Nexor Consulting | Tecnologia que gera resultados">
-  <meta property="og:description" content="Tecnologia • Segurança • Performance. Soluções de TI que acompanham o crescimento do seu negócio.">
+  <title>Nexor Consulting | Software sob medida com Inteligência Artificial</title>
+  <meta name="description" content="Nexor Consulting: desenvolvimento de sites, sistemas empresariais (ERP, CRM, BI), software sob medida e IA para automação de processos. Para empresas de pequeno, médio e grande porte.">
+  <meta name="theme-color" content="#03070f">
+  <meta property="og:title" content="Nexor Consulting | Software sob medida com IA">
+  <meta property="og:description" content="Sites, sistemas empresariais, desenvolvimento sob medida e automação com IA.">
   <meta property="og:image" content="assets/img/brand-wallpaper.webp">
   <meta property="og:type" content="website">
   <link rel="icon" type="image/png" href="assets/img/favicon.png">
   <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=Michroma&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Michroma&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
-<!-- Ícones -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="3" width="14" height="6" rx="1.5"/><rect x="3" y="11" width="10" height="6" rx="1.5"/><path d="M6 6h.01M6 14h.01"/><path d="M15 19a3 3 0 0 1 .4-6 4 4 0 0 1 7.6 1.5A2.5 2.5 0 0 1 21 19z"/></symbol>
-    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10 11V9.5a2 2 0 0 1 4 0V11"/></symbol>
-    <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
-    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 8.5 4.75 4.75 0 0 1 17.5 18"/><path d="M12 20v-8M9 14.5l3-3 3 3"/></symbol>
-    <symbol id="i-headset" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19c0 1.5-2 2.5-5 2.5"/></symbol>
-    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
-    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16"/><rect x="5" y="13" width="3" height="5"/><rect x="10.5" y="10" width="3" height="8"/><rect x="16" y="7" width="3" height="11"/><path d="M4 9l5-4 4 3 7-5M16 3h4v4"/></symbol>
-    <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/><circle cx="12" cy="10" r="3"/><path d="M11 10l.8.8L13.5 9"/></symbol>
-    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8l13-4 2 6-13 4z"/><path d="M7 13l1 3h-4v4"/><circle cx="18.5" cy="11.5" r="1"/></symbol>
-    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="11" cy="13" r="8"/><circle cx="11" cy="13" r="4.5"/><circle cx="11" cy="13" r="1"/><path d="M11 13l9-9M17 4h3v3"/></symbol>
-    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 5.3"/></symbol>
-    <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M4 16l5-5 4 3 7-7"/><path d="M15 7h5v5"/></symbol>
-    <symbol id="i-badge" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="M9.5 9l1.8 1.8L14.8 7.5"/><path d="M8.5 14l-1.5 7 5-2.5 5 2.5-1.5-7"/></symbol>
-    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/><path d="M12 14v4M8 21h8M9 18h6"/></symbol>
-    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17.5l9 5 9-5" opacity=".5"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
+    <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/><path d="M12 9h2.5M12 14h3"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v4"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 8.5 4.75 4.75 0 0 1 17.5 18z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M4 16l5-5 4 3 7-7"/><path d="M15 7h5v5"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
-    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
-    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></symbol>
-    <symbol id="i-handshake" viewBox="0 0 24 24"><path d="M2 11l4-4 4 2 3-2 3 1 6 4"/><path d="M6 15l3 3c.8.8 2 .8 2.8 0l4.7-4.7"/><path d="M2 11l4 4M22 11l-4 4M10 9l-3 3 1 1c.8.8 2 .8 2.8 0L13 11"/></symbol>
-    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a9 9 0 1 1 16 0"/><path d="M12 14l4-5"/><circle cx="12" cy="14" r="1.2"/><path d="M6.5 11h.01M9 7.5h.01M12 6h.01M17.5 11h.01"/></symbol>
-    <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></symbol>
-    <symbol id="i-plan" viewBox="0 0 24 24"><rect x="4" y="3" width="13" height="18" rx="1.5"/><path d="M7.5 8h6M7.5 12h6M7.5 16h3"/><path d="M15 18l2 2 4-4"/></symbol>
-    <symbol id="i-dollar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9a3 2.5 0 0 0-3-1.5c-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2a3 2.5 0 0 1-3-1.5M12 6v1.5M12 16.5V18"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M14 4c3-1 6-1 6-1s0 3-1 6l-6 6-5-5z"/><path d="M8 10l-4 1 2-4 4-1M14 16l-1 4 4-2 1-4"/><path d="M6 18c-1 0-2 1-2 2 1 0 2-1 2-2z"/></symbol>
+    <symbol id="i-test" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7.5 14h9"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 5.3"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="3" width="11" height="18"/><path d="M15 9h5v12h-5M7.5 7h4M7.5 11h4M7.5 15h4"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0A2.7 2.7 0 0 0 20 9"/><path d="M5 11v9h14v-9M10 20v-5h4v5"/></symbol>
     <symbol id="i-whatsapp" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12.04 2a9.9 9.9 0 0 0-8.5 14.98L2 22l5.16-1.5A9.9 9.9 0 1 0 12.04 2zm0 18.1a8.2 8.2 0 0 1-4.18-1.14l-.3-.18-3.06.89.9-2.98-.2-.31a8.2 8.2 0 1 1 6.84 3.72zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.16.25-.64.8-.78.97-.15.16-.29.18-.54.06-.25-.12-1.04-.38-1.98-1.22a7.4 7.4 0 0 1-1.37-1.7c-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.56-1.34-.76-1.83-.2-.48-.4-.42-.56-.42h-.47c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07s.89 2.4 1.01 2.57c.13.16 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.6.19 1.13.16 1.56.1.47-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.29z"/></symbol>
   </defs>
 </svg>
 
 <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+<div class="scroll-progress" aria-hidden="true"></div>
+<div class="cursor-glow" aria-hidden="true"></div>
 
 <header class="site-header" id="topo">
   <div class="container header-inner">
     <a class="brand" href="#topo" aria-label="Nexor Consulting, início">
-      <img src="assets/img/logo-mark.webp" alt="" width="46" height="51">
+      <img src="assets/img/logo-mark.webp" alt="" width="40" height="45">
       <span class="brand-text">
         <span class="brand-name">NE<span class="x">X</span>OR</span>
         <span class="brand-sub">CONSULTING</span>
@@ -65,342 +63,460 @@
     </button>
     <nav class="nav" id="menu" aria-label="Principal">
       <a href="#servicos">Serviços</a>
-      <a href="#metodologia">Metodologia</a>
-      <a href="#planos">Planos</a>
-      <a href="#simulador">Simulador</a>
-      <a href="#sobre">Sobre</a>
-      <a class="btn btn-sm btn-primary" href="#contato">Diagnóstico gratuito</a>
+      <a href="#vitrine">Vitrine</a>
+      <a href="#ia">IA</a>
+      <a href="#engenharia">Engenharia</a>
+      <a href="#processo">Processo</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn btn-sm btn-primary" href="#orcamento">Iniciar projeto</a>
     </nav>
   </div>
 </header>
 
 <main id="conteudo">
 
-  <!-- HERO -->
+  <!-- ================= HERO ================= -->
   <section class="hero">
-    <div class="hero-bg" aria-hidden="true"></div>
+    <canvas class="hero-canvas" id="neural" aria-hidden="true"></canvas>
+    <div class="hero-grid-bg" aria-hidden="true"></div>
     <div class="container hero-grid">
-      <div class="hero-copy reveal">
-        <p class="eyebrow">Tecnologia <i></i> Segurança <i></i> Performance</p>
-        <h1>Tecnologia que <span class="accent">gera resultados.</span></h1>
-        <p class="lead">Sua empresa merece mais que suporte. Merece resultados. A Nexor transforma tecnologia em <strong>vantagem competitiva</strong> — com eficiência, segurança e crescimento para o seu negócio.</p>
+      <div class="hero-copy">
+        <p class="pill"><span class="pulse-dot"></span> Software house · IA aplicada a negócios</p>
+        <h1>
+          Desenvolvemos
+          <span class="type-wrap"><span class="typed" id="typed">ERPs e CRMs</span><span class="caret" aria-hidden="true"></span></span>
+          <span class="h1-sub">sob medida para <em class="grad">o seu negócio.</em></span>
+        </h1>
+        <p class="lead">Sites de alta conversão, ERPs, CRMs, plataformas sob medida e <strong>agentes de IA que automatizam processos</strong> de ponta a ponta. Para empresas de pequeno, médio e grande porte.</p>
         <div class="hero-actions">
-          <a class="btn btn-whats" data-whatsapp="Olá! Gostaria de solicitar um diagnóstico gratuito." href="#contato">
-            <svg class="ic"><use href="#i-whatsapp"/></svg> Diagnóstico gratuito
-          </a>
-          <a class="btn btn-ghost" href="#planos">Conheça os planos</a>
+          <a class="btn btn-primary btn-lg" href="#vitrine">Ver vitrine de projetos <svg class="ic"><use href="#i-arrow"/></svg></a>
+          <a class="btn btn-ghost btn-lg" href="#orcamento">Montar meu projeto</a>
         </div>
-        <ul class="stats">
-          <li><svg class="ic"><use href="#i-trophy"/></svg><div><strong>+10</strong><span>anos de experiência</span></div></li>
-          <li><svg class="ic"><use href="#i-users"/></svg><div><strong>+200</strong><span>clientes atendidos</span></div></li>
-          <li><svg class="ic"><use href="#i-target"/></svg><div><strong>100%</strong><span>foco em resultados</span></div></li>
+        <ul class="hero-stats">
+          <li><strong data-count="10" data-prefix="+">+10</strong><span>anos de experiência</span></li>
+          <li><strong data-count="200" data-prefix="+">+200</strong><span>clientes atendidos</span></li>
+          <li><strong data-count="100" data-suffix="%">100%</strong><span>código sob medida</span></li>
         </ul>
       </div>
-      <div class="hero-visual reveal" aria-hidden="true">
-        <div class="hero-ring"></div>
-        <img src="assets/img/logo-lockup.webp" alt="" width="720" height="470">
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="code-window tilt">
+          <div class="win-bar"><i></i><i></i><i></i><span>nexor-ai / agents / automacao.ts</span></div>
+          <pre class="code" id="hero-code"></pre>
+        </div>
+        <div class="float-card fc-1">
+          <span class="fc-icon"><svg class="ic"><use href="#i-brain"/></svg></span>
+          <div><small>Agente IA</small><strong>Processando pedidos</strong>
+            <div class="bar"><i style="--w:78%"></i></div></div>
+        </div>
+        <div class="float-card fc-2">
+          <span class="fc-icon green"><svg class="ic"><use href="#i-bolt"/></svg></span>
+          <div><small>Deploy</small><strong>Build concluído <b class="ok">✓</b></strong><small class="mono">v2.4.1 · 38s</small></div>
+        </div>
+        <div class="float-card fc-3">
+          <svg viewBox="0 0 120 40" class="spark"><polyline points="0,32 15,28 30,30 45,20 60,22 75,12 90,15 105,6 120,8"/></svg>
+          <div><small>Produtividade</small><strong class="grad">Processos automatizados</strong></div>
+        </div>
       </div>
+    </div>
+    <a class="scroll-hint" href="#tech" aria-label="Rolar para baixo"><span></span></a>
+  </section>
+
+  <!-- ================= TECH MARQUEE ================= -->
+  <section class="tech" id="tech" aria-label="Tecnologias que dominamos">
+    <div class="marquee">
+      <div class="marquee-track" id="marquee"></div>
     </div>
   </section>
 
-  <!-- COM OU SEM TI -->
-  <section class="section" id="atende">
+  <!-- ================= SERVIÇOS ================= -->
+  <section class="section" id="servicos">
     <div class="container">
       <div class="section-head reveal">
-        <p class="kicker">Para qualquer tamanho de empresa</p>
-        <h2>Com ou sem TI, <span class="accent">a Nexor atende.</span></h2>
-        <p>Não importa o tamanho ou o segmento da sua empresa. Temos a solução ideal para a sua realidade.</p>
-      </div>
-      <div class="split-cards">
-        <article class="duo-card duo-blue reveal">
-          <svg class="ic ic-lg"><use href="#i-gear"/></svg>
-          <h3>Sem time de TI?</h3>
-          <p>A Nexor atua como o seu <strong>departamento de TI completo</strong>. Você foca no seu negócio, nós cuidamos da tecnologia.</p>
-        </article>
-        <article class="duo-card duo-orange reveal">
-          <svg class="ic ic-lg"><use href="#i-headset"/></svg>
-          <h3>Já possui time de TI?</h3>
-          <p>Somos o <strong>parceiro estratégico</strong> que traz tecnologia e expertise para potencializar os resultados da sua equipe.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- SERVIÇOS -->
-  <section class="section section-alt" id="servicos">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">O que fazemos</p>
-        <h2>Soluções completas em <span class="accent">TI</span></h2>
-        <p>Tecnologia que impulsiona o que realmente importa: segurança que protege, desempenho que acelera e suporte que resolve.</p>
+        <p class="kicker">// o que construímos</p>
+        <h2>Tecnologia completa, <span class="grad">do pixel ao algoritmo.</span></h2>
+        <p>Uma única parceira para tirar sua ideia do papel, digitalizar a operação e colocar inteligência artificial para trabalhar no seu negócio.</p>
       </div>
       <div class="services">
-        <article class="service reveal"><svg class="ic"><use href="#i-server"/></svg><h3>Infraestrutura de TI</h3><p>Ambientes estáveis, escaláveis e prontos para acompanhar o crescimento do seu negócio.</p></article>
-        <article class="service reveal"><svg class="ic"><use href="#i-shield"/></svg><h3>Segurança da Informação</h3><p>Proteção completa para seus dados, sistemas e usuários contra ameaças e ataques.</p></article>
-        <article class="service reveal"><svg class="ic"><use href="#i-cloud"/></svg><h3>Cloud &amp; Backup</h3><p>Mais disponibilidade, continuidade e recuperação rápida de dados com segurança.</p></article>
-        <article class="service reveal"><svg class="ic"><use href="#i-headset"/></svg><h3>Suporte &amp; Outsourcing</h3><p>Atendimento ágil e especializado para manter tudo funcionando com eficiência.</p></article>
-        <article class="service reveal"><svg class="ic"><use href="#i-gear"/></svg><h3>Automação &amp; Produtividade</h3><p>Processos inteligentes que reduzem custos e aumentam a performance da sua empresa.</p></article>
-        <article class="service reveal"><svg class="ic"><use href="#i-chart"/></svg><h3>Consultoria em TI</h3><p>Estratégia e tecnologia alinhadas aos objetivos do seu negócio para gerar mais resultado.</p></article>
-        <article class="service reveal"><svg class="ic"><use href="#i-monitor"/></svg><h3>Monitoramento Remoto (RMM)</h3><p>Monitoramento 24/7 com Zabbix + Grafana: detectamos falhas antes que virem problemas.</p></article>
-        <article class="service reveal"><svg class="ic"><use href="#i-camera"/></svg><h3>Segurança Eletrônica com IA</h3><p>Câmeras inteligentes, controle de acesso e monitoramento para proteger o ambiente físico.</p></article>
+        <article class="service glow-card reveal">
+          <span class="svc-icon"><svg class="ic"><use href="#i-globe"/></svg></span>
+          <h3>Sites &amp; Landing Pages</h3>
+          <p>Sites institucionais, portais e landing pages ultrarrápidos, otimizados para SEO e para converter visitantes em clientes.</p>
+          <ul><li>Next.js / React</li><li>SEO técnico</li><li>Core Web Vitals</li></ul>
+        </article>
+        <article class="service glow-card reveal">
+          <span class="svc-icon"><svg class="ic"><use href="#i-layers"/></svg></span>
+          <h3>Sistemas Empresariais</h3>
+          <p>ERP, CRM, BI, gestão financeira, estoque e RH. Sistemas web robustos que organizam e escalam sua operação.</p>
+          <ul><li>Multiempresa</li><li>Permissões</li><li>Relatórios</li></ul>
+        </article>
+        <article class="service glow-card reveal">
+          <span class="svc-icon"><svg class="ic"><use href="#i-code"/></svg></span>
+          <h3>Desenvolvimento Sob Medida</h3>
+          <p>Plataformas SaaS, marketplaces e softwares exclusivos, desenhados a partir da sua regra de negócio, sem gambiarras.</p>
+          <ul><li>Arquitetura limpa</li><li>Microsserviços</li><li>Código seu</li></ul>
+        </article>
+        <article class="service glow-card featured reveal">
+          <span class="badge-new">IA</span>
+          <span class="svc-icon"><svg class="ic"><use href="#i-brain"/></svg></span>
+          <h3>IA &amp; Automação de Processos</h3>
+          <p>Agentes inteligentes que leem documentos, atendem clientes, qualificam leads e executam tarefas repetitivas 24/7.</p>
+          <ul><li>LLMs &amp; RAG</li><li>OCR inteligente</li><li>Agentes autônomos</li></ul>
+        </article>
+        <article class="service glow-card reveal">
+          <span class="svc-icon"><svg class="ic"><use href="#i-phone"/></svg></span>
+          <h3>Aplicativos Mobile</h3>
+          <p>Apps iOS e Android com experiência nativa, notificações, pagamentos e integração total ao seu sistema.</p>
+          <ul><li>React Native</li><li>Flutter</li><li>PWA</li></ul>
+        </article>
+        <article class="service glow-card reveal">
+          <span class="svc-icon"><svg class="ic"><use href="#i-plug"/></svg></span>
+          <h3>Integrações, Cloud &amp; DevOps</h3>
+          <p>APIs, integrações com ERPs, gateways de pagamento e WhatsApp. Infraestrutura em nuvem com CI/CD e monitoramento.</p>
+          <ul><li>REST &amp; GraphQL</li><li>AWS · Azure</li><li>Docker · K8s</li></ul>
+        </article>
       </div>
     </div>
   </section>
 
-  <!-- METODOLOGIA -->
-  <section class="section" id="metodologia">
-    <div class="container method-grid">
-      <div class="reveal">
-        <p class="kicker">Metodologia Nexor</p>
-        <h2>Da reação <span class="accent">à prevenção.</span></h2>
-        <p class="lead">Detectamos e corrigimos falhas antes que elas virem problemas. Planejamos. Monitoramos. Protegemos. Você foca no que importa.</p>
-        <div class="compare">
-          <div class="compare-col compare-bad">
-            <h3><svg class="ic"><use href="#i-alert"/></svg> Suporte tradicional</h3>
-            <ul>
-              <li>Apaga incêndios</li>
-              <li>Reativo</li>
-              <li>Prejuízo</li>
-              <li>Paradas inesperadas</li>
+  <!-- ================= PORTE ================= -->
+  <section class="section section-alt" id="porte">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="kicker">// soluções por porte</p>
+        <h2>Do primeiro site ao <span class="grad">ecossistema corporativo.</span></h2>
+      </div>
+      <div class="tabs reveal" role="tablist" aria-label="Porte da empresa">
+        <button role="tab" aria-selected="true" aria-controls="tp-pequeno" id="t-pequeno"><svg class="ic"><use href="#i-store"/></svg> Pequeno porte</button>
+        <button role="tab" aria-selected="false" aria-controls="tp-medio" id="t-medio" tabindex="-1"><svg class="ic"><use href="#i-users"/></svg> Médio porte</button>
+        <button role="tab" aria-selected="false" aria-controls="tp-grande" id="t-grande" tabindex="-1"><svg class="ic"><use href="#i-building"/></svg> Grande porte</button>
+      </div>
+      <div class="tab-panels reveal">
+        <div class="tab-panel" role="tabpanel" id="tp-pequeno" aria-labelledby="t-pequeno">
+          <div>
+            <h3>Presença digital que vende e processos no automático</h3>
+            <p>Para quem quer sair do improviso: um site profissional, catálogo ou loja online e automações simples que economizam horas por semana.</p>
+            <ul class="checks">
+              <li><svg class="ic"><use href="#i-check"/></svg>Site institucional ou landing page de alta conversão</li>
+              <li><svg class="ic"><use href="#i-check"/></svg>Loja virtual com pagamento e frete integrados</li>
+              <li><svg class="ic"><use href="#i-check"/></svg>Atendente de IA no WhatsApp e no site</li>
+              <li><svg class="ic"><use href="#i-check"/></svg>Agenda, orçamentos e cadastro de clientes online</li>
             </ul>
           </div>
-          <div class="compare-col compare-good">
-            <h3><svg class="ic"><use href="#i-shield-check"/></svg> Nexor Consulting</h3>
-            <ul>
-              <li>Previne problemas</li>
-              <li>Proativo e preditivo</li>
-              <li>Economia</li>
-              <li>Zero downtime</li>
+          <div class="porte-meter"><span>Escopo típico</span><div class="meter"><i style="--w:33%"></i></div><small>Entrega ágil · investimento enxuto</small></div>
+        </div>
+        <div class="tab-panel" role="tabpanel" id="tp-medio" aria-labelledby="t-medio" hidden>
+          <div>
+            <h3>Sistemas que organizam a operação e escalam o crescimento</h3>
+            <p>Quando planilhas não dão mais conta: centralizamos vendas, financeiro, estoque e atendimento em uma plataforma única, com IA nos pontos de maior esforço.</p>
+            <ul class="checks">
+              <li><svg class="ic"><use href="#i-check"/></svg>ERP / CRM sob medida para o seu fluxo</li>
+              <li><svg class="ic"><use href="#i-check"/></svg>Dashboards de BI em tempo real</li>
+              <li><svg class="ic"><use href="#i-check"/></svg>Automação de documentos, notas e cobranças com IA</li>
+              <li><svg class="ic"><use href="#i-check"/></svg>Integrações com marketplaces, bancos e ERPs</li>
             </ul>
           </div>
+          <div class="porte-meter"><span>Escopo típico</span><div class="meter"><i style="--w:66%"></i></div><small>Entregas por módulos · evolução contínua</small></div>
+        </div>
+        <div class="tab-panel" role="tabpanel" id="tp-grande" aria-labelledby="t-grande" hidden>
+          <div>
+            <h3>Arquitetura corporativa, segurança e IA em escala</h3>
+            <p>Projetos críticos com squads dedicadas, microsserviços, alta disponibilidade, governança de dados e agentes de IA integrados aos sistemas legados.</p>
+            <ul class="checks">
+              <li><svg class="ic"><use href="#i-check"/></svg>Squads dedicadas e gestão ágil</li>
+              <li><svg class="ic"><use href="#i-check"/></svg>Microsserviços, Kubernetes e observabilidade</li>
+              <li><svg class="ic"><use href="#i-check"/></svg>LLMs privados, RAG sobre bases internas e LGPD</li>
+              <li><svg class="ic"><use href="#i-check"/></svg>Modernização de sistemas legados</li>
+            </ul>
+          </div>
+          <div class="porte-meter"><span>Escopo típico</span><div class="meter"><i style="--w:100%"></i></div><small>Squads dedicadas · SLA corporativo</small></div>
         </div>
       </div>
-      <div class="security-panel reveal">
-        <p class="kicker">Segurança 360°</p>
-        <h3 class="security-title">Cibersegurança de verdade não é sorte. <span class="accent">É estratégia.</span></h3>
-        <ul class="checklist">
-          <li><svg class="ic"><use href="#i-shield-check"/></svg>Proteção contra ransomware</li>
-          <li><svg class="ic"><use href="#i-shield-check"/></svg>Firewalls de última geração</li>
-          <li><svg class="ic"><use href="#i-shield-check"/></svg>Backups imutáveis</li>
-          <li><svg class="ic"><use href="#i-shield-check"/></svg>Monitoramento contínuo 24/7</li>
-          <li><svg class="ic"><use href="#i-shield-check"/></svg>Resposta a incidentes</li>
-          <li><svg class="ic"><use href="#i-shield-check"/></svg>Segurança eletrônica com IA</li>
-        </ul>
-      </div>
     </div>
   </section>
 
-  <!-- POR QUE A NEXOR -->
-  <section class="section section-alt" id="porque">
+  <!-- ================= VITRINE ================= -->
+  <section class="section" id="vitrine">
     <div class="container">
       <div class="section-head reveal">
-        <p class="kicker">Diferenciais</p>
-        <h2>Por que escolher <span class="accent">a Nexor?</span></h2>
+        <p class="kicker">// vitrine de projetos</p>
+        <h2>Escolha um modelo. <span class="grad">Nós deixamos com a sua cara.</span></h2>
+        <p>Modelos de projetos prontos para personalizar. Clique em qualquer um para explorar recursos, tecnologia e solicitar o seu.</p>
       </div>
-      <div class="why">
-        <article class="why-item reveal"><svg class="ic"><use href="#i-target"/></svg><h3>Foco em resultados</h3><p>Entregamos soluções que geram impacto real e mensurável no seu negócio.</p></article>
-        <article class="why-item reveal"><svg class="ic"><use href="#i-shield-check"/></svg><h3>Segurança em 1º lugar</h3><p>Boas práticas, políticas e tecnologias para proteger o que mais importa.</p></article>
-        <article class="why-item reveal"><svg class="ic"><use href="#i-users"/></svg><h3>Atendimento próximo</h3><p>Fácil de falar, fácil de resolver. Somos parceiros, não apenas fornecedores.</p></article>
-        <article class="why-item reveal"><svg class="ic"><use href="#i-trend"/></svg><h3>Tecnologia que evolui</h3><p>Soluções modernas e escaláveis para acompanhar o futuro do seu negócio.</p></article>
-        <article class="why-item reveal"><svg class="ic"><use href="#i-badge"/></svg><h3>Experiência comprovada</h3><p>Profissionais especializados e projetos de sucesso em diversos segmentos.</p></article>
+      <div class="filters reveal" role="group" aria-label="Filtrar projetos">
+        <button class="chip active" data-filter="all" aria-pressed="true">Todos</button>
+        <button class="chip" data-filter="sites" aria-pressed="false">Sites</button>
+        <button class="chip" data-filter="ecommerce" aria-pressed="false">E-commerce</button>
+        <button class="chip" data-filter="sistemas" aria-pressed="false">Sistemas</button>
+        <button class="chip" data-filter="ia" aria-pressed="false">Inteligência Artificial</button>
+        <button class="chip" data-filter="apps" aria-pressed="false">Apps</button>
       </div>
+      <div class="showcase" id="showcase"></div>
     </div>
   </section>
 
-  <!-- PLANOS -->
-  <section class="section" id="planos">
+  <!-- ================= IA ================= -->
+  <section class="section section-ai" id="ia">
     <div class="container">
       <div class="section-head reveal">
-        <p class="kicker">Planos Nexor</p>
-        <h2>Da estrutura básica <span class="accent">à excelência em TI.</span></h2>
-        <p>Planos escaláveis, flexíveis e completos para levar tecnologia, segurança e performance ao seu negócio.</p>
+        <p class="kicker">// ia em ação</p>
+        <h2>Agentes de IA que <span class="grad">executam o trabalho.</span></h2>
+        <p>Escolha um processo e veja como um agente da Nexor automatiza cada etapa. <small class="demo-tag">Simulação ilustrativa</small></p>
       </div>
-
-      <div class="plans">
-        <article class="plan plan-start reveal">
-          <header><h3>Start</h3><p>Microempresa · até 5 dispositivos</p></header>
-          <p class="price"><small>R$</small>149 <span>– R$ 299</span><em>/mês</em></p>
-          <ul>
-            <li>Suporte remoto em horário comercial</li>
-            <li>Monitoramento básico</li>
-            <li>Gestão de rede básica</li>
-            <li>Orientação de backup</li>
-            <li>Segurança básica</li>
-          </ul>
-          <a class="btn btn-plan" data-whatsapp="Olá! Tenho interesse no plano START da Nexor." href="#contato">Quero o Start</a>
-        </article>
-        <article class="plan plan-core reveal">
-          <header><h3>Core</h3><p>Pequena empresa · até 15 dispositivos</p></header>
-          <p class="price"><small>R$</small>399 <span>– R$ 799</span><em>/mês</em></p>
-          <ul>
-            <li>Suporte remoto ilimitado</li>
-            <li>Suporte presencial 1x/mês</li>
-            <li>Monitoramento com Zabbix + Grafana</li>
-            <li>Backup automatizado</li>
-            <li>Relatórios mensais</li>
-          </ul>
-          <a class="btn btn-plan" data-whatsapp="Olá! Tenho interesse no plano CORE da Nexor." href="#contato">Quero o Core</a>
-        </article>
-        <article class="plan plan-business featured reveal">
-          <span class="ribbon">★ Mais escolhido</span>
-          <header><h3>Business</h3><p>Média empresa · até 50 dispositivos</p></header>
-          <p class="price"><small>R$</small>1.200 <span>– R$ 2.500</span><em>/mês</em></p>
-          <ul>
-            <li>Suporte remoto ilimitado + presencial 2x/mês</li>
-            <li>Monitoramento avançado</li>
-            <li>Gestão de rede avançada e de servidores</li>
-            <li>Backup gerenciado</li>
-            <li>Relatórios detalhados e planejamento de TI</li>
-          </ul>
-          <a class="btn btn-plan" data-whatsapp="Olá! Tenho interesse no plano BUSINESS da Nexor." href="#contato">Quero o Business</a>
-        </article>
-        <article class="plan plan-enterprise reveal">
-          <header><h3>Enterprise</h3><p>Grande empresa · 50+ dispositivos</p></header>
-          <p class="price"><small>R$</small>3.000 <span>– R$ 10.000+</span><em>/mês</em></p>
-          <ul>
-            <li>Suporte 24/7 prioritário + presencial sob demanda</li>
-            <li>Monitoramento 24/7 completo</li>
-            <li>Backup gerenciado + testes</li>
-            <li>Segurança avançada e SLA crítico</li>
-            <li>Relatórios executivos e planejamento estratégico</li>
-          </ul>
-          <a class="btn btn-plan" data-whatsapp="Olá! Tenho interesse no plano ENTERPRISE da Nexor." href="#contato">Quero o Enterprise</a>
-        </article>
-      </div>
-
-      <details class="compare-table reveal">
-        <summary>Ver comparativo completo dos planos</summary>
-        <div class="table-wrap">
-          <table id="plans-table">
-            <thead>
-              <tr><th scope="col">Recursos / Planos</th><th scope="col" class="c-start">Start</th><th scope="col" class="c-core">Core</th><th scope="col" class="c-business">Business</th><th scope="col" class="c-enterprise">Enterprise</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <div class="ai-lab reveal">
+        <div class="ai-procs" role="tablist" aria-label="Processos" id="ai-procs"></div>
+        <div class="ai-stage">
+          <div class="pipeline" id="pipeline"></div>
+          <div class="terminal">
+            <div class="win-bar"><i></i><i></i><i></i><span>nexor-agent · logs</span><button class="run-btn" id="ai-run"><svg class="ic"><use href="#i-play"/></svg> Executar</button></div>
+            <pre class="term-body" id="term" aria-live="polite"></pre>
+          </div>
+          <div class="ai-metrics" id="ai-metrics"></div>
         </div>
-        <p class="note">Valores de investimento mensal sugerido. A proposta final depende do diagnóstico do seu ambiente.</p>
-      </details>
-    </div>
-  </section>
-
-  <!-- SIMULADOR -->
-  <section class="section section-alt" id="simulador">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">Simulador Nexor</p>
-        <h2>Monte sua <span class="accent">solução sob medida</span></h2>
-        <p>Selecione os serviços e quantidades. Receba uma estimativa mensal na hora e gere sua proposta em PDF.</p>
-      </div>
-      <div class="sim-grid">
-        <div class="sim-list" id="sim-list"></div>
-        <aside class="sim-summary" aria-live="polite">
-          <h3>Total mensal estimado</h3>
-          <p class="sim-total" id="sim-total">R$ 0,00</p>
-          <ul class="sim-items" id="sim-items"><li class="empty">Nenhum serviço selecionado.</li></ul>
-          <button class="btn btn-primary btn-block" id="sim-pdf" disabled>Gerar proposta em PDF</button>
-          <a class="btn btn-whats btn-block" id="sim-whats" href="#contato"><svg class="ic"><use href="#i-whatsapp"/></svg> Enviar pelo WhatsApp</a>
-          <p class="note">Valores de referência. A Nexor garante estabilidade, segurança e continuidade para sua empresa.</p>
-        </aside>
       </div>
     </div>
   </section>
 
-  <!-- SOBRE -->
-  <section class="section" id="sobre">
-    <div class="container about-grid">
-      <div class="about-visual reveal">
-        <img src="assets/img/brand-wallpaper.webp" alt="Logotipo Nexor Consulting sobre fundo azul escuro com linhas de luz" width="1600" height="900" loading="lazy">
-      </div>
+  <!-- ================= ENGENHARIA ================= -->
+  <section class="section" id="engenharia">
+    <div class="container eng-grid">
       <div class="reveal">
-        <p class="kicker">Sobre a Nexor</p>
-        <h2>Somos o cérebro tecnológico <span class="accent">do seu negócio.</span></h2>
-        <p class="lead">Mais que tecnologia: inteligência para impulsionar resultados. Somos um parceiro estratégico de valor agregado que une tecnologia, pessoas e processos para garantir segurança, performance e crescimento contínuo.</p>
-        <ul class="pillars">
-          <li><svg class="ic"><use href="#i-target"/></svg><span>Estratégia<br>inteligente</span></li>
-          <li><svg class="ic"><use href="#i-gear"/></svg><span>Execução<br>impecável</span></li>
-          <li><svg class="ic"><use href="#i-chart"/></svg><span>Resultados<br>reais</span></li>
-        </ul>
+        <p class="kicker">// engenharia de verdade</p>
+        <h2>Código limpo, tipado, testado <span class="grad">e pronto para escalar.</span></h2>
+        <p class="lead">Trabalhamos com as linguagens e frameworks mais modernos do mercado. Arquitetura sólida, testes automatizados, revisão de código e CI/CD em todo projeto. O código-fonte é seu.</p>
+        <div class="langs" id="langs"></div>
+      </div>
+      <div class="code-tabs reveal">
+        <div class="code-tab-bar" role="tablist" aria-label="Exemplos de código" id="code-tab-bar"></div>
+        <div class="code-window">
+          <div class="win-bar"><i></i><i></i><i></i><span id="code-file">api.ts</span></div>
+          <pre class="code code-lg" id="code-view"></pre>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- REDES -->
-  <section class="section section-alt" id="redes">
+  <!-- ================= PROCESSO ================= -->
+  <section class="section section-alt" id="processo">
     <div class="container">
       <div class="section-head reveal">
-        <p class="kicker">Nexor nas redes</p>
-        <h2>Tecnologia que conecta. <span class="accent">Inteligência que protege.</span></h2>
+        <p class="kicker">// como trabalhamos</p>
+        <h2>Da ideia ao deploy <span class="grad">sem surpresas.</span></h2>
       </div>
-      <div class="gallery">
-        <button class="gallery-item reveal" data-full="assets/img/post-conecta.webp"><img src="assets/img/post-conecta.webp" alt="Tecnologia que conecta, inteligência que protege: RMM, cloud, redes e segurança eletrônica com IA" loading="lazy" width="720" height="720"></button>
-        <button class="gallery-item reveal" data-full="assets/img/post-ciberseguranca.webp"><img src="assets/img/post-ciberseguranca.webp" alt="Cibersegurança de verdade não é sorte, é estratégia" loading="lazy" width="720" height="720"></button>
-        <button class="gallery-item reveal" data-full="assets/img/post-prevencao.webp"><img src="assets/img/post-prevencao.webp" alt="Da reação à prevenção: suporte tradicional versus Nexor Consulting" loading="lazy" width="720" height="720"></button>
-        <button class="gallery-item reveal" data-full="assets/img/post-seguranca-360.webp"><img src="assets/img/post-seguranca-360.webp" alt="Segurança 360°: proteção completa para sua empresa" loading="lazy" width="720" height="720"></button>
-        <button class="gallery-item reveal" data-full="assets/img/post-zero-downtime.webp"><img src="assets/img/post-zero-downtime.webp" alt="Zero downtime: continuidade é lucro" loading="lazy" width="720" height="720"></button>
-        <button class="gallery-item reveal" data-full="assets/img/post-blindamos.webp"><img src="assets/img/post-blindamos.webp" alt="Blindamos o futuro da sua empresa" loading="lazy" width="720" height="720"></button>
-        <button class="gallery-item reveal" data-full="assets/img/post-parceiro.webp"><img src="assets/img/post-parceiro.webp" alt="Parceiro estratégico de valor agregado" loading="lazy" width="720" height="720"></button>
-        <button class="gallery-item reveal" data-full="assets/img/post-cerebro.webp"><img src="assets/img/post-cerebro.webp" alt="Somos o cérebro tecnológico do seu negócio" loading="lazy" width="720" height="720"></button>
-      </div>
+      <ol class="timeline">
+        <li class="reveal"><span class="t-num">01</span><svg class="ic"><use href="#i-search"/></svg><h3>Imersão</h3><p>Entendemos o negócio, os processos e os gargalos. Diagnóstico gratuito.</p></li>
+        <li class="reveal"><span class="t-num">02</span><svg class="ic"><use href="#i-pen"/></svg><h3>Protótipo</h3><p>UX/UI navegável para validar antes de escrever uma linha de código.</p></li>
+        <li class="reveal"><span class="t-num">03</span><svg class="ic"><use href="#i-code"/></svg><h3>Desenvolvimento</h3><p>Sprints curtas, entregas semanais e acesso ao ambiente de homologação.</p></li>
+        <li class="reveal"><span class="t-num">04</span><svg class="ic"><use href="#i-brain"/></svg><h3>IA &amp; Automação</h3><p>Agentes e integrações treinados com os dados e regras da sua empresa.</p></li>
+        <li class="reveal"><span class="t-num">05</span><svg class="ic"><use href="#i-test"/></svg><h3>Testes &amp; Segurança</h3><p>Testes automatizados, revisão de segurança e conformidade com a LGPD.</p></li>
+        <li class="reveal"><span class="t-num">06</span><svg class="ic"><use href="#i-rocket"/></svg><h3>Deploy &amp; Evolução</h3><p>Publicação em nuvem, monitoramento, suporte e melhorias contínuas.</p></li>
+      </ol>
     </div>
   </section>
 
-  <!-- CONTATO -->
-  <section class="section" id="contato">
+  <!-- ================= DIFERENCIAIS ================= -->
+  <section class="section" id="diferenciais">
+    <div class="container bento">
+      <article class="bento-item b-wide reveal">
+        <svg class="ic"><use href="#i-code"/></svg>
+        <h3>100% sob medida, código 100% seu</h3>
+        <p>Nada de templates engessados. Você recebe o código-fonte, a documentação e a liberdade de evoluir como quiser.</p>
+      </article>
+      <article class="bento-item reveal">
+        <svg class="ic"><use href="#i-bolt"/></svg>
+        <h3>Performance extrema</h3>
+        <p>Carregamento rápido, boa nota no Lighthouse e infraestrutura que aguenta crescer.</p>
+      </article>
+      <article class="bento-item reveal">
+        <svg class="ic"><use href="#i-shield"/></svg>
+        <h3>Segurança &amp; LGPD</h3>
+        <p>Criptografia, controle de acesso, logs de auditoria e boas práticas OWASP.</p>
+      </article>
+      <article class="bento-item reveal">
+        <svg class="ic"><use href="#i-cloud"/></svg>
+        <h3>Cloud nativa</h3>
+        <p>Deploy automatizado, backups e alta disponibilidade em AWS, Azure ou GCP.</p>
+      </article>
+      <article class="bento-item b-wide b-glow reveal">
+        <svg class="ic"><use href="#i-brain"/></svg>
+        <h3>IA aplicada ao que dá resultado</h3>
+        <p>Não vendemos hype: identificamos onde a IA reduz custo e tempo de verdade e entregamos automações mensuráveis.</p>
+      </article>
+      <article class="bento-item reveal">
+        <svg class="ic"><use href="#i-chart"/></svg>
+        <h3>Suporte &amp; evolução</h3>
+        <p>Acompanhamento após a entrega, com melhorias contínuas e SLA.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ================= CONFIGURADOR ================= -->
+  <section class="section section-alt" id="orcamento">
     <div class="container">
-      <div class="cta-box reveal">
-        <div class="cta-copy">
-          <span class="cta-icon"><svg class="ic"><use href="#i-search"/></svg></span>
-          <p class="kicker green">Vamos conversar?</p>
-          <h2>Diagnóstico <span class="green">gratuito</span></h2>
-          <p>Entendemos sua realidade e indicamos as melhores soluções para gerar resultados de verdade.</p>
-          <ul class="checklist green-checks">
-            <li><svg class="ic"><use href="#i-check"/></svg>Análise completa do seu ambiente e desafios</li>
-            <li><svg class="ic"><use href="#i-check"/></svg>Plano de ação personalizado com foco em resultados</li>
-            <li><svg class="ic"><use href="#i-check"/></svg>Recomendações estratégicas sem compromisso</li>
-          </ul>
+      <div class="section-head reveal">
+        <p class="kicker">// monte seu projeto</p>
+        <h2>Configure em 1 minuto. <span class="grad">Receba sua proposta.</span></h2>
+        <p>Selecione o que você precisa e envie o briefing direto para nosso time. Sem compromisso.</p>
+      </div>
+      <form class="builder reveal" id="builder">
+        <div class="builder-steps">
+          <fieldset>
+            <legend><span>1</span> O que vamos construir?</legend>
+            <div class="opt-grid" data-group="tipo" data-single>
+              <label><input type="radio" name="tipo" value="Site / Landing page" checked><span><svg class="ic"><use href="#i-globe"/></svg>Site / Landing</span></label>
+              <label><input type="radio" name="tipo" value="E-commerce"><span><svg class="ic"><use href="#i-store"/></svg>E-commerce</span></label>
+              <label><input type="radio" name="tipo" value="Sistema empresarial"><span><svg class="ic"><use href="#i-layers"/></svg>Sistema empresarial</span></label>
+              <label><input type="radio" name="tipo" value="Automação com IA"><span><svg class="ic"><use href="#i-brain"/></svg>Automação com IA</span></label>
+              <label><input type="radio" name="tipo" value="Aplicativo mobile"><span><svg class="ic"><use href="#i-phone"/></svg>App mobile</span></label>
+              <label><input type="radio" name="tipo" value="Software sob medida"><span><svg class="ic"><use href="#i-code"/></svg>Sob medida</span></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend><span>2</span> Porte da empresa</legend>
+            <div class="opt-row">
+              <label><input type="radio" name="porte" value="Pequeno porte" checked><span>Pequeno</span></label>
+              <label><input type="radio" name="porte" value="Médio porte"><span>Médio</span></label>
+              <label><input type="radio" name="porte" value="Grande porte"><span>Grande</span></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend><span>3</span> Recursos desejados</legend>
+            <div class="opt-row wrap">
+              <label><input type="checkbox" name="recursos" value="Área do cliente / login"><span>Área do cliente</span></label>
+              <label><input type="checkbox" name="recursos" value="Pagamentos online"><span>Pagamentos</span></label>
+              <label><input type="checkbox" name="recursos" value="Chatbot com IA"><span>Chatbot IA</span></label>
+              <label><input type="checkbox" name="recursos" value="Dashboard / relatórios"><span>Dashboards</span></label>
+              <label><input type="checkbox" name="recursos" value="Integração com WhatsApp"><span>WhatsApp</span></label>
+              <label><input type="checkbox" name="recursos" value="Integração com ERP/sistemas"><span>Integrações</span></label>
+              <label><input type="checkbox" name="recursos" value="App mobile"><span>App mobile</span></label>
+              <label><input type="checkbox" name="recursos" value="Automação de documentos (OCR)"><span>OCR / documentos</span></label>
+              <label><input type="checkbox" name="recursos" value="Multi-idioma"><span>Multi-idioma</span></label>
+              <label><input type="checkbox" name="recursos" value="SEO avançado"><span>SEO</span></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend><span>4</span> Prazo ideal</legend>
+            <div class="opt-row">
+              <label><input type="radio" name="prazo" value="O quanto antes"><span>Urgente</span></label>
+              <label><input type="radio" name="prazo" value="1 a 3 meses" checked><span>1–3 meses</span></label>
+              <label><input type="radio" name="prazo" value="3 a 6 meses"><span>3–6 meses</span></label>
+              <label><input type="radio" name="prazo" value="Sem pressa"><span>Flexível</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="contact-fields">
+            <legend><span>5</span> Seus dados</legend>
+            <label>Nome<input name="nome" autocomplete="name" required></label>
+            <label>Empresa<input name="empresa" autocomplete="organization"></label>
+            <label>WhatsApp<input name="telefone" type="tel" autocomplete="tel" required></label>
+            <label class="full">Conte um pouco sobre a ideia<textarea name="mensagem" rows="3"></textarea></label>
+          </fieldset>
         </div>
-        <form class="contact-form" id="contact-form" novalidate>
-          <label>Nome<input name="nome" autocomplete="name" required></label>
-          <label>Empresa<input name="empresa" autocomplete="organization"></label>
-          <label>Telefone / WhatsApp<input name="telefone" type="tel" autocomplete="tel" required></label>
-          <label>Quantos dispositivos?
-            <select name="dispositivos">
-              <option>Até 5</option><option>6 a 15</option><option>16 a 50</option><option>Mais de 50</option>
-            </select>
-          </label>
-          <label class="full">Como podemos ajudar?<textarea name="mensagem" rows="3"></textarea></label>
+        <aside class="builder-summary" aria-live="polite">
+          <div class="win-bar"><i></i><i></i><i></i><span>briefing.json</span></div>
+          <pre class="code" id="briefing"></pre>
+          <div class="complexity">
+            <div><span>Complexidade estimada</span><strong id="cx-label">Baixa</strong></div>
+            <div class="meter"><i id="cx-bar" style="--w:20%"></i></div>
+          </div>
           <p class="form-error" id="form-error" role="alert"></p>
-          <button class="btn btn-whats btn-block full" type="submit"><svg class="ic"><use href="#i-whatsapp"/></svg> Fale conosco no WhatsApp</button>
-          <p class="note full">É rápido, fácil e sem compromisso.</p>
-        </form>
+          <button class="btn btn-whats btn-block" type="submit"><svg class="ic"><use href="#i-whatsapp"/></svg> Enviar briefing pelo WhatsApp</button>
+          <p class="note">Respondemos rápido, com proposta personalizada e diagnóstico gratuito.</p>
+        </aside>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= FAQ ================= -->
+  <section class="section" id="faq">
+    <div class="container faq-grid">
+      <div class="reveal">
+        <p class="kicker">// dúvidas frequentes</p>
+        <h2>Perguntas <span class="grad">frequentes</span></h2>
+        <p class="lead">Não encontrou o que procurava? Fale com a gente — o diagnóstico é gratuito.</p>
+        <a class="btn btn-whats" data-whatsapp="Olá! Tenho uma dúvida sobre um projeto com a Nexor." href="#orcamento"><svg class="ic"><use href="#i-whatsapp"/></svg> Tirar dúvida no WhatsApp</a>
+      </div>
+      <div class="faq reveal">
+        <details open><summary>Quanto tempo leva para desenvolver um projeto?</summary><p>Depende do escopo. Sites e landing pages costumam levar algumas semanas; sistemas empresariais e automações com IA são entregues em módulos, com versões funcionais desde as primeiras sprints.</p></details>
+        <details><summary>Os modelos da vitrine podem ser personalizados?</summary><p>Sim. Os modelos são pontos de partida: adaptamos identidade visual, fluxos, regras de negócio e integrações para a realidade da sua empresa.</p></details>
+        <details><summary>O código-fonte fica com a minha empresa?</summary><p>Sim. Em projetos sob medida o código e a documentação são entregues para você, sem aprisionamento tecnológico.</p></details>
+        <details><summary>Como a IA é aplicada no meu negócio?</summary><p>Mapeamos processos repetitivos — atendimento, leitura de documentos, triagem de leads, relatórios — e criamos agentes que executam essas tarefas integrados aos seus sistemas, com supervisão humana quando necessário.</p></details>
+        <details><summary>Meus dados ficam seguros com a IA?</summary><p>Usamos provedores com garantias corporativas, controle de acesso, anonimização quando necessário e boas práticas de LGPD. Para grandes empresas, há opção de modelos privados.</p></details>
+        <details><summary>Vocês dão suporte depois da entrega?</summary><p>Sim. Oferecemos planos de suporte, monitoramento e evolução contínua, com SLA de acordo com a criticidade do sistema.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CTA ================= -->
+  <section class="cta-final">
+    <div class="container cta-inner reveal">
+      <img src="assets/img/logo-lockup.webp" alt="Nexor Consulting" width="720" height="470" loading="lazy">
+      <div>
+        <h2>Sua próxima vantagem competitiva <span class="grad">começa com uma conversa.</span></h2>
+        <p>Diagnóstico gratuito: entendemos seu desafio e mostramos o caminho — com tecnologia, IA e foco em resultado.</p>
+        <div class="hero-actions">
+          <a class="btn btn-whats btn-lg" data-whatsapp="Olá! Quero agendar um diagnóstico gratuito com a Nexor." href="#orcamento"><svg class="ic"><use href="#i-whatsapp"/></svg> Agendar diagnóstico gratuito</a>
+          <a class="btn btn-ghost btn-lg" href="#vitrine">Rever a vitrine</a>
+        </div>
       </div>
     </div>
   </section>
 </main>
 
 <footer class="site-footer">
-  <div class="container footer-pillars">
-    <div><svg class="ic"><use href="#i-chip"/></svg><p><strong>Tecnologia</strong>Soluções inovadoras e eficientes.</p></div>
-    <div><svg class="ic"><use href="#i-shield"/></svg><p><strong>Segurança</strong>Proteção completa para o seu negócio.</p></div>
-    <div><svg class="ic"><use href="#i-gauge"/></svg><p><strong>Performance</strong>Mais produtividade, menos custos.</p></div>
-    <div><svg class="ic"><use href="#i-handshake"/></svg><p><strong>Parceria</strong>Compromisso real com o seu sucesso.</p></div>
+  <div class="container footer-grid">
+    <div>
+      <a class="brand" href="#topo" aria-label="Voltar ao topo">
+        <img src="assets/img/logo-mark.webp" alt="" width="40" height="45">
+        <span class="brand-text"><span class="brand-name">NE<span class="x">X</span>OR</span><span class="brand-sub">CONSULTING</span></span>
+      </a>
+      <p class="footer-tag">Software sob medida e inteligência artificial para empresas que querem ir além.</p>
+    </div>
+    <div>
+      <h4>Soluções</h4>
+      <a href="#servicos">Sites &amp; Landing Pages</a>
+      <a href="#servicos">Sistemas Empresariais</a>
+      <a href="#servicos">Desenvolvimento Sob Medida</a>
+      <a href="#ia">IA &amp; Automação</a>
+    </div>
+    <div>
+      <h4>Empresa</h4>
+      <a href="#vitrine">Vitrine</a>
+      <a href="#processo">Processo</a>
+      <a href="#faq">FAQ</a>
+      <a href="#orcamento">Orçamento</a>
+    </div>
+    <div>
+      <h4>Contato</h4>
+      <a data-whatsapp="Olá! Vim pelo site da Nexor." href="#orcamento">WhatsApp</a>
+      <p class="status"><span class="pulse-dot"></span> Todos os sistemas operacionais</p>
+    </div>
   </div>
   <div class="container footer-bottom">
-    <a class="brand" href="#topo" aria-label="Voltar ao topo">
-      <img src="assets/img/logo-mark.webp" alt="" width="38" height="42">
-      <span class="brand-text"><span class="brand-name">NE<span class="x">X</span>OR</span><span class="brand-sub">CONSULTING</span></span>
-    </a>
-    <p>© <span id="year">2026</span> Nexor Consulting. Mais que suporte. Parceiros do seu crescimento.</p>
+    <p>© <span id="year">2026</span> Nexor Consulting · Tecnologia • Segurança • Performance</p>
+    <p class="mono">&lt;/&gt; feito com código, café e IA</p>
   </div>
 </footer>
 
-<a class="whats-float" data-whatsapp="Olá! Vim pelo site e gostaria de falar com a Nexor." href="#contato" aria-label="Fale conosco no WhatsApp"><svg class="ic"><use href="#i-whatsapp"/></svg></a>
+<a class="whats-float" data-whatsapp="Olá! Vim pelo site e gostaria de falar com a Nexor." href="#orcamento" aria-label="Fale conosco no WhatsApp"><svg class="ic"><use href="#i-whatsapp"/></svg></a>
 
-<dialog class="lightbox" id="lightbox">
-  <button class="lightbox-close" aria-label="Fechar">×</button>
-  <img alt="">
+<dialog class="modal" id="project-modal" aria-labelledby="pm-title">
+  <button class="modal-close" aria-label="Fechar">×</button>
+  <div class="modal-body">
+    <div class="modal-preview" id="pm-preview"></div>
+    <div class="modal-info">
+      <p class="kicker" id="pm-cat"></p>
+      <h3 id="pm-title"></h3>
+      <p id="pm-desc"></p>
+      <h4>Recursos</h4>
+      <ul class="checks" id="pm-features"></ul>
+      <h4>Stack</h4>
+      <div class="stack-chips" id="pm-stack"></div>
+      <a class="btn btn-primary btn-block" id="pm-cta" href="#orcamento">Quero um projeto como este <svg class="ic"><use href="#i-arrow"/></svg></a>
+    </div>
+  </div>
 </dialog>
 
+<script src="assets/js/projects.js"></script>
 <script src="assets/js/main.js"></script>
 </body>
 </html>

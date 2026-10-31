@@ -1,16 +1,16 @@
 # Nexor Consulting — Site institucional
 
-Site estático (HTML + CSS + JS puro, sem build) da Nexor Consulting: *Tecnologia • Segurança • Performance*.
+Site estático (HTML + CSS + JavaScript puro, sem build) da Nexor Consulting: desenvolvimento de sites, sistemas empresariais, software sob medida e IA para automação de processos.
 
 ## Seções
-- **Hero** com proposta de valor, CTA de diagnóstico gratuito e números (+10 anos, +200 clientes, 100% foco em resultados)
-- **Com ou sem TI** — atendimento para empresas com ou sem time de TI
-- **Serviços** — infraestrutura, segurança, cloud & backup, suporte, automação, consultoria, RMM e segurança eletrônica com IA
-- **Metodologia** — da reação à prevenção + Segurança 360°
-- **Diferenciais**
-- **Planos** — Start, Core, Business e Enterprise, com comparativo completo
-- **Simulador** — monta a solução, calcula o total mensal, gera proposta em PDF (jsPDF) ou envia pelo WhatsApp
-- **Sobre**, **galeria de posts** e **contato** (formulário que abre o WhatsApp com a mensagem preenchida)
+- **Hero** com rede neural animada em canvas, palavras rotativas e janela de código "digitando"
+- **Tecnologias** em faixa contínua (linguagens, frameworks, cloud e IA)
+- **Serviços**: sites, sistemas empresariais, sob medida, IA & automação, apps, integrações/cloud
+- **Soluções por porte** (pequeno, médio, grande) em abas
+- **Vitrine de projetos**: 9 modelos com telas renderizadas em HTML/CSS, filtros por categoria e detalhes em modal
+- **IA em ação**: simulação de agentes automatizando processos, com pipeline e terminal de logs
+- **Engenharia**: exemplos de código com realce de sintaxe (TypeScript, Python, SQL, Go)
+- **Processo**, **diferenciais**, **configurador de projeto** (gera briefing e envia pelo WhatsApp) e **FAQ**
 
 ## Como rodar
 Abra `index.html` no navegador, ou sirva a pasta:
@@ -19,13 +19,9 @@ Abra `index.html` no navegador, ou sirva a pasta:
 python3 -m http.server 8000
 ```
 
-Pode ser publicado direto no GitHub Pages, Netlify, Vercel ou qualquer hospedagem estática.
+Pode ser publicado no GitHub Pages, Netlify, Vercel ou qualquer hospedagem estática.
 
-## Configuração
-Defina o número do WhatsApp em `assets/js/main.js`:
-
-```js
-const WHATSAPP_NUMBER = "5500000000000"; // DDI + DDD + número
-```
-
-Preços dos serviços do simulador e dados do comparativo de planos também ficam em `assets/js/main.js` (`SERVICES` e `PLAN_ROWS`).
+## Onde editar
+- `assets/js/main.js` → `WHATSAPP_NUMBER` (DDI + DDD + número), processos da seção de IA, exemplos de código e tecnologias
+- `assets/js/projects.js` → modelos da vitrine (nome, descrição, recursos, stack, cores)
+- `assets/css/style.css` → cores e visual (variáveis em `:root`)
