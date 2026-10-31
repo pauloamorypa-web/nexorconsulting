@@ -1067,3 +1067,143 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
   .brinde-caixa, .brinde-raios, .brinde-cta, .brinde-cta::after, .brinde-brilho { animation: none !important; }
 }
 [hidden] { display: none !important; }
+
+/* ==========================================================
+   PADRÃO VISUAL — escala única de tipografia, espaçamento e toque
+   (vem por último para valer sobre as regras anteriores)
+   ========================================================== */
+:root {
+  /* Tipografia: 12 · 13 · 14 · 16 · 17 · 18 px e títulos fluidos */
+  --fs-2xs: 0.75rem;
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.125rem;
+  --fs-h3: clamp(1.125rem, 1rem + 0.6vw, 1.375rem);
+  --fs-h3-lg: clamp(1.25rem, 1.05rem + 1vw, 1.625rem);
+  --fs-h2: clamp(1.75rem, 1.2rem + 2.6vw, 3rem);
+  --fs-h1: clamp(2.25rem, 1.3rem + 4.6vw, 4.5rem);
+  --lh-titulo: 1.1;
+  --lh-texto: 1.6;
+  /* Espaçamento: base de 4 px */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+  --gutter: clamp(16px, 4vw, 32px);
+  --sec-y: clamp(56px, 8vw, 112px);
+  --head-gap: clamp(32px, 5vw, 56px);
+  --pad-card: clamp(18px, 2.4vw, 28px);
+  --gap-grid: clamp(12px, 2vw, 24px);
+  /* Cantos */
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px;
+  /* Toque */
+  --toque: 44px;
+}
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { font-size: var(--fs-base); line-height: var(--lh-texto); }
+.container { width: min(1240px, 100% - 2 * var(--gutter)); }
+.section { padding-block: var(--sec-y); }
+.section-head { margin-bottom: var(--head-gap); }
+
+/* ---------- Títulos e textos ---------- */
+h1, h2, h3, h4 { line-height: var(--lh-titulo); overflow-wrap: break-word; }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h3); }
+.hero h1 { font-size: var(--fs-h1); }
+.sol-info h3, .project-info h3, .timeline h3, .bento-item h3, .why-item h3, .service h3, .int-group h3, .duo-card h3 { font-size: var(--fs-h3); }
+.b-wide h3, .tab-panel h3, .security-title, .sm-info h3, .modal-info h3, .mini-form h3, .saida-conteudo h3 { font-size: var(--fs-h3-lg); }
+.lead, .section-head > p:not(.kicker), .cta-inner p { font-size: var(--fs-lg); line-height: var(--lh-texto); }
+.service p, .sol-sub, .project-info p, .bento-item p, .timeline p, .why-item p, .stat-card p, .faq details p, .tab-panel p, .sm-legenda, .calc-frase, .footer-tag, .gov span { font-size: var(--fs-sm); line-height: 1.55; }
+.checks li, .solution .checks li, .sm-info .checks li, .modal-info .checks li, .brinde-inclui li { font-size: var(--fs-sm); line-height: 1.45; }
+.faq summary { font-size: var(--fs-md); }
+
+/* Etiquetas e textos de apoio: nunca abaixo de 12 px */
+.kicker { font-size: var(--fs-xs); }
+.sol-badge, .project-label, .demo-tag, .badge-new, .sol-preview-mais, .brinde-selo, .ta-selo, .ta-chip, .stat-card a, .status, .run-btn,
+.service li, .project-stack span, .stack-chips span, .int-group span, .lgpd, .ta-rodape, .nx-chat-aviso, .calc-mini small, .ta-kpis small,
+.ta-tabela th, .mk-legend, .float-card small, .hero-stats span, .footer-bottom, .footer-grid h4, .modal-info h4, .eyebrow, .pill { font-size: var(--fs-2xs); }
+.note, .ta-dica, .calc-grafico-topo, .sm-abas button, .ta-abas button, .ta-tabela table, .nx-msg, .int-cats b { font-size: var(--fs-xs); }
+.brand-sub { font-size: 0.55rem; }
+.calc-bar small { font-size: 0.6875rem; }
+.code, .code-lg, .builder-summary .code, .term-body, .ta-terminal { font-size: max(0.75rem, 0.78em); }
+
+/* Rótulos de formulário legíveis */
+.contact-fields label, .mini-campos label, .ta-form label, .calc-ajuste label > span, .roi-inputs label > span, .mini-check { font-size: var(--fs-sm); }
+
+/* ---------- Campos: 16 px evita o zoom automático do iPhone ---------- */
+input, select, textarea, .contact-fields input, .contact-fields textarea, .calc-form input, .mini-form input, .mini-form select,
+.ta-form input, .ta-form select, .ta-form textarea, .ta-inline input, .ta-envio input, .nx-chat-form textarea { font-size: 16px; }
+.contact-fields input, .calc-form input, .mini-form input, .mini-form select, .ta-form input, .ta-form select, .ta-inline input, .ta-envio input { min-height: var(--toque); }
+input[type="range"] { min-height: 0; }
+
+/* ---------- Botões e alvos de toque ---------- */
+.btn { min-height: var(--toque); padding: 12px 22px; font-size: var(--fs-base); line-height: 1.2; white-space: normal; text-align: center; border-radius: var(--r-sm); }
+.btn-lg { min-height: 52px; padding: 14px 26px; font-size: var(--fs-md); }
+.btn-sm { min-height: 40px; padding: 9px 16px; font-size: var(--fs-sm); }
+.chip, .tabs button, .code-tab-bar button, .calc-opcoes button, .ai-procs button, .sm-abas button, .ta-abas button, .ta-chips button, .ta-dispositivos button, .nx-chat-sugestoes button, .ta-sugs button { min-height: 40px; }
+.run-btn { min-height: 32px; }
+.link-btn { display: inline-flex; align-items: center; min-height: 40px; padding-inline: 4px; }
+.modal-close, .ta-fechar, .nx-chat-fechar { width: 44px; height: 44px; }
+.nav a:not(.btn) { padding-block: 8px; }
+
+/* ---------- Cartões: mesmo respiro e cantos ---------- */
+.service, .bento-item, .why-item, .timeline li, .int-group, .stat-card, .int-cats div, .gov div, .ta-card { padding: var(--pad-card); border-radius: var(--r-lg); }
+.sol-info { padding: var(--pad-card); }
+.project-info { padding: var(--pad-card); }
+.services, .solutions, .showcase, .bento, .stats-grid, .int-groups, .int-cats, .gov, .timeline, .why { gap: var(--gap-grid); }
+
+/* ---------- Celular e tablet ---------- */
+@media (max-width: 900px) {
+  .hero { padding-block: 40px 64px; }
+  .hero-actions { margin-block: 24px 32px; }
+  .scroll-hint { display: none; }
+}
+@media (max-width: 640px) {
+  :root { --pad-card: 18px; }
+  .lead, .section-head > p:not(.kicker), .cta-inner p { font-size: var(--fs-md); }
+  .section-head { text-align: left; }
+  .section-head .kicker::before { display: none; }
+  .hero-actions .btn, .cta-inner .hero-actions .btn, .sol-actions .btn { flex: 1 1 100%; }
+  .sol-actions { flex-wrap: wrap; }
+  .cta-inner { padding: 24px 18px; gap: 24px; }
+  .cta-inner img { max-width: min(260px, 100%); }
+  .hero-visual .code { min-height: 0; }
+  .tabs { width: 100%; }
+  .tabs button { flex: 1 0 auto; }
+  .filters { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+  .sol-preview { height: 200px; }
+  .footer-bottom { flex-direction: column; align-items: flex-start; }
+  /* Botões flutuantes menores e sem cobrir o fim da página */
+  .whats-float { width: 52px; height: 52px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+  .whats-float .ic { width: 26px; height: 26px; }
+  .nx-chat-abrir { right: 16px; bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 64px); padding: 0; width: 52px; height: 52px; justify-content: center; }
+  .nx-chat-abrir .nx-blue-av { width: 32px; height: 32px; }
+  .site-footer { padding-bottom: 96px; }
+  /* Janelas ocupam a tela com margem segura */
+  .modal, .mini-modal, .brinde-modal { width: calc(100vw - 24px); max-height: calc(100svh - 24px); }
+  .mini-form, .saida-conteudo, .brinde-etapa { padding: 24px 18px 20px; }
+  .modal-info, .sm-info { padding: 22px 18px; }
+  /* Área do teste grátis */
+  .ta-topo { gap: 8px; }
+  .ta-acoes { width: 100%; }
+  .ta-acoes .btn { flex: 1; }
+  .ta-corpo { padding: 16px var(--gutter); }
+  .ta-chat { height: min(460px, 70svh); }
+  .ta-kpis b { font-size: 1.15rem; }
+}
+@media (max-width: 380px) {
+  :root { --gutter: 14px; }
+  .brand-name { font-size: .92rem; }
+  .brand img { height: 36px; }
+  .hero-stats { gap: 16px; }
+}
+.calc-grafico-topo small, .porte-meter, .porte-meter small, .roi-main small, .roi-grid small, .calc-resultado > small, .sm-legenda { font-size: var(--fs-xs); }
+@media (max-width: 640px) {
+  .ta-topo { position: relative; }
+  .ta-titulo { padding-right: 52px; }
+  .ta-fechar { position: absolute; top: 8px; right: 12px; }
+  .ta-acoes .btn { flex: 1 1 0; min-width: 0; padding-inline: 10px; font-size: var(--fs-sm); }
+  .ta-ola { display: none; }
+}
