@@ -24,6 +24,9 @@ python3 -m http.server 8000
 
 Pode ser publicado no GitHub Pages, Netlify, Vercel ou qualquer hospedagem estática.
 
+### GitHub Pages
+Em **Settings → Pages**, escolha **Deploy from a branch**, branch `main` e pasta `/ (root)`. O site fica em `https://pauloamorypa-web.github.io/nexorconsulting/`. O arquivo `.nojekyll` faz o GitHub servir os arquivos como estão.
+
 ## Onde editar
 - `assets/js/main.js` → `WHATSAPP_NUMBER` (DDI + DDD + número), integrações, processos da seção de IA, exemplos de código e tecnologias
 - `assets/js/projects.js` → modelos da vitrine (nome, descrição, recursos, stack, cores)
