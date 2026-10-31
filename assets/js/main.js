@@ -1,7 +1,7 @@
 /* Nexor Consulting — scripts do site */
 
 // Número do WhatsApp da Nexor (DDI + DDD + número, só dígitos). Ex.: 5511999999999
-const WHATSAPP_NUMBER = "5500000000000";
+const WHATSAPP_NUMBER = "5534997337499";
 
 const whatsUrl = (msg) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 const $ = (s, el = document) => el.querySelector(s);
