@@ -117,7 +117,7 @@ if (reduceMotion) {
 }
 
 /* ================= Hero: palavras rotativas ================= */
-const WORDS = ["ERPs e CRMs", "sites que vendem", "agentes de IA", "sistemas web", "apps mobile", "automações"];
+const WORDS = ["agentes de IA", "lojas virtuais", "ERPs e CRMs", "sites que vendem", "automações", "apps mobile"];
 const typed = $("#typed");
 if (!reduceMotion) {
   let w = 0;
@@ -333,10 +333,9 @@ $$(".filters .chip").forEach((chip) =>
 );
 
 const modal = $("#project-modal");
-showcase.addEventListener("click", (e) => {
-  const btn = e.target.closest(".project-btn");
-  if (!btn) return;
-  const p = PROJECTS.find((x) => x.id === btn.dataset.id);
+const openProject = (id) => {
+  const p = PROJECTS.find((x) => x.id === id);
+  if (!p) return;
   modal.style.setProperty("--a", p.accent);
   modal.style.setProperty("--a2", p.accent2);
   $("#pm-preview").innerHTML = renderMock(p);
@@ -345,12 +344,54 @@ showcase.addEventListener("click", (e) => {
   $("#pm-desc").textContent = p.desc;
   $("#pm-features").innerHTML = p.features.map((f) => `<li><svg class="ic"><use href="#i-check"/></svg>${f}</li>`).join("");
   $("#pm-stack").innerHTML = p.stack.map((s) => `<span>${s}</span>`).join("");
-  linkWhats($("#pm-cta"), `Olá! Vi o modelo "${p.name} — ${p.title}" na vitrine da Nexor e quero um projeto como este.`);
+  linkWhats($("#pm-cta"), `Olá! Vi o modelo "${p.name} — ${p.title}" no site da Nexor e quero um projeto como este.`);
   modal.showModal();
+};
+showcase.addEventListener("click", (e) => {
+  const btn = e.target.closest(".project-btn");
+  if (btn) openProject(btn.dataset.id);
 });
+$$("[data-open]").forEach((b) => b.addEventListener("click", () => openProject(b.dataset.open)));
 modal.addEventListener("click", (e) => {
   if (e.target === modal || e.target.closest(".modal-close")) modal.close();
 });
+
+/* ================= Integrações ================= */
+const INTEGRATIONS = [
+  ["Atendimento", ["WhatsApp Business API", "Instagram Direct", "Chat no site", "E-mail", "Telefonia / URA"]],
+  ["Vendas & marketplaces", ["Mercado Livre", "Shopee", "Amazon", "Magalu", "Nuvemshop", "VTEX", "Shopify", "WooCommerce"]],
+  ["Pagamentos", ["Pix", "Mercado Pago", "PagSeguro", "Stripe", "Asaas", "Boleto bancário"]],
+  ["Gestão & ERP", ["TOTVS", "SAP", "Omie", "Bling", "Tiny", "Conta Azul", "NF-e / NFS-e"]],
+  ["CRM & marketing", ["RD Station", "HubSpot", "Salesforce", "Pipedrive", "Meta Ads", "Google Ads"]],
+  ["Dados, nuvem & IA", ["AWS", "Azure", "Google Cloud", "Power BI", "Google Workspace", "Microsoft 365", "LLMs (Claude, GPT, Gemini)"]],
+];
+$("#int-groups").innerHTML = INTEGRATIONS.map(
+  ([g, items]) => `<div class="int-group"><h3>${g}</h3><div>${items.map((i) => `<span>${i}</span>`).join("")}</div></div>`
+).join("");
+
+/* ================= Calculadora de retorno ================= */
+const roiForm = $("#roi-form");
+const brl = (n) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const nf = (n) => n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+const updateRoi = () => {
+  const v = Object.fromEntries([...new FormData(roiForm)].map(([k, x]) => [k, +x]));
+  $("#o-vol").textContent = nf(v.vol);
+  $("#o-min").textContent = `${v.min} min`;
+  $("#o-cost").textContent = brl(v.cost);
+  $("#o-pct").textContent = `${v.pct}%`;
+  const hours = (v.vol * v.min) / 60 * (v.pct / 100);
+  const month = hours * v.cost;
+  const fte = hours / 176;
+  $("#r-hours").textContent = `${nf(hours)} h`;
+  $("#r-month").textContent = brl(month);
+  $("#r-year").textContent = brl(month * 12);
+  $("#r-fte").textContent = `${fte.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ${fte >= 2 ? "pessoas" : "pessoa"}`;
+  $("#r-bar").style.setProperty("--w", `${100 - v.pct}%`);
+  $("#r-left").textContent = `${100 - v.pct}%`;
+  linkWhats($("#roi-cta"), `Olá! Usei a calculadora do site da Nexor: ${nf(v.vol)} atendimentos/mês, ${v.min} min cada. A estimativa foi de ${brl(month * 12)} por ano. Quero um diagnóstico gratuito.`);
+};
+roiForm.addEventListener("input", updateRoi);
+updateRoi();
 
 /* ================= Laboratório de IA ================= */
 const PROCESSES = [
