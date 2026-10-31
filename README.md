@@ -32,5 +32,13 @@ Em **Settings → Pages**, escolha **Deploy from a branch**, branch `main` e pas
 - `assets/js/projects.js` → modelos da vitrine (nome, descrição, recursos, stack, cores)
 - `assets/css/style.css` → cores e visual (variáveis em `:root`)
 
-## Agente de IA (Nexor Assist)
-A pasta `agent/` tem o agente de atendimento com IA (Claude) que responde no chat do site e no WhatsApp, registra leads e agenda o diagnóstico gratuito. Instruções em [`agent/README.md`](agent/README.md). O chat do site (`assets/js/assistente.js`) só aparece depois que o endereço do servidor do agente for configurado.
+## Blue, testes grátis e captura de leads
+A pasta `agent/` tem o servidor da Blue, a assistente de IA (Claude) que responde no chat do site e no WhatsApp, recebe os leads do site e faz a IA do teste do Atende IA. Instruções em [`agent/README.md`](agent/README.md).
+
+No site:
+- `assets/js/config.js`: endereço do servidor (`NEXOR_API_URL`) e WhatsApp.
+- `assets/js/solucoes.js`: as 9 soluções (6 de negócio e 3 de TI) com os modelos de tela de cada uma.
+- `assets/js/teste.js`: pré-cadastro e as demonstrações do teste grátis de 12 horas.
+- `assets/js/calculadora.js`: calculadora de retorno.
+- `assets/js/leads.js`: pontuação de engajamento, formulários abandonados e oferta antes de sair.
+- `assets/js/assistente.js`: a Blue no site.

@@ -1,4 +1,4 @@
-/* Núcleo do Nexor Assist: guarda as conversas e roda o ciclo com o Claude e as ferramentas. */
+/* Núcleo do agente (Blue): guarda as conversas e roda o ciclo com o Claude e as ferramentas. */
 
 import Anthropic from "@anthropic-ai/sdk";
 import { config } from "./config.js";
@@ -7,8 +7,6 @@ import { DEFINICOES, criarExecutor } from "./ferramentas.js";
 
 const MAX_ITERACOES = 8;
 const FALHA = "Desculpe, tive um problema para responder agora. Você pode falar direto com a equipe no WhatsApp (34) 99733-7499.";
-
-const SISTEMA = [{ type: "text", text: INSTRUCOES }];
 
 const quandoAgora = (d) =>
   d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -26,9 +24,13 @@ const textoDa = (mensagem) =>
  * @param {ReturnType<import('./armazenamento.js').criarArmazenamento>} deps.armazenamento
  * @param {(texto: string, dados: object) => Promise<void>} [deps.notificar]
  * @param {() => Date} [deps.agora]
+ * @param {string} [deps.instrucoes] instruções de sistema (padrão: a Blue, assistente da Nexor)
+ * @param {boolean} [deps.comFerramentas] false = só conversa, sem registrar leads nem agendar (modo de teste)
  */
-export function criarAgente({ cliente = new Anthropic(), armazenamento, notificar = async () => {}, agora = () => new Date() }) {
+export function criarAgente({ cliente = new Anthropic(), armazenamento, notificar = async () => {}, agora = () => new Date(), instrucoes = INSTRUCOES, comFerramentas = true }) {
   const executar = criarExecutor({ armazenamento, notificar, agora });
+  const sistema = [{ type: "text", text: instrucoes }];
+  const ferramentas = comFerramentas ? DEFINICOES : [];
   /** @type {Map<string, {mensagens: Anthropic.Beta.BetaMessageParam[], atualizadaEm: number, pausadaAte: number, envios: number[], fila: Promise<unknown>}>} */
   const conversas = new Map();
 
@@ -55,14 +57,14 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
     return true;
   };
 
-  async function rodar(c, { idConversa, canal, texto, telefone }) {
+  async function rodar(c, { idConversa, canal, texto, telefone, contexto }) {
     let transferido = false;
     const ctx = { idConversa, canal, telefone, transferir: () => (transferido = true) };
 
     c.mensagens.push({
       role: "user",
       content: [
-        { type: "text", text: `<contexto>agora: ${quandoAgora(agora())} (horário de Brasília) · canal: ${canal}${telefone ? ` · WhatsApp do cliente: ${telefone}` : ""}</contexto>` },
+        { type: "text", text: `<contexto>agora: ${quandoAgora(agora())} (horário de Brasília) · canal: ${canal}${telefone ? ` · WhatsApp do cliente: ${telefone}` : ""}${contexto ? `\n${contexto}` : ""}</contexto>` },
         { type: "text", text: texto },
       ],
     });
@@ -71,8 +73,8 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
       const resposta = await cliente.beta.messages.create({
         model: config.modelo,
         max_tokens: config.maxTokens,
-        system: SISTEMA,
-        tools: DEFINICOES,
+        system: sistema,
+        ...(ferramentas.length ? { tools: ferramentas } : {}),
         messages: c.mensagens,
         output_config: { effort: config.esforco },
         cache_control: { type: "ephemeral" },
@@ -109,7 +111,7 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
      * Responde a uma mensagem do cliente.
      * @returns {Promise<{resposta: string | null, transferido: boolean}>} resposta null = conversa com a equipe humana, o agente fica em silêncio
      */
-    responder({ idConversa, canal, texto, telefone }) {
+    responder({ idConversa, canal, texto, telefone, contexto }) {
       const c = obterConversa(idConversa);
       if (c.pausadaAte > agora().getTime()) return Promise.resolve({ resposta: null, transferido: true });
       if (!dentroDoLimite(c)) {
@@ -120,7 +122,7 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
       const tarefa = c.fila.then(async () => {
         c.atualizadaEm = agora().getTime();
         try {
-          const r = await rodar(c, { idConversa, canal, texto, telefone });
+          const r = await rodar(c, { idConversa, canal, texto, telefone, contexto });
           if (r.transferido) c.pausadaAte = agora().getTime() + config.pausaAposTransferenciaHoras * 3600_000;
           return r;
         } catch (err) {

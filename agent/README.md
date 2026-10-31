@@ -1,6 +1,6 @@
-# Nexor Assist — agente de IA da Nexor Consulting
+# Blue — assistente de IA da Nexor Consulting
 
-Agente de atendimento e vendas que responde clientes no **chat do site** e no **WhatsApp**, usando o Claude (Anthropic).
+A Blue é a assistente de atendimento e vendas da Nexor. Ela responde clientes no **chat do site** e no **WhatsApp**, usando o Claude (Anthropic). O mesmo servidor recebe os **leads do site** (pré-cadastro do teste grátis, calculadora, formulários abandonados) e faz a IA do **teste grátis do Nexor Atende IA**.
 
 O que ele faz:
 
@@ -15,7 +15,8 @@ Regras importantes estão em `src/conhecimento.js`: não inventa preços, prazos
 ## Como funciona
 
 ```
-Site (chat)  ──POST /api/chat──────────┐
+Site (leads) ──POST /api/lead──────────┐
+Site (chat)  ──POST /api/chat──────────┤
                                        ├─► servidor.js ─► agente.js ─► Claude
 WhatsApp ──POST /webhook/whatsapp──────┘                      │
                                                               └─► ferramentas.js
@@ -31,11 +32,30 @@ WhatsApp ──POST /webhook/whatsapp──────┘                      
 | `src/conhecimento.js` | Quem é a Nexor, tom de voz e regras do atendimento. Edite aqui para mudar o comportamento. |
 | `src/ferramentas.js` | Ações que o agente pode executar, com validação das entradas. |
 | `src/agente.js` | Ciclo com o Claude, histórico das conversas, limite de mensagens. |
-| `src/servidor.js` | Endpoints HTTP do site e do WhatsApp. |
+| `src/servidor.js` | Endpoints HTTP do site (chat, leads, modo de teste) e do WhatsApp. |
 | `src/whatsapp.js` | Assinatura do webhook, leitura e envio de mensagens na WhatsApp Cloud API. |
 | `src/config.js` | Configurações lidas das variáveis de ambiente. |
 
 Leads ficam em `data/leads.jsonl` e agendamentos em `data/agendamentos.json`. Cada lead, agendamento e transferência também é enviado para a equipe no WhatsApp (`TEAM_WHATSAPP`) e, se configurado, para `LEAD_WEBHOOK_URL` (planilha, CRM, n8n, Make, Zapier).
+
+## Leads do site (`POST /api/lead`)
+
+O site envia leads em vários momentos, sempre com a pontuação de engajamento do visitante (tempo no site, seções vistas, uso da calculadora, testes abertos):
+
+| Tipo | Quando | Avisa a equipe? |
+| --- | --- | --- |
+| `teste` | Pré-cadastro de um teste grátis de 12 h | Sim |
+| `interesse` | Clicou em "Quero implantar" durante o teste | Sim |
+| `calculadora` | Pediu o estudo de retorno | Sim |
+| `blue` | A Blue coletou os dados na conversa | Sim |
+| `saida` | Deixou o contato na oferta antes de sair do site | Sim |
+| `parcial` | Digitou nome e WhatsApp/e-mail num formulário e não enviou | Só se a pontuação for 8 ou mais (lead quente) |
+
+Todos ficam em `data/leads.jsonl` e vão para `LEAD_WEBHOOK_URL`, se configurado.
+
+## Modo de teste do Atende IA
+
+No teste grátis, o visitante descreve a empresa dele e conversa com o "atendente virtual" dela. O site chama `/api/chat` com `modo: "demo"`; o servidor usa as instruções de `INSTRUCOES_DEMO` (em `src/conhecimento.js`), sem ferramentas, e trata a descrição da empresa como informação, não como ordem.
 
 ## Rodar no computador
 
@@ -43,7 +63,7 @@ Leads ficam em `data/leads.jsonl` e agendamentos em `data/agendamentos.json`. Ca
 cd agent
 npm install
 cp .env.example .env        # preencha ANTHROPIC_API_KEY
-npm test                     # 19 testes, não usam a API
+npm test                     # testes automáticos, não usam a API
 node --env-file=.env src/chat-cli.js   # conversa pelo terminal
 node --env-file=.env src/servidor.js   # sobe o servidor em http://localhost:8787
 ```
@@ -54,11 +74,11 @@ O GitHub Pages só hospeda o site estático, então o agente precisa de um servi
 
 1. Crie uma conta no [Render](https://render.com) e escolha **New + → Blueprint**, apontando para este repositório. O arquivo `render.yaml` na raiz já configura tudo.
 2. Preencha `ANTHROPIC_API_KEY` (crie em [console.anthropic.com](https://console.anthropic.com)).
-3. Quando o serviço estiver no ar, copie o endereço (ex.: `https://nexor-assist.onrender.com`) e coloque em `assets/js/assistente.js`:
+3. Quando o serviço estiver no ar, copie o endereço (ex.: `https://nexor-assist.onrender.com`) e coloque em `assets/js/config.js`:
    ```js
-   const NEXOR_AGENT_URL = "https://nexor-assist.onrender.com";
+   const NEXOR_API_URL = "https://nexor-assist.onrender.com";
    ```
-   O botão **Fale com a IA** aparece no site depois disso.
+   A partir daí a Blue responde com IA, os leads chegam para a equipe e o teste do Atende IA usa IA de verdade. Antes disso, a Blue faz um atendimento guiado e os leads ficam guardados no navegador do visitante, esperando o servidor.
 
 O disco dos planos gratuitos de hospedagem costuma ser apagado a cada nova publicação. Configure `LEAD_WEBHOOK_URL` ou use os avisos no WhatsApp para não perder leads. Também funciona em Railway, Fly.io ou qualquer VPS com Node 20+.
 

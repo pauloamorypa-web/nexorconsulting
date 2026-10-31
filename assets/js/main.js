@@ -1,9 +1,6 @@
 /* Nexor Consulting — scripts do site */
 
-// Número do WhatsApp da Nexor (DDI + DDD + número, só dígitos). Ex.: 5511999999999
-const WHATSAPP_NUMBER = "5534997337499";
-
-const whatsUrl = (msg) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+// WhatsApp e endereço do servidor ficam em assets/js/config.js
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -356,42 +353,77 @@ modal.addEventListener("click", (e) => {
   if (e.target === modal || e.target.closest(".modal-close")) modal.close();
 });
 
-/* ================= Integrações ================= */
-const INTEGRATIONS = [
-  ["Atendimento", ["WhatsApp Business API", "Instagram Direct", "Chat no site", "E-mail", "Telefonia / URA"]],
-  ["Vendas & marketplaces", ["Mercado Livre", "Shopee", "Amazon", "Magalu", "Nuvemshop", "VTEX", "Shopify", "WooCommerce"]],
-  ["Pagamentos", ["Pix", "Mercado Pago", "PagSeguro", "Stripe", "Asaas", "Boleto bancário"]],
-  ["Gestão & ERP", ["TOTVS", "SAP", "Omie", "Bling", "Tiny", "Conta Azul", "NF-e / NFS-e"]],
-  ["CRM & marketing", ["RD Station", "HubSpot", "Salesforce", "Pipedrive", "Meta Ads", "Google Ads"]],
-  ["Dados, nuvem & IA", ["AWS", "Azure", "Google Cloud", "Power BI", "Google Workspace", "Microsoft 365", "LLMs (Claude, GPT, Gemini)"]],
-];
-$("#int-groups").innerHTML = INTEGRATIONS.map(
-  ([g, items]) => `<div class="int-group"><h3>${g}</h3><div>${items.map((i) => `<span>${i}</span>`).join("")}</div></div>`
-).join("");
+/* ================= Soluções: cartões, galeria de modelos e teste grátis ================= */
+$$(".solutions[data-grupo]").forEach((grade) => {
+  grade.innerHTML = SOLUCOES.filter((x) => x.grupo === grade.dataset.grupo)
+    .map(
+      (x) => `
+    <article class="solution glow-card reveal" style="--a:${x.accent};--a2:${x.accent2}">
+      <button class="sol-preview" type="button" data-solucao="${x.id}" aria-label="Ver modelos do ${x.nome}">
+        <div class="sol-preview-tela">${renderMock(x.modelos[0].p)}</div>
+        <span class="sol-preview-mais">${x.modelos.length} modelos · ver todos</span>
+      </button>
+      <div class="sol-info">
+        <span class="sol-badge">${x.selo}</span>
+        <h3><svg class="ic"><use href="#${x.icone}"/></svg> ${x.nome}</h3>
+        <p class="sol-sub">${x.resumo}</p>
+        <ul class="checks">${x.recursos.slice(0, 3).map((r) => `<li><svg class="ic"><use href="#i-check"/></svg>${r}</li>`).join("")}</ul>
+        <div class="sol-actions">
+          <button class="btn btn-sm btn-ghost" type="button" data-solucao="${x.id}">Ver modelos</button>
+          <button class="btn btn-sm btn-primary" type="button" data-testar="${x.id}">Testar grátis 12h</button>
+        </div>
+      </div>
+    </article>`
+    )
+    .join("");
+});
+$$(".solution.glow-card").forEach((el) => {
+  el.addEventListener("pointermove", (e) => {
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+    el.style.setProperty("--my", `${e.clientY - r.top}px`);
+  });
+});
 
-/* ================= Calculadora de retorno ================= */
-const roiForm = $("#roi-form");
-const brl = (n) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-const nf = (n) => n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
-const updateRoi = () => {
-  const v = Object.fromEntries([...new FormData(roiForm)].map(([k, x]) => [k, +x]));
-  $("#o-vol").textContent = nf(v.vol);
-  $("#o-min").textContent = `${v.min} min`;
-  $("#o-cost").textContent = brl(v.cost);
-  $("#o-pct").textContent = `${v.pct}%`;
-  const hours = (v.vol * v.min) / 60 * (v.pct / 100);
-  const month = hours * v.cost;
-  const fte = hours / 176;
-  $("#r-hours").textContent = `${nf(hours)} h`;
-  $("#r-month").textContent = brl(month);
-  $("#r-year").textContent = brl(month * 12);
-  $("#r-fte").textContent = `${fte.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ${fte >= 2 ? "pessoas" : "pessoa"}`;
-  $("#r-bar").style.setProperty("--w", `${100 - v.pct}%`);
-  $("#r-left").textContent = `${100 - v.pct}%`;
-  linkWhats($("#roi-cta"), `Olá! Usei a calculadora do site da Nexor: ${nf(v.vol)} atendimentos/mês, ${v.min} min cada. A estimativa foi de ${brl(month * 12)} por ano. Quero um diagnóstico gratuito.`);
+const solModal = $("#solucao-modal");
+const abrirSolucao = (id) => {
+  const x = SOLUCOES.find((s) => s.id === id);
+  NX.registrar(`viu-${id}`, 2);
+  solModal.style.setProperty("--a", x.accent);
+  solModal.style.setProperty("--a2", x.accent2);
+  solModal.dataset.atual = id;
+  $("#sm-selo").textContent = `// ${x.selo}`;
+  $("#sm-titulo").textContent = x.nome;
+  $("#sm-resumo").textContent = x.resumo;
+  $("#sm-recursos").innerHTML = x.recursos.map((r) => `<li><svg class="ic"><use href="#i-check"/></svg>${r}</li>`).join("");
+  linkWhats($("#sm-whats"), `Olá! Vi o ${x.nome} no site da Nexor e quero saber mais.`);
+  const abasEl = $(".sm-abas", solModal);
+  abasEl.innerHTML = x.modelos.map((m, i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-modelo="${i}">${m.nome}</button>`).join("");
+  const mostrar = (i) => {
+    $$("[data-modelo]", abasEl).forEach((b) => b.setAttribute("aria-selected", String(Number(b.dataset.modelo) === i)));
+    $(".sm-tela", solModal).innerHTML = renderMock(x.modelos[i].p);
+    $(".sm-legenda", solModal).textContent = x.modelos[i].texto;
+  };
+  abasEl.onclick = (e) => {
+    const b = e.target.closest("[data-modelo]");
+    if (b) mostrar(Number(b.dataset.modelo));
+  };
+  mostrar(0);
+  solModal.showModal();
 };
-roiForm.addEventListener("input", updateRoi);
-updateRoi();
+document.addEventListener("click", (e) => {
+  const ver = e.target.closest("[data-solucao]");
+  const testar = e.target.closest("[data-testar]");
+  if (ver) abrirSolucao(ver.dataset.solucao);
+  if (testar) Teste.abrir(testar.dataset.testar);
+});
+$("#sm-testar").addEventListener("click", () => {
+  solModal.close();
+  Teste.abrir(solModal.dataset.atual);
+});
+solModal.addEventListener("click", (e) => {
+  if (e.target === solModal || e.target.closest(".modal-close") || e.target.closest("[data-abrir-blue]")) solModal.close();
+});
 
 /* ================= Laboratório de IA ================= */
 const PROCESSES = [

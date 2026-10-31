@@ -11,13 +11,13 @@ const agente = criarAgente({
 });
 
 const terminal = createInterface({ input: process.stdin, output: process.stdout });
-console.log(`Nexor Assist · ${config.modelo} · digite "sair" para encerrar\n`);
+console.log(`Blue · Nexor · ${config.modelo} · digite "sair" para encerrar\n`);
 
 while (true) {
   const texto = (await terminal.question("Você: ")).trim();
   if (!texto) continue;
   if (texto.toLowerCase() === "sair") break;
   const { resposta } = await agente.responder({ idConversa: "terminal", canal: "site", texto });
-  console.log(`\nNexor: ${resposta ?? "(conversa com a equipe humana)"}\n`);
+  console.log(`\nBlue: ${resposta ?? "(conversa com a equipe humana)"}\n`);
 }
 terminal.close();
