@@ -674,22 +674,52 @@
   <p class="ta-rodape">Ambiente de demonstração. Os dados que você digita ficam só neste navegador.</p>
 </dialog>
 
-<dialog class="modal mini-modal" id="saida-modal" aria-labelledby="sd-titulo">
+<dialog class="modal brinde-modal" id="saida-modal" aria-labelledby="bd-titulo">
   <button class="modal-close" data-fechar aria-label="Fechar">×</button>
-  <div class="saida-conteudo">
-    <span class="mini-icone"><svg class="ic"><use href="#i-gift"/></svg></span>
-    <h3 id="sd-titulo">Antes de ir: um estudo grátis para a sua empresa</h3>
-    <p class="muted">Deixe seu WhatsApp e receba quanto sua empresa pode economizar com IA, sem compromisso.</p>
-    <form class="mini-form" data-form="saida" novalidate>
+  <canvas class="brinde-confete" aria-hidden="true"></canvas>
+
+  <div class="brinde-etapa" data-etapa="caixa">
+    <div class="brinde-palco">
+      <div class="brinde-raios" aria-hidden="true"></div>
+      <button class="brinde-caixa" type="button" data-abrir-brinde aria-label="Abrir o presente">
+        <span class="bc-tampa"><span class="bc-laco"><i></i><i></i></span></span>
+        <span class="bc-corpo"><span class="bc-fita"></span></span>
+      </button>
+      <span class="brinde-brilho b1" aria-hidden="true">✦</span><span class="brinde-brilho b2" aria-hidden="true">✦</span><span class="brinde-brilho b3" aria-hidden="true">✦</span>
+    </div>
+    <p class="brinde-kicker">Espera! Antes de sair…</p>
+    <h3 id="bd-titulo">Você ganhou um <span class="grad">presente</span> da Nexor</h3>
+    <p class="muted">Abra a caixa e descubra.</p>
+    <button class="btn btn-primary btn-lg btn-block brinde-cta" type="button" data-abrir-brinde><svg class="ic"><use href="#i-gift"/></svg> Abrir meu presente</button>
+  </div>
+
+  <div class="brinde-etapa" data-etapa="premio" hidden>
+    <span class="brinde-selo">🎁 Seu presente</span>
+    <h3 class="brinde-premio"><span class="grad">12 horas grátis</span> para testar a solução que você quiser</h3>
+    <ul class="brinde-inclui">
+      <li><svg class="ic"><use href="#i-check"/></svg>Acesso completo à demonstração</li>
+      <li><svg class="ic"><use href="#i-check"/></svg>Sem cartão de crédito</li>
+      <li><svg class="ic"><use href="#i-check"/></svg>Diagnóstico gratuito com um especialista</li>
+    </ul>
+    <p class="brinde-escolha">Escolha o que quer testar e comece agora:</p>
+    <div class="brinde-solucoes"></div>
+    <button class="link-btn brinde-alt" type="button" data-ver-estudo>Prefiro receber um estudo grátis no WhatsApp</button>
+    <form class="mini-form" data-form="saida" novalidate hidden>
       <div class="mini-campos">
         <label>Seu nome<input name="nome" data-lead="nome" autocomplete="name"></label>
         <label>WhatsApp com DDD<input name="telefone" data-lead="telefone" type="tel" autocomplete="tel"></label>
       </div>
       <p class="form-error" role="alert"></p>
-      <button class="btn btn-primary btn-block" type="submit">Quero meu estudo grátis</button>
+      <button class="btn btn-whats btn-block" type="submit">Quero meu estudo grátis</button>
       <p class="lgpd">Usamos seus dados só para a Nexor falar com você (LGPD).</p>
     </form>
-    <a class="saida-teste" href="#servicos" data-fechar>Prefiro testar as soluções grátis por 12 horas →</a>
+  </div>
+
+  <div class="brinde-etapa" data-etapa="ok" hidden>
+    <span class="brinde-selo">✅ Tudo certo</span>
+    <h3 class="brinde-premio" data-ok-titulo></h3>
+    <p class="muted">Nossa equipe vai te chamar no WhatsApp com o estudo de retorno para a sua empresa. Enquanto isso, que tal usar seu presente?</p>
+    <button class="btn btn-primary btn-block" type="button" data-voltar-premio>Escolher meu teste grátis</button>
   </div>
 </dialog>
 

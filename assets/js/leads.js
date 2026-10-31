@@ -134,20 +134,72 @@ const NX = (() => {
   return { sessao, registrar, enviarLead, preencher, pontos: () => eng.pontos, interesses, ler, guardar, contatoValido };
 })();
 
-/* ---------- Aviso antes de sair ---------- */
+/* ---------- Presente antes de sair ---------- */
 (() => {
   const modal = document.getElementById("saida-modal");
   if (!modal) return;
   const inicio = Date.now();
   let mostrado = NX.ler("nx-saida-vista", false, sessionStorage);
+  const calmo = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const etapa = (nome) => modal.querySelectorAll("[data-etapa]").forEach((el) => (el.hidden = el.dataset.etapa !== nome));
+
+  // Botões das soluções para escolher o teste
+  modal.querySelector(".brinde-solucoes").innerHTML = SOLUCOES.map(
+    (s) => `<button type="button" data-brinde="${s.id}" style="--a:${s.accent}"><svg class="ic"><use href="#${s.icone}"/></svg><span>${s.nome.replace("Nexor ", "")}</span></button>`
+  ).join("");
+
+  /* Confete */
+  const canvas = modal.querySelector(".brinde-confete");
+  const confete = () => {
+    if (calmo) return;
+    const ctx = canvas.getContext("2d");
+    const r = modal.getBoundingClientRect();
+    canvas.width = r.width;
+    canvas.height = r.height;
+    const cores = ["#3b8dff", "#22d3ee", "#a78bfa", "#25d366", "#facc15", "#ff4d8d"];
+    const pecas = Array.from({ length: 140 }, () => ({
+      x: r.width / 2,
+      y: r.height * 0.32,
+      vx: (Math.random() - 0.5) * 14,
+      vy: -Math.random() * 13 - 4,
+      g: 0.32 + Math.random() * 0.12,
+      w: 5 + Math.random() * 6,
+      h: 8 + Math.random() * 8,
+      giro: Math.random() * Math.PI,
+      vgiro: (Math.random() - 0.5) * 0.4,
+      cor: cores[Math.floor(Math.random() * cores.length)],
+    }));
+    const t0 = performance.now();
+    const quadro = (t) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of pecas) {
+        p.vy += p.g;
+        p.vx *= 0.99;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.giro += p.vgiro;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.giro);
+        ctx.fillStyle = p.cor;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.giro)));
+        ctx.restore();
+      }
+      if (t - t0 < 2600) requestAnimationFrame(quadro);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+    requestAnimationFrame(quadro);
+  };
 
   const mostrar = () => {
     if (mostrado || NX.ler("nx-lead", null) || document.querySelector("dialog[open]") || Date.now() - inicio < 15000) return;
     mostrado = true;
     NX.guardar("nx-saida-vista", true, sessionStorage);
+    etapa("caixa");
+    modal.classList.remove("aberto");
     NX.preencher(modal);
     modal.showModal();
-    NX.registrar("viu-oferta-saida", 0);
+    NX.registrar("viu-presente", 0);
   };
 
   // Computador: o mouse sai pela parte de cima da janela
@@ -170,8 +222,33 @@ const NX = (() => {
   );
 
   modal.addEventListener("click", (e) => {
-    if (e.target === modal || e.target.closest("[data-fechar]")) modal.close();
+    if (e.target === modal || e.target.closest("[data-fechar]")) return modal.close();
+    if (e.target.closest("[data-abrir-brinde]")) {
+      if (modal.classList.contains("aberto")) return;
+      modal.classList.add("aberto");
+      NX.registrar("abriu-presente", 3);
+      setTimeout(() => {
+        etapa("premio");
+        confete();
+      }, calmo ? 0 : 650);
+    }
+    const escolha = e.target.closest("[data-brinde]");
+    if (escolha) {
+      modal.close();
+      Teste.abrir(escolha.dataset.brinde);
+    }
+    if (e.target.closest("[data-ver-estudo]")) {
+      const form = modal.querySelector("form");
+      form.hidden = false;
+      e.target.closest("[data-ver-estudo]").hidden = true;
+      form.querySelector("input").focus();
+    }
+    if (e.target.closest("[data-voltar-premio]")) {
+      etapa("premio");
+      modal.querySelector("form").hidden = true;
+    }
   });
+
   modal.querySelector("form").addEventListener("submit", (e) => {
     e.preventDefault();
     const form = e.target;
@@ -182,7 +259,8 @@ const NX = (() => {
       return;
     }
     form.dataset.enviado = "1";
-    NX.enviarLead("saida", d, { formulario: "saida" });
-    modal.querySelector(".saida-conteudo").innerHTML = `<h3>Pronto, ${d.nome.split(" ")[0]}!</h3><p class="muted">Nossa equipe vai te chamar no WhatsApp com o estudo de retorno para a sua empresa.</p><button class="btn btn-primary btn-block" type="button" data-fechar>Continuar no site</button>`;
+    NX.enviarLead("saida", d, { formulario: "presente" });
+    modal.querySelector("[data-ok-titulo]").textContent = `Pronto, ${d.nome.split(" ")[0]}!`;
+    etapa("ok");
   });
 })();
