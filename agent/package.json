@@ -1,0 +1,23 @@
+{
+  "name": "nexor-assist",
+  "version": "1.0.0",
+  "description": "Agente de IA da Nexor Consulting para o chat do site e o WhatsApp",
+  "main": "src/servidor.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "start": "node src/servidor.js",
+    "chat": "node src/chat-cli.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
+    "zod": "^4.6.7"
+  },
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

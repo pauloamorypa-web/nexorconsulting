@@ -31,3 +31,6 @@ Em **Settings → Pages**, escolha **Deploy from a branch**, branch `main` e pas
 - `assets/js/main.js` → `WHATSAPP_NUMBER` (DDI + DDD + número), integrações, processos da seção de IA, exemplos de código e tecnologias
 - `assets/js/projects.js` → modelos da vitrine (nome, descrição, recursos, stack, cores)
 - `assets/css/style.css` → cores e visual (variáveis em `:root`)
+
+## Agente de IA (Nexor Assist)
+A pasta `agent/` tem o agente de atendimento com IA (Claude) que responde no chat do site e no WhatsApp, registra leads e agenda o diagnóstico gratuito. Instruções em [`agent/README.md`](agent/README.md). O chat do site (`assets/js/assistente.js`) só aparece depois que o endereço do servidor do agente for configurado.
