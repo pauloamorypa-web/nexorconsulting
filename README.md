@@ -31,3 +31,14 @@ Em **Settings → Pages**, escolha **Deploy from a branch**, branch `main` e pas
 - `assets/js/main.js` → `WHATSAPP_NUMBER` (DDI + DDD + número), integrações, processos da seção de IA, exemplos de código e tecnologias
 - `assets/js/projects.js` → modelos da vitrine (nome, descrição, recursos, stack, cores)
 - `assets/css/style.css` → cores e visual (variáveis em `:root`)
+
+## Blue, testes grátis e captura de leads
+A pasta `agent/` tem o servidor da Blue, a assistente de IA (Claude) que responde no chat do site e no WhatsApp, recebe os leads do site e faz a IA do teste do Atende IA. Instruções em [`agent/README.md`](agent/README.md).
+
+No site:
+- `assets/js/config.js`: endereço do servidor (`NEXOR_API_URL`) e WhatsApp.
+- `assets/js/solucoes.js`: as 9 soluções (6 de negócio e 3 de TI) com os modelos de tela de cada uma.
+- `assets/js/teste.js`: pré-cadastro e as demonstrações do teste grátis de 12 horas.
+- `assets/js/calculadora.js`: calculadora de retorno.
+- `assets/js/leads.js`: pontuação de engajamento, formulários abandonados e oferta antes de sair.
+- `assets/js/assistente.js`: a Blue no site.

@@ -1,0 +1,30 @@
+# Publicação do Nexor Assist no Render (https://render.com) → New + → Blueprint → este repositório
+services:
+  - type: web
+    name: nexor-assist
+    runtime: node
+    rootDir: agent
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NEXOR_MODEL
+        value: claude-opus-5-5
+      - key: NEXOR_EFFORT
+        value: low
+      - key: ALLOWED_ORIGINS
+        value: https://pauloamorypa-web.github.io
+      - key: LEAD_WEBHOOK_URL
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        generateValue: true
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: TEAM_WHATSAPP
+        value: "5534997337499"

@@ -3,7 +3,7 @@
 const PROJECTS = [
   {
     id: "chatbot",
-    name: "Nexor Assist",
+    name: "Atende IA",
     title: "Atendente de IA 24/7",
     cats: ["ia"],
     label: "Inteligência Artificial",
@@ -145,10 +145,10 @@ const Mock = {
       <div class="mk-nav"><b class="mk-logo"></b><span></span><span></span><span></span><em>Contato</em></div>
       <div class="mk-hero">
         <div>
-          <small class="mk-tag">Nova era digital</small>
-          <strong>Cresça com uma presença digital imbatível</strong>
+          <small class="mk-tag">${p.d?.tag ?? "Nova era digital"}</small>
+          <strong>${p.d?.titulo ?? "Cresça com uma presença digital imbatível"}</strong>
           <p class="mk-lines"><i></i><i style="width:70%"></i></p>
-          <em class="mk-btn">Começar agora</em>
+          <em class="mk-btn">${p.d?.cta ?? "Começar agora"}</em>
         </div>
         <div class="mk-orb"><span></span></div>
       </div>
@@ -156,16 +156,17 @@ const Mock = {
   },
 
   store(p) {
-    const items = [
+    const items = p.d?.itens ?? [
       ["Tênis Runner X", "R$ 389"],
       ["Fone Pulse Pro", "R$ 549"],
       ["Smartwatch Neo", "R$ 899"],
       ["Mochila Urban", "R$ 249"],
     ];
+    const pills = p.d?.categorias ?? ["Destaques", "Calçados", "Eletrônicos", "Acessórios"];
     return Mock.browser(p, `
       <div class="mk-nav"><b class="mk-logo"></b><div class="mk-search">Buscar produtos…</div><em class="mk-cart">🛒<sup>3</sup></em></div>
-      <div class="mk-pills"><span class="on">Destaques</span><span>Calçados</span><span>Eletrônicos</span><span>Acessórios</span></div>
-      <div class="mk-banner"><strong>Black Week · até 40% OFF</strong><em class="mk-btn">Aproveitar</em></div>
+      <div class="mk-pills">${pills.map((c, i) => `<span class="${i ? "" : "on"}">${c}</span>`).join("")}</div>
+      <div class="mk-banner"><strong>${p.d?.banner ?? "Black Week · até 40% OFF"}</strong><em class="mk-btn">Aproveitar</em></div>
       <div class="mk-products">${items
         .map(
           ([n, v], i) => `<div class="mk-prod"><div class="mk-img" style="--h:${i * 40}deg"></div><b>${n}</b><span>${v}</span></div>`
@@ -194,17 +195,17 @@ const Mock = {
 
   dashboard(p) {
     const bi = p.variant === "bi";
-    const kpis = bi
+    const kpis = p.d?.kpis ?? (bi
       ? [["Receita", "R$ 2,4 mi", "+18%"], ["Ticket médio", "R$ 312", "+6%"], ["Conversão", "4,8%", "+0,9"], ["Previsão IA", "R$ 2,9 mi", "↗"]]
-      : [["Faturamento", "R$ 486 mil", "+12%"], ["A receber", "R$ 128 mil", "32 títulos"], ["Estoque", "1.284 itens", "8 críticos"], ["Pedidos", "342", "+24 hoje"]];
-    const rows = bi
+      : [["Faturamento", "R$ 486 mil", "+12%"], ["A receber", "R$ 128 mil", "32 títulos"], ["Estoque", "1.284 itens", "8 críticos"], ["Pedidos", "342", "+24 hoje"]]);
+    const rows = p.d?.linhas ?? (bi
       ? [["Sudeste", "R$ 1,1 mi", 82], ["Sul", "R$ 640 mil", 64], ["Nordeste", "R$ 420 mil", 48]]
-      : [["NF-e 4521 · Cliente Alfa", "Paga", 100], ["Pedido 8842 · Beta Ltda", "Em separação", 60], ["OS 1203 · Gama S/A", "Aberta", 25]];
+      : [["NF-e 4521 · Cliente Alfa", "Paga", 100], ["Pedido 8842 · Beta Ltda", "Em separação", 60], ["OS 1203 · Gama S/A", "Aberta", 25]]);
     return Mock.browser(p, `
       <div class="mk-app">
         <aside class="mk-side"><b class="mk-logo"></b><i class="on"></i><i></i><i></i><i></i><i></i></aside>
         <div class="mk-main">
-          <div class="mk-top"><strong>${bi ? "Visão executiva" : "Painel de gestão"}</strong>${bi ? '<span class="mk-ask">✦ Pergunte aos dados…</span>' : '<span class="mk-ask">Out/2026</span>'}</div>
+          <div class="mk-top"><strong>${p.d?.titulo ?? (bi ? "Visão executiva" : "Painel de gestão")}</strong>${bi ? '<span class="mk-ask">✦ Pergunte aos dados…</span>' : '<span class="mk-ask">Out/2026</span>'}</div>
           <div class="mk-kpis">${kpis.map(([l, v, d]) => `<div><small>${l}</small><b>${v}</b><em>${d}</em></div>`).join("")}</div>
           <div class="mk-charts">
             <div class="mk-chart">
@@ -225,14 +226,14 @@ const Mock = {
   },
 
   kanban(p) {
-    const cols = [
+    const cols = p.d?.colunas ?? [
       ["Novos leads", [["Clínica Vida", "R$ 8 mil", 72], ["Loja Prisma", "R$ 3 mil", 41]]],
       ["Qualificados", [["Grupo Atlas", "R$ 45 mil", 88], ["TechNova", "R$ 12 mil", 65]]],
       ["Proposta", [["Rede Sol", "R$ 120 mil", 93]]],
       ["Fechado", [["Inova Log", "R$ 32 mil", 100]]],
     ];
     return Mock.browser(p, `
-      <div class="mk-top pad"><strong>Funil de vendas</strong><span class="mk-ask">✦ IA: 3 leads quentes hoje</span></div>
+      <div class="mk-top pad"><strong>${p.d?.titulo ?? "Funil de vendas"}</strong><span class="mk-ask">${p.d?.selo ?? "✦ IA: 3 leads quentes hoje"}</span></div>
       <div class="mk-kanban">${cols
         .map(
           ([t, cards]) => `<div class="mk-col"><small>${t}</small>${cards
@@ -247,12 +248,14 @@ const Mock = {
   chat(p) {
     return `<div class="mk mk-chatwrap" style="--a:${p.accent};--a2:${p.accent2}">
       <div class="mk-chat">
-        <div class="mk-chat-head"><span class="mk-avatar">✦</span><div><b>Nexor Assist</b><small>● online agora</small></div></div>
+        <div class="mk-chat-head"><span class="mk-avatar">${p.d?.avatar ?? "✦"}</span><div><b>${p.d?.nome ?? "Atendente virtual"}</b><small>● ${p.d?.status ?? "online agora"}</small></div></div>
         <div class="mk-msgs">
-          <p class="in">Oi! Vocês têm horário amanhã para revisão do carro?</p>
-          <p class="out">Olá! 😊 Tenho horários amanhã às <b>09:30</b>, <b>14:00</b> e <b>16:30</b>. Qual prefere?</p>
-          <p class="in">14h, por favor. Placa ABC1D23.</p>
-          <p class="out">Pronto! ✅ Agendado para amanhã às 14:00 — revisão do veículo ABC1D23. Enviei a confirmação por e-mail.</p>
+          ${(p.d?.msgs ?? [
+            ["in", "Oi! Vocês têm horário amanhã para revisão do carro?"],
+            ["out", "Olá! 😊 Tenho horários amanhã às <b>09:30</b>, <b>14:00</b> e <b>16:30</b>. Qual prefere?"],
+            ["in", "14h, por favor. Placa ABC1D23."],
+            ["out", "Pronto! ✅ Agendado para amanhã às 14:00 — revisão do veículo ABC1D23. Enviei a confirmação por e-mail."],
+          ]).map(([d, t]) => `<p class="${d}">${t}</p>`).join("")}
           <p class="typing"><i></i><i></i><i></i></p>
         </div>
         <div class="mk-input"><span>Digite uma mensagem…</span><em>➤</em></div>
@@ -261,7 +264,7 @@ const Mock = {
   },
 
   flow(p) {
-    const nodes = [
+    const nodes = p.d?.etapas ?? [
       ["📥", "E-mail recebido", "nota_4521.pdf"],
       ["🔍", "OCR + IA", "extraindo campos"],
       ["✔️", "Validação", "CNPJ · valores · impostos"],
@@ -269,7 +272,7 @@ const Mock = {
       ["🔔", "Notificação", "financeiro avisado"],
     ];
     return Mock.browser(p, `
-      <div class="mk-top pad"><strong>Pipeline: notas fiscais</strong><span class="mk-ask live">● executando</span></div>
+      <div class="mk-top pad"><strong>${p.d?.titulo ?? "Pipeline: notas fiscais"}</strong><span class="mk-ask live">● executando</span></div>
       <div class="mk-flow">${nodes
         .map(
           ([i, t, s], k) => `<div class="mk-node" style="--d:${k * 0.6}s"><span>${i}</span><div><b>${t}</b><small>${s}</small></div></div>${
@@ -277,7 +280,7 @@ const Mock = {
           }`
         )
         .join("")}</div>
-      <div class="mk-extract"><code>{ "fornecedor": "Alfa Ltda", "valor": 4280.50, "vencimento": "15/11", "confianca": 0.98 }</code></div>`);
+      <div class="mk-extract"><code>${p.d?.saida ?? '{ "fornecedor": "Alfa Ltda", "valor": 4280.50, "vencimento": "15/11", "confianca": 0.98 }'}</code></div>`);
   },
 
   phone(p) {
@@ -285,18 +288,89 @@ const Mock = {
     return `<div class="mk mk-phonewrap" style="--a:${p.accent};--a2:${p.accent2}">
       <div class="mk-phone">
         <div class="mk-notch"></div>
-        <div class="mk-app-head"><small>Olá, Ana 👋</small><b>Seus agendamentos</b></div>
+        <div class="mk-app-head"><small>${p.d?.saudacao ?? "Olá, Ana 👋"}</small><b>${p.d?.titulo ?? "Seus agendamentos"}</b></div>
         <div class="mk-days">${days.map((d, i) => `<span class="${i === 2 ? "on" : ""}"><small>${d}</small>${12 + i}</span>`).join("")}</div>
         <div class="mk-appts">
-          <div><i></i><b>Limpeza de pele</b><small>09:00 · Dra. Carla</small></div>
-          <div class="on"><i></i><b>Massagem relaxante</b><small>14:30 · Studio 2</small></div>
-          <div><i></i><b>Manicure</b><small>17:00 · Bia</small></div>
+          ${(p.d?.itens ?? [["Limpeza de pele", "09:00 · Dra. Carla"], ["Massagem relaxante", "14:30 · Studio 2"], ["Manicure", "17:00 · Bia"]])
+            .map(([t, s], i) => `<div class="${i === 1 ? "on" : ""}"><i></i><b>${t}</b><small>${s}</small></div>`).join("")}
         </div>
-        <em class="mk-btn wide">+ Novo agendamento</em>
+        <em class="mk-btn wide">${p.d?.botao ?? "+ Novo agendamento"}</em>
         <div class="mk-tabbar"><i class="on"></i><i></i><i></i><i></i></div>
       </div>
     </div>`;
   },
 };
+
+/* ---------- Telas genéricas (sistemas de gestão, TI, checkout) ---------- */
+const mkChip = (t) => {
+  const [txt, tom] = String(t).split("|");
+  return tom ? `<em class="mk-chip ${tom}">${txt}</em>` : txt;
+};
+
+Object.assign(Mock, {
+  /* Sistema com menu lateral, indicadores opcionais e tabela. Células "texto|tom" viram etiqueta (ok, warn, bad, info). */
+  app(p) {
+    const d = p.d;
+    return Mock.browser(p, `
+      <div class="mk-app">
+        <aside class="mk-side"><b class="mk-logo"></b><i class="on"></i><i></i><i></i><i></i><i></i></aside>
+        <div class="mk-main">
+          <div class="mk-top"><strong>${d.titulo}</strong>${d.selo ? `<span class="mk-ask">${d.selo}</span>` : ""}</div>
+          ${d.kpis ? `<div class="mk-kpis">${d.kpis.map(([l, v, e]) => `<div><small>${l}</small><b>${v}</b>${e ? `<em>${e}</em>` : ""}</div>`).join("")}</div>` : ""}
+          <div class="mk-grid" style="--cols:${d.colunas.length}">
+            ${d.colunas.map((c) => `<span class="h">${c}</span>`).join("")}
+            ${d.linhas.map((l) => l.map((c) => `<span>${mkChip(c)}</span>`).join("")).join("")}
+          </div>
+        </div>
+      </div>`);
+  },
+
+  /* Formulário de sistema (abrir chamado, gerador de senha etc.) */
+  form(p) {
+    const d = p.d;
+    return Mock.browser(p, `
+      <div class="mk-top pad"><strong>${d.titulo}</strong>${d.selo ? `<span class="mk-ask">${d.selo}</span>` : ""}</div>
+      <div class="mk-form">
+        ${d.campos.map(([l, v, cheio]) => `<label class="${cheio ? "full" : ""}"><small>${l}</small><span>${mkChip(v)}</span></label>`).join("")}
+      </div>
+      <div class="mk-form-foot">${d.nota ? `<small>${d.nota}</small>` : "<span></span>"}<em class="mk-btn">${d.botao}</em></div>`);
+  },
+
+  /* Painel de TV com números grandes */
+  tv(p) {
+    const d = p.d;
+    return Mock.browser(p, `
+      <div class="mk-top pad"><strong>${d.titulo}</strong><span class="mk-ask live">● ao vivo</span></div>
+      <div class="mk-tv">${d.numeros.map(([l, v, tom]) => `<div class="${tom ?? ""}"><b>${v}</b><small>${l}</small></div>`).join("")}</div>
+      <div class="mk-ticker">${d.linhas.map((l) => `<span>${l}</span>`).join("")}</div>`);
+  },
+
+  /* Checkout com Pix */
+  pix(p) {
+    const d = p.d ?? {};
+    const qr = Array.from({ length: 81 }, (_, i) => `<i class="${(i * 7 + (i % 5) * 3) % 3 ? "" : "on"}"></i>`).join("");
+    return Mock.browser(p, `
+      <div class="mk-checkout">
+        <div class="mk-resumo"><small>Resumo do pedido</small>
+          ${(d.itens ?? [["Vestido Linho", "R$ 289"], ["Sandália Clara", "R$ 179"]]).map(([n, v]) => `<div><span>${n}</span><b>${v}</b></div>`).join("")}
+          <div class="tot"><span>Total</span><b>${d.total ?? "R$ 468,00"}</b></div>
+        </div>
+        <div class="mk-pixbox"><small>Pague com Pix</small><div class="mk-qr">${qr}</div><em class="mk-btn">Copiar código Pix</em><small class="ok">● aprovação na hora</small></div>
+      </div>`);
+  },
+
+  /* Caixa de entrada com várias conversas (WhatsApp, Instagram, site) */
+  inbox(p) {
+    const d = p.d;
+    return Mock.browser(p, `
+      <div class="mk-inbox">
+        <div class="mk-convs">${d.conversas.map(([n, c, t, on], i) => `<div class="${i === 0 ? "on" : ""}"><b>${n}</b><small>${c} · ${t}</small>${on ? `<em class="mk-chip ${on}">${on === "ok" ? "IA" : "humano"}</em>` : ""}</div>`).join("")}</div>
+        <div class="mk-thread">
+          <div class="mk-top"><strong>${d.conversas[0][0]}</strong><span class="mk-ask">IA atendendo</span></div>
+          ${d.msgs.map(([dir, t]) => `<p class="${dir}">${t}</p>`).join("")}
+        </div>
+      </div>`);
+  },
+});
 
 const renderMock = (p) => Mock[p.type](p);
