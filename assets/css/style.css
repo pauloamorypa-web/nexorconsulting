@@ -1217,3 +1217,9 @@ input[type="range"] { min-height: 0; }
 
 /* Rosto da Blue no chat */
 img.nx-blue-av, img.nx-chat-avatar { object-fit: cover; padding: 0; background: #0b2a5c; box-shadow: 0 0 0 2px rgba(59, 141, 255, .7); }
+
+/* Botão de conversa por voz no chat da Blue */
+.nx-chat-voz { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 6px 12px; min-height: 36px; border-radius: 999px; border: 1px solid rgba(59, 141, 255, .6); background: rgba(59, 141, 255, .12); color: #cfe3ff; font: 600 var(--fs-xs) var(--font-body); cursor: pointer; }
+.nx-chat-voz svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.nx-chat-voz:hover { background: rgba(59, 141, 255, .22); }
+.nx-chat-voz[hidden] { display: none; }

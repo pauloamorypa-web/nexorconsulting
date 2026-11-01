@@ -8,6 +8,9 @@ const NEXOR_API_URL = "";
 // WhatsApp da Nexor (DDI + DDD + número, só dígitos)
 const WHATSAPP_NUMBER = "5534997337499";
 
+// Conversa por voz com a voz da Blue: ID do agente criado no ElevenLabs (Agents). Vazio = só chat escrito.
+const BLUE_VOZ_AGENTE = "";
+
 // E-mail no domínio (aparece no rodapé quando preenchido). Ex.: "contato@nexorconsultingit.com.br"
 const NEXOR_EMAIL = "";
 
