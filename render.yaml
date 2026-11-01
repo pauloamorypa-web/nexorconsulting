@@ -15,7 +15,13 @@ services:
       - key: NEXOR_EFFORT
         value: low
       - key: ALLOWED_ORIGINS
-        value: https://pauloamorypa-web.github.io
+        value: https://nexorconsultingit.com.br,https://www.nexorconsultingit.com.br,https://pauloamorypa-web.github.io
+      - key: REPORT_TOKEN
+        generateValue: true
+      - key: META_PIXEL_ID
+        sync: false
+      - key: META_CAPI_TOKEN
+        sync: false
       - key: LEAD_WEBHOOK_URL
         sync: false
       - key: WHATSAPP_TOKEN

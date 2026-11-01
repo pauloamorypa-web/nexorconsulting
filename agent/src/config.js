@@ -16,12 +16,25 @@ export const config = {
   maxTokens: Number(process.env.NEXOR_MAX_TOKENS ?? 16000),
 
   // Site que pode chamar /api/chat (CORS)
-  origensPermitidas: lista(process.env.ALLOWED_ORIGINS, "https://pauloamorypa-web.github.io"),
+  origensPermitidas: lista(process.env.ALLOWED_ORIGINS, "https://nexorconsultingit.com.br,https://www.nexorconsultingit.com.br,https://pauloamorypa-web.github.io"),
+  siteUrl: process.env.SITE_URL ?? "https://nexorconsultingit.com.br/",
 
   // Onde ficam leads e agendamentos
   pastaDados: process.env.DATA_DIR ?? "./data",
   // Envia cada lead e agendamento para uma planilha, CRM ou automação (n8n, Make, Zapier, Google Apps Script)
   webhookLeads: process.env.LEAD_WEBHOOK_URL ?? "",
+
+  // Relatório de campanhas (GET /api/relatorio). Sem token, o relatório fica desligado.
+  tokenRelatorio: process.env.REPORT_TOKEN ?? "",
+
+  // API de Conversões da Meta: devolve os leads (e os leads quentes) para a Meta otimizar os anúncios
+  meta: {
+    pixel: process.env.META_PIXEL_ID ?? "",
+    token: process.env.META_CAPI_TOKEN ?? "",
+    versaoGraph: process.env.META_GRAPH_VERSION ?? "v23.0",
+    // Código de teste do Gerenciador de Eventos (aba "Testar eventos"). Apague depois de testar.
+    codigoTeste: process.env.META_TEST_EVENT_CODE ?? "",
+  },
 
   // WhatsApp Cloud API (Meta)
   whatsapp: {

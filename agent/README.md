@@ -53,6 +53,16 @@ O site envia leads em vários momentos, sempre com a pontuação de engajamento 
 
 Todos ficam em `data/leads.jsonl` e vão para `LEAD_WEBHOOK_URL`, se configurado.
 
+Cada lead chega com:
+
+- **Temperatura** (`quente`, `morno`, `frio`), calculada pelo servidor a partir do tipo e do engajamento. Quente = pronto para vendas.
+- **Origem**: `utm_source`, `utm_medium`, `utm_campaign`, `gclid`, `fbclid`... O aviso para a equipe mostra de qual campanha o lead veio.
+
+## Campanhas: Meta e relatório com IA
+
+- **API de Conversões da Meta**: com `META_PIXEL_ID` e `META_CAPI_TOKEN`, cada lead (menos os parciais) vai para a Meta como `Lead`, e os quentes também como `LeadQuente`, com telefone e e-mail em hash SHA-256. Assim a campanha aprende a buscar pessoas parecidas com quem virou lead quente. O `event_id` é o mesmo do Pixel do site, então a Meta não conta duas vezes.
+- **Relatório**: `GET /api/relatorio?dias=7` com `Authorization: Bearer <REPORT_TOKEN>` devolve os leads por campanha e a taxa de leads quentes. Com `&analise=1`, o Claude escreve o que escalar, o que pausar e o que testar. Opcional: `&investimento=meta/teste12h: R$ 350; google/erp: R$ 280` para ele considerar o custo.
+
 ## Modo de teste do Atende IA
 
 No teste grátis, o visitante descreve a empresa dele e conversa com o "atendente virtual" dela. O site chama `/api/chat` com `modo: "demo"`; o servidor usa as instruções de `INSTRUCOES_DEMO` (em `src/conhecimento.js`), sem ferramentas, e trata a descrição da empresa como informação, não como ordem.

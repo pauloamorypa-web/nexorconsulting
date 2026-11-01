@@ -8,10 +8,12 @@ let servidor;
 const recebidas = [];
 const leads = [];
 const avisos = [];
+const paraMeta = [];
 
 before(async () => {
   config.whatsapp.tokenVerificacao = "token-teste";
   config.whatsapp.segredoApp = "segredo";
+  config.tokenRelatorio = "relatorio-secreto";
   const agente = {
     async responder(m) {
       recebidas.push(m);
@@ -24,7 +26,10 @@ before(async () => {
       return { resposta: "demo", transferido: false };
     },
   };
-  servidor = criarServidor({ agente, agenteDemo, armazenamento: { salvarLead: async (l) => leads.push(l) }, notificar: async (t, d) => avisos.push(d) });
+  servidor = criarServidor({ agente, agenteDemo, armazenamento: { salvarLead: async (l) => leads.push(l), listarLeads: async () => leads },
+    notificar: async (t, d) => avisos.push({ ...d, texto: t }),
+    enviarMeta: async (l, ctx) => paraMeta.push({ l, ctx }),
+  });
   await new Promise((r) => servidor.listen(0, r));
   base = `http://127.0.0.1:${servidor.address().port}`;
 });
@@ -96,4 +101,34 @@ test("lead parcial só avisa a equipe quando é quente, e não repete", async ()
 test("lead sem contato ou com tipo inválido é recusado", async () => {
   assert.equal((await lead({ sessao: "x1234567", tipo: "teste", dados: { nome: "Sem contato" } })).status, 400);
   assert.equal((await lead({ sessao: "x1234567", tipo: "spam", dados: { telefone: "1" } })).status, 400);
+});
+
+test("lead guarda a origem da campanha, calcula a temperatura e vai para a Meta", async () => {
+  const r = await lead({
+    id: "abc-12345678",
+    sessao: "camp1234",
+    tipo: "interesse",
+    temperatura: "frio", // o servidor ignora a temperatura enviada pelo navegador
+    dados: { nome: "Carlos Lima", telefone: "34977776666" },
+    pontuacao: 4,
+    origem: { utm_source: "instagram", utm_medium: "pago", utm_campaign: "teste12h", fbc: "fb.1.1.XYZ", lixo: "x" },
+  });
+  assert.equal(r.status, 200);
+  const l = leads.at(-1);
+  assert.equal(l.id, "abc-12345678");
+  assert.equal(l.temperatura, "quente");
+  assert.deepEqual(l.origem, { utm_source: "instagram", utm_medium: "pago", utm_campaign: "teste12h", fbc: "fb.1.1.XYZ" });
+  assert.equal(paraMeta.at(-1).l.id, "abc-12345678");
+  assert.match(avisos.at(-1).texto, /Quente · origem: instagram \/ pago \/ teste12h/);
+});
+
+test("relatório exige token e agrupa leads por campanha", async () => {
+  assert.equal((await fetch(`${base}/api/relatorio`)).status, 401);
+  assert.equal((await fetch(`${base}/api/relatorio`, { headers: { Authorization: "Bearer errado" } })).status, 401);
+  const r = await fetch(`${base}/api/relatorio?dias=30`, { headers: { Authorization: "Bearer relatorio-secreto" } });
+  assert.equal(r.status, 200);
+  const rel = await r.json();
+  assert.equal(rel.total.leads, leads.length);
+  const camp = rel.porOrigem.find((g) => g.origem === "instagram / pago / teste12h");
+  assert.equal(camp.quente, 1);
 });

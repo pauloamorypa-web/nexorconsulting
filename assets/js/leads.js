@@ -70,9 +70,26 @@ const NX = (() => {
     }
   };
 
+  /* Temperatura: quente = pronto para conversar com vendas. Mesma regra do servidor (agent/src/leads.js). */
+  const BASE = { interesse: 2, diagnostico: 2, teste: 1, calculadora: 1, blue: 1, saida: 1, parcial: 0 };
+  const NIVEIS = ["frio", "morno", "quente"];
+  const temperatura = (tipo, pontos) => NIVEIS[Math.min(2, (BASE[tipo] ?? 0) + (pontos >= 10 || (tipo === "parcial" && pontos >= 8) ? 1 : 0))];
+  const novoId = () => (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36)).replace(/[^A-Za-z0-9-]/g, "");
+
   /** Envia um lead. tipo: parcial | teste | diagnostico | calculadora | saida | interesse | blue */
   async function enviarLead(tipo, dados, extra = {}) {
-    const lead = { sessao, tipo, dados, pontuacao: eng.pontos, interesses: interesses(), ...extra };
+    const lead = {
+      id: novoId(),
+      sessao,
+      tipo,
+      dados,
+      pontuacao: eng.pontos,
+      temperatura: temperatura(tipo, eng.pontos),
+      interesses: interesses(),
+      origem: typeof NXT !== "undefined" ? NXT.origem() : undefined,
+      ...extra,
+    };
+    if (tipo !== "parcial" && typeof NXT !== "undefined") NXT.lead({ id: lead.id, tipo, temperatura: lead.temperatura, dados });
     if (tipo !== "parcial") {
       guardar("nx-lead", { ...ler("nx-lead", {}), ...dados });
       registrar("lead-enviado", 5);
