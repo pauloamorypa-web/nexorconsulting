@@ -13,6 +13,16 @@ const SOLUCOES = [
     accent2: "#22d3ee",
     recursos: ["Responde, qualifica e agenda sozinha, a qualquer hora", "Treinada com seus produtos, preços e regras", "Integrada ao seu CRM, ERP e agenda", "Passa para sua equipe quando precisa"],
     modelos: [
+      {
+        nome: "Painel de conversas",
+        texto: "Tela real do sistema: todas as conversas num só lugar, com temperatura do lead, resumo e próxima ação calculados pela IA. Você assume quando quiser.",
+        p: { type: "foto", url: "atendimento.suaempresa.com.br", img: "assets/img/atende/conversa.webp", alt: "Tela real do Nexor Atende IA: caixa de entrada com a IA atendendo e agendando" },
+      },
+      {
+        nome: "Painel de resultados",
+        texto: "Tela real do sistema: quanto a IA resolveu sozinha, tempo de resposta, horas economizadas, funil de vendas e leads quentes.",
+        p: { type: "foto", url: "atendimento.suaempresa.com.br/inicio", img: "assets/img/atende/painel.webp", alt: "Tela real do Nexor Atende IA: painel com indicadores, gráfico e funil" },
+      },
       { nome: "WhatsApp", texto: "Seu cliente pergunta, a IA responde e agenda na hora.", p: { type: "chat", d: { nome: "Auto Center Prime", avatar: "A" } } },
       {
         nome: "Chat no site",
@@ -23,11 +33,6 @@ const SOLUCOES = [
         nome: "Instagram Direct",
         texto: "Comentou ou chamou no Direct? A resposta chega em segundos.",
         p: { type: "chat", accent: "#e1306c", accent2: "#f77737", d: { nome: "Bella Moda", avatar: "B", status: "Instagram · online", msgs: [["in", "Esse vestido tem no M?"], ["out", "Tem sim! 💖 No M temos azul e areia. Quer o link para comprar?"], ["in", "Quero o azul"], ["out", "Aqui está: <b>bellamoda.com/v-azul-m</b>. Frete grátis para sua região!"]] } },
-      },
-      {
-        nome: "Painel de conversas",
-        texto: "Todas as conversas num só lugar. Você vê o que a IA resolveu e assume quando quiser.",
-        p: { type: "inbox", url: "atendimento.suaempresa.com.br", d: { conversas: [["Marina Souza", "WhatsApp", "agora", "ok"], ["Pedro Lima", "Instagram", "2 min", "ok"], ["João Reis", "Site", "5 min", "warn"], ["Ana Costa", "WhatsApp", "12 min", "ok"]], msgs: [["in", "Vocês entregam em Uberlândia?"], ["out", "Entregamos sim! Prazo de 1 dia útil. Posso fechar seu pedido?"], ["in", "Pode sim"]] } },
       },
     ],
   },
