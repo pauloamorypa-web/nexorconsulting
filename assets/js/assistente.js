@@ -23,6 +23,7 @@
       <header>
         <img class="nx-chat-avatar" src="/assets/img/blue-avatar.webp" alt="" width="38" height="38">
         <div><b>Blue</b><small><span class="nx-online"></span> assistente de IA da Nexor</small></div>
+        <button class="nx-chat-voz" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Falar por voz</button>
         <button class="nx-chat-fechar" type="button" aria-label="Fechar conversa">×</button>
       </header>
       <div class="nx-chat-msgs" aria-live="polite"></div>
@@ -88,6 +89,27 @@
   botao.addEventListener("click", () => abrir(painel.hidden));
   raiz.querySelector(".nx-chat-fechar").addEventListener("click", () => abrir(false));
   painel.addEventListener("keydown", (e) => e.key === "Escape" && abrir(false));
+  /* Conversa por voz com a voz da Blue (agente de voz do ElevenLabs, configurado em BLUE_VOZ_AGENTE) */
+  const vozId = typeof BLUE_VOZ_AGENTE !== "undefined" ? BLUE_VOZ_AGENTE : "";
+  if (vozId) {
+    const bVoz = raiz.querySelector(".nx-chat-voz");
+    bVoz.hidden = false;
+    bVoz.addEventListener("click", () => {
+      NX.registrar("blue-voz", 4);
+      abrir(false);
+      raiz.hidden = true; // o widget de voz ocupa o mesmo canto da tela
+      if (!document.querySelector("elevenlabs-convai")) {
+        const el = document.createElement("elevenlabs-convai");
+        el.setAttribute("agent-id", vozId);
+        document.body.appendChild(el);
+        const sc = document.createElement("script");
+        sc.src = "https://unpkg.com/@elevenlabs/convai-widget-embed";
+        sc.async = true;
+        document.body.appendChild(sc);
+      }
+    });
+  }
+
   // Outros pontos do site podem abrir a Blue: <button data-abrir-blue>
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-abrir-blue]")) abrir(true);
