@@ -137,6 +137,105 @@ const Teste = (() => {
   const kpis = (itens) => `<div class="ta-kpis">${itens.map(([l, v, tom]) => `<div class="${tom ?? ""}"><small>${l}</small><b>${v}</b></div>`).join("")}</div>`;
   const dataCurta = (t) => new Date(t).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
+  /* ---------- Telas reais do Nexor Atende IA (capturas do sistema com dados de demonstração) ---------- */
+  const TELAS_ATENDE = [
+    ["conversa", "Conversas em tempo real", "A IA atende, agenda e você acompanha tudo. Ao lado, a inteligência da conversa: temperatura do lead, sentimento, resumo e a próxima ação recomendada."],
+    ["painel", "Painel de resultados", "Quantas conversas a IA resolveu, tempo de resposta, horas economizadas, funil de vendas e quem precisa de você agora."],
+    ["transferencia", "Passa para a equipe na hora certa", "Negociação ou cliente pedindo uma pessoa? A IA transfere com o resumo pronto e avisa a equipe."],
+    ["simulador", "Simulador da IA", "Teste antes de colocar no ar e veja nos bastidores o que a IA faz: consulta a base, vê horários, atualiza o CRM."],
+    ["ensinar", "A IA aprende com você", "Corrija uma resposta uma vez e a IA passa a responder do seu jeito em todas as conversas."],
+    ["funil", "CRM e funil automáticos", "A IA preenche o cadastro e avança cada cliente no funil conforme a conversa. Arraste para ajustar."],
+    ["agenda", "Agenda pelo WhatsApp", "Horários marcados pela IA respeitando o expediente e a duração de cada serviço, com lembrete automático."],
+    ["campanhas", "Campanhas com modelos aprovados", "Dispare pela API oficial da Meta e acompanhe entregas, leituras e respostas. Quem responde é atendido pela IA."],
+    ["celular", "Também no celular", "Acompanhe e responda de qualquer lugar."],
+  ];
+
+  function galeriaAtende(raiz) {
+    const sec = document.createElement("section");
+    sec.className = "ta-card ta-galeria";
+    sec.innerHTML = `
+      <div class="ta-galeria-topo">
+        <h4>3. Por dentro do Nexor Atende IA: telas reais do sistema</h4>
+        <span class="ta-galeria-selo">Sistema real · API oficial da Meta</span>
+      </div>
+      <div class="ta-galeria-palco">
+        <button class="ta-galeria-seta" type="button" data-passo="-1" aria-label="Tela anterior">‹</button>
+        <figure>
+          <button class="ta-galeria-ampliar" type="button" aria-label="Ampliar tela"><img alt="" width="1600" height="1000" decoding="async"></button>
+          <figcaption><b></b><span></span></figcaption>
+        </figure>
+        <button class="ta-galeria-seta" type="button" data-passo="1" aria-label="Próxima tela">›</button>
+      </div>
+      <div class="ta-galeria-miniaturas" role="tablist" aria-label="Telas do sistema">
+        ${TELAS_ATENDE.map(([id, titulo], i) => `<button type="button" role="tab" data-i="${i}" aria-label="${esc(titulo)}"><img src="assets/img/atende/${id}.webp" alt="" loading="lazy" decoding="async"><small>${esc(titulo)}</small></button>`).join("")}
+      </div>
+      <p class="muted ta-dica">Capturas do painel do Nexor Atende IA com dados de demonstração (Clínica Sorriso é uma empresa fictícia). Na versão contratada, é a sua empresa aqui.</p>`;
+    raiz.appendChild(sec);
+
+    let atual = 0;
+    const img = sec.querySelector("figure img");
+    const mostrar = (i) => {
+      atual = (i + TELAS_ATENDE.length) % TELAS_ATENDE.length;
+      const [id, titulo, texto] = TELAS_ATENDE[atual];
+      img.src = `assets/img/atende/${id}.webp`;
+      img.alt = `Tela do Nexor Atende IA: ${titulo}`;
+      img.classList.toggle("vertical", id === "celular");
+      sec.querySelector("figcaption b").textContent = titulo;
+      sec.querySelector("figcaption span").textContent = texto;
+      sec.querySelectorAll(".ta-galeria-miniaturas button").forEach((b, j) => b.setAttribute("aria-selected", String(j === atual)));
+      sec.querySelector(`.ta-galeria-miniaturas [data-i="${atual}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    };
+    sec.addEventListener("click", (e) => {
+      const passo = e.target.closest("[data-passo]");
+      const mini = e.target.closest("[data-i]");
+      if (passo) mostrar(atual + Number(passo.dataset.passo));
+      if (mini) mostrar(Number(mini.dataset.i));
+      if (e.target.closest(".ta-galeria-ampliar")) ampliar();
+    });
+
+    function ampliar() {
+      const v = document.createElement("div");
+      v.className = "ta-zoom";
+      v.setAttribute("role", "dialog");
+      v.setAttribute("aria-label", "Tela ampliada");
+      v.innerHTML = `<button class="ta-zoom-fechar" type="button" aria-label="Fechar">×</button><button class="ta-galeria-seta" type="button" data-z="-1" aria-label="Tela anterior">‹</button><figure><img alt=""><figcaption></figcaption></figure><button class="ta-galeria-seta" type="button" data-z="1" aria-label="Próxima tela">›</button>`;
+      const zimg = v.querySelector("img");
+      const pintar = () => {
+        zimg.src = img.src;
+        zimg.alt = img.alt;
+        v.querySelector("figcaption").textContent = TELAS_ATENDE[atual][1];
+      };
+      const fechar = () => {
+        v.remove();
+        area.removeEventListener("cancel", impedir);
+        document.removeEventListener("keydown", tecla, true);
+      };
+      const impedir = (e) => {
+        e.preventDefault();
+        fechar();
+      };
+      const tecla = (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+          mostrar(atual + (e.key === "ArrowRight" ? 1 : -1));
+          pintar();
+        }
+      };
+      v.addEventListener("click", (e) => {
+        const z = e.target.closest("[data-z]");
+        if (z) {
+          mostrar(atual + Number(z.dataset.z));
+          pintar();
+        } else if (e.target === v || e.target.closest(".ta-zoom-fechar")) fechar();
+      });
+      area.addEventListener("cancel", impedir);
+      document.addEventListener("keydown", tecla, true);
+      pintar();
+      area.appendChild(v);
+      v.querySelector(".ta-zoom-fechar").focus();
+    }
+    mostrar(0);
+  }
+
   /* ---------- Demonstrações ---------- */
   const DEMOS = {
     /* Nexor Atende IA: o visitante descreve a empresa e conversa com o atendente virtual dela */
@@ -170,6 +269,8 @@ const Teste = (() => {
             <p class="muted ta-dica">${NEXOR_API_URL ? "Respostas geradas pela IA da Nexor com as informações ao lado." : "Prévia do atendimento. Na versão contratada, a IA responde qualquer pergunta com base nas suas informações."}</p>
           </div>
         </div>`;
+
+      galeriaAtende(raiz);
 
       const msgs = raiz.querySelector(".ta-msgs");
       const config = raiz.querySelector("[data-config]");

@@ -295,7 +295,7 @@ textarea.entrada { resize: vertical; min-height: 42px; }
 .barra-ia { background: var(--azul); }
 .barra-humano { background: var(--ciano); border-radius: 0; }
 .barra-col:hover .barra { filter: brightness(1.1); }
-.lista-mini { display: grid; gap: 4px; }
+.lista-mini { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
 .mini-conversa { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; color: var(--texto); text-decoration: none !important; border: none; background: none; text-align: left; width: 100%; }
 .mini-conversa:hover { background: var(--superficie-3); }
 .mini-conversa > div { flex: 1; min-width: 0; }
@@ -504,7 +504,7 @@ audio { max-width: 280px; height: 40px; }
 .kanban-coluna header { display: flex; gap: 8px; align-items: center; padding: 2px 4px; }
 .kanban-coluna header small { margin-left: auto; color: var(--texto-3); }
 .kanban-cartoes { display: grid; gap: 8px; align-content: start; }
-.kanban-cartao { background: var(--superficie); border: 1px solid var(--linha); border-radius: 10px; padding: 10px; display: grid; gap: 6px; cursor: grab; box-shadow: var(--sombra); }
+.kanban-cartao { color: var(--texto); background: var(--superficie); border: 1px solid var(--linha); border-radius: 10px; padding: 10px; display: grid; gap: 6px; cursor: grab; box-shadow: var(--sombra); }
 .kanban-cartao p { font-size: 12.5px; color: var(--texto-2); }
 
 /* ---------- Agenda ---------- */
