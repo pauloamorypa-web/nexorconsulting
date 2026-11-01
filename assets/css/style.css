@@ -575,7 +575,7 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
 
 /* ---------- Footer ---------- */
 .site-footer { border-top: 1px solid var(--line); background: var(--bg-alt); padding: 60px 0 30px; }
-.footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; }
+.footer-grid { display: grid; grid-template-columns: 1.5fr repeat(4, 1fr); gap: 32px; }
 .footer-grid h4 { font: 600 .8rem var(--font-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 14px; }
 .footer-grid a:not(.brand) { display: block; text-decoration: none; color: #c3cfe2; font-size: .92rem; padding: 4px 0; }
 .footer-grid a:not(.brand):hover { color: var(--cyan); }

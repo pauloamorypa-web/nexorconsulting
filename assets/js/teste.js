@@ -763,3 +763,16 @@ const Teste = (() => {
 
   return { abrir };
 })();
+
+/* Link direto para um teste: /#testar-atende, /#testar-gestao... (usado pelas páginas de serviço e anúncios) */
+(() => {
+  const abrirDoLink = () => {
+    const m = location.hash.match(/^#testar-(\w+)$/);
+    if (m && SOLUCOES.some((s) => s.id === m[1])) {
+      history.replaceState(null, "", location.pathname + location.search);
+      Teste.abrir(m[1]);
+    }
+  };
+  abrirDoLink();
+  addEventListener("hashchange", abrirDoLink);
+})();
