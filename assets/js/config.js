@@ -12,7 +12,7 @@ const WHATSAPP_NUMBER = "5534997337499";
 const BLUE_VOZ_AGENTE = "";
 
 // E-mail no domínio (aparece no rodapé quando preenchido). Ex.: "contato@nexorconsultingit.com.br"
-const NEXOR_EMAIL = "";
+const NEXOR_EMAIL = "contato@nexorconsultingit.com.br";
 
 // Campanhas: preencha com os códigos das plataformas. Vazio = desligado.
 const RASTREIO = {
