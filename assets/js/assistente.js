@@ -16,12 +16,12 @@
   raiz.innerHTML = `
     <button class="nx-chat-abrir" type="button" aria-expanded="false" aria-controls="nx-chat-painel">
       <span class="nx-chat-pulso" aria-hidden="true"></span>
-      <span class="nx-blue-av" aria-hidden="true">B</span>
+      <img class="nx-blue-av" src="assets/img/blue-avatar.webp" alt="" width="28" height="28">
       <span class="nx-chat-rotulo">Fale com a Blue</span>
     </button>
     <section class="nx-chat-painel" id="nx-chat-painel" role="dialog" aria-label="Conversa com a Blue, assistente de IA da Nexor" hidden>
       <header>
-        <span class="nx-chat-avatar" aria-hidden="true">B</span>
+        <img class="nx-chat-avatar" src="assets/img/blue-avatar.webp" alt="" width="38" height="38">
         <div><b>Blue</b><small><span class="nx-online"></span> assistente de IA da Nexor</small></div>
         <button class="nx-chat-fechar" type="button" aria-label="Fechar conversa">×</button>
       </header>

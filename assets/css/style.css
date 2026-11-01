@@ -1214,3 +1214,6 @@ input[type="range"] { min-height: 0; }
 .nx-consent a { color: var(--accent, #3b8dff); }
 .nx-consent div { display: flex; gap: 8px; justify-content: flex-end; }
 @media (max-width: 640px) { .nx-consent { left: 12px; right: 12px; bottom: 12px; max-width: none; } .nx-consent .btn { flex: 1; } }
+
+/* Rosto da Blue no chat */
+img.nx-blue-av, img.nx-chat-avatar { object-fit: cover; padding: 0; background: #0b2a5c; box-shadow: 0 0 0 2px rgba(59, 141, 255, .7); }
