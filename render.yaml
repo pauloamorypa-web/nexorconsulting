@@ -34,3 +34,42 @@ services:
         sync: false
       - key: TEAM_WHATSAPP
         value: "5534997337499"
+
+  # Nexor Atende IA: painel + webhook da WhatsApp Cloud API (pasta atende/)
+  - type: web
+    name: nexor-atende-ia
+    runtime: node
+    rootDir: atende
+    plan: starter # o disco persistente exige um plano pago
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    disk:
+      name: dados
+      mountPath: /var/data
+      sizeGB: 5
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NEXOR_MODEL
+        value: claude-opus-5-5
+      - key: NEXOR_EFFORT
+        value: low
+      - key: PUBLIC_URL
+        sync: false
+      - key: MASTER_KEY
+        generateValue: true
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_VERIFY_TOKEN
+        generateValue: true
+      - key: META_APP_ID
+        sync: false
+      - key: META_CONFIG_ID
+        sync: false
+      - key: ALLOW_SIGNUP
+        value: "false"

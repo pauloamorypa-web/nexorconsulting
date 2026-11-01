@@ -32,6 +32,9 @@ Em **Settings → Pages**, escolha **Deploy from a branch**, branch `main` e pas
 - `assets/js/projects.js` → modelos da vitrine (nome, descrição, recursos, stack, cores)
 - `assets/css/style.css` → cores e visual (variáveis em `:root`)
 
+## Nexor Atende IA (produto)
+A pasta `atende/` tem o **Nexor Atende IA** completo: atendimento no WhatsApp pela API oficial da Meta com o Claude, painel em tempo real, CRM com funil, agenda, campanhas, copiloto para a equipe e IA que aprende com as correções. Instruções em [`atende/README.md`](atende/README.md).
+
 ## Blue, testes grátis e captura de leads
 A pasta `agent/` tem o servidor da Blue, a assistente de IA (Claude) que responde no chat do site e no WhatsApp, recebe os leads do site e faz a IA do teste do Atende IA. Instruções em [`agent/README.md`](agent/README.md).
 
