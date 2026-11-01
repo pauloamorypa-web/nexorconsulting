@@ -15,6 +15,12 @@ const linkWhats = (el, msg) => {
   el.rel = "noopener";
 };
 $$("[data-whatsapp]").forEach((el) => linkWhats(el, el.dataset.whatsapp));
+if (NEXOR_EMAIL)
+  $$("[data-email]").forEach((el) => {
+    el.href = `mailto:${NEXOR_EMAIL}`;
+    el.textContent = NEXOR_EMAIL;
+    el.hidden = false;
+  });
 
 /* ================= Header, progresso, menu, cursor ================= */
 const header = $(".site-header");
@@ -389,6 +395,7 @@ const solModal = $("#solucao-modal");
 const abrirSolucao = (id) => {
   const x = SOLUCOES.find((s) => s.id === id);
   NX.registrar(`viu-${id}`, 2);
+  NXT.evento("ViewContent", { content_name: x.nome, content_category: x.grupo });
   solModal.style.setProperty("--a", x.accent);
   solModal.style.setProperty("--a2", x.accent2);
   solModal.dataset.atual = id;

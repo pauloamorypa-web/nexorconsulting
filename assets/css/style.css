@@ -1207,3 +1207,10 @@ input[type="range"] { min-height: 0; }
   .ta-acoes .btn { flex: 1 1 0; min-width: 0; padding-inline: 10px; font-size: var(--fs-sm); }
   .ta-ola { display: none; }
 }
+
+/* Aviso de cookies (só aparece quando há rastreio de campanha configurado) */
+.nx-consent { position: fixed; left: 16px; bottom: 16px; z-index: 60; max-width: 420px; display: grid; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: #070f20f2; backdrop-filter: blur(12px); box-shadow: 0 20px 50px #0008; font-size: var(--fs-sm); }
+.nx-consent p { margin: 0; color: var(--muted); }
+.nx-consent a { color: var(--accent, #3b8dff); }
+.nx-consent div { display: flex; gap: 8px; justify-content: flex-end; }
+@media (max-width: 640px) { .nx-consent { left: 12px; right: 12px; bottom: 12px; max-width: none; } .nx-consent .btn { flex: 1; } }

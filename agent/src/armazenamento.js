@@ -26,6 +26,18 @@ export function criarArmazenamento(pasta) {
       await appendFile(arqLeads, JSON.stringify(lead) + "\n");
     },
 
+    async listarLeads() {
+      try {
+        return (await readFile(arqLeads, "utf8"))
+          .split("\n")
+          .filter(Boolean)
+          .map((l) => JSON.parse(l));
+      } catch (err) {
+        if (err.code === "ENOENT") return [];
+        throw err;
+      }
+    },
+
     async listarAgendamentos() {
       return lerAgenda();
     },

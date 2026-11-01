@@ -2,20 +2,26 @@
    GET  /health             → verificação de saúde
    POST /api/chat           → chat do site  {sessao, mensagem, modo?, negocio?} → {resposta}
    POST /api/lead           → leads do site (pré-cadastro, teste grátis, formulários abandonados)
+   GET  /api/relatorio      → leads por campanha, com análise por IA (?dias=7&analise=1, exige REPORT_TOKEN)
    GET  /webhook/whatsapp   → verificação do webhook pela Meta
    POST /webhook/whatsapp   → mensagens recebidas no WhatsApp */
 
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
 import { criarAgente } from "./agente.js";
 import { criarArmazenamento } from "./armazenamento.js";
 import { config } from "./config.js";
 import { INSTRUCOES_DEMO } from "./conhecimento.js";
+import { limparOrigem, rotuloOrigem, temperatura } from "./leads.js";
+import { enviarParaMeta } from "./meta.js";
+import { gerarRelatorio } from "./relatorio.js";
 import { assinaturaValida, enviarTexto, extrairMensagens, marcarComoLida, whatsappConfigurado } from "./whatsapp.js";
 
 const LIMITE_CORPO = 256 * 1024;
 const SESSAO_VALIDA = /^[A-Za-z0-9_-]{8,64}$/;
 const TIPOS_LEAD = new Set(["parcial", "teste", "diagnostico", "calculadora", "saida", "interesse", "blue"]);
+const ID_VALIDO = /^[A-Za-z0-9-]{8,64}$/;
 const LEAD_FORTE = 8; // pontuação de engajamento a partir da qual um lead parcial avisa a equipe
 
 const limpar = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : undefined);
@@ -56,7 +62,14 @@ const json = (res, status, corpo, extra = {}) => {
   res.end(JSON.stringify(corpo));
 };
 
-export function criarServidor({ agente, agenteDemo = agente, armazenamento, notificar = notificarEquipe }) {
+const tokenConfere = (recebido, esperado) => {
+  if (!esperado || !recebido) return false;
+  const a = Buffer.from(recebido);
+  const b = Buffer.from(esperado);
+  return a.length === b.length && timingSafeEqual(a, b);
+};
+
+export function criarServidor({ agente, agenteDemo = agente, armazenamento, notificar = notificarEquipe, enviarMeta = enviarParaMeta, clienteRelatorio }) {
   const ultimosParciais = new Map(); // sessão → último lead parcial, para não repetir
   const vistas = new Set(); // ids de mensagens do WhatsApp já processadas (a Meta pode reenviar)
 
@@ -108,8 +121,11 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
     const sessao = String(d?.sessao ?? "");
     if (!SESSAO_VALIDA.test(sessao) || !TIPOS_LEAD.has(d?.tipo)) return json(res, 400, { erro: "dados inválidos" }, cors);
     const c = d.dados ?? {};
+    const pontuacao = Math.max(0, Math.min(100, Number(d.pontuacao) || 0));
     const lead = {
+      id: ID_VALIDO.test(String(d.id ?? "")) ? String(d.id) : randomUUID(),
       tipo: d.tipo,
+      temperatura: temperatura(d.tipo, pontuacao),
       sessao,
       solucao: limpar(d.solucao, 80),
       nome: limpar(c.nome, 120),
@@ -120,8 +136,9 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
       porte: limpar(c.porte, 40),
       mensagem: limpar(c.mensagem, 1500),
       formulario: limpar(d.formulario, 60),
-      pontuacao: Math.max(0, Math.min(100, Number(d.pontuacao) || 0)),
+      pontuacao,
       interesses: Array.isArray(d.interesses) ? d.interesses.slice(0, 20).map((x) => limpar(String(x), 60)) : [],
+      origem: limparOrigem(d.origem),
       canal: "site",
       registrado_em: new Date().toISOString(),
     };
@@ -134,6 +151,8 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
       if (ultimosParciais.size > 5000) ultimosParciais.delete(ultimosParciais.keys().next().value);
     }
     await armazenamento.salvarLead(lead);
+    const ip = String(req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "").split(",")[0].trim() || undefined;
+    enviarMeta(lead, { ip, navegador: limpar(req.headers["user-agent"], 400) }).catch(() => {});
 
     const forte = lead.tipo !== "parcial" || lead.pontuacao >= LEAD_FORTE;
     if (forte) {
@@ -148,6 +167,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
       }[lead.tipo];
       await notificar(
         `${titulo}${lead.solucao ? ` · ${lead.solucao}` : ""}\n${lead.nome ?? "Sem nome"}${lead.empresa ? ` · ${lead.empresa}` : ""}\n` +
+          `${{ quente: "🔥 Quente", morno: "🌤️ Morno", frio: "❄️ Frio" }[lead.temperatura]} · origem: ${rotuloOrigem(lead.origem)}\n` +
           `Contato: ${lead.telefone ?? lead.email}\nEngajamento: ${lead.pontuacao} pontos${lead.interesses.length ? ` · viu: ${lead.interesses.join(", ")}` : ""}` +
           `${lead.mensagem ? `\nMensagem: ${lead.mensagem}` : ""}`,
         { ...lead },
@@ -200,6 +220,20 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
           return res.end();
         }
         if (req.method === "POST") return await leadDoSite(req, res);
+      }
+
+      if (req.method === "GET" && url.pathname === "/api/relatorio") {
+        const token = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "") || url.searchParams.get("token") || "";
+        if (!tokenConfere(token, config.tokenRelatorio)) return json(res, 401, { erro: "não autorizado" });
+        const dias = Math.max(1, Math.min(90, Number(url.searchParams.get("dias")) || 7));
+        const relatorio = await gerarRelatorio({
+          armazenamento,
+          dias,
+          analise: url.searchParams.get("analise") === "1",
+          investimento: limpar(url.searchParams.get("investimento") ?? undefined, 500),
+          cliente: clienteRelatorio,
+        });
+        return json(res, 200, relatorio);
       }
 
       if (url.pathname === "/webhook/whatsapp") {
