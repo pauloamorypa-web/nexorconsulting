@@ -7,7 +7,7 @@ import { z } from "zod";
 import { gerarHashSenha, sha256 } from "../seguranca.js";
 import { conferirCadastro, conferirConfirmacao, criarDesafios, opcoesCadastro, opcoesConfirmacao } from "../ponto/biometria.js";
 import { dataLocal, horaLocal, instante, somarDias } from "../ponto/calendario.js";
-import { conferirGps, conferirQr } from "../ponto/presenca.js";
+import { conferirGps, conferirQr, distanciaMetros } from "../ponto/presenca.js";
 import { comprovante, ErroMarcacao, registrarMarcacao } from "../ponto/registro.js";
 import { periodosFerias } from "../folha/calculo.js";
 import { competencia, cpf, data, horario, op, t, validar } from "./validacao.js";
@@ -118,15 +118,22 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
   /* App nativo (iOS/Android): o celular cria um par de chaves, guarda a chave privada no cofre do sistema
      (Keychain/Keystore) e só a usa depois que a digital ou o Face ID confirmam. O servidor guarda a pública. */
   r.post("/api/app/aparelho", APP, async (ctx) => {
-    const d = validar(z.object({ id: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/), chave: z.object({ kty: z.literal("EC"), crv: z.literal("P-256"), x: t(64), y: t(64) }), aparelho: op(200) }), await ctx.corpo());
+    const d = validar(z.object({ id: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/), chave: z.object({ kty: z.literal("EC"), crv: z.literal("P-256"), x: t(64), y: t(64) }), hardware: z.boolean().optional(), strongbox: z.boolean().optional(), aparelho: op(200) }), await ctx.corpo());
+    // Só chaves guardadas no chip de segurança do celular (Keystore / Secure Enclave). Versões antigas
+    // do app guardavam a chave fora do chip, e um celular com root conseguia usá-la sem a digital.
+    if (d.hardware !== true) falha(426, "Atualize o app Meu Ponto para ativar a biometria com o chip de segurança do celular.");
     try {
       createPublicKey({ key: { kty: "EC", crv: "P-256", x: d.chave.x, y: d.chave.y }, format: "jwk" });
     } catch {
       falha(400, "Chave do aparelho inválida.");
     }
     idLivre(`ap:${d.id}`, ctx.colaborador.id);
-    repo.rodar("INSERT OR REPLACE INTO credenciais (id, colaborador_id, chave, alg, contador, aparelho, criada_em, tipo) VALUES (?,?,?,?,?,?,?,?)", `ap:${d.id}`, ctx.colaborador.id, JSON.stringify({ kty: "EC", crv: "P-256", x: d.chave.x, y: d.chave.y }), -7, 0, d.aparelho ?? null, agora(), "aparelho");
-    auditar(ctxApp(ctx), "biometria_cadastrada", { aparelho: d.aparelho, app: "nativo" });
+    // Chaves antigas (fora do chip) deste colaborador deixam de valer
+    for (const antiga of credenciaisDe(ctx.colaborador.id, "aparelho")) {
+      if (JSON.parse(antiga.chave).hw !== true) repo.rodar("DELETE FROM credenciais WHERE id = ?", antiga.id);
+    }
+    repo.rodar("INSERT OR REPLACE INTO credenciais (id, colaborador_id, chave, alg, contador, aparelho, criada_em, tipo) VALUES (?,?,?,?,?,?,?,?)", `ap:${d.id}`, ctx.colaborador.id, JSON.stringify({ kty: "EC", crv: "P-256", x: d.chave.x, y: d.chave.y, hw: true, strongbox: d.strongbox === true }), -7, 0, d.aparelho ?? null, agora(), "aparelho");
+    auditar(ctxApp(ctx), "biometria_cadastrada", { aparelho: d.aparelho, app: "nativo", chip: d.strongbox ? "strongbox/secure enclave" : "keystore" });
     return { ok: true, id: `ap:${d.id}` };
   });
 
@@ -141,6 +148,8 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
       aparelho: aparelhos.length ? { desafio: desafios.novo(`ap:${c.id}`), ids: aparelhos.map((a) => a.id) } : null,
       exige_biometria: empresa.config.ponto.exige_biometria,
       exige_qr: Boolean(estab?.exige_qr),
+      // Com QR, o app sempre envia a localização (o servidor confere a cerca do local do QR)
+      qr_exige_gps: empresa.config.ponto.qr_exige_gps !== false,
       exige_gps: Boolean(estab?.exige_gps && estab.lat !== null) || repo.listar("estabelecimentos", empresa.id, { ativo: true }).some((e) => e.exige_gps && e.lat !== null),
       proxima: estadoHoje(c).proxima,
     };
@@ -180,7 +189,9 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
       const desafio = desafios.usar(`ap:${c.id}`);
       const cred = repo.um("SELECT * FROM credenciais WHERE id = ? AND colaborador_id = ? AND tipo = 'aparelho'", d.chave_aparelho.id, c.id);
       if (!desafio || !cred) falha(400, "Confirmação expirada. Toque de novo para registrar.");
-      const ok = verify("sha256", Buffer.from(desafio), { key: createPublicKey({ key: JSON.parse(cred.chave), format: "jwk" }), dsaEncoding: "ieee-p1363" }, Buffer.from(d.chave_aparelho.assinatura, "base64url"));
+      const jwk = JSON.parse(cred.chave);
+      if (jwk.hw !== true) falha(426, "Atualize o app Meu Ponto e ative a biometria de novo (agora com o chip de segurança do celular).");
+      const ok = verify("sha256", Buffer.from(desafio), { key: createPublicKey({ key: { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y }, format: "jwk" }), dsaEncoding: "ieee-p1363" }, Buffer.from(d.chave_aparelho.assinatura, "base64url"));
       if (!ok) falha(401, "Biometria não confirmada: assinatura do aparelho inválida.");
       repo.rodar("UPDATE credenciais SET usada_em = ? WHERE id = ?", agora(), cred.id);
       biometria = true;
@@ -196,12 +207,23 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
       if (!v.ok) falha(400, v.motivo);
       estabelecimento_id = v.estabelecimento_id;
       qr = true;
+      // QR + GPS: uma foto do QR enviada a um colega não basta. Se o local tem coordenadas,
+      // o celular precisa estar dentro da cerca desse local no momento da leitura.
+      const local = estabs.find((e) => e.id === v.estabelecimento_id);
+      if (local && local.lat !== null && empresa.config.ponto.qr_exige_gps !== false) {
+        const g = conferirGps([local], d.lat ?? undefined, d.lng ?? undefined, d.precisao ?? 0);
+        if (!g.ok) falha(400, g.motivo.replace("para registrar o ponto", "para registrar o ponto com o QR Code"));
+      }
     } else if (meu?.exige_qr) {
       falha(400, "Escaneie o QR Code do quiosque para registrar o ponto.");
     }
 
-    // 3. Localização (cerca virtual). Com QR válido, a presença já está comprovada.
+    // 3. Localização (cerca virtual). Com QR, a cerca do local do QR já foi conferida acima.
     let distancia_m = null;
+    if (qr && d.lat != null && d.lng != null) {
+      const local = estabs.find((e) => e.id === estabelecimento_id);
+      if (local?.lat != null) distancia_m = distanciaMetros(d.lat, d.lng, local.lat, local.lng);
+    }
     if (!qr) {
       const cerca = estabs.filter((e) => e.exige_gps && e.lat !== null);
       if (cerca.length) {

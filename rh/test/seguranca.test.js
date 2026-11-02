@@ -46,7 +46,7 @@ test("app: credencial de outro colaborador não pode ser sobrescrita", async () 
   const appA = await ativar(rhA, colabA, CPF);
   const appB = await ativar(rhB, colabB, CPF2);
   const chave = { kty: "EC", crv: "P-256", ...(await crypto.subtle.exportKey("jwk", (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign"])).publicKey)) };
-  const corpo = { id: "aparelho-da-alice-01", chave: { kty: chave.kty, crv: chave.crv, x: chave.x, y: chave.y } };
+  const corpo = { id: "aparelho-da-alice-01", chave: { kty: chave.kty, crv: chave.crv, x: chave.x, y: chave.y }, hardware: true };
   assert.equal((await appA.post("/api/app/aparelho", corpo)).status, 200);
   assert.equal((await appB.post("/api/app/aparelho", corpo)).status, 409);
   assert.equal((await appA.get("/api/app/eu")).dados.ponto.aparelhos, 1, "a credencial da Alice continua dela");

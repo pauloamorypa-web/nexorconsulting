@@ -230,7 +230,7 @@ async function baterPonto(botao, { qrToken } = {}) {
       if (!lido) return;
       corpo.qr = lido;
     }
-    if (prep.exige_gps && !corpo.qr) Object.assign(corpo, await localizar());
+    if (prep.exige_gps || (corpo.qr && prep.qr_exige_gps)) Object.assign(corpo, await localizar());
     if (nativo && prep.aparelho) {
       const a = await assinarComBiometria(prep.aparelho.desafio, prep.aparelho.ids);
       if (a) corpo.chave_aparelho = a;
@@ -242,6 +242,17 @@ async function baterPonto(botao, { qrToken } = {}) {
     comprovante(r);
   } catch (e) {
     vibrar(200);
+    if (e.recadastrar) {
+      // Digital nova no celular invalida a chave do chip: cadastra de novo e tenta outra vez
+      aviso(e.message, "erro", 7000);
+      try {
+        await cadastrarBiometria();
+        estado.eu = await get("/app/eu").catch(() => estado.eu);
+      } catch (e2) {
+        aviso(e2.message, "erro", 7000);
+      }
+      return;
+    }
     aviso(e.message, "erro", 7000);
   } finally {
     botao.disabled = false;
