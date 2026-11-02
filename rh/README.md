@@ -8,14 +8,14 @@ Node.js 22 sem framework, banco SQLite nativo do Node, interface em JavaScript p
 
 | Área | Funções |
 | --- | --- |
-| **Ponto (REP-P, Portaria MTP 671/2021)** | Registro pelo app com biometria do celular (digital/rosto via WebAuthn), QR Code rotativo do quiosque (muda a cada 30 s), cerca de GPS por local, PIN no quiosque para quem está sem celular. Cada marcação tem NSR único, hash SHA-256 encadeado e comprovante. Marcações nunca são apagadas: correções viram ajustes. |
+| **Ponto (REP-P, Portaria MTP 671/2021)** | Registro pelo app com biometria do celular (digital/rosto via WebAuthn), QR Code rotativo do quiosque (muda a cada 30 s) que só vale com o celular dentro da cerca de GPS daquele local (foto do QR enviada a um colega não funciona), cerca de GPS por local, PIN no quiosque para quem está sem celular. Cada marcação tem NSR único, hash SHA-256 encadeado e comprovante. Marcações nunca são apagadas: correções viram ajustes. |
 | **Espelho e tratamento** | Horas trabalhadas, extras 50% e 100% (domingo/feriado), adicional noturno com hora reduzida (52m30s), tolerância da CLT (art. 58 §1º), faltas, atrasos, escalas (12x36, 6x1…), feriados nacionais automáticos + locais. Ajustes pedidos pelo app e aprovados pelo RH/gestor. Banco de horas. Fechamento do mês. Assinatura eletrônica do espelho pelo colaborador. |
 | **Fiscalização** | AFD (Anexo I), AEJ (Anexo II), assinatura CAdES do AFD (.p7s) com o certificado da empresa e verificação de integridade da cadeia de hash. |
 | **Colaboradores** | Admissão completa, ficha, contrato, dependentes, benefícios, documentos com validade (ASO, CNH, NRs) e aviso de vencimento, histórico. |
 | **Férias e ausências** | Períodos aquisitivos e concessivos com alerta de férias em dobro, programação com validação da CLT (art. 134 §3º), abono pecuniário, recibo, pedidos pelo app, atestados com foto pelo app, afastamentos com motivos do eSocial. |
 | **Folha** | Mensal, 13º (1ª e 2ª parcelas), férias e rescisão (5 motivos, aviso proporcional, multa do FGTS). INSS progressivo, IRRF com desconto simplificado e a redução da Lei 15.270/2025, FGTS, salário-família, VT 6%, insalubridade, periculosidade, DSR, lançamentos variáveis. Holerite no app. Exportação de pagamentos (CSV). |
 | **eSocial (leiaute S-1.3)** | Eventos gerados sozinhos a cada fato: S-1000, S-1005, S-1010, S-1020, S-2200, S-2205, S-2206, S-2230, S-2299, S-1200, S-1210, S-1299. Assinatura XMLDSig com certificado A1, envio em lotes ao webservice oficial (produção restrita ou produção) e consulta do retorno com recibos. |
-| **App nativo (iOS e Android)** | App "Meu Ponto" em `mobile/` (Capacitor): biometria do sistema com chave guardada no Keychain/Keystore, leitor de QR nativo, GPS e o QR do quiosque abrindo direto o app. Compilado pelo GitHub Actions. Ver `mobile/README.md`. |
+| **App nativo (iOS e Android)** | App "Meu Ponto" em `mobile/` (Capacitor): biometria com a chave do ponto presa ao chip de segurança (Android Keystore/StrongBox e Secure Enclave do iPhone), liberada só pela digital ou rosto do dono, leitor de QR nativo, GPS e o QR do quiosque abrindo direto o app. Compilado pelo GitHub Actions. Ver `mobile/README.md`. |
 | **Recrutamento** | Vagas, página pública de candidatura com upload de currículo e consentimento LGPD, funil de arrastar e soltar. |
 | **Integrações de recrutamento** | Página de cada vaga com dados para o Google Vagas (schema.org/JobPosting); feed XML para agregadores (Indeed, Jooble, Talent.com, Careerjet, Adzuna…); links por canal com origem (LinkedIn, WhatsApp, Facebook, Indeed, InfoJobs, Catho, Vagas.com); API da Gupy (vagas e candidaturas); webhook para Gupy, Solides, Zapier/Make; importação de planilha CSV de qualquer plataforma; relatório de candidatos e contratações por origem. |
 | **Comunicados** | Publicados no app com confirmação de leitura. |
@@ -61,7 +61,7 @@ npm test
 ## Implantação
 
 - **HTTPS é obrigatório em produção.** Biometria (WebAuthn), câmera e GPS só funcionam em HTTPS (ou `localhost`).
-- Defina `PUBLIC_URL` com o endereço final (ex.: `https://rh.suaempresa.com.br`). A biometria fica vinculada a esse domínio: se mudar o domínio, os colaboradores precisam cadastrar a digital de novo.
+- Defina `PUBLIC_URL` com o endereço final (ex.: `https://rh.suaempresa.com.br`). **Com `NODE_ENV=production`, o servidor não sobe sem ela** (precisa ser https e sem caminho). A biometria fica vinculada a esse domínio: se mudar o domínio, os colaboradores precisam cadastrar a digital de novo.
 - Defina `MASTER_KEY` (texto aleatório longo). Ela criptografa o certificado digital e os arquivos enviados. **Guarde-a**: sem ela não dá para ler esses dados.
 - Faça backup diário da pasta `DATA_DIR` (banco `rh.db` e pasta `arquivos/`).
 - O `render.yaml` da raiz do repositório tem o serviço `nexor-rh` (instância de demonstração da Nexor). Para clientes, implante na infraestrutura do próprio cliente (veja abaixo).
