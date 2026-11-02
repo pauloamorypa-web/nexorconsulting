@@ -100,3 +100,13 @@ services:
         value: "false"
       - key: DEVELOPER_CNPJ
         sync: false
+      - key: APP_STORE_URL
+        sync: false
+      - key: PLAY_STORE_URL
+        sync: false
+      - key: APK_URL
+        sync: false
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: ANDROID_SHA256
+        sync: false

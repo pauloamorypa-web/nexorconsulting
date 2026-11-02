@@ -6,10 +6,10 @@ import forge from "node-forge";
 import { lerConfig } from "../src/config.js";
 import { montarAplicacao } from "../src/servidor.js";
 
-export async function subir({ agora, fetchSoap } = {}) {
+export async function subir({ agora, fetchSoap, fetchFn } = {}) {
   const pasta = mkdtempSync(join(tmpdir(), "nexor-rh-"));
   const cfg = { ...lerConfig({}), pastaDados: pasta, chaveMestra: "teste-chave-mestra" };
-  const app = montarAplicacao({ cfg, caminhoBanco: ":memory:", agora, fetchSoap });
+  const app = montarAplicacao({ cfg, caminhoBanco: ":memory:", agora, fetchSoap, fetchFn });
   await new Promise((r) => app.servidor.listen(0, r));
   const url = `http://localhost:${app.servidor.address().port}`;
   return {

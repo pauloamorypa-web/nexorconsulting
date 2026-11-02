@@ -26,6 +26,15 @@ export function lerConfig(env = process.env) {
       desenvolvedorCnpj: (env.DEVELOPER_CNPJ ?? "").replace(/\D/g, ""),
     },
     limites: { tamanhoArquivo: 10 * 1024 * 1024, tentativasLogin: 8 },
+    // App nativo nas lojas (página /baixar e links que abrem o app a partir do QR Code)
+    apps: {
+      id: env.APP_ID ?? "br.com.nexorconsultingit.ponto",
+      appStore: env.APP_STORE_URL ?? "",
+      googlePlay: env.PLAY_STORE_URL ?? "",
+      apk: env.APK_URL ?? "",
+      appleTeamId: env.APPLE_TEAM_ID ?? "",
+      androidSha256: (env.ANDROID_SHA256 ?? "").split(",").map((x) => x.trim().toUpperCase()).filter(Boolean),
+    },
   };
 }
 

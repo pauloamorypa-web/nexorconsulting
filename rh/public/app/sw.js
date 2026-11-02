@@ -1,7 +1,7 @@
 /* Service worker do app de ponto: abre rápido e funciona como app instalado. A API nunca é guardada em cache
    (o ponto precisa do horário do servidor). */
-const VERSAO = "nexor-ponto-v1";
-const CASCA = ["/app/", "/app/app.js", "/app/app.css", "/app.css", "/js/ui.js", "/js/api.js", "/img/logo-mark.webp", "/img/favicon.png", "/app/manifest.webmanifest"];
+const VERSAO = "nexor-ponto-v2";
+const CASCA = ["/app/", "/app/app.js", "/app/nativo.js", "/app/app.css", "/app.css", "/js/ui.js", "/js/api.js", "/img/logo-mark.webp", "/img/favicon.png", "/app/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(CASCA)).then(() => self.skipWaiting()));

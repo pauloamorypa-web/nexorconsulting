@@ -268,8 +268,8 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
     repo.rodar("DELETE FROM convites_app WHERE colaborador_id = ?", c.id);
     repo.rodar("INSERT INTO convites_app (codigo_hash, colaborador_id, expira_em) VALUES (?,?,?)", sha256(`${c.id}:${codigo}`), c.id, agora() + 7 * 86400_000);
     auditar(ctx, "convite_app", { nome: c.nome });
-    const link = `${base(ctx.req)}/app/`;
-    return { codigo, link, mensagem: `Olá, ${c.nome.split(" ")[0]}! Baixe o app de ponto da ${ctx.empresa.nome_fantasia || ctx.empresa.razao_social}: abra ${link} no celular, toque em "Adicionar à tela inicial" e entre com seu CPF e o código ${codigo}. O código vale por 7 dias.` };
+    const link = `${base(ctx.req)}/baixar`;
+    return { codigo, link, mensagem: `Olá, ${c.nome.split(" ")[0]}! Baixe o app de ponto da ${ctx.empresa.nome_fantasia || ctx.empresa.razao_social} (iPhone ou Android): ${link} . Depois entre com seu CPF e o código ${codigo}. O código vale por 7 dias.` };
   });
   /** Desconecta o celular do colaborador e apaga as biometrias (troca de aparelho) */
   r.delete("/api/colaboradores/:id/app", RH, (ctx) => {

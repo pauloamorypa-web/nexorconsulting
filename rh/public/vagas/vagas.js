@@ -3,7 +3,11 @@
 import { h, limpar, acao, aviso, icone } from "/js/ui.js";
 
 const raiz = document.getElementById("vagas");
-const empresa = new URLSearchParams(location.search).get("e");
+const params = new URLSearchParams(location.search);
+const empresa = raiz.dataset.empresa || params.get("e");
+const somente = raiz.dataset.vaga || null;
+// De onde o candidato veio: ?origem=linkedin (links do painel) ou ?utm_source=… (anúncios)
+const origem = (params.get("origem") || params.get("utm_source") || (document.referrer.includes("linkedin.") ? "linkedin" : document.referrer.includes("google.") ? "google" : document.referrer.includes("indeed.") ? "indeed" : "site")).toLowerCase().slice(0, 20);
 
 const lerBase64 = (arquivo) => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result).split(",")[1]); r.onerror = reject; r.readAsDataURL(arquivo); });
 
@@ -12,7 +16,7 @@ async function enviar(vaga, form, botao) {
     const d = Object.fromEntries(new FormData(form));
     const arquivo = form.querySelector("input[type=file]").files[0];
     if (arquivo && arquivo.size > 5 * 1024 * 1024) throw new Error("O currículo pode ter até 5 MB.");
-    const corpo = { nome: d.nome, email: d.email, telefone: d.telefone, cidade: d.cidade || undefined, linkedin: d.linkedin || undefined, mensagem: d.mensagem || undefined, consentimento: form.querySelector("[name=consentimento]").checked };
+    const corpo = { nome: d.nome, email: d.email, telefone: d.telefone, cidade: d.cidade || undefined, linkedin: d.linkedin || undefined, mensagem: d.mensagem || undefined, origem, consentimento: form.querySelector("[name=consentimento]").checked };
     if (arquivo) corpo.curriculo = { nome: arquivo.name, tipo: arquivo.type, base64: await lerBase64(arquivo) };
     const r = await fetch(`/api/publico/vagas/${empresa}/${vaga.id}`, { method: "POST", headers: { "Content-Type": "application/json", "x-nexor": "1" }, body: JSON.stringify(corpo) });
     const x = await r.json();
@@ -27,10 +31,11 @@ async function iniciar() {
   const d = await r.json();
   if (!r.ok) return limpar(raiz, h("div", { class: "vazio" }, h("h3", {}, d.erro)));
   document.title = `Trabalhe conosco · ${d.empresa}`;
-  const alvo = location.hash.slice(1);
+  const alvo = somente ?? location.hash.slice(1);
+  if (somente) d.vagas = d.vagas.filter((v) => v.id === somente);
   limpar(
     raiz,
-    h("header", { class: "vagas-cabeca" }, h("small", { class: "suave" }, d.empresa), h("h1", {}, "Trabalhe conosco"), h("p", { class: "suave" }, d.vagas.length ? `${d.vagas.length} vaga(s) aberta(s).` : "No momento não há vagas abertas. Volte em breve!")),
+    h("header", { class: "vagas-cabeca" }, h("small", { class: "suave" }, d.empresa), h("h1", {}, somente ? "Vaga aberta" : "Trabalhe conosco"), h("p", { class: "suave" }, d.vagas.length ? (somente ? h("a", { href: `/vagas/?e=${empresa}` }, "Ver todas as vagas") : `${d.vagas.length} vaga(s) aberta(s).`) : "Esta vaga não está mais aberta.")),
     d.vagas.map((v) => {
       const botao = h("button", { class: "btn btn-primario largo", type: "submit" }, "Enviar candidatura");
       const form = h(
