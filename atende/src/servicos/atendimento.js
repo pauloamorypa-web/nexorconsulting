@@ -141,6 +141,18 @@ export function criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia
 
   /* ---------- Resposta automática ---------- */
 
+  const respostasIa = new Map();
+  function dentroDoLimite(chave) {
+    const t0 = agora();
+    const janela = configGlobal.limites.janelaMinutos * 60_000;
+    const lista = (respostasIa.get(chave) ?? []).filter((x) => t0 - x < janela);
+    if (lista.length >= configGlobal.limites.mensagensPorJanela) return false;
+    lista.push(t0);
+    respostasIa.set(chave, lista);
+    if (respostasIa.size > 50_000) for (const [k, v] of respostasIa) if (t0 - v.at(-1) >= janela) respostasIa.delete(k);
+    return true;
+  }
+
   function agendarResposta(empresa, conversa_id, segundos = empresa.config.agente.agrupar_segundos) {
     clearTimeout(timers.get(conversa_id));
     const ms = atrasoAgrupamento ?? Math.max(0, Math.min(30, Number(segundos) || 0)) * 1000;
@@ -168,6 +180,15 @@ export function criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia
     const canal = canalDaConversa(empresa_id, conversa);
     if (canal && ultimaEntrada?.wamid && !followup) apiDoCanal(canal).marcarComoLida(ultimaEntrada.wamid, { digitando: true });
     eventos.emitir(empresa_id, "digitando", { conversa_id, ativo: true });
+
+    // Limite por contato: um número que dispara mensagens sem parar (robô ou abuso) não consome
+    // a IA sem fim. Passa a conversa para a equipe, que decide o que fazer.
+    if (!followup && !dentroDoLimite(`${empresa_id}:${contato.id}`)) {
+      repo.atualizarConversa(empresa_id, conversa_id, { modo: "humano", status: "aguardando", prioridade: "alta", resumo: "Muitas mensagens seguidas: a IA pausou e passou para a equipe." });
+      eventos.emitir(empresa_id, "digitando", { conversa_id, ativo: false });
+      eventos.emitir(empresa_id, "conversa", repo.conversa(empresa_id, conversa_id));
+      return null;
+    }
 
     const horario = situacaoHorario(empresa.config.horario, agora());
     const agendamentos = repo.agendamentosDoContato(empresa_id, contato.id).map((a) => ({ ...a, texto: formatarQuando(a.inicio) }));

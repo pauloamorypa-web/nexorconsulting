@@ -4,11 +4,13 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const N = 16384;
+// scrypt com N = 2^17 (recomendação OWASP). Senhas antigas (N menor) são refeitas no próximo login.
+const N = 131072;
+const opcoes = (n) => ({ N: n, r: 8, p: 1, maxmem: 256 * n * 8 + 1024 * 1024 });
 
 export function gerarHashSenha(senha) {
   const sal = randomBytes(16);
-  const hash = scryptSync(senha, sal, 64, { N, r: 8, p: 1 });
+  const hash = scryptSync(senha, sal, 64, opcoes(N));
   return `scrypt$${N}$${sal.toString("base64")}$${hash.toString("base64")}`;
 }
 
@@ -16,9 +18,14 @@ export function conferirSenha(senha, guardado) {
   const [alg, n, sal, hash] = String(guardado ?? "").split("$");
   if (alg !== "scrypt" || !sal || !hash) return false;
   const esperado = Buffer.from(hash, "base64");
-  const calculado = scryptSync(senha, Buffer.from(sal, "base64"), esperado.length, { N: Number(n), r: 8, p: 1 });
+  const custo = Number(n);
+  if (!Number.isInteger(custo) || custo < 1024 || custo > 1048576 || (custo & (custo - 1)) !== 0) return false;
+  const calculado = scryptSync(senha, Buffer.from(sal, "base64"), esperado.length, opcoes(custo));
   return timingSafeEqual(esperado, calculado);
 }
+
+/** A senha foi guardada com proteção mais fraca que a atual? (refazer o hash depois do login) */
+export const precisaRefazerHash = (guardado) => Number(String(guardado ?? "").split("$")[1]) < N;
 
 export const gerarToken = (bytes = 32) => randomBytes(bytes).toString("base64url");
 export const sha256 = (v) => createHash("sha256").update(v).digest("hex");

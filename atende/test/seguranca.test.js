@@ -109,3 +109,17 @@ async function loginCookie(t) {
   const r = await fetch(`${t.base}/api/entrar`, { method: "POST", headers: { "Content-Type": "application/json", "x-nexor": "1" }, body: JSON.stringify({ email: "dona@teste.com", senha: "senha-da-dona-1" }) });
   return r.headers.get("set-cookie").split(";")[0];
 }
+
+test("senhas: força atual (scrypt 2^17) e senhas antigas continuam valendo até o próximo login", async () => {
+  const { gerarHashSenha, conferirSenha, precisaRefazerHash } = await import("../src/seguranca.js");
+  const { scryptSync, randomBytes } = await import("node:crypto");
+  const nova = gerarHashSenha("Senha-Forte-123");
+  assert.match(nova, /^scrypt\$131072\$/);
+  assert.equal(conferirSenha("Senha-Forte-123", nova), true);
+  assert.equal(precisaRefazerHash(nova), false);
+  const sal = randomBytes(16);
+  const antiga = `scrypt$16384$${sal.toString("base64")}$${scryptSync("Senha-Forte-123", sal, 64, { N: 16384, r: 8, p: 1 }).toString("base64")}`;
+  assert.equal(conferirSenha("Senha-Forte-123", antiga), true);
+  assert.equal(precisaRefazerHash(antiga), true);
+  assert.equal(conferirSenha("x", "scrypt$99$abc$def"), false, "custo inválido é recusado");
+});

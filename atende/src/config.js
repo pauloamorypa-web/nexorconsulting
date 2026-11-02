@@ -56,6 +56,10 @@ export function lerConfig(env = process.env) {
       mensagensPorJanela: 25,
       janelaMinutos: 10,
       tentativasLogin: 8,
+      iaPorUsuario: numero(env.LIMITE_IA_USUARIO, 40), // pedidos à IA do painel a cada 10 min, por usuário
+      iaPorEmpresaHora: numero(env.LIMITE_IA_EMPRESA_HORA, 400), // pedidos à IA do painel por hora, somando a empresa
+      arquivosPorUsuario: numero(env.LIMITE_ARQUIVOS_USUARIO, 60), // arquivos enviados a cada 10 min, por usuário
+      arquivosPorEmpresaHora: numero(env.LIMITE_ARQUIVOS_EMPRESA_HORA, 600),
     },
 
     sessaoDias: numero(env.SESSION_DAYS, 14),

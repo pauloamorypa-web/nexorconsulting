@@ -64,7 +64,22 @@ function criarEventos() {
 }
 
 /** Monta todas as peças. Os testes trocam o relógio e o cliente SOAP do eSocial. */
+/** Em produção, o endereço público é obrigatório: links do QR, da biometria (WebAuthn) e das vagas
+    não podem depender do cabeçalho Host de cada acesso (envenenamento de cache e de links). */
+export function conferirEnderecoPublico(cfg) {
+  if (!cfg.producao) return;
+  let u;
+  try {
+    u = new URL(cfg.urlPublica);
+  } catch {
+    throw new Error("PUBLIC_URL é obrigatória em produção (ex.: https://rh.suaempresa.com.br).");
+  }
+  if (u.protocol !== "https:") throw new Error("PUBLIC_URL precisa começar com https:// em produção.");
+  if (u.pathname !== "/" || u.search || u.hash || u.username) throw new Error("PUBLIC_URL deve ser só o endereço, sem caminho (ex.: https://rh.suaempresa.com.br).");
+}
+
 export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () => Date.now(), fetchSoap, fetchFn = fetch } = {}) {
+  conferirEnderecoPublico(cfg);
   const cofre = criarCofre(cfg);
   const repo = abrirBanco(caminhoBanco ?? join(cfg.pastaDados, "rh.db"));
   const nucleo = criarNucleo({ repo, cofre, cfg, agora });
@@ -214,7 +229,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   app.servidor.listen(app.cfg.porta, () => {
     console.log(`Nexor RH no ar em http://localhost:${app.cfg.porta}`);
     console.log(`Painel: /   ·   App do trabalhador: /app/   ·   Quiosque: /quiosque/   ·   Vagas: /vagas/`);
-    if (!app.cfg.urlPublica) console.warn("PUBLIC_URL vazia: os links do QR Code usarão o endereço de cada acesso.");
+    if (!app.cfg.urlPublica) console.warn("PUBLIC_URL vazia: só aceitável em teste local. Em produção (NODE_ENV=production) ela é obrigatória.");
   });
   const desligar = () => {
     app.fechar();

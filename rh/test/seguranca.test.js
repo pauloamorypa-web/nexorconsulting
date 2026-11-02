@@ -95,3 +95,26 @@ test("trocar a senha encerra as outras sessões", async () => {
   assert.equal((await outra.get("/api/eu")).status, 401, "a sessão antiga caiu");
   assert.equal((await rhB.get("/api/eu")).status, 200, "a sessão de quem trocou continua");
 });
+
+test("senhas: força atual (scrypt 2^17) e senhas antigas continuam valendo até o próximo login", async () => {
+  const { gerarHashSenha, conferirSenha, precisaRefazerHash } = await import("../src/seguranca.js");
+  const { scryptSync, randomBytes } = await import("node:crypto");
+  const nova = gerarHashSenha("Senha-Forte-123");
+  assert.match(nova, /^scrypt\$131072\$/);
+  assert.equal(conferirSenha("Senha-Forte-123", nova), true);
+  assert.equal(precisaRefazerHash(nova), false);
+  const sal = randomBytes(16);
+  const antiga = `scrypt$16384$${sal.toString("base64")}$${scryptSync("Senha-Forte-123", sal, 64, { N: 16384, r: 8, p: 1 }).toString("base64")}`;
+  assert.equal(conferirSenha("Senha-Forte-123", antiga), true);
+  assert.equal(precisaRefazerHash(antiga), true);
+  assert.equal(conferirSenha("x", "scrypt$99$abc$def"), false, "custo inválido é recusado");
+});
+
+test("produção exige PUBLIC_URL https sem caminho", async () => {
+  const { conferirEnderecoPublico } = await import("../src/servidor.js");
+  assert.throws(() => conferirEnderecoPublico({ producao: true, urlPublica: "" }), /obrigatória/);
+  assert.throws(() => conferirEnderecoPublico({ producao: true, urlPublica: "http://rh.empresa.com.br" }), /https/);
+  assert.throws(() => conferirEnderecoPublico({ producao: true, urlPublica: "https://rh.empresa.com.br/painel" }), /sem caminho/);
+  assert.doesNotThrow(() => conferirEnderecoPublico({ producao: true, urlPublica: "https://rh.empresa.com.br" }));
+  assert.doesNotThrow(() => conferirEnderecoPublico({ producao: false, urlPublica: "" }));
+});
