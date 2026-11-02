@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "configurar": "node scripts/configurar.mjs",
-    "icones": "capacitor-assets generate --iconBackgroundColor '#060b16' --iconBackgroundColorDark '#060b16' --splashBackgroundColor '#060b16' --splashBackgroundColorDark '#060b16'",
+    "icones": "capacitor-assets generate --iconBackgroundColor '#010524' --iconBackgroundColorDark '#010524' --splashBackgroundColor '#010524' --splashBackgroundColorDark '#010524'",
     "sync": "npm run configurar && cap sync",
     "android": "npm run sync && cap open android",
     "ios": "npm run sync && cap open ios"

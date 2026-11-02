@@ -808,7 +808,9 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
 .mini-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .mini-campos label { display: grid; gap: 5px; font-size: .8rem; color: var(--muted); }
 .mini-check { display: flex; gap: 10px; align-items: flex-start; font-size: .82rem; color: var(--muted); }
-.mini-check input { margin-top: 3px; accent-color: var(--blue); }
+.mini-campos .mini-check, .mini-check { display: flex; grid-column: 1 / -1; gap: 10px; align-items: flex-start; }
+.mini-form .mini-check input { flex: 0 0 auto; width: 18px; height: 18px; padding: 0; margin: 2px 0 0; accent-color: var(--blue); }
+.mini-check a { color: var(--cyan); }
 .saida-teste { color: var(--cyan); font-size: .9rem; text-align: center; }
 
 /* ---------- Área do teste grátis ---------- */
@@ -1003,6 +1005,7 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
   .calc { padding: 14px; }
   .calc-form-campos { grid-template-columns: 1fr; }
   .sm-galeria { padding: 50px 14px 16px; }
+  .sm-tela { min-height: 0; }
   .sm-acoes { grid-template-columns: 1fr; }
   .ta-topo { padding-block: 10px; }
   .ta-ola { display: none; }

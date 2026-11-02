@@ -7,6 +7,7 @@
 .sp-selo { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--a) 55%, transparent); color: var(--a); font: 500 var(--fs-sm) var(--font-mono, monospace); margin: 0 0 var(--sp-4); }
 .sp-selo .ic { width: 18px; height: 18px; }
 .sp-hero h1 { font-size: var(--fs-h1); line-height: var(--lh-titulo); max-width: 18ch; margin: 0 0 var(--sp-4); text-wrap: balance; }
+@media (max-width: 420px) { .sp-hero h1 { font-size: clamp(1.6rem, 8.2vw, 2.1rem); overflow-wrap: break-word; hyphens: auto; } }
 .sp-hero h1 em { font-style: normal; color: var(--a); }
 .sp-sub { font-size: var(--fs-lg); color: var(--muted); max-width: 62ch; margin: 0 0 var(--sp-6); line-height: var(--lh-texto); }
 .sp-ctas { display: flex; flex-wrap: wrap; gap: 12px; }
