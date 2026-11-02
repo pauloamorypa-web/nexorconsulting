@@ -12,7 +12,9 @@ Regra de ouro: toda peça leva para o site (teste grátis de 12 horas ou lista d
 | `blue-story-em-breve.png` | Story | Stories, status do WhatsApp |
 | `atende-24h.png` | Post 4:5 | Instagram, Facebook, anúncio |
 | `atende-quem-compra.png` | Post 4:5 | Instagram, LinkedIn |
-| `portfolio-17.png` | Post 4:5 | Instagram, LinkedIn, grupos |
+| `portfolio.png` | Post 4:5 · portfólio atual com 20 soluções | Instagram, LinkedIn, grupos |
+| `portfolio-17.png` | Post 4:5 · versão antiga (17 soluções) | Não usar mais |
+| `lgpd-checklist.png` | Post 4:5 · autodiagnóstico de LGPD | LinkedIn, Instagram, anúncio |
 | `em-breve-8.png` | Post 4:5 | Instagram, LinkedIn |
 | `atende-story-teste.png` | Story | Stories, status, anúncio de story |
 | `antes-depois.png` | Post 4:5 | Instagram, Facebook, anúncio |
@@ -73,14 +75,23 @@ Dica: use a figurinha de enquete “Qual você quer primeiro?” com duas opçõ
 >
 > #crm #funildevendas #gestaocomercial #IA #vendasonline
 
-### `portfolio-17.png` — 17 soluções
-> Do atendimento à gestão, da loja virtual à TI: são 17 soluções para cada etapa da sua empresa. 🚀
+### `portfolio.png` — 20 soluções
+> Do atendimento à gestão, das pessoas à TI: são 20 soluções para cada etapa da sua empresa. 🚀
 > 🔹 Atende IA · Commerce · Gestão · Site Pro · Automação · Sob Medida
+> 🔹 Nexor RH (ponto, folha, eSocial e recrutamento) · Consultoria de LGPD
 > 🔹 Service Desk · Cofre de senhas · IT Platform
-> 🔹 E 8 novas IAs chegando no Laboratório Nexor
+> 🔹 E 9 novidades chegando no Laboratório Nexor, incluindo o Nexor Shield
 > Conheça todas e teste grátis: nexorconsultingit.com.br
 >
-> #tecnologia #softwaresobmedida #ERP #ecommerce #transformacaodigital
+> #tecnologia #softwaresobmedida #ERP #RH #transformacaodigital
+
+### `lgpd-checklist.png` — Sua empresa está em dia com a LGPD?
+Use com a legenda do post de LGPD do manual do LinkedIn. No Instagram:
+> Responda rápido: quantos “não” a sua empresa tem nessas 6 perguntas? 🔐
+> Dois ou mais? A consultoria de LGPD da Nexor cuida do diagnóstico, dos documentos (revisados por advogado parceiro) e da segurança dos sistemas.
+> 📲 Agende o diagnóstico: (34) 99733-7499
+>
+> #lgpd #protecaodedados #segurancadainformacao #empresas
 
 ### `em-breve-8.png` — Em breve
 > Vem novidade aí! 👀 O Laboratório Nexor está preparando 8 novas soluções com inteligência artificial:
@@ -144,4 +155,4 @@ Título sugerido para o perfil: **Fundador da Nexor Consulting · IA no WhatsApp
 | Sex | `diagnostico` | `blue-pergunte` |
 | Reunião do BNI | `indicacao` no grupo + folheto impresso | |
 
-Use `portfolio-17` fixado no topo do perfil do Instagram e a `linkedin-capa` desde o primeiro dia.
+Use `portfolio` fixado no topo do perfil do Instagram e a `linkedin-capa` desde o primeiro dia.
