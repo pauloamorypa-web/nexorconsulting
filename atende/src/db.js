@@ -393,7 +393,7 @@ export function abrirBanco(caminho) {
         campos.senha_hash ?? u.senha_hash,
         id,
       );
-      if (campos.ativo === false) rodar("DELETE FROM sessoes WHERE usuario_id = ?", id);
+      if (campos.ativo === false || campos.senha_hash) rodar("DELETE FROM sessoes WHERE usuario_id = ?", id);
       return repo.usuario(id);
     },
     marcarOnline: (id) => rodar("UPDATE usuarios SET online_em = ? WHERE id = ?", agora(), id),
@@ -691,10 +691,11 @@ export function abrirBanco(caminho) {
     mensagemPorWamid: (wamid) => ler.mensagem(um("SELECT * FROM mensagens WHERE wamid = ?", wamid)),
     existeWamid: (wamid) => Boolean(um("SELECT 1 x FROM mensagens WHERE wamid = ?", wamid)),
     definirWamid: (id, wamid, status = "enviada") => rodar("UPDATE mensagens SET wamid = ?, status = ?, erro = NULL WHERE id = ?", wamid, status, id),
-    atualizarStatusMensagem(wamid, status, erro = null) {
+    /** empresa_id: só atualiza mensagens da empresa dona do número que mandou o status */
+    atualizarStatusMensagem(wamid, status, erro = null, empresa_id) {
       const ordem = { pendente: 0, enviada: 1, entregue: 2, lida: 3, falhou: 4 };
       const m = repo.mensagemPorWamid(wamid);
-      if (!m) return null;
+      if (!m || (empresa_id !== undefined && m.empresa_id !== empresa_id)) return null;
       // Status chegam fora de ordem: nunca volta de "lida" para "entregue"
       if (status !== "falhou" && (ordem[m.status] ?? 0) >= ordem[status]) return m;
       rodar("UPDATE mensagens SET status = ?, erro = ? WHERE id = ?", status, erro, m.id);

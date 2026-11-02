@@ -150,9 +150,10 @@ test("limitador barra excesso por chave e libera depois da janela", async () => 
   assert.equal(lim("a"), true);
 });
 
-test("ip do cliente usa o endereço anexado pelo proxy, não o enviado pelo visitante", async () => {
+test("ip do cliente prefere o cabeçalho da Cloudflare ao X-Forwarded-For", async () => {
   const { ipDoCliente } = await import("../src/servidor.js");
-  assert.equal(ipDoCliente({ headers: { "x-forwarded-for": "1.1.1.1, 9.9.9.9" }, socket: {} }), "9.9.9.9");
+  assert.equal(ipDoCliente({ headers: { "true-client-ip": "8.8.8.8", "x-forwarded-for": "1.1.1.1" }, socket: {} }), "8.8.8.8");
+  assert.equal(ipDoCliente({ headers: { "x-forwarded-for": "1.1.1.1, 9.9.9.9" }, socket: {} }), "1.1.1.1");
   assert.equal(ipDoCliente({ headers: {}, socket: { remoteAddress: "2.2.2.2" } }), "2.2.2.2");
 });
 

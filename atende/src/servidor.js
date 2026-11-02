@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import { config as configPadrao } from "./config.js";
@@ -35,6 +35,9 @@ const SEGURANCA = {
   "Content-Security-Policy":
     "default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://connect.facebook.net; connect-src 'self' https://*.facebook.com; frame-src https://*.facebook.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 };
+
+// Em produção o painel só deve abrir por HTTPS (o cookie de sessão já é Secure)
+const HSTS = { "Strict-Transport-Security": "max-age=31536000; includeSubDomains" };
 
 /** Token de verificação do webhook: META_VERIFY_TOKEN ou um gerado e guardado na pasta de dados */
 function tokenVerificacao(cfg) {
@@ -71,18 +74,27 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
     } catch {
       return false;
     }
-    const ids = new Set((payload?.entry ?? []).flatMap((e) => (e.changes ?? []).map((c) => c.value?.metadata?.phone_number_id)).filter(Boolean));
-    for (const id of ids) {
+    // Cada mudança precisa ser de um número cujo segredo próprio confere a assinatura. Sem isso, uma empresa
+    // que cadastrou o próprio segredo poderia assinar um payload com o número de outra empresa junto.
+    const mudancas = (payload?.entry ?? []).flatMap((e) => e.changes ?? []);
+    const ids = mudancas.map((c) => c.value?.metadata?.phone_number_id);
+    if (!ids.length || ids.some((id) => !id)) return false;
+    return [...new Set(ids)].every((id) => {
       const canal = repo.canalPorNumero(id);
-      if (canal?.segredo_app_cripto && assinaturaValida(corpo, assinatura, cofre.decifrar(canal.segredo_app_cripto))) return true;
-    }
-    return false;
+      return Boolean(canal?.segredo_app_cripto) && assinaturaValida(corpo, assinatura, cofre.decifrar(canal.segredo_app_cripto));
+    });
   }
 
   async function arquivoEstatico(caminho, res) {
-    const relativo = caminho === "/" ? "index.html" : decodeURIComponent(caminho).replace(/^\/+/, "");
+    let relativo;
+    try {
+      relativo = caminho === "/" ? "index.html" : decodeURIComponent(caminho).replace(/^\/+/, "");
+    } catch {
+      return false;
+    }
     let alvo = normalize(join(PUBLICO, relativo));
-    if (!alvo.startsWith(PUBLICO)) return false;
+    // Com o separador no fim: "/app/public-x" não passa por estar dentro de "/app/public"
+    if (!alvo.startsWith(PUBLICO + sep) || relativo.includes("\0")) return false;
     let info = await stat(alvo).catch(() => null);
     // Rotas do painel (sem extensão) devolvem o index.html
     if (!info && !extname(alvo)) {
@@ -91,7 +103,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
     }
     if (!info?.isFile()) return false;
     const html = alvo.endsWith(".html");
-    res.writeHead(200, { "Content-Type": TIPOS[extname(alvo)] ?? "application/octet-stream", "Cache-Control": html ? "no-cache" : "public, max-age=3600", ...SEGURANCA });
+    res.writeHead(200, { "Content-Type": TIPOS[extname(alvo)] ?? "application/octet-stream", "Cache-Control": html ? "no-cache" : "public, max-age=3600", ...SEGURANCA, ...(cfg.producao ? HSTS : {}) });
     res.end(await readFile(alvo));
     return true;
   }
@@ -120,7 +132,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
       cookies,
       usuario,
       empresa,
-      ip: String(req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "").split(",")[0].trim(),
+      // Cloudflare (na frente do Render) grava o IP real nesses cabeçalhos; X-Forwarded-For pode vir do visitante
+      ip: String(req.headers["true-client-ip"] ?? req.headers["cf-connecting-ip"] ?? "").trim() || String(req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "").split(",")[0].trim(),
       corpo: async () => {
         if (lido === undefined) {
           const b = await lerCorpo(req, 6 * 1024 * 1024);
@@ -163,9 +176,12 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
       if (req.method === "GET" && (await arquivoEstatico(url.pathname, res))) return;
       json(res, 404, { erro: "não encontrado" });
     } catch (err) {
-      const status = err.status ?? (err instanceof Anthropic.APIError ? 502 : 500);
+      // Erros da API do Claude viram 502 com mensagem genérica: um 401 da Anthropic não pode deslogar o painel
+      // nem expor detalhes da conta da IA
+      const ehIA = err instanceof Anthropic.APIError;
+      const status = ehIA ? 502 : (err.status ?? 500);
       if (status >= 500) console.error("[servidor]", err);
-      const mensagem = err instanceof ErroHttp || (err.status && err.status < 500) ? err.message : err instanceof Anthropic.APIError ? "A IA está indisponível no momento. Tente de novo em instantes." : "Erro interno.";
+      const mensagem = ehIA ? "A IA está indisponível no momento. Tente de novo em instantes." : err instanceof ErroHttp || (err.status && err.status < 500) ? err.message : "Erro interno.";
       json(res, status, { erro: mensagem, ...(err.codigo ? { codigo: err.codigo } : {}) });
     }
   });

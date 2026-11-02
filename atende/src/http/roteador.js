@@ -32,14 +32,20 @@ export function lerCookies(cabecalho = "") {
   const r = {};
   for (const parte of cabecalho.split(";")) {
     const i = parte.indexOf("=");
-    if (i > 0) r[parte.slice(0, i).trim()] = decodeURIComponent(parte.slice(i + 1).trim());
+    if (i <= 0) continue;
+    // Cookie malformado de outro sistema no mesmo domínio não pode derrubar a requisição
+    try {
+      r[parte.slice(0, i).trim()] = decodeURIComponent(parte.slice(i + 1).trim());
+    } catch {
+      /* ignora */
+    }
   }
   return r;
 }
 
 export function json(res, status, corpo, cabecalhos = {}) {
   if (res.headersSent) return;
-  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...cabecalhos });
+  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...cabecalhos });
   res.end(JSON.stringify(corpo));
 }
 
@@ -70,7 +76,12 @@ export function criarRoteador() {
         if (!m) continue;
         caminhoExiste = true;
         if (r.metodo !== metodo) continue;
-        const params = Object.fromEntries(r.nomes.map((n, i) => [n, decodeURIComponent(m[i + 1])]));
+        let params;
+        try {
+          params = Object.fromEntries(r.nomes.map((n, i) => [n, decodeURIComponent(m[i + 1])]));
+        } catch {
+          return { caminhoExiste: false };
+        }
         return { rota: r, params };
       }
       return { caminhoExiste };

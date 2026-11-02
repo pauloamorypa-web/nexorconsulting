@@ -48,12 +48,14 @@ export function criarLimitador({ quantidade, janelaMs }, agora = Date.now) {
   };
 }
 
-/* IP real do visitante. Atrás do proxy do Render, o último endereço de X-Forwarded-For é o que o
-   proxy viu (o visitante não consegue falsificar); os anteriores podem ter vindo do próprio visitante. */
-export const ipDoCliente = (req) => {
-  const xff = String(req.headers["x-forwarded-for"] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  return xff.at(-1) || req.socket.remoteAddress || "desconhecido";
-};
+/* IP real do visitante. O Render fica atrás da Cloudflare, que grava o IP verdadeiro em
+   True-Client-IP / CF-Connecting-IP (e sobrescreve o que o visitante mandar). O X-Forwarded-For
+   só é usado como reserva, porque o Render repassa o valor enviado pelo próprio visitante. */
+export const ipDoCliente = (req) =>
+  String(req.headers["true-client-ip"] ?? req.headers["cf-connecting-ip"] ?? "").trim() ||
+  String(req.headers["x-forwarded-for"] ?? "").split(",")[0].trim() ||
+  req.socket.remoteAddress ||
+  "desconhecido";
 
 const SEGURANCA = {
   "X-Content-Type-Options": "nosniff",
