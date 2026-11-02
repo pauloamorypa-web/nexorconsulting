@@ -117,6 +117,7 @@
 
   /* ---------- Atendimento guiado (sem servidor) ---------- */
   const SOLUCAO_POR_TEMA = [
+    [/\brh\b|ponto|funcion[aá]rio|colaborador|folha|f[eé]rias|esocial|holerite|biometria|recursos humanos/i, "Nexor RH, ponto pelo celular com digital ou QR Code, folha e eSocial"],
     [/whats|atend|venda|vender|instagram|cliente/i, "Nexor Atende IA, que atende e vende no WhatsApp 24h"],
     [/loja|e-?commerce|marketplace|mercado livre|shopee/i, "Nexor Commerce, loja virtual integrada aos marketplaces"],
     [/sistema|gest|erp|crm|planilha|estoque|financeiro/i, "Nexor Gestão, ERP e CRM sob medida"],

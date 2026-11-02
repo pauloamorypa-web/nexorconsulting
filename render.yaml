@@ -73,3 +73,30 @@ services:
         sync: false
       - key: ALLOW_SIGNUP
         value: "false"
+
+  # Nexor RH: painel do RH, app do trabalhador, quiosque de ponto e eSocial (pasta rh/)
+  - type: web
+    name: nexor-rh
+    runtime: node
+    rootDir: rh
+    plan: starter # o disco persistente exige um plano pago
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    disk:
+      name: dados-rh
+      mountPath: /var/data
+      sizeGB: 5
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: PUBLIC_URL
+        sync: false
+      - key: MASTER_KEY
+        generateValue: true
+      - key: ALLOW_SIGNUP
+        value: "false"
+      - key: DEVELOPER_CNPJ
+        sync: false

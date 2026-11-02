@@ -150,13 +150,31 @@ const Teste = (() => {
     ["celular", "Também no celular", "Acompanhe e responda de qualquer lugar."],
   ];
 
+  /* ---------- Telas reais do Nexor RH (capturas com a empresa fictícia Padaria Pão Dourado) ---------- */
+  const TELAS_RH = [
+    ["app", "App do colaborador", "Bate o ponto com a digital ou o rosto do celular, recebe o comprovante na hora e vê o holerite. Funciona como app instalado, sem loja."],
+    ["painel", "Painel do RH", "Quem está trabalhando agora, atrasos, pedidos para aprovar, férias a vencer, fim de experiência e aniversariantes."],
+    ["ponto", "Ponto do dia em tempo real", "Cada batida aparece na hora, com selo de biometria e QR Code. Entende turnos que viram a noite."],
+    ["espelho", "Espelho de ponto", "Horas trabalhadas, extras 50% e 100%, adicional noturno, atrasos e faltas, com a tolerância da CLT."],
+    ["quiosque", "Quiosque com QR Code", "Tablet na entrada com QR que muda a cada 30 segundos. Quem está sem celular bate com CPF e PIN."],
+    ["ferias", "Férias sem multa", "Períodos aquisitivos e prazos de concessão: o sistema avisa antes de a férias vencer e ter que ser paga em dobro."],
+    ["folha", "Folha de pagamento", "INSS, IRRF (com a isenção de 2026), FGTS, extras, DSR, faltas e benefícios calculados a partir do ponto."],
+    ["holerite", "Holerite", "Demonstrativo completo, liberado no app do colaborador quando a folha é fechada."],
+    ["esocial", "eSocial integrado", "Admissão, alterações, afastamentos, desligamento e folha viram eventos assinados com o certificado da empresa."],
+    ["recrutamento", "Recrutamento", "Página de vagas com envio de currículo e funil de candidatos de arrastar e soltar."],
+  ];
+
   function galeriaAtende(raiz) {
+    galeria(raiz, { telas: TELAS_ATENDE, pasta: "atende", titulo: "3. Por dentro do Nexor Atende IA: telas reais do sistema", selo: "Sistema real · API oficial da Meta", dica: "Capturas do painel do Nexor Atende IA com dados de demonstração (Clínica Sorriso é uma empresa fictícia). Na versão contratada, é a sua empresa aqui.", vertical: ["celular"], nome: "Nexor Atende IA" });
+  }
+
+  function galeria(raiz, { telas: TELAS, pasta, titulo, selo, dica, vertical = [], nome }) {
     const sec = document.createElement("section");
     sec.className = "ta-card ta-galeria";
     sec.innerHTML = `
       <div class="ta-galeria-topo">
-        <h4>3. Por dentro do Nexor Atende IA: telas reais do sistema</h4>
-        <span class="ta-galeria-selo">Sistema real · API oficial da Meta</span>
+        <h4>${esc(titulo)}</h4>
+        <span class="ta-galeria-selo">${esc(selo)}</span>
       </div>
       <div class="ta-galeria-palco">
         <button class="ta-galeria-seta" type="button" data-passo="-1" aria-label="Tela anterior">‹</button>
@@ -167,19 +185,19 @@ const Teste = (() => {
         <button class="ta-galeria-seta" type="button" data-passo="1" aria-label="Próxima tela">›</button>
       </div>
       <div class="ta-galeria-miniaturas" role="tablist" aria-label="Telas do sistema">
-        ${TELAS_ATENDE.map(([id, titulo], i) => `<button type="button" role="tab" data-i="${i}" aria-label="${esc(titulo)}"><img src="assets/img/atende/${id}.webp" alt="" loading="lazy" decoding="async"><small>${esc(titulo)}</small></button>`).join("")}
+        ${TELAS.map(([id, titulo], i) => `<button type="button" role="tab" data-i="${i}" aria-label="${esc(titulo)}"><img src="assets/img/${pasta}/${id}.webp" alt="" loading="lazy" decoding="async"><small>${esc(titulo)}</small></button>`).join("")}
       </div>
-      <p class="muted ta-dica">Capturas do painel do Nexor Atende IA com dados de demonstração (Clínica Sorriso é uma empresa fictícia). Na versão contratada, é a sua empresa aqui.</p>`;
+      <p class="muted ta-dica">${esc(dica)}</p>`;
     raiz.appendChild(sec);
 
     let atual = 0;
     const img = sec.querySelector("figure img");
     const mostrar = (i) => {
-      atual = (i + TELAS_ATENDE.length) % TELAS_ATENDE.length;
-      const [id, titulo, texto] = TELAS_ATENDE[atual];
-      img.src = `assets/img/atende/${id}.webp`;
-      img.alt = `Tela do Nexor Atende IA: ${titulo}`;
-      img.classList.toggle("vertical", id === "celular");
+      atual = (i + TELAS.length) % TELAS.length;
+      const [id, titulo, texto] = TELAS[atual];
+      img.src = `assets/img/${pasta}/${id}.webp`;
+      img.alt = `Tela do ${nome}: ${titulo}`;
+      img.classList.toggle("vertical", vertical.includes(id));
       sec.querySelector("figcaption b").textContent = titulo;
       sec.querySelector("figcaption span").textContent = texto;
       sec.querySelectorAll(".ta-galeria-miniaturas button").forEach((b, j) => b.setAttribute("aria-selected", String(j === atual)));
@@ -203,7 +221,7 @@ const Teste = (() => {
       const pintar = () => {
         zimg.src = img.src;
         zimg.alt = img.alt;
-        v.querySelector("figcaption").textContent = TELAS_ATENDE[atual][1];
+        v.querySelector("figcaption").textContent = TELAS[atual][1];
       };
       const fechar = () => {
         v.remove();
@@ -238,6 +256,133 @@ const Teste = (() => {
 
   /* ---------- Demonstrações ---------- */
   const DEMOS = {
+    /* Nexor RH: bata o ponto num celular simulado, veja o espelho calcular e simule um holerite */
+    rh(raiz) {
+      const ROTULOS = ["Entrada", "Saída para intervalo", "Volta do intervalo", "Saída"];
+      const HORARIOS = [[8, 2], [12, 4], [13, 1], [17, 53]];
+      const st = estado("rh", { marcas: [], nsr: 4817 });
+      const pad = (n) => String(n).padStart(2, "0");
+      const hora = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+      const dur = (m) => `${Math.floor(m / 60)}h${pad(Math.round(m % 60))}`;
+      const empresa = NX.ler("nx-teste-perfil", {}).empresa || "Sua Empresa";
+      const nome = (NX.ler("nx-teste-perfil", {}).nome || "Você").split(" ")[0];
+
+      /* Tabelas 2025 (INSS, salário-família) e IRRF com a redução de 2026 (Lei 15.270/2025), em reais */
+      const inss = (b) => { let t = 0, ant = 0; for (const [ate, al] of [[1518, 0.075], [2793.88, 0.09], [4190.83, 0.12], [8157.41, 0.14]]) { if (b > ant) t += (Math.min(b, ate) - ant) * al; ant = ate; } return Math.round(t * 100) / 100; };
+      const irrf = (rend, inssV, deps) => {
+        const base = Math.max(0, rend - Math.max(inssV + deps * 189.59, 607.2));
+        const f = [[2428.8, 0, 0], [2826.65, 0.075, 182.16], [3751.05, 0.15, 394.16], [4664.68, 0.225, 675.49], [Infinity, 0.275, 908.73]].find(([ate]) => base <= ate);
+        let imp = Math.max(0, base * f[1] - f[2]);
+        imp = Math.max(0, imp - (rend <= 5000 ? 312.89 : rend <= 7350 ? Math.max(0, 978.62 - 0.133145 * rend) : 0));
+        return imp < 10 ? 0 : Math.round(imp * 100) / 100;
+      };
+
+      raiz.innerHTML = `
+        <div class="ta-dois">
+          <div class="ta-card ta-rh-cel">
+            <h4>1. Bata o ponto como o seu colaborador</h4>
+            <div class="ta-rh-tela">
+              <small class="muted">${esc(empresa)}</small>
+              <b class="ta-rh-ola">Olá, ${esc(nome)}!</b>
+              <div class="ta-rh-relogio" data-relogio></div>
+              <button type="button" class="ta-rh-botao" data-bater><span class="ta-rh-dedo">☝︎</span><span data-rotulo></span></button>
+              <div class="ta-rh-selos"><em class="ta-chip ok">digital ativa</em><em class="ta-chip">📍 dentro da empresa</em></div>
+              <ol class="ta-rh-marcas" data-marcas></ol>
+            </div>
+            <p class="muted ta-dica">Na demonstração cada toque simula o próximo horário do dia. No sistema real, o celular confere a digital ou o rosto e o GPS antes de registrar.</p>
+          </div>
+          <div class="ta-card ta-rh-painel"><h4>2. Veja o que o RH recebe na hora</h4><div data-abas></div></div>
+        </div>`;
+
+      const desenharCel = () => {
+        const prox = ROTULOS[st.marcas.length];
+        raiz.querySelector("[data-rotulo]").textContent = prox ? `Registrar ${prox.toLowerCase()}` : "Dia completo ✓";
+        raiz.querySelector("[data-bater]").disabled = !prox;
+        raiz.querySelector("[data-marcas]").innerHTML = st.marcas.map((m, i) => `<li><b>${hora(m.min)}</b> ${ROTULOS[i]} <small>NSR ${m.nsr}</small></li>`).join("") || `<li class="muted">Nenhuma marcação ainda.</li>`;
+      };
+      const relogio = raiz.querySelector("[data-relogio]");
+      const tique = () => { if (!relogio.isConnected) return clearInterval(t); relogio.textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); };
+      const t = setInterval(tique, 1000);
+      tique();
+
+      const ir = abas(raiz.querySelector("[data-abas]"), ["Espelho do dia", "Comprovante", "Simular holerite"], (aba, p) => {
+        if (aba === 0) {
+          const ms = st.marcas.map((m) => m.min);
+          let trab = 0;
+          for (let i = 0; i + 1 < ms.length; i += 2) trab += ms[i + 1] - ms[i];
+          const previsto = 528;
+          const saldo = ms.length === 4 ? trab - previsto : 0;
+          const extra = saldo > 5 ? saldo : 0;
+          const atraso = ms.length && ms[0] > 8 * 60 + 5 ? ms[0] - 8 * 60 : 0;
+          p.innerHTML = kpis([["Trabalhadas", dur(trab)], ["Previstas", "8h48"], ["Horas extras", dur(extra), extra ? "warn" : ""], ["Atraso", dur(atraso), atraso ? "bad" : "ok"]]) +
+            tabela(["Colaborador", "Marcações", "Situação"], [
+              [`<b>${esc(nome)}</b> (você)`, st.marcas.map((m) => `<code>${hora(m.min)}</code>`).join(" ") || "—", ms.length === 0 ? chip("Ainda não chegou", "") : ms.length % 2 ? chip("Trabalhando", "ok") : ms.length === 2 ? chip("Em intervalo", "info") : chip("Saiu", "")],
+              ["Ana Lima", "<code>07:58</code> <code>12:01</code>", chip("Em intervalo", "info")],
+              ["Bruno Costa", "<code>08:21</code>", chip("Trabalhando · 16 min de atraso", "warn")],
+              ["Carla Dias", "—", chip("Férias", "")],
+            ]) + `<p class="muted ta-dica">Tolerância de 5 minutos por marcação (CLT art. 58 §1º). Bata as 4 marcações e veja as horas extras aparecerem.</p>`;
+        } else if (aba === 1) {
+          const m = st.marcas.at(-1);
+          p.innerHTML = m
+            ? `<div class="ta-rh-comp"><div class="ta-rh-ok">✓</div><b>${hora(m.min)}</b><p>${ROTULOS[st.marcas.length - 1]} · com biometria</p>
+               <dl><dt>Empregador</dt><dd>${esc(empresa)}</dd><dt>Trabalhador</dt><dd>${esc(nome)}</dd><dt>NSR</dt><dd>${String(m.nsr).padStart(9, "0")}</dd><dt>Código</dt><dd><code>${m.hash}</code></dd></dl>
+               <small class="muted">Comprovante de Registro de Ponto do Trabalhador (Portaria MTP 671/2021). Cada marcação recebe um número sequencial e um código encadeado à anterior: ninguém altera sem deixar rastro.</small></div>`
+            : `<p class="muted ta-vazio">Bata o ponto no celular ao lado para gerar o comprovante.</p>`;
+        } else {
+          p.innerHTML = `<form class="ta-form ta-rh-sim">
+              <label>Salário (R$)<input name="sal" type="number" min="1518" step="0.01" value="3000"></label>
+              <label>Horas extras 50% no mês<input name="he" type="number" min="0" max="80" step="0.5" value="6"></label>
+              <label>Dependentes<input name="dep" type="number" min="0" max="10" value="1"></label>
+              <label class="ta-check"><input name="vt" type="checkbox" checked> Vale-transporte (6%)</label>
+            </form><div data-holerite></div>`;
+          const form = p.querySelector("form");
+          const calc = () => {
+            const d = Object.fromEntries(new FormData(form));
+            const sal = Math.max(0, Number(d.sal) || 0);
+            const he = ((sal / 220) * 1.5 * (Number(d.he) || 0));
+            const dsr = he / 25 * 5;
+            const bruto = sal + he + dsr;
+            const i = inss(bruto);
+            const ir = irrf(bruto, i, Number(d.dep) || 0);
+            const vt = d.vt ? sal * 0.06 : 0;
+            const liq = bruto - i - ir - vt;
+            const linha = (n, v, neg) => `<li><span>${n}</span><b class="${neg ? "neg" : ""}">${neg ? "−" : ""}${brl(v)}</b></li>`;
+            p.querySelector("[data-holerite]").innerHTML = `<ul class="ta-rh-hol">${linha("Salário", sal)}${he ? linha("Horas extras 50%", he) : ""}${dsr ? linha("DSR sobre extras", dsr) : ""}${linha("INSS", i, true)}${ir ? linha("IRRF", ir, true) : `<li><span>IRRF</span><b>isento</b></li>`}${vt ? linha("Vale-transporte", vt, true) : ""}<li class="total"><span>Líquido</span><b>${brl(liq)}</b></li></ul>
+              <p class="muted ta-dica">FGTS do mês (pago pela empresa): ${brl(bruto * 0.08)}. Estimativa com INSS de 2025 e a nova isenção do IR de 2026. No sistema, as tabelas são atualizadas a cada ano.</p>`;
+          };
+          form.addEventListener("input", calc);
+          calc();
+        }
+      });
+
+      raiz.querySelector("[data-bater]").addEventListener("click", async (e) => {
+        const b = e.currentTarget;
+        b.disabled = true;
+        b.classList.add("lendo");
+        raiz.querySelector("[data-rotulo]").textContent = "Confirmando digital…";
+        await new Promise((r) => setTimeout(r, 900));
+        b.classList.remove("lendo");
+        const [hh, mm] = HORARIOS[st.marcas.length];
+        const min = hh * 60 + mm + Math.round(Math.random() * 6) - 2;
+        const bytes = crypto.getRandomValues(new Uint8Array(8));
+        st.nsr++;
+        st.marcas.push({ min, nsr: st.nsr, hash: [...bytes].map((x) => x.toString(16).padStart(2, "0")).join("") + "…" });
+        salvar("rh", st);
+        aviso(`Ponto registrado às ${hora(min)} ✓`);
+        desenharCel();
+        ir(1);
+      });
+      const recomecar = document.createElement("button");
+      recomecar.type = "button";
+      recomecar.className = "btn btn-sm btn-ghost";
+      recomecar.textContent = "Recomeçar o dia";
+      recomecar.addEventListener("click", () => { st.marcas = []; salvar("rh", st); desenharCel(); ir(0); });
+      raiz.querySelector(".ta-rh-cel").appendChild(recomecar);
+      desenharCel();
+
+      galeria(raiz, { telas: TELAS_RH, pasta: "rh", titulo: "3. Por dentro do Nexor RH: telas reais do sistema", selo: "Sistema real · eSocial · Portaria 671", dica: "Capturas do Nexor RH com dados de demonstração (Padaria Pão Dourado é uma empresa fictícia). Na versão contratada, é a sua empresa aqui.", nome: "Nexor RH" });
+    },
+
     /* Nexor Atende IA: o visitante descreve a empresa e conversa com o atendente virtual dela */
     atende(raiz) {
       const exemplos = {

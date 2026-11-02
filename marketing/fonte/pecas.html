@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Peças de marketing Nexor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --azul: #3b8dff; --ciano: #22d3ee; --violeta: #a78bfa; --verde: #25d366; --texto: #eef3fb; --suave: #a9b8d0; --fundo: #060b16; }
+* { box-sizing: border-box; margin: 0; }
+body { background: #222; font-family: Inter, sans-serif; color: var(--texto); -webkit-font-smoothing: antialiased; }
+.peca { position: relative; overflow: hidden; background: radial-gradient(ellipse at 80% 0%, #163a7a 0%, #0a1630 40%, #060b16 78%); }
+.peca + .peca { margin-top: 40px; }
+.post { width: 1080px; height: 1350px; padding: 80px; display: flex; flex-direction: column; }
+.story { width: 1080px; height: 1920px; padding: 150px 80px 170px; display: flex; flex-direction: column; }
+h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing: -0.02em; }
+.grad { background: linear-gradient(100deg, #3b8dff, #22d3ee 55%, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.topo { display: flex; align-items: center; justify-content: space-between; }
+.logo { height: 92px; }
+.marca-mini { display: flex; align-items: center; gap: 14px; font: 600 28px "Space Grotesk"; color: #dfe8f7; }
+.marca-mini img { width: 48px; height: 53px; }
+.selo { display: inline-flex; align-items: center; gap: 10px; font: 700 24px Inter; letter-spacing: .08em; text-transform: uppercase; padding: 12px 22px; border-radius: 999px; }
+.selo.ciano { background: rgba(34, 211, 238, .14); color: #67e8f9; border: 2px solid rgba(34, 211, 238, .4); }
+.selo.verde { background: var(--verde); color: #04260f; }
+.selo.azul { background: var(--azul); color: #fff; }
+.rod { margin-top: auto; display: flex; justify-content: space-between; align-items: center; font-size: 28px; color: var(--suave); }
+.rod b { color: #fff; }
+.cta { display: inline-flex; align-items: center; gap: 14px; font: 700 34px Inter; padding: 26px 40px; border-radius: 22px; background: linear-gradient(90deg, #0066ff, #22d3ee); color: #fff; box-shadow: 0 20px 60px -10px rgba(0, 102, 255, .6); }
+.cta.verde { background: var(--verde); color: #04260f; box-shadow: 0 20px 60px -10px rgba(37, 211, 102, .5); }
+.brilho { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .55; pointer-events: none; }
+/* Blue */
+.blue-av { border-radius: 50%; object-fit: cover; border: 6px solid #0b1324; box-shadow: 0 0 0 6px #3b8dff, 0 0 80px 10px rgba(59, 141, 255, .55); }
+.balao { background: #fff; color: #0f172a; border-radius: 34px; padding: 30px 36px; font-size: 36px; line-height: 1.35; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .6); position: relative; }
+.balao.esq { border-top-left-radius: 8px; }
+.balao.dir { background: #d9fdd3; border-top-right-radius: 8px; align-self: flex-end; }
+.balao small { display: block; font-size: 22px; color: #64748b; margin-top: 8px; text-align: right; }
+.online { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; color: #86efac; }
+.online::before { content: ""; width: 14px; height: 14px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 5px rgba(34, 197, 94, .25); }
+/* Molduras */
+.tela { border-radius: 28px; border: 3px solid #24406f; box-shadow: 0 40px 100px -20px rgba(0, 0, 0, .8); display: block; }
+.celular { width: 440px; border-radius: 52px; border: 12px solid #0f172a; box-shadow: 0 0 0 3px #2b3d5c, 0 50px 120px -20px rgba(0, 0, 0, .9); background: #0f172a; overflow: hidden; }
+.celular img { width: 100%; display: block; }
+.lista { display: grid; gap: 22px; font-size: 34px; }
+.lista div { display: flex; gap: 20px; align-items: flex-start; font-size: inherit; line-height: 1.3; }
+.lista i { flex-shrink: 0; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-style: normal; font-size: 26px; font-weight: 800; background: rgba(59, 141, 255, .18); color: #7fb2ff; }
+.cartao { background: rgba(14, 26, 48, .85); border: 2px solid #1f3256; border-radius: 28px; padding: 32px; }
+.mini { display: grid; gap: 8px; }
+.mini img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; border-radius: 14px; border: 2px solid #24406f; }
+.mini b { font: 600 28px "Space Grotesk"; }
+.chip { display: inline-block; font-size: 38px; font-weight: 600; padding: 16px 28px; border-radius: 999px; background: rgba(255, 255, 255, .08); border: 2px solid rgba(255, 255, 255, .14); color: #dfe8f7; }
+</style>
+</head>
+<body>
+
+<!-- ===================== BLUE ===================== -->
+
+<!-- B1: Conheça a Blue -->
+<section class="peca post" id="blue-conheca">
+  <div class="brilho" style="width:600px;height:600px;background:#0066ff;left:-200px;top:300px"></div>
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo ciano">Assistente de IA</span></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:48px;margin-top:80px;position:relative">
+    <img class="blue-av" src="img/blue-avatar.webp" alt="Blue" style="width:380px;height:380px">
+    <div style="text-align:center"><h1 style="font-size:96px;line-height:1">Oi, eu sou a <span class="grad">Blue</span> 👋</h1><p class="online" style="margin-top:22px">online agora · 24 horas por dia</p></div>
+    <div class="balao esq" style="width:900px;font-size:40px">Sou a assistente de IA da Nexor. Me conta o que você quer melhorar na sua empresa e eu te mostro a solução certa, na hora. 💙</div>
+  </div>
+  <div class="rod"><span>Fale comigo em <b>nexorconsultingit.com.br</b></span><span>@nexorconsultingit</span></div>
+</section>
+
+<!-- B2: Story 23h47 -->
+<section class="peca story" id="blue-story-23h">
+  <div class="brilho" style="width:700px;height:700px;background:#0066ff;right:-300px;top:200px"></div>
+  <div class="marca-mini"><img src="img/logo-mark.webp" alt="">Nexor Atende IA</div>
+  <p class="t" style="font-size:150px;font-weight:700;margin-top:90px;line-height:1">23:47</p>
+  <p style="font-size:44px;color:var(--suave);margin-top:16px">Um cliente acabou de mandar mensagem.</p>
+  <div style="display:flex;flex-direction:column;gap:26px;margin-top:80px">
+    <div class="balao dir" style="max-width:800px">Oi! Vocês fazem entrega hoje? Quanto fica?<small>23:47 ✓✓</small></div>
+    <div style="display:flex;gap:22px;align-items:flex-end">
+      <img class="blue-av" src="img/blue-avatar.webp" alt="" style="width:110px;height:110px;border-width:4px">
+      <div class="balao esq" style="max-width:780px">Oi! Fazemos sim 😊 Para o seu bairro a entrega é grátis e chega em até 40 min. Quer que eu já anote o pedido?<small>23:47</small></div>
+    </div>
+  </div>
+  <h2 style="font-size:76px;line-height:1.08;margin-top:100px">Na sua empresa,<br><span class="grad">quem responderia?</span></h2>
+  <p style="font-size:38px;color:var(--suave);margin-top:24px;line-height:1.35">Com o Nexor Atende IA, a resposta sai em segundos, até de madrugada.</p>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:22px;align-items:flex-start"><span class="cta">Teste grátis por 12 horas →</span><p style="font-size:30px;color:var(--suave)">nexorconsultingit.com.br · sem cartão de crédito</p></div>
+</section>
+
+<!-- B3: Pergunte à Blue -->
+<section class="peca post" id="blue-pergunte">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo ciano">Pergunte à Blue</span></div>
+  <div style="display:flex;gap:32px;align-items:center;margin-top:60px">
+    <img class="blue-av" src="img/blue-avatar.webp" alt="Blue" style="width:180px;height:180px">
+    <h2 style="font-size:72px;line-height:1.05">Dúvidas sobre IA na sua empresa? <span class="grad">Pergunte para mim.</span></h2>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;margin-top:60px">
+    <div class="balao dir" style="font-size:34px">Qual solução serve para a minha empresa?</div>
+    <div class="balao dir" style="font-size:34px">Quanto eu economizo automatizando o WhatsApp?</div>
+    <div class="balao dir" style="font-size:34px">Como funciona o teste grátis de 12 horas?</div>
+    <div class="balao esq" style="font-size:34px;width:860px">Respondo tudo isso e, se quiser, já agendo uma conversa com um especialista. É só clicar em <b>Fale com a Blue</b> no site. 😉</div>
+  </div>
+  <div class="rod"><span><b>nexorconsultingit.com.br</b></span><span>Atendimento 24h</span></div>
+</section>
+
+<!-- B4: Story Blue Em breve -->
+<section class="peca story" id="blue-story-em-breve" style="background:radial-gradient(ellipse at 50% 0%, #0e5a8a 0%, #0a2448 40%, #060b16 80%)">
+  <div class="marca-mini"><img src="img/logo-mark.webp" alt="">Laboratório Nexor</div>
+  <div style="display:flex;gap:26px;align-items:center;margin-top:90px">
+    <img class="blue-av" src="img/blue-avatar.webp" alt="" style="width:170px;height:170px">
+    <div class="balao esq" style="font-size:40px">Psiu… posso te contar um segredo? 🤫</div>
+  </div>
+  <h1 style="font-size:120px;line-height:1;margin-top:80px">Vêm aí<br><span class="grad">8 novas IAs</span><br>da Nexor.</h1>
+  <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:80px">
+    <span class="chip">💸 Cobra IA</span><span class="chip">📅 Agenda IA</span><span class="chip">📞 Voz IA</span><span class="chip">🚀 Vendedor IA</span><span class="chip">🍕 Pedidos IA</span><span class="chip">📄 Documentos IA</span><span class="chip">📊 Gestor IA</span><span class="chip">🤝 Parceiros</span>
+  </div>
+  <p style="font-size:48px;line-height:1.35;margin-top:90px;color:#dbeafe">Entre na lista de espera e garanta <b>condição especial de primeiro cliente</b>.</p>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:22px;align-items:flex-start"><span class="cta">Ver as prévias →</span><p style="font-size:30px;color:var(--suave)">nexorconsultingit.com.br/#em-breve</p></div>
+</section>
+
+<!-- ===================== PRODUTOS ===================== -->
+
+<!-- P1: Atende IA celular -->
+<section class="peca post" id="atende-24h">
+  <div class="brilho" style="width:600px;height:600px;background:#25d366;right:-250px;bottom:100px;opacity:.3"></div>
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo verde">API oficial da Meta</span></div>
+  <div style="display:grid;grid-template-columns:1fr 440px;gap:50px;margin-top:60px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:36px">
+      <h1 style="font-size:88px;line-height:1">Seu WhatsApp vendendo <span class="grad">24 horas.</span></h1>
+      <div class="lista">
+        <div><i>✓</i>Responde em segundos</div>
+        <div><i>✓</i>Agenda e envia preços</div>
+        <div><i>✓</i>Entende fotos e PDFs</div>
+        <div><i>✓</i>Chama a equipe quando precisa</div>
+      </div>
+    </div>
+    <div class="celular"><img src="img/celular.webp" alt="Tela real do Nexor Atende IA no celular"></div>
+  </div>
+  <div class="rod" style="margin-top:auto"><span class="cta" style="font-size:30px;padding:22px 34px">Teste grátis 12h</span><span><b>Nexor Atende IA</b><br>nexorconsultingit.com.br</span></div>
+</section>
+
+<!-- P2: Painel temperatura -->
+<section class="peca post" id="atende-quem-compra">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo ciano">Nexor Atende IA</span></div>
+  <h1 style="font-size:92px;line-height:1;margin-top:60px">Saiba quem está <span class="grad">pronto para comprar.</span></h1>
+  <p style="font-size:36px;color:var(--suave);margin-top:28px;line-height:1.35">A IA analisa cada conversa e mostra a temperatura do lead, o sentimento e a próxima ação para não perder a venda.</p>
+  <img class="tela" src="img/conversa.webp" alt="Tela real do Nexor Atende IA" style="width:1180px;height:600px;object-fit:cover;object-position:right top;margin-top:56px;margin-left:0">
+  <div class="rod"><span>Tela real do sistema · dados de demonstração</span><span><b>nexorconsultingit.com.br</b></span></div>
+</section>
+
+<!-- P3: Portfólio -->
+<section class="peca post" id="portfolio-17">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo ciano">Portfólio</span></div>
+  <h1 style="font-size:100px;line-height:1;margin-top:56px"><span class="grad">17 soluções</span> para cada etapa da sua empresa.</h1>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:56px">
+    <div class="cartao"><p class="t" style="font-size:32px;font-weight:700;color:#7fb2ff">Vender e organizar</p><p style="font-size:30px;line-height:1.55;margin-top:12px;color:#dfe8f7">Atende IA · Commerce<br>Gestão (ERP/CRM) · Site Pro<br>Automação · Sob Medida</p></div>
+    <div class="cartao"><p class="t" style="font-size:32px;font-weight:700;color:#67e8f9">Para TI</p><p style="font-size:30px;line-height:1.55;margin-top:12px;color:#dfe8f7">Service Desk<br>Cofre de senhas<br>IT Platform</p></div>
+    <div class="cartao" style="grid-column:span 2;border-color:#0e7490"><p class="t" style="font-size:32px;font-weight:700;color:#a5f3fc">Em breve · Laboratório Nexor</p><p style="font-size:30px;line-height:1.55;margin-top:12px;color:#dfe8f7">Cobra IA · Agenda IA · Voz IA · Vendedor IA · Pedidos IA · Documentos IA · Gestor IA · Parceiros</p></div>
+  </div>
+  <div class="rod"><span>Tecnologia • Segurança • Performance</span><span><b>nexorconsultingit.com.br</b></span></div>
+</section>
+
+<!-- P4: Em breve grade -->
+<section class="peca post" id="em-breve-8" style="background:radial-gradient(ellipse at 50% 0%, #0e5a8a 0%, #0a2448 45%, #060b16 85%)">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo ciano">Em breve</span></div>
+  <h1 style="font-size:84px;line-height:1;margin-top:46px">A próxima geração de <span class="grad">soluções com IA.</span></h1>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:18px;margin-top:46px">
+    <div class="mini"><img src="img/cobra-0.webp" alt=""><b>Cobra IA</b></div>
+    <div class="mini"><img src="img/agenda-0.webp" alt=""><b>Agenda IA</b></div>
+    <div class="mini"><img src="img/voz-0.webp" alt=""><b>Voz IA</b></div>
+    <div class="mini"><img src="img/vendedor-0.webp" alt=""><b>Vendedor IA</b></div>
+    <div class="mini"><img src="img/pedidos-0.webp" alt=""><b>Pedidos IA</b></div>
+    <div class="mini"><img src="img/documentos-0.webp" alt=""><b>Documentos IA</b></div>
+    <div class="mini"><img src="img/gestor-0.webp" alt=""><b>Gestor IA</b></div>
+    <div class="mini"><img src="img/parceiros-0.webp" alt=""><b>Parceiros</b></div>
+  </div>
+  <p style="font-size:34px;line-height:1.35;margin-top:46px;color:#dbeafe">Entre na lista de espera e garanta <b>condição especial de primeiro cliente</b>.</p>
+  <div class="rod"><span>Prévias ilustrativas · produtos em desenvolvimento</span><span><b>nexorconsultingit.com.br</b></span></div>
+</section>
+
+<!-- P5: Story Atende teste grátis -->
+<section class="peca story" id="atende-story-teste">
+  <div class="brilho" style="width:700px;height:700px;background:#25d366;left:-300px;top:600px;opacity:.3"></div>
+  <div class="marca-mini"><img src="img/logo-mark.webp" alt="">Nexor Atende IA</div>
+  <span class="selo verde" style="align-self:flex-start;margin-top:70px">Teste grátis · 12 horas</span>
+  <h1 style="font-size:104px;line-height:1;margin-top:36px">Converse com a IA <span class="grad">da sua empresa</span> agora.</h1>
+  <p style="font-size:40px;color:var(--suave);margin-top:30px;line-height:1.35">Conte sobre o seu negócio e teste como se fosse o seu cliente. Sem cartão de crédito.</p>
+  <div class="celular" style="width:620px;height:860px;align-self:center;margin-top:60px"><img src="img/celular.webp" alt="Tela real do Nexor Atende IA" style="height:100%;object-fit:cover;object-position:top"></div>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:20px;align-items:center"><span class="cta verde">Testar grátis agora →</span><p style="font-size:30px;color:var(--suave)">nexorconsultingit.com.br/#testar-atende</p></div>
+</section>
+
+<!-- ===================== SUGESTÕES ===================== -->
+
+<!-- S1: Antes x depois -->
+<section class="peca post" id="antes-depois">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo ciano">Antes × Depois</span></div>
+  <h1 style="font-size:84px;line-height:1;margin-top:50px">O mesmo cliente. <span class="grad">Dois finais diferentes.</span></h1>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:56px;flex:1">
+    <div class="cartao" style="border-color:#5b2333;background:rgba(60,14,28,.55)">
+      <p class="t" style="font-size:38px;font-weight:700;color:#fca5a5">Sem IA</p>
+      <div style="display:grid;gap:40px;margin-top:40px;font-size:38px;line-height:1.3;color:#f1d5da">
+        <p>🌙 Mensagem às 22h fica para amanhã</p><p>⏳ Cliente espera e desiste</p><p>📋 Pedido anotado à mão</p><p>❓ Ninguém sabe quem vai comprar</p>
+      </div>
+    </div>
+    <div class="cartao" style="border-color:#1d5a3a;background:rgba(10,52,32,.6)">
+      <p class="t" style="font-size:38px;font-weight:700;color:#86efac">Com Nexor Atende IA</p>
+      <div style="display:grid;gap:40px;margin-top:40px;font-size:38px;line-height:1.3;color:#d7f5e1">
+        <p>⚡ Resposta em segundos, 24h</p><p>📅 Agenda e envia o preço na hora</p><p>📇 Tudo registrado no CRM</p><p>🔥 Temperatura de cada lead</p>
+      </div>
+    </div>
+  </div>
+  <div class="rod" style="margin-top:40px"><span>Teste grátis por 12 horas</span><span><b>nexorconsultingit.com.br</b></span></div>
+</section>
+
+<!-- S2: Diagnóstico gratuito -->
+<section class="peca post" id="diagnostico">
+  <div class="brilho" style="width:700px;height:700px;background:#0066ff;left:190px;top:420px;opacity:.35"></div>
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo azul">Gratuito</span></div>
+  <div style="margin-top:auto;margin-bottom:auto;position:relative">
+    <p style="font-size:34px;font-weight:700;letter-spacing:.12em;color:#67e8f9">DIAGNÓSTICO GRATUITO</p>
+    <h1 style="font-size:116px;line-height:.98;margin-top:24px">Descubra quanto a sua empresa <span class="grad">pode economizar</span> com IA.</h1>
+    <p style="font-size:38px;color:var(--suave);margin-top:36px;line-height:1.35">Em uma conversa, mapeamos seus processos e mostramos onde a tecnologia gera retorno de verdade. Sem compromisso.</p>
+  </div>
+  <div class="rod"><span class="cta">Agendar diagnóstico</span><span style="text-align:right"><b>(34) 99733-7499</b><br>nexorconsultingit.com.br</span></div>
+</section>
+
+<!-- S3: Indicação BNI -->
+<section class="peca post" id="indicacao">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo ciano">Networking</span></div>
+  <h1 style="font-size:80px;line-height:1.02;margin-top:50px">Uma boa indicação para a <span class="grad">Nexor</span> é…</h1>
+  <div class="lista" style="margin-top:56px;gap:30px;font-size:36px">
+    <div><i>1</i>A clínica que perde pacientes por demorar no WhatsApp</div>
+    <div><i>2</i>A loja que quer vender no site e nos marketplaces</div>
+    <div><i>3</i>A empresa que ainda controla tudo em planilhas</div>
+    <div><i>4</i>O escritório afogado em notas, boletos e documentos</div>
+    <div><i>5</i>A empresa com muitos computadores e TI no improviso</div>
+    <div><i>6</i>A agência que quer revender IA com a própria marca</div>
+  </div>
+  <div class="rod"><span>Conhece alguém assim? <b>Apresente a Nexor.</b></span><span>(34) 99733-7499</span></div>
+</section>
+
+<!-- S4: LinkedIn banner -->
+<section class="peca" id="linkedin-capa" style="width:1584px;height:396px;padding:0 90px 0 520px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(110deg, #060b16 0%, #0a1630 45%, #12306b 100%)">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <h1 style="font-size:58px;line-height:1.05">Tecnologia que <span class="grad">vende, atende</span><br>e organiza a sua empresa.</h1>
+    <p style="font-size:26px;color:var(--suave)">IA no WhatsApp · Sistemas · Lojas virtuais · Sites · TI</p>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:14px"><img src="img/logo-lockup.webp" alt="" style="height:120px"><p style="font-size:24px;color:#dfe8f7">nexorconsultingit.com.br</p></div>
+</section>
+
+<!-- S5: Folheto A5 networking (874x1240 @2x = 1748x2480, 300 dpi aprox. de A5 a 150%) -->
+<section class="peca" id="folheto-a5" style="width:874px;height:1240px;padding:56px;display:flex;flex-direction:column;gap:26px">
+  <div class="topo"><img src="img/logo-lockup.webp" alt="" style="height:96px"><span class="selo ciano" style="font-size:16px;padding:8px 14px">Tecnologia • Segurança • Performance</span></div>
+  <h1 style="font-size:58px;line-height:1.02;margin-top:6px">Sua empresa vendendo, atendendo e organizada com <span class="grad">inteligência artificial.</span></h1>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="cartao" style="padding:20px;border-radius:18px"><p class="t" style="font-size:24px;font-weight:700;color:#86efac">Atende IA</p><p style="font-size:18px;color:#c6d2e6;margin-top:6px;line-height:1.4">WhatsApp respondendo, vendendo e agendando 24h.</p></div>
+    <div class="cartao" style="padding:20px;border-radius:18px"><p class="t" style="font-size:24px;font-weight:700;color:#fcd34d">Commerce</p><p style="font-size:18px;color:#c6d2e6;margin-top:6px;line-height:1.4">Loja virtual, Pix e marketplaces com um estoque só.</p></div>
+    <div class="cartao" style="padding:20px;border-radius:18px"><p class="t" style="font-size:24px;font-weight:700;color:#67e8f9">Gestão</p><p style="font-size:18px;color:#c6d2e6;margin-top:6px;line-height:1.4">ERP e CRM sob medida. Adeus, planilhas.</p></div>
+    <div class="cartao" style="padding:20px;border-radius:18px"><p class="t" style="font-size:24px;font-weight:700;color:#93c5fd">Site Pro</p><p style="font-size:18px;color:#c6d2e6;margin-top:6px;line-height:1.4">Sites rápidos que aparecem no Google.</p></div>
+    <div class="cartao" style="padding:20px;border-radius:18px"><p class="t" style="font-size:24px;font-weight:700;color:#c4b5fd">Automação</p><p style="font-size:18px;color:#c6d2e6;margin-top:6px;line-height:1.4">Agentes de IA nas tarefas repetitivas.</p></div>
+    <div class="cartao" style="padding:20px;border-radius:18px"><p class="t" style="font-size:24px;font-weight:700;color:#f9a8d4">Sob Medida e TI</p><p style="font-size:18px;color:#c6d2e6;margin-top:6px;line-height:1.4">Apps, plataformas, chamados, senhas e inventário.</p></div>
+  </div>
+  <div style="display:flex;gap:18px;align-items:center;background:rgba(14,26,48,.85);border:2px solid #1f3256;border-radius:18px;padding:18px 22px">
+    <img class="blue-av" src="img/blue-avatar.webp" alt="" style="width:84px;height:84px;border-width:3px;box-shadow:0 0 0 3px #3b8dff">
+    <p style="font-size:20px;line-height:1.4;color:#dfe8f7"><b>Fale com a Blue</b>, nossa assistente de IA, no site. Ela indica a solução certa e libera o <b>teste grátis de 12 horas</b>.</p>
+  </div>
+  <div style="margin-top:auto;display:grid;grid-template-columns:1fr auto auto;gap:22px;align-items:center">
+    <div style="font-size:20px;line-height:1.6;color:#dfe8f7"><p class="t" style="font-size:28px;font-weight:700;color:#fff">Diagnóstico gratuito</p>(34) 99733-7499<br>contato@nexorconsultingit.com.br<br>nexorconsultingit.com.br · @nexorconsultingit</div>
+    <div style="text-align:center"><img src="img/qr-site.png" alt="QR code do site" style="width:150px;height:150px;border-radius:12px;background:#fff;padding:8px"><p style="font-size:15px;color:var(--suave);margin-top:6px">Site</p></div>
+    <div style="text-align:center"><img src="img/qr-whats.png" alt="QR code do WhatsApp" style="width:150px;height:150px;border-radius:12px;background:#fff;padding:8px"><p style="font-size:15px;color:var(--suave);margin-top:6px">WhatsApp</p></div>
+  </div>
+</section>
+
+</body>
+</html>
