@@ -2,7 +2,7 @@
 # Rode em Actions → "App Meu Ponto" → Run workflow. Os arquivos ficam em "Artifacts" no fim da execução.
 #
 # Configuração (Settings → Secrets and variables → Actions):
-#   Variável  NEXOR_RH_URL                 endereço do servidor com HTTPS (padrão https://rh.nexorconsultingit.com.br)
+#   Variável  NEXOR_RH_URL                 só para app com a marca de UM cliente (endereço embutido). Vazio = app genérico das lojas
 #   Android (opcional, para publicar no Google Play):
 #     Secret  ANDROID_KEYSTORE_BASE64      arquivo .jks da chave de assinatura, em base64
 #     Secret  ANDROID_KEYSTORE_PASSWORD    senha do keystore
@@ -27,7 +27,7 @@ permissions:
   contents: read
 
 env:
-  NEXOR_RH_URL: ${{ vars.NEXOR_RH_URL || 'https://rh.nexorconsultingit.com.br' }}
+  NEXOR_RH_URL: ${{ vars.NEXOR_RH_URL }}
 
 jobs:
   android:

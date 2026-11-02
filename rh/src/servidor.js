@@ -86,7 +86,25 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     return true;
   }
 
+  // App das lojas (Capacitor): telas embutidas no app, origem local. Só a API do app aceita essas origens,
+  // e sem cookies: a autenticação é pelo token no cabeçalho Authorization.
+  const ORIGENS_APP = new Set(["capacitor://localhost", "https://localhost", "http://localhost", "ionic://localhost"]);
+  function cors(req, res, url) {
+    const origem = req.headers.origin;
+    if (!origem || !ORIGENS_APP.has(origem) || !url.pathname.startsWith("/api/app/")) return false;
+    res.setHeader("Access-Control-Allow-Origin", origem);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, x-nexor, x-nome, x-app-nativo");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+    res.setHeader("Access-Control-Max-Age", "600");
+    return true;
+  }
+
   async function tratarApi(req, res, url) {
+    if (cors(req, res, url) && req.method === "OPTIONS") {
+      res.writeHead(204);
+      return res.end();
+    }
     const cookies = lerCookies(req.headers.cookie);
     if (url.pathname === "/api/eventos") {
       const u = api.sessaoPainel(cookies);
@@ -101,7 +119,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     let colaborador = null;
     let empresa = null;
     if (rota.opcoes.app) {
-      colaborador = api.sessaoApp(cookies);
+      colaborador = api.sessaoApp(cookies, req);
       if (!colaborador) return json(res, 401, { erro: "Entre no aplicativo com seu CPF e o código do RH." });
       empresa = nucleo.empresa(colaborador.empresa_id);
     } else if (!rota.opcoes.publico) {

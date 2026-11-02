@@ -45,6 +45,15 @@ Atendimento inteligente no WhatsApp com a **API oficial da Meta (WhatsApp Cloud 
 - Erros da Meta traduzidos (ex.: 131047 janela de 24 h, 131026 número sem WhatsApp, 190 token expirado) e novas tentativas automáticas em erros temporários.
 - Várias empresas no mesmo servidor (multiempresa), cada uma com os próprios números, dados e IA.
 
+## Modelo de implantação e LGPD (regra da Nexor)
+
+- **Todo sistema vendido é implantado no ambiente do cliente:** no servidor físico da empresa ou na conta de nuvem dela (AWS, Azure, Google Cloud, Render, outra). O banco de dados e os arquivos ficam no armazenamento do cliente.
+- **O cliente é o controlador** dos dados tratados no sistema perante a LGPD. Ele responde pela base legal, pelos avisos aos titulares, pelo atendimento dos direitos e pela segurança do ambiente onde o sistema roda.
+- **A Nexor não guarda os dados dos clientes.** Quando presta suporte com acesso ao ambiente, atua como **operadora**, só com o que o contrato permitir. Formalize isso no contrato, com uma cláusula ou acordo de tratamento de dados.
+- **A consultoria de adequação à LGPD é vendida à parte:** mapeamento de dados, relatório de impacto, políticas, contratos e treinamento.
+- A instância da Nexor (ex.: `rh.nexorconsultingit.com.br`) serve **só para demonstração, com dados fictícios**.
+- **Fornecedores que o Atende IA usa** (e que o cliente, como controlador, precisa informar na política de privacidade dele): **Meta** (WhatsApp Cloud API) e **Anthropic** (IA). Ambos têm servidores fora do Brasil. As chaves de API (`ANTHROPIC_API_KEY`, token da Meta) devem ser **da conta do cliente**, para o contrato com esses fornecedores ficar em nome dele.
+
 ## Arquitetura
 
 ```

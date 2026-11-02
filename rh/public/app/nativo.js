@@ -59,20 +59,45 @@ export async function assinarComBiometria(desafio, idsValidos) {
 
 /* ---------- QR Code e localização ---------- */
 
-export async function lerQrNativo() {
-  // Leitor oficial do Capacitor (iOS e Android). hint 0 = QR Code; câmera traseira; retrato.
-  const r = await P().CapacitorBarcodeScanner.scanBarcode({ hint: 0, scanInstructions: "Aponte para o QR Code do quiosque de ponto", scanButton: false, scanText: " ", cameraDirection: 1, scanOrientation: 1 }).catch((e) => {
+/** Abre o leitor de QR e devolve o endereço lido (URL) */
+export async function escanearUrl(instrucao) {
+  const r = await P().CapacitorBarcodeScanner.scanBarcode({ hint: 0, scanInstructions: instrucao, scanButton: false, scanText: " ", cameraDirection: 1, scanOrientation: 1 }).catch((e) => {
     if (/cancel/i.test(`${e.code} ${e.message}`)) return null;
     throw new Error(/permiss|denied|camera/i.test(e.message) ? "Permita o uso da câmera nos Ajustes do celular para ler o QR Code." : "Não foi possível abrir a câmera.");
   });
-  const txt = r?.ScanResult;
-  if (!txt) return null;
   try {
-    return new URL(txt).searchParams.get("q");
+    return r?.ScanResult ? new URL(r.ScanResult) : null;
   } catch {
     return null;
   }
 }
+
+/** QR do quiosque: devolve o token e o servidor de onde ele veio */
+export async function lerQrNativo() {
+  const u = await escanearUrl("Aponte para o QR Code do quiosque de ponto");
+  const q = u?.searchParams.get("q");
+  return q ? { q, origem: u.origin } : null;
+}
+
+/* ---------- Sessão e servidor da empresa (app das lojas) ---------- */
+const SESSAO = "nexor_ponto_sessao";
+export const guardarSessao = (token) => guardar(SESSAO, token);
+export const lerSessao = () => ler(SESSAO);
+export const apagarSessao = () => P().SecureStorage.internalRemoveItem({ prefixedKey: SESSAO, sync: false }).catch(() => {});
+export const servidorSalvo = () => {
+  try {
+    return localStorage.getItem("nx-servidor");
+  } catch {
+    return null;
+  }
+};
+export const salvarServidor = (url) => {
+  try {
+    url ? localStorage.setItem("nx-servidor", url) : localStorage.removeItem("nx-servidor");
+  } catch {
+    /* sem armazenamento */
+  }
+};
 
 export async function localizarNativo() {
   const geo = P().Geolocation;

@@ -9,13 +9,22 @@ export class ErroApi extends Error {
 }
 
 let aoDeslogar = () => {};
+// App das lojas: servidor da empresa (outra origem) e token de sessão. No navegador ficam vazios (mesma origem + cookie).
+let BASE = "";
+let TOKEN = null;
+export const configurarApi = ({ base = "", token = null } = {}) => {
+  BASE = base.replace(/\/$/, "");
+  TOKEN = token;
+};
+export const urlApi = (caminho) => `${BASE}/api${caminho}`;
+export const cabecalhosApi = (extra = {}) => ({ "x-nexor": "1", ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}), ...extra });
 export const definirAoDeslogar = (fn) => (aoDeslogar = fn);
 
-export async function api(caminho, { metodo = "GET", corpo, bruto, tipo } = {}) {
-  const r = await fetch(`/api${caminho}`, {
+export async function api(caminho, { metodo = "GET", corpo, bruto, tipo, cabecalhos = {} } = {}) {
+  const r = await fetch(urlApi(caminho), {
     method: metodo,
-    credentials: "same-origin",
-    headers: { "x-nexor": "1", ...(bruto ? { "Content-Type": tipo } : corpo !== undefined ? { "Content-Type": "application/json" } : {}) },
+    credentials: BASE ? "omit" : "same-origin",
+    headers: cabecalhosApi({ ...(bruto ? { "Content-Type": tipo } : corpo !== undefined ? { "Content-Type": "application/json" } : {}), ...cabecalhos }),
     body: bruto ?? (corpo !== undefined ? JSON.stringify(corpo) : undefined),
   });
   const ehJson = (r.headers.get("content-type") ?? "").includes("json");

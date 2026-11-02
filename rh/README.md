@@ -64,7 +64,7 @@ npm test
 - Defina `PUBLIC_URL` com o endereço final (ex.: `https://rh.suaempresa.com.br`). A biometria fica vinculada a esse domínio: se mudar o domínio, os colaboradores precisam cadastrar a digital de novo.
 - Defina `MASTER_KEY` (texto aleatório longo). Ela criptografa o certificado digital e os arquivos enviados. **Guarde-a**: sem ela não dá para ler esses dados.
 - Faça backup diário da pasta `DATA_DIR` (banco `rh.db` e pasta `arquivos/`).
-- O `render.yaml` da raiz do repositório já tem o serviço `nexor-rh` com disco persistente.
+- O `render.yaml` da raiz do repositório tem o serviço `nexor-rh` (instância de demonstração da Nexor). Para clientes, implante na infraestrutura do próprio cliente (veja abaixo).
 
 ## Integrações com o governo: o que está pronto e o que conferir
 
@@ -77,6 +77,14 @@ O sistema gera e transmite os arquivos e eventos oficiais, mas **cada empresa pr
 5. **Convenção coletiva**: pisos, adicionais diferentes da CLT, horas extras acima de 50% e regras de banco de horas da convenção precisam ser configurados (jornadas, lançamentos) ou revisados manualmente.
 6. **Plataformas de recrutamento**: o conector da Gupy usa o formato padrão da API (`GET /jobs` e `GET /jobs/{id}/applications`, token Bearer). Confira com a documentação da sua conta: o endereço é editável na tela, e o acesso à API depende do plano contratado na Gupy. LinkedIn, Catho, InfoJobs e Vagas.com não oferecem publicação automática aberta a qualquer sistema. Com eles, a integração é pelo link de candidatura com origem, pelo feed (para quem aceita) e pela importação de planilha.
 7. **Rescisão**: o cálculo é uma estimativa para conferência (médias de variáveis e descontos específicos devem ser revisados).
+
+## Modelo de implantação e LGPD (regra da Nexor)
+
+- **Todo sistema vendido é implantado no ambiente do cliente:** no servidor físico da empresa ou na conta de nuvem dela (AWS, Azure, Google Cloud, Render, outra). O banco de dados e os arquivos ficam no armazenamento do cliente.
+- **O cliente é o controlador** dos dados tratados no sistema perante a LGPD. Ele responde pela base legal, pelos avisos aos titulares, pelo atendimento dos direitos e pela segurança do ambiente onde o sistema roda.
+- **A Nexor não guarda os dados dos clientes.** Quando presta suporte com acesso ao ambiente, atua como **operadora**, só com o que o contrato permitir. Formalize isso no contrato, com uma cláusula ou acordo de tratamento de dados.
+- **A consultoria de adequação à LGPD é vendida à parte:** mapeamento de dados, relatório de impacto, políticas, contratos e treinamento.
+- A instância da Nexor (ex.: `rh.nexorconsultingit.com.br`) serve **só para demonstração, com dados fictícios**.
 
 ## Segurança e LGPD
 

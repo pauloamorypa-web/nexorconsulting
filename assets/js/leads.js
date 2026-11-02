@@ -87,6 +87,7 @@ const NX = (() => {
       temperatura: temperatura(tipo, eng.pontos),
       interesses: interesses(),
       origem: typeof NXT !== "undefined" ? NXT.origem() : undefined,
+      consentimento: typeof NXT !== "undefined" && NXT.consentimento(),
       ...extra,
     };
     if (tipo !== "parcial" && typeof NXT !== "undefined") NXT.lead({ id: lead.id, tipo, temperatura: lead.temperatura, dados });
@@ -110,22 +111,7 @@ const NX = (() => {
     });
     return d;
   };
-  const temporizadores = new WeakMap();
-  document.addEventListener("focusout", (e) => {
-    const form = e.target.closest?.("form[data-form]");
-    if (!form || form.dataset.enviado || !e.target.matches("[data-lead]")) return;
-    clearTimeout(temporizadores.get(form));
-    temporizadores.set(
-      form,
-      setTimeout(() => {
-        const d = dadosDoForm(form);
-        if (contatoValido(d) && !form.dataset.enviado) enviarLead("parcial", d, { formulario: form.dataset.form });
-      }, 1200)
-    );
-  });
-  document.addEventListener("submit", (e) => {
-    if (e.target.matches?.("form[data-form]")) clearTimeout(temporizadores.get(e.target));
-  });
+  // LGPD: nada do formulário é enviado antes de a pessoa clicar em "Enviar" (não há captura de formulário abandonado).
 
   // Preenche formulários com o que a pessoa já informou antes
   const preencher = (raiz = document) => {

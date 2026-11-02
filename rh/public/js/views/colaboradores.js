@@ -160,7 +160,12 @@ async function ficha(raiz, ctx, id, abaInicial = "resumo") {
           const wa = c.telefone ? `https://wa.me/55${c.telefone.replace(/\D/g, "").replace(/^55/, "")}?text=${encodeURIComponent(r.mensagem)}` : null;
           janela({
             titulo: "Convite do app de ponto",
-            conteudo: h("div", { class: "pilha" }, h("p", {}, "Envie para o colaborador:"), h("div", { class: "codigo-grande" }, r.codigo), h("p", { class: "suave" }, r.mensagem)),
+            conteudo: h(
+              "div",
+              { class: "pilha" },
+              h("div", { class: "convite-qr" }, h("img", { src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(r.qr)}`, alt: "QR Code de ativação do app", width: 180, height: 180 }), h("div", {}, h("p", {}, "No app Meu Ponto, toque em ", h("strong", {}, "Ler QR Code de ativação"), " e aponte para este código. Ou digite o endereço:"), h("p", { class: "mono" }, r.servidor), h("p", {}, "Código:"), h("div", { class: "codigo-grande" }, r.codigo))),
+              h("p", { class: "suave" }, r.mensagem),
+            ),
             acoes: [{ texto: "Copiar mensagem", classe: "btn-fantasma", fn: () => copiarTexto(r.mensagem) }, wa ? h("a", { class: "btn btn-whats", href: wa, target: "_blank", rel: "noopener" }, "Enviar no WhatsApp") : null].filter(Boolean),
           });
         }),

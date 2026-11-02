@@ -210,3 +210,31 @@ test("app nativo: chave do aparelho protegida por biometria assina o ponto", asy
   r = await app.post("/api/app/ponto", { chave_aparelho: { id: "ap:aparelho-teste-0001", assinatura: await assinar(par.privateKey, prep.aparelho.desafio) } });
   assert.equal(r.status, 400, "desafio é de uso único");
 });
+
+test("app das lojas: CORS só para a API do app e sessão por token", async () => {
+  const rh = s.cliente();
+  await rh.post("/api/entrar", { email: "ana@bio.com", senha: "senha-forte-1" });
+  const c = (await rh.post("/api/colaboradores", { nome: "Tato Token", cpf: "39053344705", admissao: "2026-01-02", salario_centavos: 200000 })).dados;
+  const conv = (await rh.post(`/api/colaboradores/${c.id}/convite`)).dados;
+  assert.match(conv.ativacao, /\/app\/\?ativar=\d{6}$/);
+  assert.match(conv.qr, /<svg/);
+  const origem = "https://localhost";
+  let r = await fetch(`${s.url}/api/app/ativar`, { method: "OPTIONS", headers: { Origin: origem, "Access-Control-Request-Method": "POST" } });
+  assert.equal(r.status, 204);
+  assert.equal(r.headers.get("access-control-allow-origin"), origem);
+  r = await fetch(`${s.url}/api/colaboradores`, { headers: { Origin: origem } });
+  assert.equal(r.headers.get("access-control-allow-origin"), null, "painel não aceita a origem do app");
+  r = await fetch(`${s.url}/api/app/servidor`, { headers: { Origin: "https://site-malicioso.com" } });
+  assert.equal(r.headers.get("access-control-allow-origin"), null);
+  assert.equal((await r.json()).sistema, "Nexor RH");
+  r = await fetch(`${s.url}/api/app/ativar`, { method: "POST", headers: { Origin: origem, "content-type": "application/json", "x-nexor": "1", "x-app-nativo": "1" }, body: JSON.stringify({ cpf: "39053344705", codigo: conv.codigo }) });
+  const at = await r.json();
+  assert.equal(r.status, 200, JSON.stringify(at));
+  assert.ok(at.token && !r.headers.get("set-cookie"), "app nativo recebe token, não cookie");
+  r = await fetch(`${s.url}/api/app/eu`, { headers: { Origin: origem, Authorization: `Bearer ${at.token}` } });
+  assert.equal((await r.json()).colaborador.primeiro_nome, "Tato");
+  r = await fetch(`${s.url}/api/app/sair`, { method: "POST", headers: { Origin: origem, Authorization: `Bearer ${at.token}`, "x-nexor": "1" } });
+  assert.equal(r.status, 200);
+  r = await fetch(`${s.url}/api/app/eu`, { headers: { Authorization: `Bearer ${at.token}` } });
+  assert.equal(r.status, 401);
+});

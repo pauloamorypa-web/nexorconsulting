@@ -411,7 +411,7 @@ const Teste = (() => {
               <div class="ta-sugs">${["Qual o horário de vocês?", "Quanto custa?", "Quero fazer um pedido", "Vocês aceitam Pix?"].map((s) => `<button type="button">${s}</button>`).join("")}</div>
               <form class="ta-envio"><input aria-label="Mensagem" placeholder="Escreva como um cliente…" maxlength="500"><button class="btn btn-sm btn-primary" type="submit">Enviar</button></form>
             </div>
-            <p class="muted ta-dica">${NEXOR_API_URL ? "Respostas geradas pela IA da Nexor com as informações ao lado." : "Prévia do atendimento. Na versão contratada, a IA responde qualquer pergunta com base nas suas informações."}</p>
+            <p class="muted ta-dica">${NEXOR_API_URL ? "Respostas geradas por IA com as informações ao lado. As mensagens vão para o provedor de IA: use dados de exemplo, não dados reais de clientes." : "Prévia do atendimento. Na versão contratada, a IA responde qualquer pergunta com base nas suas informações."}</p>
           </div>
         </div>`;
 

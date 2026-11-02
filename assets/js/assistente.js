@@ -33,7 +33,7 @@
         <textarea id="nx-chat-campo" rows="1" maxlength="2000" placeholder="Escreva sua mensagem…"></textarea>
         <button type="submit" aria-label="Enviar"><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></button>
       </form>
-      <p class="nx-chat-aviso">Seus dados são usados só para a Nexor falar com você (LGPD). Prefere uma pessoa? WhatsApp (34) 99733-7499.</p>
+      <p class="nx-chat-aviso">A conversa é respondida por inteligência artificial e usada só para a Nexor atender você. Não envie dados sensíveis (saúde, documentos, senhas). <a href="/privacidade.html" target="_blank" rel="noopener">Privacidade</a> · Prefere uma pessoa? WhatsApp (34) 99733-7499.</p>
     </section>`;
   document.body.appendChild(raiz);
 
