@@ -52,8 +52,15 @@ export function cnpjValido(v) {
 
 /** Empresa sem segredos (certificado) para mandar ao navegador */
 export function empresaPublica(e) {
-  const { certificado, ...config } = e.config ?? {};
-  return { ...e, config: { ...config, certificado: certificado ? { titular: certificado.titular, valido_ate: certificado.valido_ate, enviado_em: certificado.enviado_em } : null } };
+  const { certificado, recrutamento, ...config } = e.config ?? {};
+  return {
+    ...e,
+    config: {
+      ...config,
+      certificado: certificado ? { titular: certificado.titular, valido_ate: certificado.valido_ate, enviado_em: certificado.enviado_em } : null,
+      recrutamento: { webhook: Boolean(recrutamento?.webhook_hash), gupy: Boolean(recrutamento?.gupy?.token) },
+    },
+  };
 }
 
 export const usuarioPublico = ({ senha_hash, ...u }) => ({ ...u, ativo: Boolean(u.ativo) });

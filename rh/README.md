@@ -15,7 +15,9 @@ Node.js 22 sem framework, banco SQLite nativo do Node, interface em JavaScript p
 | **Férias e ausências** | Períodos aquisitivos e concessivos com alerta de férias em dobro, programação com validação da CLT (art. 134 §3º), abono pecuniário, recibo, pedidos pelo app, atestados com foto pelo app, afastamentos com motivos do eSocial. |
 | **Folha** | Mensal, 13º (1ª e 2ª parcelas), férias e rescisão (5 motivos, aviso proporcional, multa do FGTS). INSS progressivo, IRRF com desconto simplificado e a redução da Lei 15.270/2025, FGTS, salário-família, VT 6%, insalubridade, periculosidade, DSR, lançamentos variáveis. Holerite no app. Exportação de pagamentos (CSV). |
 | **eSocial (leiaute S-1.3)** | Eventos gerados sozinhos a cada fato: S-1000, S-1005, S-1010, S-1020, S-2200, S-2205, S-2206, S-2230, S-2299, S-1200, S-1210, S-1299. Assinatura XMLDSig com certificado A1, envio em lotes ao webservice oficial (produção restrita ou produção) e consulta do retorno com recibos. |
+| **App nativo (iOS e Android)** | App "Meu Ponto" em `mobile/` (Capacitor): biometria do sistema com chave guardada no Keychain/Keystore, leitor de QR nativo, GPS e o QR do quiosque abrindo direto o app. Compilado pelo GitHub Actions. Ver `mobile/README.md`. |
 | **Recrutamento** | Vagas, página pública de candidatura com upload de currículo e consentimento LGPD, funil de arrastar e soltar. |
+| **Integrações de recrutamento** | Página de cada vaga com dados para o Google Vagas (schema.org/JobPosting); feed XML para agregadores (Indeed, Jooble, Talent.com, Careerjet, Adzuna…); links por canal com origem (LinkedIn, WhatsApp, Facebook, Indeed, InfoJobs, Catho, Vagas.com); API da Gupy (vagas e candidaturas); webhook para Gupy, Solides, Zapier/Make; importação de planilha CSV de qualquer plataforma; relatório de candidatos e contratações por origem. |
 | **Comunicados** | Publicados no app com confirmação de leitura. |
 | **Painel** | Quem está trabalhando agora, atrasados, pedidos pendentes, férias a vencer, fim de experiência, aniversários, documentos vencendo. Perfis: administrador, RH e gestor (gestor vê só a própria equipe). |
 
@@ -25,6 +27,10 @@ Node.js 22 sem framework, banco SQLite nativo do Node, interface em JavaScript p
 - `/app/`: app do trabalhador (instalável no celular: "Adicionar à tela inicial")
 - `/quiosque/`: tela do QR Code para o tablet da entrada (link gerado em Configurações → Locais e quiosque)
 - `/vagas/?e=<empresa>`: página pública de vagas
+- `/vagas/v/<vaga>`: página de uma vaga (Google Vagas, prévia no LinkedIn/WhatsApp)
+- `/vagas/feed/<empresa>.xml` e `/vagas/sitemap/<empresa>.xml`: feed para agregadores e sitemap
+- `/baixar`: download do app (App Store, Google Play, APK ou versão web)
+- `/privacidade.html`: política de privacidade do app (exigida pelas lojas)
 - `/health`: verificação de saúde
 
 ## Como rodar
@@ -69,7 +75,8 @@ O sistema gera e transmite os arquivos e eventos oficiais, mas **cada empresa pr
 3. **Tabelas da folha**: os valores padrão são INSS, salário mínimo e salário-família de **2025**, IRRF de maio/2025 e a redução do IR de 2026 (Lei 15.270/2025). **Atualize em Configurações → Tabelas sempre que sair a tabela nova** (INSS e salário mínimo mudam todo janeiro).
 4. **FGTS Digital e DCTFWeb**: são apurados pelo governo a partir dos eventos do eSocial. O sistema calcula o FGTS e a multa rescisória para conferência, mas a guia é emitida no FGTS Digital.
 5. **Convenção coletiva**: pisos, adicionais diferentes da CLT, horas extras acima de 50% e regras de banco de horas da convenção precisam ser configurados (jornadas, lançamentos) ou revisados manualmente.
-6. **Rescisão**: o cálculo é uma estimativa para conferência (médias de variáveis e descontos específicos devem ser revisados).
+6. **Plataformas de recrutamento**: o conector da Gupy usa o formato padrão da API (`GET /jobs` e `GET /jobs/{id}/applications`, token Bearer). Confira com a documentação da sua conta: o endereço é editável na tela, e o acesso à API depende do plano contratado na Gupy. LinkedIn, Catho, InfoJobs e Vagas.com não oferecem publicação automática aberta a qualquer sistema. Com eles, a integração é pelo link de candidatura com origem, pelo feed (para quem aceita) e pela importação de planilha.
+7. **Rescisão**: o cálculo é uma estimativa para conferência (médias de variáveis e descontos específicos devem ser revisados).
 
 ## Segurança e LGPD
 

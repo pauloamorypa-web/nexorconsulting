@@ -2,6 +2,7 @@
    com QR Code e GPS, comprovante, espelho com assinatura, solicitações (ajuste, férias, atestado), holerites,
    comunicados e documentos. */
 
+import { createPublicKey, verify } from "node:crypto";
 import { z } from "zod";
 import { gerarHashSenha, sha256 } from "../seguranca.js";
 import { conferirCadastro, conferirConfirmacao, criarDesafios, opcoesCadastro, opcoesConfirmacao } from "../ponto/biometria.js";
@@ -22,7 +23,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
     const u = new URL(base(req));
     return { rpId: u.hostname, origens: [u.origin] };
   };
-  const credenciaisDe = (id) => repo.todos("SELECT * FROM credenciais WHERE colaborador_id = ?", id);
+  const credenciaisDe = (id, tipo) => repo.todos(`SELECT * FROM credenciais WHERE colaborador_id = ?${tipo ? " AND tipo = ?" : ""}`, id, ...(tipo ? [tipo] : []));
   const ctxApp = (ctx) => ({ ...ctx, usuario: null });
 
   /* ---------- Ativação ---------- */
@@ -65,7 +66,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
       empresa: { nome: empresa.nome_fantasia || empresa.razao_social, razao_social: empresa.razao_social, cnpj: empresa.cnpj },
       local: estab ? { nome: estab.nome, exige_qr: estab.exige_qr, exige_gps: estab.exige_gps && estab.lat !== null } : null,
       jornada: jornada ? { nome: jornada.nome, banco_horas: jornada.banco_horas } : null,
-      ponto: { exige_biometria: empresa.config.ponto.exige_biometria, biometrias: credenciaisDe(c.id).length },
+      ponto: { exige_biometria: empresa.config.ponto.exige_biometria, biometrias: credenciaisDe(c.id).length, webauthn: credenciaisDe(c.id, "webauthn").length, aparelhos: credenciaisDe(c.id, "aparelho").length },
       hoje: estadoHoje(c),
       saldo_banco: repo.saldoBanco(c.id),
       nao_lidos: repo.um("SELECT COUNT(*) n FROM comunicados m WHERE m.empresa_id = ? AND NOT EXISTS (SELECT 1 FROM comunicado_leituras l WHERE l.comunicado_id = m.id AND l.colaborador_id = ?)", empresa.id, c.id).n,
@@ -83,7 +84,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
 
   r.post("/api/app/biometria/opcoes", APP, ({ colaborador: c, empresa, req }) => {
     const { rpId } = rp(req);
-    return opcoesCadastro({ desafio: desafios.novo(`cad:${c.id}`), rpId, rpNome: `Ponto ${empresa.nome_fantasia || empresa.razao_social}`.slice(0, 60), colaborador: c, excluir: credenciaisDe(c.id).map((k) => k.id) });
+    return opcoesCadastro({ desafio: desafios.novo(`cad:${c.id}`), rpId, rpNome: `Ponto ${empresa.nome_fantasia || empresa.razao_social}`.slice(0, 60), colaborador: c, excluir: credenciaisDe(c.id, "webauthn").map((k) => k.id) });
   });
   r.post("/api/app/biometria", APP, async (ctx) => {
     const d = validar(z.object({ id: t(512), resposta: z.object({ clientDataJSON: t(4000), attestationObject: t(20000) }), aparelho: op(200) }), await ctx.corpo());
@@ -100,13 +101,29 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
     return { ok: true };
   });
 
+  /* App nativo (iOS/Android): o celular cria um par de chaves, guarda a chave privada no cofre do sistema
+     (Keychain/Keystore) e só a usa depois que a digital ou o Face ID confirmam. O servidor guarda a pública. */
+  r.post("/api/app/aparelho", APP, async (ctx) => {
+    const d = validar(z.object({ id: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/), chave: z.object({ kty: z.literal("EC"), crv: z.literal("P-256"), x: t(64), y: t(64) }), aparelho: op(200) }), await ctx.corpo());
+    try {
+      createPublicKey({ key: { kty: "EC", crv: "P-256", x: d.chave.x, y: d.chave.y }, format: "jwk" });
+    } catch {
+      falha(400, "Chave do aparelho inválida.");
+    }
+    repo.rodar("INSERT OR REPLACE INTO credenciais (id, colaborador_id, chave, alg, contador, aparelho, criada_em, tipo) VALUES (?,?,?,?,?,?,?,?)", `ap:${d.id}`, ctx.colaborador.id, JSON.stringify({ kty: "EC", crv: "P-256", x: d.chave.x, y: d.chave.y }), -7, 0, d.aparelho ?? null, agora(), "aparelho");
+    auditar(ctxApp(ctx), "biometria_cadastrada", { aparelho: d.aparelho, app: "nativo" });
+    return { ok: true, id: `ap:${d.id}` };
+  });
+
   /* ---------- Registro de ponto ---------- */
 
   r.post("/api/app/ponto/preparar", APP, ({ colaborador: c, empresa, req }) => {
-    const creds = credenciaisDe(c.id);
+    const creds = credenciaisDe(c.id, "webauthn");
+    const aparelhos = credenciaisDe(c.id, "aparelho");
     const estab = c.estabelecimento_id ? repo.obter("estabelecimentos", empresa.id, c.estabelecimento_id) : null;
     return {
       biometria: creds.length ? opcoesConfirmacao({ desafio: desafios.novo(`ponto:${c.id}`), rpId: rp(req).rpId, credenciais: creds }) : null,
+      aparelho: aparelhos.length ? { desafio: desafios.novo(`ap:${c.id}`), ids: aparelhos.map((a) => a.id) } : null,
       exige_biometria: empresa.config.ponto.exige_biometria,
       exige_qr: Boolean(estab?.exige_qr),
       exige_gps: Boolean(estab?.exige_gps && estab.lat !== null) || repo.listar("estabelecimentos", empresa.id, { ativo: true }).some((e) => e.exige_gps && e.lat !== null),
@@ -123,6 +140,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
         precisao: z.number().min(0).max(100000).optional().nullable(),
         qr: z.string().max(200).optional().nullable(),
         biometria: z.object({ id: t(512), clientDataJSON: t(4000), authenticatorData: t(4000), signature: t(2000) }).optional().nullable(),
+        chave_aparelho: z.object({ id: t(140), assinatura: t(200) }).optional().nullable(),
         aparelho: op(200),
       }),
       await ctx.corpo(),
@@ -143,6 +161,14 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
       } catch (e) {
         falha(401, `Biometria não confirmada: ${e.message}`);
       }
+    } else if (d.chave_aparelho) {
+      const desafio = desafios.usar(`ap:${c.id}`);
+      const cred = repo.um("SELECT * FROM credenciais WHERE id = ? AND colaborador_id = ? AND tipo = 'aparelho'", d.chave_aparelho.id, c.id);
+      if (!desafio || !cred) falha(400, "Confirmação expirada. Toque de novo para registrar.");
+      const ok = verify("sha256", Buffer.from(desafio), { key: createPublicKey({ key: JSON.parse(cred.chave), format: "jwk" }), dsaEncoding: "ieee-p1363" }, Buffer.from(d.chave_aparelho.assinatura, "base64url"));
+      if (!ok) falha(401, "Biometria não confirmada: assinatura do aparelho inválida.");
+      repo.rodar("UPDATE credenciais SET usada_em = ? WHERE id = ?", agora(), cred.id);
+      biometria = true;
     } else if (empresa.config.ponto.exige_biometria) {
       falha(400, credenciaisDe(c.id).length ? "Confirme com sua digital ou rosto para registrar." : "Cadastre sua biometria no app antes de registrar o ponto.");
     }

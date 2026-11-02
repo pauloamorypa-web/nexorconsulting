@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { config as configPadrao } from "./config.js";
 import { abrirBanco } from "./db.js";
 import { criarApi } from "./http/api.js";
+import { arquivosConhecidos, paginaBaixar } from "./http/baixar.js";
 import { ErroHttp, json, lerCookies, lerCorpo } from "./http/roteador.js";
 import { criarCofre } from "./seguranca.js";
 import { criarNucleo } from "./servicos/nucleo.js";
@@ -54,12 +55,12 @@ function criarEventos() {
 }
 
 /** Monta todas as peças. Os testes trocam o relógio e o cliente SOAP do eSocial. */
-export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () => Date.now(), fetchSoap } = {}) {
+export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () => Date.now(), fetchSoap, fetchFn = fetch } = {}) {
   const cofre = criarCofre(cfg);
   const repo = abrirBanco(caminhoBanco ?? join(cfg.pastaDados, "rh.db"));
   const nucleo = criarNucleo({ repo, cofre, cfg, agora });
   const eventos = criarEventos();
-  const api = criarApi({ repo, nucleo, cofre, cfg, eventos, agora, fetchSoap });
+  const api = criarApi({ repo, nucleo, cofre, cfg, eventos, agora, fetchSoap, fetchFn });
 
   async function arquivoEstatico(caminho, res) {
     let relativo = decodeURIComponent(caminho).replace(/^\/+/, "");
@@ -95,7 +96,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     const { rota, params, caminhoExiste } = api.roteador.encontrar(req.method, url.pathname);
     if (!rota) return json(res, caminhoExiste ? 405 : 404, { erro: caminhoExiste ? "método não permitido" : "não encontrado" });
     // Proteção contra CSRF: o painel e o app sempre mandam este cabeçalho; formulários de outros sites não conseguem
-    if (req.method !== "GET" && req.headers["x-nexor"] !== "1") return json(res, 403, { erro: "requisição recusada" });
+    if (req.method !== "GET" && !rota.opcoes.webhook && req.headers["x-nexor"] !== "1") return json(res, 403, { erro: "requisição recusada" });
     let usuario = null;
     let colaborador = null;
     let empresa = null;
@@ -140,7 +141,19 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     const url = new URL(req.url ?? "/", "http://localhost");
     try {
       if (url.pathname === "/health") return json(res, 200, { ok: true });
+      if (req.method === "GET" && url.pathname.startsWith("/.well-known/")) {
+        const corpo = arquivosConhecidos(cfg, url.pathname);
+        if (!corpo) return json(res, 404, { erro: "não encontrado" });
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" });
+        return res.end(corpo);
+      }
+      if (req.method === "GET" && (url.pathname === "/baixar" || url.pathname === "/baixar/")) {
+        const b = cfg.urlPublica || `${req.headers["x-forwarded-proto"] ?? "http"}://${req.headers.host}`;
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache", "Content-Security-Policy": "default-src 'self'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none'", "X-Content-Type-Options": "nosniff" });
+        return res.end(paginaBaixar(cfg, b));
+      }
       if (url.pathname.startsWith("/api/")) return await tratarApi(req, res, url);
+      if (req.method === "GET" && url.pathname.startsWith("/vagas/") && api.paginasVagas(req, res, url)) return;
       if (req.method === "GET" && (await arquivoEstatico(url.pathname, res))) return;
       json(res, 404, { erro: "não encontrado" });
     } catch (err) {

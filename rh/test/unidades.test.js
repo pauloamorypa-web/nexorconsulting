@@ -183,3 +183,30 @@ test("biometria: cadastro WebAuthn e ponto confirmado pela digital", async () =>
   const marc = s.app.repo.um("SELECT biometria FROM marcacoes");
   assert.equal(marc.biometria, 1);
 });
+
+test("app nativo: chave do aparelho protegida por biometria assina o ponto", async () => {
+  const rh = s.cliente();
+  await rh.post("/api/entrar", { email: "ana@bio.com", senha: "senha-forte-1" });
+  const c = (await rh.post("/api/colaboradores", { nome: "Nina Nativa", cpf: "11144477735", admissao: "2026-01-02", salario_centavos: 200000 })).dados;
+  const { codigo } = (await rh.post(`/api/colaboradores/${c.id}/convite`)).dados;
+  const app = s.cliente();
+  await app.post("/api/app/ativar", { cpf: "11144477735", codigo });
+  // Como o app faz no celular (WebCrypto): par de chaves P-256, a pública vai para o servidor
+  const par = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  const jwk = await crypto.subtle.exportKey("jwk", par.publicKey);
+  let r = await app.post("/api/app/aparelho", { id: "aparelho-teste-0001", chave: { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y }, aparelho: "iPhone" });
+  assert.equal(r.status, 200, JSON.stringify(r.dados));
+  const assinar = async (chave, texto) => Buffer.from(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, chave, new TextEncoder().encode(texto))).toString("base64url");
+  let prep = (await app.post("/api/app/ponto/preparar")).dados;
+  assert.equal(prep.biometria, null, "sem WebAuthn neste aparelho");
+  assert.deepEqual(prep.aparelho.ids, ["ap:aparelho-teste-0001"]);
+  const outra = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign"]);
+  r = await app.post("/api/app/ponto", { chave_aparelho: { id: "ap:aparelho-teste-0001", assinatura: await assinar(outra.privateKey, prep.aparelho.desafio) } });
+  assert.equal(r.status, 401, "chave de outro aparelho não passa");
+  prep = (await app.post("/api/app/ponto/preparar")).dados;
+  r = await app.post("/api/app/ponto", { chave_aparelho: { id: "ap:aparelho-teste-0001", assinatura: await assinar(par.privateKey, prep.aparelho.desafio) } });
+  assert.equal(r.status, 200, JSON.stringify(r.dados));
+  assert.equal(r.dados.marcacao.biometria, true);
+  r = await app.post("/api/app/ponto", { chave_aparelho: { id: "ap:aparelho-teste-0001", assinatura: await assinar(par.privateKey, prep.aparelho.desafio) } });
+  assert.equal(r.status, 400, "desafio é de uso único");
+});

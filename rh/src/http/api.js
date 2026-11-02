@@ -14,6 +14,7 @@ import { rotasEsocial } from "./rotas-esocial.js";
 import { rotasFolha } from "./rotas-folha.js";
 import { rotasPessoas } from "./rotas-pessoas.js";
 import { rotasPonto } from "./rotas-ponto.js";
+import { rotasRecrutamento } from "./rotas-recrutamento.js";
 import { criarRoteador, falha } from "./roteador.js";
 
 export * from "./validacao.js";
@@ -24,7 +25,7 @@ import { COOKIE_APP, COOKIE_PAINEL } from "./validacao.js";
  * @param {ReturnType<import('../db.js').abrirBanco>} d.repo
  * @param {ReturnType<import('../servicos/nucleo.js').criarNucleo>} d.nucleo
  */
-export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date.now(), fetchSoap }) {
+export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date.now(), fetchSoap, fetchFn = fetch }) {
   const r = criarRoteador();
   const tentativas = new Map();
 
@@ -156,13 +157,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
     return usuarioPublico(repo.atualizar("usuarios", null, usuario.id, { nome: d.nome || undefined, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined }));
   });
 
-  const deps = { r, repo, nucleo, cofre, cfg, agora, limitar, iniciarSessao, sessaoApp, filtroEquipe, exigirColaborador, auditar, aviso, base, fetchSoap, configCompleta };
+  const deps = { r, repo, nucleo, cofre, cfg, agora, limitar, iniciarSessao, sessaoApp, filtroEquipe, exigirColaborador, auditar, aviso, base, fetchSoap, fetchFn, configCompleta };
   rotasCadastros(deps);
   rotasPonto(deps);
   rotasFolha(deps);
   rotasPessoas(deps);
   rotasEsocial(deps);
   rotasApp(deps);
+  const recrutamento = rotasRecrutamento(deps);
 
-  return { roteador: r, sessaoPainel, sessaoApp };
+  return { roteador: r, sessaoPainel, sessaoApp, paginasVagas: recrutamento.paginas };
 }

@@ -8,6 +8,7 @@ import { falha } from "./roteador.js";
 
 const RH = { papeis: ["admin", "rh"] };
 const TODOS = {};
+const ORIGENS_PUBLICAS = new Set(["site", "linkedin", "indeed", "infojobs", "catho", "vagas", "google", "whatsapp", "instagram", "facebook", "indicacao", "feed", "gupy", "solides"]);
 export const ETAPAS = ["triagem", "entrevista", "teste", "proposta", "contratado", "reprovado"];
 
 export function rotasPessoas({ r, repo, nucleo, agora, filtroEquipe, auditar, aviso, limitar, base }) {
@@ -58,7 +59,7 @@ export function rotasPessoas({ r, repo, nucleo, agora, filtroEquipe, auditar, av
 
   /* ---------- Vagas e candidatos ---------- */
 
-  const esqVaga = z.object({ titulo: t(120), departamento_id: op(40), cargo_id: op(40), descricao: op(8000), requisitos: op(4000), salario: op(60), modalidade: z.enum(["presencial", "hibrido", "remoto"]).optional(), local: op(120), status: z.enum(["aberta", "pausada", "fechada"]).optional() });
+  const esqVaga = z.object({ titulo: t(120), departamento_id: op(40), cargo_id: op(40), descricao: op(8000), requisitos: op(4000), salario: op(60), modalidade: z.enum(["presencial", "hibrido", "remoto"]).optional(), local: op(120), status: z.enum(["aberta", "pausada", "fechada"]).optional(), estado: op(2), tipo_contrato: z.enum(["clt", "meio_periodo", "temporario", "estagio", "pj", "aprendiz"]).optional().nullable(), validade: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(), codigo_externo: op(80) });
   r.get("/api/vagas", RH, ({ empresa }) => repo.todos("SELECT v.*, (SELECT COUNT(*) FROM candidatos c WHERE c.vaga_id = v.id) candidatos FROM vagas v WHERE v.empresa_id = ? ORDER BY v.status, v.criada_em DESC", empresa.id));
   r.post("/api/vagas", RH, async (ctx) => repo.inserir("vagas", { ...validar(esqVaga, await ctx.corpo()), empresa_id: ctx.empresa.id }));
   r.put("/api/vagas/:id", RH, async (ctx) => repo.atualizar("vagas", ctx.empresa.id, ctx.params.id, validar(esqVaga.partial(), await ctx.corpo())) ?? falha(404, "Vaga não encontrada."));
@@ -91,7 +92,7 @@ export function rotasPessoas({ r, repo, nucleo, agora, filtroEquipe, auditar, av
   r.get("/api/publico/vagas/:empresa", { publico: true }, ({ params }) => {
     const e = repo.obter("empresas", null, params.empresa);
     if (!e) falha(404, "Empresa não encontrada.");
-    return { empresa: e.nome_fantasia || e.razao_social, vagas: repo.todos("SELECT id, titulo, descricao, requisitos, salario, modalidade, local, criada_em FROM vagas WHERE empresa_id = ? AND status = 'aberta' ORDER BY criada_em DESC", e.id) };
+    return { empresa: e.nome_fantasia || e.razao_social, vagas: repo.todos("SELECT id, titulo, descricao, requisitos, salario, modalidade, local, estado, tipo_contrato, criada_em FROM vagas WHERE empresa_id = ? AND status = 'aberta' ORDER BY criada_em DESC", e.id) };
   });
   r.post("/api/publico/vagas/:empresa/:vaga", { publico: true }, async ({ params, corpo, ip }) => {
     limitar(`candidatura:${ip}`, 10, 3600_000);
@@ -105,6 +106,7 @@ export function rotasPessoas({ r, repo, nucleo, agora, filtroEquipe, auditar, av
         cidade: op(80),
         linkedin: op(200),
         mensagem: op(4000),
+        origem: op(20),
         consentimento: z.literal(true, { message: "É preciso aceitar o uso dos dados para a seleção (LGPD)." }),
         curriculo: z.object({ nome: t(160), tipo: z.enum(["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword"]), base64: z.string().max(7_000_000) }).optional(),
       }),
@@ -112,7 +114,7 @@ export function rotasPessoas({ r, repo, nucleo, agora, filtroEquipe, auditar, av
     );
     let curriculo = null;
     if (d.curriculo) curriculo = (await nucleo.salvarArquivo({ empresa_id: v.empresa_id, nome: d.curriculo.nome, mime: d.curriculo.tipo, dados: Buffer.from(d.curriculo.base64, "base64"), enviado_por: d.nome })).id;
-    const c = repo.inserir("candidatos", { empresa_id: v.empresa_id, vaga_id: v.id, nome: d.nome, email: d.email, telefone: d.telefone, cidade: d.cidade, linkedin: d.linkedin, mensagem: d.mensagem, curriculo });
+    const c = repo.inserir("candidatos", { empresa_id: v.empresa_id, vaga_id: v.id, nome: d.nome, email: d.email, telefone: d.telefone, cidade: d.cidade, linkedin: d.linkedin, mensagem: d.mensagem, curriculo, origem: ORIGENS_PUBLICAS.has(d.origem) ? d.origem : "site" });
     aviso(v.empresa_id, "candidato", { id: c.id, vaga: v.titulo });
     return { ok: true };
   });

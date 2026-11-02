@@ -182,6 +182,23 @@ export function abrirBanco(caminho) {
     if (!s) cache.set(sql, (s = db.prepare(sql)));
     return s;
   };
+  // Colunas acrescentadas depois da primeira versão: bancos antigos ganham a coluna sem perder dados
+  const MIGRACOES = [
+    ["credenciais", "tipo", "TEXT NOT NULL DEFAULT 'webauthn'"],
+    ["candidatos", "origem", "TEXT NOT NULL DEFAULT 'site'"],
+    ["candidatos", "externo_id", "TEXT"],
+    ["candidatos", "curriculo_url", "TEXT"],
+    ["vagas", "codigo_externo", "TEXT"],
+    ["vagas", "estado", "TEXT"],
+    ["vagas", "tipo_contrato", "TEXT"],
+    ["vagas", "validade", "TEXT"],
+  ];
+  for (const [tabela, coluna, def] of MIGRACOES) {
+    const existe = db.prepare(`PRAGMA table_info(${tabela})`).all().some((c) => c.name === coluna);
+    if (!existe) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${def}`);
+  }
+  db.exec("CREATE INDEX IF NOT EXISTS candidatos_externo ON candidatos (empresa_id, origem, externo_id)");
+
   const colunas = {};
   for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()) {
     colunas[name] = new Set(db.prepare(`PRAGMA table_info(${name})`).all().map((c) => c.name));

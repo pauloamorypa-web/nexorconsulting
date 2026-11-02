@@ -3,6 +3,7 @@
 
 import { api, definirAoDeslogar, get, post, put } from "/js/api.js";
 import { acao, aviso, h, icone, janela, limpar, reais } from "/js/ui.js";
+import { aoAbrirLink, assinarComBiometria, biometriaDisponivel, criarChaveAparelho, lerQrNativo, localizarNativo, nativo, plataforma } from "/app/nativo.js";
 
 const raiz = document.getElementById("app");
 const estado = { eu: null, aba: "inicio", qr: null };
@@ -31,7 +32,16 @@ if (q) {
   history.replaceState(null, "", "/app/");
 }
 
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" }).catch(() => {});
+if ("serviceWorker" in navigator && !nativo) navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" }).catch(() => {});
+if (nativo) document.body.classList.add("nativo", `nativo-${plataforma}`);
+// App instalado: o QR Code lido pela câmera do celular abre direto aqui
+aoAbrirLink((token) => {
+  estado.qr = { token, lido: Date.now() };
+  if (estado.eu) {
+    estado.aba = "inicio";
+    desenhar();
+  }
+});
 
 /* ---------- Ativação ---------- */
 function telaAtivacao() {
@@ -54,9 +64,15 @@ function telaAtivacao() {
 }
 
 /* ---------- Biometria ---------- */
-const temBiometria = async () => Boolean(window.PublicKeyCredential && (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.().catch(() => false)));
+const temBiometria = async () => (nativo ? biometriaDisponivel() : Boolean(window.PublicKeyCredential && (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.().catch(() => false))));
+const biometriaAtiva = (eu) => (nativo ? eu.ponto.aparelhos > 0 : eu.ponto.webauthn > 0);
 
 async function cadastrarBiometria() {
+  if (nativo) {
+    const d = await criarChaveAparelho();
+    await post("/app/aparelho", { ...d, aparelho: nomeAparelho() });
+    return aviso("Biometria ativada! Agora é só encostar o dedo ou olhar para o celular.");
+  }
   const o = await post("/app/biometria/opcoes");
   const cred = await navigator.credentials.create({
     publicKey: { ...o, challenge: b64.de(o.challenge), user: { ...o.user, id: b64.de(o.user.id) }, excludeCredentials: o.excludeCredentials.map((c) => ({ ...c, id: b64.de(c.id) })) },
@@ -72,7 +88,7 @@ async function confirmarBiometria(o) {
 
 /* ---------- Localização ---------- */
 const localizar = () =>
-  new Promise((resolve, reject) => {
+  nativo ? localizarNativo() : new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error("Este aparelho não informa a localização."));
     navigator.geolocation.getCurrentPosition(
       (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, precisao: p.coords.accuracy }),
@@ -83,6 +99,16 @@ const localizar = () =>
 
 /* ---------- Leitor de QR Code ---------- */
 async function lerQr() {
+  if (nativo) {
+    try {
+      const t = await lerQrNativo();
+      if (!t) aviso("Este QR Code não é do quiosque de ponto.", "erro");
+      return t;
+    } catch (e) {
+      aviso(e.message, "erro", 6000);
+      return null;
+    }
+  }
   if (!("BarcodeDetector" in window)) {
     janela({ titulo: "Ler QR Code", conteudo: h("div", { class: "pilha" }, h("p", {}, "Abra a câmera do celular e aponte para o QR Code do quiosque. O app abre sozinho e registra o ponto."), h("p", { class: "suave" }, "Dica: no iPhone, use a Câmera ou o Leitor de Código na Central de Controle.")) });
     return null;
@@ -133,7 +159,10 @@ async function baterPonto(botao, { qrToken } = {}) {
       corpo.qr = lido;
     }
     if (prep.exige_gps && !corpo.qr) Object.assign(corpo, await localizar());
-    if (prep.biometria) corpo.biometria = await confirmarBiometria(prep.biometria).catch((e) => { throw new Error(e.name === "NotAllowedError" ? "Biometria cancelada. Toque de novo para registrar." : e.message); });
+    if (nativo && prep.aparelho) {
+      const a = await assinarComBiometria(prep.aparelho.desafio, prep.aparelho.ids);
+      if (a) corpo.chave_aparelho = a;
+    } else if (!nativo && prep.biometria) corpo.biometria = await confirmarBiometria(prep.biometria).catch((e) => { throw new Error(e.name === "NotAllowedError" ? "Biometria cancelada. Toque de novo para registrar." : e.message); });
     const r = await post("/app/ponto", corpo);
     estado.qr = null;
     vibrar([60, 40, 60]);
@@ -172,14 +201,14 @@ async function inicio(area) {
   const atualizar = () => (relogio.textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Sao_Paulo" }));
   atualizar();
   const t = setInterval(() => (relogio.isConnected ? atualizar() : clearInterval(t)), 1000);
-  const botao = h("button", { class: "botao-ponto", onclick: (e) => baterPonto(e.currentTarget) }, icone(eu.ponto.biometrias ? "digital" : "relogio", 54), h("span", {}, `Registrar ${eu.hoje.proxima.toLowerCase()}`));
+  const botao = h("button", { class: "botao-ponto", onclick: (e) => baterPonto(e.currentTarget) }, icone(biometriaAtiva(eu) ? "digital" : "relogio", 54), h("span", {}, `Registrar ${eu.hoje.proxima.toLowerCase()}`));
   const podeBio = await temBiometria();
   limpar(
     area,
     h("div", { class: "topo-app" }, h("div", {}, h("small", { class: "suave" }, eu.empresa.nome), h("h1", {}, `Olá, ${eu.colaborador.primeiro_nome}!`)), eu.nao_lidos ? h("button", { class: "btn-icone selo-btn", "aria-label": "Comunicados", onclick: () => ir("mais") }, icone("sino"), h("span", { class: "selo" }, eu.nao_lidos)) : null),
-    h("section", { class: "cartao centro cartao-ponto" }, h("small", { class: "suave" }, new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", timeZone: "America/Sao_Paulo" })), relogio, botao, estado.qr ? h("p", { class: "chip chip-ok" }, icone("qr", 12), " QR Code lido. Toque para registrar.") : null, h("div", { class: "tags centro-tags" }, eu.local?.exige_gps ? h("span", { class: "chip" }, icone("local", 12), " ", eu.local.nome) : null, eu.ponto.biometrias ? h("span", { class: "chip chip-ok" }, icone("digital", 12), " biometria ativa") : null), h("button", { class: "btn btn-fantasma btn-pequeno", onclick: async (e) => { const tok = await lerQr(); if (tok) baterPonto(botao, { qrToken: tok }); void e; } }, icone("qr", 16), "Ler QR Code do quiosque")),
-    !eu.ponto.biometrias && podeBio ? h("section", { class: "cartao aviso-cartao" }, icone("digital", 22), h("div", {}, h("strong", {}, "Ative sua digital ou rosto"), h("p", {}, eu.ponto.exige_biometria ? "Sua empresa exige biometria para registrar o ponto." : "Mais segurança: só você consegue registrar o seu ponto."), h("button", { class: "btn btn-primario btn-pequeno", onclick: (e) => acao(e.currentTarget, async () => (await cadastrarBiometria(), desenhar())) }, "Ativar agora"))) : null,
-    !podeBio && eu.ponto.exige_biometria ? h("section", { class: "cartao aviso-cartao" }, icone("alerta", 22), h("p", {}, "Este celular não tem leitor de digital/rosto disponível no navegador. Fale com o RH.")) : null,
+    h("section", { class: "cartao centro cartao-ponto" }, h("small", { class: "suave" }, new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", timeZone: "America/Sao_Paulo" })), relogio, botao, estado.qr ? h("p", { class: "chip chip-ok" }, icone("qr", 12), " QR Code lido. Toque para registrar.") : null, h("div", { class: "tags centro-tags" }, eu.local?.exige_gps ? h("span", { class: "chip" }, icone("local", 12), " ", eu.local.nome) : null, biometriaAtiva(eu) ? h("span", { class: "chip chip-ok" }, icone("digital", 12), " biometria ativa") : null), h("button", { class: "btn btn-fantasma btn-pequeno", onclick: async (e) => { const tok = await lerQr(); if (tok) baterPonto(botao, { qrToken: tok }); void e; } }, icone("qr", 16), "Ler QR Code do quiosque")),
+    !biometriaAtiva(eu) && podeBio ? h("section", { class: "cartao aviso-cartao" }, icone("digital", 22), h("div", {}, h("strong", {}, "Ative sua digital ou rosto"), h("p", {}, eu.ponto.exige_biometria ? "Sua empresa exige biometria para registrar o ponto." : "Mais segurança: só você consegue registrar o seu ponto."), h("button", { class: "btn btn-primario btn-pequeno", onclick: (e) => acao(e.currentTarget, async () => (await cadastrarBiometria(), desenhar())) }, "Ativar agora"))) : null,
+    !podeBio && eu.ponto.exige_biometria ? h("section", { class: "cartao aviso-cartao" }, icone("alerta", 22), h("p", {}, nativo ? "Cadastre uma digital ou o rosto nos Ajustes do celular para registrar o ponto." : "Este celular não tem leitor de digital/rosto disponível no navegador. Baixe o app Meu Ponto na loja ou fale com o RH.")) : null,
     h("section", { class: "cartao" }, h("h2", {}, "Hoje"), eu.hoje.marcacoes.length ? h("ol", { class: "linha-tempo" }, eu.hoje.marcacoes.map((m) => h("li", {}, h("strong", {}, m.hora), h("span", {}, m.rotulo), h("span", { class: "tags" }, m.biometria ? icone("digital", 14) : null, m.qr ? icone("qr", 14) : null)))) : h("p", { class: "suave" }, "Nenhuma marcação ainda hoje.")),
     eu.jornada?.banco_horas ? h("section", { class: "cartao linha-entre" }, h("span", {}, "Banco de horas"), h("strong", { class: eu.saldo_banco < 0 ? "perigo" : "" }, hhmm(eu.saldo_banco))) : null,
   );
@@ -295,7 +324,7 @@ async function mais(area) {
       { class: "cartao" },
       h("h2", {}, "Minha conta"),
       h("p", {}, `${eu.colaborador.nome}`, h("br"), h("small", { class: "suave" }, `${eu.colaborador.cargo ?? ""} · matrícula ${eu.colaborador.matricula} · desde ${dataBR(eu.colaborador.admissao)}`)),
-      h("div", { class: "pilha" }, h("button", { class: "btn btn-fantasma", onclick: (e) => acao(e.currentTarget, async () => (await cadastrarBiometria(), desenhar())) }, icone("digital", 16), eu.ponto.biometrias ? "Cadastrar outra biometria" : "Ativar digital ou rosto"), h("button", { class: "btn btn-fantasma", onclick: () => definirPin() }, icone("escudo", 16), eu.colaborador.tem_pin ? "Trocar PIN do quiosque" : "Criar PIN do quiosque"), h("button", { class: "btn btn-perigo-fantasma", onclick: async () => { await post("/app/sair"); location.reload(); } }, icone("sair", 16), "Sair deste celular")),
+      h("div", { class: "pilha" }, h("button", { class: "btn btn-fantasma", onclick: (e) => acao(e.currentTarget, async () => (await cadastrarBiometria(), desenhar())) }, icone("digital", 16), biometriaAtiva(eu) ? "Cadastrar outra biometria" : "Ativar digital ou rosto"), h("button", { class: "btn btn-fantasma", onclick: () => definirPin() }, icone("escudo", 16), eu.colaborador.tem_pin ? "Trocar PIN do quiosque" : "Criar PIN do quiosque"), h("button", { class: "btn btn-perigo-fantasma", onclick: async () => { await post("/app/sair"); location.reload(); } }, icone("sair", 16), "Sair deste celular")),
     ),
     h("p", { class: "suave pequeno centro" }, "Nexor RH · nexorconsultingit.com.br"),
   );
@@ -332,7 +361,7 @@ async function iniciar() {
   }
   await desenhar();
   // Veio do QR Code: sem biometria registra direto; com biometria o navegador exige um toque na tela
-  if (estado.qr && !estado.eu.ponto.biometrias) document.querySelector(".botao-ponto")?.click();
+  if (estado.qr && !biometriaAtiva(estado.eu)) document.querySelector(".botao-ponto")?.click();
 }
 
 document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && estado.aba === "inicio" && estado.eu && desenhar());

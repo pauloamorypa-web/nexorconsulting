@@ -1,0 +1,27 @@
+{
+  "appId": "br.com.nexorconsultingit.ponto",
+  "appName": "Meu Ponto",
+  "webDir": "www",
+  "server": {
+    "url": "https://rh.nexorconsultingit.com.br/app/",
+    "allowNavigation": [
+      "rh.nexorconsultingit.com.br"
+    ],
+    "errorPath": "offline.html"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 900,
+      "launchAutoHide": true,
+      "backgroundColor": "#060b16",
+      "showSpinner": false
+    }
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "never",
+    "limitsNavigationsToAppBoundDomains": false
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Meu Ponto</string>
+    <string name="title_activity_main">Meu Ponto</string>
+    <string name="package_name">br.com.nexorconsultingit.ponto</string>
+    <string name="custom_url_scheme">br.com.nexorconsultingit.ponto</string>
+</resources>
