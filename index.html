@@ -78,6 +78,7 @@
     <nav class="nav" id="menu" aria-label="Principal">
       <a href="#servicos">Soluções</a>
       <a href="#ti">Para TI</a>
+      <a href="#em-breve">Em breve</a>
       <a href="#roi">Calcule seu retorno</a>
       <a href="#vitrine">Modelos</a>
       <a href="#processo">Processo</a>
@@ -197,6 +198,19 @@
         <p>Chamados, senhas e todos os computadores da empresa em sistemas prontos para usar, instalados no seu servidor e sem licenças pagas de terceiros.</p>
       </div>
       <div class="solutions ti" data-grupo="ti"></div>
+    </div>
+  </section>
+
+  <!-- ================= EM BREVE ================= -->
+  <section class="section section-alt" id="em-breve">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="kicker">// em breve · laboratório nexor</p>
+        <h2>A próxima geração de <span class="grad">soluções com IA.</span></h2>
+        <p>Produtos em desenvolvimento na Nexor. Veja as prévias e entre na lista para ser avisado no lançamento, com condição especial para os primeiros clientes.</p>
+      </div>
+      <div class="breve-grade" data-em-breve></div>
+      <p class="breve-aviso muted">As telas são prévias ilustrativas dos produtos em desenvolvimento, com dados fictícios. Recursos e nomes podem mudar até o lançamento oficial.</p>
     </div>
   </section>
 
@@ -645,6 +659,29 @@
 </dialog>
 
 
+<dialog class="modal sol-modal breve-modal" id="breve-modal" aria-labelledby="bm-titulo">
+  <button class="modal-close" aria-label="Fechar">×</button>
+  <div class="sm-corpo">
+    <div class="sm-galeria">
+      <div class="sm-abas" role="tablist" aria-label="Telas da prévia"></div>
+      <div class="sm-tela"></div>
+      <p class="sm-legenda"></p>
+    </div>
+    <div class="sm-info">
+      <p class="kicker"><span class="breve-selo">Em breve</span></p>
+      <h3 id="bm-titulo"></h3>
+      <p id="bm-resumo" class="muted"></p>
+      <ul class="checks" id="bm-recursos"></ul>
+      <a class="btn btn-primary btn-block" id="bm-avisar" target="_blank" rel="noopener"><svg class="ic"><use href="#i-rocket"/></svg> Quero ser avisado no lançamento</a>
+      <div class="sm-acoes">
+        <button class="btn btn-ghost" type="button" data-abrir-blue>Tirar dúvidas com a Blue</button>
+        <a class="btn btn-whats" id="bm-whats" target="_blank" rel="noopener">WhatsApp</a>
+      </div>
+      <p class="muted breve-nota">Prévia de produto em desenvolvimento. Telas ilustrativas com dados fictícios.</p>
+    </div>
+  </div>
+</dialog>
+
 <dialog class="modal sol-modal" id="solucao-modal" aria-labelledby="sm-titulo">
   <button class="modal-close" aria-label="Fechar">×</button>
   <div class="sm-corpo">
@@ -751,6 +788,7 @@
 <script src="assets/js/solucoes.js"></script>
 <script src="assets/js/leads.js"></script>
 <script src="assets/js/main.js"></script>
+<script src="assets/js/em-breve.js"></script>
 <script src="assets/js/calculadora.js"></script>
 <script src="assets/js/teste.js"></script>
 <script src="assets/js/assistente.js"></script>

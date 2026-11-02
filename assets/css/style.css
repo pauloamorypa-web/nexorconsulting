@@ -1260,3 +1260,25 @@ img.nx-blue-av, img.nx-chat-avatar { object-fit: cover; padding: 0; background: 
   .ta-zoom .ta-galeria-seta[data-z="-1"] { left: 16px; }
   .ta-zoom .ta-galeria-seta[data-z="1"] { right: 16px; }
 }
+
+/* ---------- Em breve: prévias dos próximos produtos ---------- */
+.breve-grade { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.breve { --a: #3b8dff; display: flex; flex-direction: column; border-radius: var(--r-lg, 18px); border: 1px solid var(--line); background: var(--panel); overflow: hidden; transition: transform .2s, border-color .2s; }
+.breve:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--a) 55%, transparent); }
+.breve-foto { position: relative; display: block; padding: 0; border: 0; cursor: pointer; aspect-ratio: 16 / 10; overflow: hidden; background: #f4f6fb; border-bottom: 1px solid var(--line); }
+.breve-foto img { width: 100%; height: 100%; object-fit: cover; object-position: top left; display: block; transition: transform .4s; }
+.breve:hover .breve-foto img { transform: scale(1.04); }
+.breve-selo { display: inline-block; font: 700 .7rem var(--font-mono, monospace); letter-spacing: .06em; text-transform: uppercase; color: #04101f; background: linear-gradient(90deg, var(--a), var(--a2, #22d3ee)); padding: 4px 10px; border-radius: 999px; }
+.breve-foto .breve-selo { position: absolute; top: 10px; left: 10px; box-shadow: 0 6px 18px -6px rgba(0, 0, 0, .5); }
+.breve-info { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.breve-info h3 { margin: 0; font: 600 1.05rem var(--font-head); display: flex; align-items: center; gap: 8px; }
+.breve-info h3 .ic { color: var(--a); width: 20px; height: 20px; flex-shrink: 0; }
+.breve-info p { margin: 0; color: var(--muted); font-size: .92rem; flex: 1; }
+.breve-info .btn { align-self: flex-start; }
+.breve-aviso { text-align: center; margin: 22px auto 0; max-width: 720px; font-size: .85rem; }
+.breve-modal .sm-tela { min-height: 0; }
+.breve-tela { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 30px 60px -30px color-mix(in srgb, var(--a) 60%, transparent); }
+.breve-nota { font-size: .78rem; margin: 6px 0 0; }
+@media (max-width: 1180px) { .breve-grade { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px) { .breve-grade { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .breve-grade { grid-template-columns: 1fr; } }
