@@ -24,6 +24,46 @@ const TIPOS_LEAD = new Set(["parcial", "teste", "diagnostico", "calculadora", "s
 const ID_VALIDO = /^[A-Za-z0-9-]{8,64}$/;
 const LEAD_FORTE = 8; // pontuação de engajamento a partir da qual um lead parcial avisa a equipe
 
+/* Limites contra abuso: sem eles, um robô poderia trocar de sessão a cada mensagem,
+   gastar os créditos de IA e encher a base de leads falsos. */
+const LIMITES = {
+  chatPorIp: { quantidade: 30, janelaMs: 10 * 60_000 },
+  leadPorIp: { quantidade: 12, janelaMs: 10 * 60_000 },
+  chatGlobalPorHora: Number(process.env.CHAT_LIMITE_HORA ?? 600), // teto de custo: respostas de IA por hora, somando todos
+};
+
+export function criarLimitador({ quantidade, janelaMs }, agora = Date.now) {
+  const registros = new Map();
+  return (chave) => {
+    const t = agora();
+    const lista = (registros.get(chave) ?? []).filter((x) => t - x < janelaMs);
+    if (lista.length >= quantidade) {
+      registros.set(chave, lista);
+      return false;
+    }
+    lista.push(t);
+    registros.set(chave, lista);
+    if (registros.size > 20_000) registros.delete(registros.keys().next().value);
+    return true;
+  };
+}
+
+/* IP real do visitante. Atrás do proxy do Render, o último endereço de X-Forwarded-For é o que o
+   proxy viu (o visitante não consegue falsificar); os anteriores podem ter vindo do próprio visitante. */
+export const ipDoCliente = (req) => {
+  const xff = String(req.headers["x-forwarded-for"] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  return xff.at(-1) || req.socket.remoteAddress || "desconhecido";
+};
+
+const SEGURANCA = {
+  "X-Content-Type-Options": "nosniff",
+  "Cache-Control": "no-store",
+  "Referrer-Policy": "no-referrer",
+  "X-Frame-Options": "DENY",
+  "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+};
+
 const limpar = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : undefined);
 
 async function notificarEquipe(texto, dados) {
@@ -58,7 +98,7 @@ const lerCorpo = (req) =>
   });
 
 const json = (res, status, corpo, extra = {}) => {
-  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...extra });
+  res.writeHead(status, { ...SEGURANCA, "Content-Type": "application/json; charset=utf-8", ...extra });
   res.end(JSON.stringify(corpo));
 };
 
@@ -72,6 +112,10 @@ const tokenConfere = (recebido, esperado) => {
 export function criarServidor({ agente, agenteDemo = agente, armazenamento, notificar = notificarEquipe, enviarMeta = enviarParaMeta, clienteRelatorio }) {
   const ultimosParciais = new Map(); // sessão → último lead parcial, para não repetir
   const vistas = new Set(); // ids de mensagens do WhatsApp já processadas (a Meta pode reenviar)
+  const limiteChat = criarLimitador(LIMITES.chatPorIp);
+  const limiteLead = criarLimitador(LIMITES.leadPorIp);
+  const limiteRelatorio = criarLimitador({ quantidade: 20, janelaMs: 15 * 60_000 });
+  const limiteGlobal = criarLimitador({ quantidade: LIMITES.chatGlobalPorHora, janelaMs: 60 * 60_000 });
 
   const cabecalhosCors = (origem) =>
     origem && config.origensPermitidas.includes(origem)
@@ -81,6 +125,9 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
   async function chatDoSite(req, res) {
     const cors = cabecalhosCors(req.headers.origin);
     if (req.headers.origin && !cors["Access-Control-Allow-Origin"]) return json(res, 403, { erro: "origem não permitida" });
+    if (!limiteChat(ipDoCliente(req)) || !limiteGlobal("chat")) {
+      return json(res, 429, { erro: "muitas mensagens", resposta: "Recebi muitas mensagens seguidas. Aguarde alguns minutos ou fale com a equipe no WhatsApp (34) 99733-7499." }, { ...cors, "Retry-After": "300" });
+    }
     let dados;
     try {
       dados = JSON.parse((await lerCorpo(req)).toString("utf8"));
@@ -112,6 +159,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
   async function leadDoSite(req, res) {
     const cors = cabecalhosCors(req.headers.origin);
     if (req.headers.origin && !cors["Access-Control-Allow-Origin"]) return json(res, 403, { erro: "origem não permitida" });
+    if (!limiteLead(ipDoCliente(req))) return json(res, 429, { erro: "muitas tentativas" }, { ...cors, "Retry-After": "600" });
     let d;
     try {
       d = JSON.parse((await lerCorpo(req)).toString("utf8"));
@@ -153,7 +201,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
       if (ultimosParciais.size > 5000) ultimosParciais.delete(ultimosParciais.keys().next().value);
     }
     await armazenamento.salvarLead(lead);
-    const ip = String(req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "").split(",")[0].trim() || undefined;
+    const ip = ipDoCliente(req);
     if (lead.consentimento_medicao) enviarMeta(lead, { ip, navegador: limpar(req.headers["user-agent"], 400) }).catch(() => {});
 
     const forte = lead.tipo !== "parcial" || lead.pontuacao >= LEAD_FORTE;
@@ -210,7 +258,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
 
       if (url.pathname === "/api/chat") {
         if (req.method === "OPTIONS") {
-          res.writeHead(204, cabecalhosCors(req.headers.origin));
+          res.writeHead(204, { ...SEGURANCA, ...cabecalhosCors(req.headers.origin), "Access-Control-Max-Age": "600" });
           return res.end();
         }
         if (req.method === "POST") return await chatDoSite(req, res);
@@ -218,7 +266,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
 
       if (url.pathname === "/api/lead") {
         if (req.method === "OPTIONS") {
-          res.writeHead(204, cabecalhosCors(req.headers.origin));
+          res.writeHead(204, { ...SEGURANCA, ...cabecalhosCors(req.headers.origin), "Access-Control-Max-Age": "600" });
           return res.end();
         }
         if (req.method === "POST") return await leadDoSite(req, res);
@@ -226,6 +274,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
 
       if (req.method === "GET" && url.pathname === "/api/relatorio") {
         const token = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "") || url.searchParams.get("token") || "";
+        if (!limiteRelatorio(ipDoCliente(req))) return json(res, 429, { erro: "muitas tentativas" }, { "Retry-After": "900" });
         if (!tokenConfere(token, config.tokenRelatorio)) return json(res, 401, { erro: "não autorizado" });
         const dias = Math.max(1, Math.min(90, Number(url.searchParams.get("dias")) || 7));
         const relatorio = await gerarRelatorio({
@@ -240,8 +289,8 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
 
       if (url.pathname === "/webhook/whatsapp") {
         if (req.method === "GET") {
-          const ok = url.searchParams.get("hub.mode") === "subscribe" && config.whatsapp.tokenVerificacao && url.searchParams.get("hub.verify_token") === config.whatsapp.tokenVerificacao;
-          res.writeHead(ok ? 200 : 403, { "Content-Type": "text/plain" });
+          const ok = url.searchParams.get("hub.mode") === "subscribe" && tokenConfere(url.searchParams.get("hub.verify_token") ?? "", config.whatsapp.tokenVerificacao);
+          res.writeHead(ok ? 200 : 403, { ...SEGURANCA, "Content-Type": "text/plain" });
           return res.end(ok ? url.searchParams.get("hub.challenge") ?? "" : "forbidden");
         }
         if (req.method === "POST") {

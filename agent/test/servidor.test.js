@@ -137,3 +137,27 @@ test("relatório exige token e agrupa leads por campanha", async () => {
   const camp = rel.porOrigem.find((g) => g.origem === "instagram / pago / teste12h");
   assert.equal(camp.quente, 1);
 });
+
+test("limitador barra excesso por chave e libera depois da janela", async () => {
+  const { criarLimitador } = await import("../src/servidor.js");
+  let t = 0;
+  const lim = criarLimitador({ quantidade: 2, janelaMs: 1000 }, () => t);
+  assert.equal(lim("a"), true);
+  assert.equal(lim("a"), true);
+  assert.equal(lim("a"), false);
+  assert.equal(lim("b"), true);
+  t = 1500;
+  assert.equal(lim("a"), true);
+});
+
+test("ip do cliente usa o endereço anexado pelo proxy, não o enviado pelo visitante", async () => {
+  const { ipDoCliente } = await import("../src/servidor.js");
+  assert.equal(ipDoCliente({ headers: { "x-forwarded-for": "1.1.1.1, 9.9.9.9" }, socket: {} }), "9.9.9.9");
+  assert.equal(ipDoCliente({ headers: {}, socket: { remoteAddress: "2.2.2.2" } }), "2.2.2.2");
+});
+
+test("respostas da API saem com cabeçalhos de segurança", async () => {
+  const r = await fetch(`${base}/health`);
+  assert.equal(r.headers.get("x-content-type-options"), "nosniff");
+  assert.match(r.headers.get("content-security-policy"), /frame-ancestors 'none'/);
+});
