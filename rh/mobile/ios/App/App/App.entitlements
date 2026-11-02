@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyLists-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Universal Links: o QR Code do quiosque abre direto no app. Ative "Associated Domains" no Xcode
+	     (Signing & Capabilities) e use o mesmo host de NEXOR_RH_URL. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:rh.nexorconsultingit.com.br</string>
+	</array>
+</dict>
+</plist>

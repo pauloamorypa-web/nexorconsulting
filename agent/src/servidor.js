@@ -140,6 +140,8 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
       interesses: Array.isArray(d.interesses) ? d.interesses.slice(0, 20).map((x) => limpar(String(x), 60)) : [],
       origem: limparOrigem(d.origem),
       canal: "site",
+      // Consentimento de medição de anúncios dado no aviso de cookies (LGPD): sem ele, nada vai para a Meta
+      consentimento_medicao: d.consentimento === true,
       registrado_em: new Date().toISOString(),
     };
     if (!lead.telefone && !lead.email) return json(res, 400, { erro: "informe WhatsApp ou e-mail" }, cors);
@@ -152,7 +154,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
     }
     await armazenamento.salvarLead(lead);
     const ip = String(req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "").split(",")[0].trim() || undefined;
-    enviarMeta(lead, { ip, navegador: limpar(req.headers["user-agent"], 400) }).catch(() => {});
+    if (lead.consentimento_medicao) enviarMeta(lead, { ip, navegador: limpar(req.headers["user-agent"], 400) }).catch(() => {});
 
     const forte = lead.tipo !== "parcial" || lead.pontuacao >= LEAD_FORTE;
     if (forte) {

@@ -132,7 +132,18 @@ const PROJECTS = [
 ];
 
 /* ---------- Mockups ---------- */
+// Raiz do site, a partir deste arquivo (assets/js/): funciona na página inicial e nas páginas de serviço
+const RAIZ_SITE = new URL("../../", document.currentScript?.src ?? location.href).href;
+
 const Mock = {
+  /* Foto real de um sistema dentro da moldura do navegador */
+  foto(p) {
+    return `<div class="mk mk-browser" style="--a:${p.accent ?? "#3b8dff"};--a2:${p.accent2 ?? "#22d3ee"}">
+      <div class="mk-bar"><i></i><i></i><i></i><span>🔒 ${p.url}</span></div>
+      <div class="mk-screen mk-screen-foto"><img class="mk-foto" src="${new URL(p.img, RAIZ_SITE).href}" alt="${p.alt ?? ""}" width="1600" height="1000" loading="lazy" decoding="async"></div>
+    </div>`;
+  },
+
   browser(p, inner) {
     return `<div class="mk mk-browser" style="--a:${p.accent};--a2:${p.accent2}">
       <div class="mk-bar"><i></i><i></i><i></i><span>🔒 ${p.url}</span></div>

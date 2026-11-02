@@ -1,0 +1,145 @@
+# Compila o app "Meu Ponto" (Nexor RH) para Android e iOS nos servidores do GitHub.
+# Rode em Actions → "App Meu Ponto" → Run workflow. Os arquivos ficam em "Artifacts" no fim da execução.
+#
+# Configuração (Settings → Secrets and variables → Actions):
+#   Variável  NEXOR_RH_URL                 só para app com a marca de UM cliente (endereço embutido). Vazio = app genérico das lojas
+#   Android (opcional, para publicar no Google Play):
+#     Secret  ANDROID_KEYSTORE_BASE64      arquivo .jks da chave de assinatura, em base64
+#     Secret  ANDROID_KEYSTORE_PASSWORD    senha do keystore
+#     Secret  ANDROID_KEY_ALIAS            alias da chave
+#     Secret  ANDROID_KEY_PASSWORD         senha da chave
+#   iOS (opcional, para publicar na App Store / TestFlight; exige conta Apple Developer):
+#     Secret  IOS_CERTIFICATE_P12_BASE64   certificado "Apple Distribution" (.p12) em base64
+#     Secret  IOS_CERTIFICATE_PASSWORD     senha do .p12
+#     Secret  IOS_PROVISIONING_PROFILE_BASE64  perfil de distribuição App Store (.mobileprovision) em base64
+#     Secret  APPLE_TEAM_ID                Team ID da conta Apple Developer
+# Sem as chaves, o Android gera um APK de teste (instalável) e o iOS só confere se o projeto compila.
+
+name: App Meu Ponto
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["rh/mobile/**", ".github/workflows/app-meu-ponto.yml"]
+
+permissions:
+  contents: read
+
+env:
+  NEXOR_RH_URL: ${{ vars.NEXOR_RH_URL }}
+
+jobs:
+  android:
+    name: Android (APK e AAB)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rh/mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rh/mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run configurar && npx cap sync android
+      - name: Compilar
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: rh/mobile/android
+        run: |
+          chmod +x gradlew
+          VERSAO="-PversionCode=${{ github.run_number }} -PversionName=1.0.${{ github.run_number }}"
+          if [ -n "$KEYSTORE" ]; then
+            echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/assinatura.jks"
+            ./gradlew assembleRelease bundleRelease $VERSAO \
+              -Pandroid.injected.signing.store.file="$RUNNER_TEMP/assinatura.jks" \
+              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+              -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+            mkdir -p ../saida && cp app/build/outputs/apk/release/*.apk ../saida/meu-ponto.apk && cp app/build/outputs/bundle/release/*.aab ../saida/meu-ponto.aab
+          else
+            ./gradlew assembleDebug $VERSAO
+            mkdir -p ../saida && cp app/build/outputs/apk/debug/*.apk ../saida/meu-ponto-teste.apk
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meu-ponto-android
+          path: rh/mobile/saida/
+
+  ios:
+    name: iOS
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: rh/mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rh/mobile/package-lock.json
+      - run: npm ci
+      - run: npm run configurar && npx cap sync ios
+      - name: Compilar
+        env:
+          CERT: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        working-directory: rh/mobile/ios/App
+        run: |
+          if [ -z "$CERT" ] || [ -z "$PROFILE" ] || [ -z "$TEAM_ID" ]; then
+            echo "Sem certificado da Apple: só confere se o projeto compila (simulador)."
+            xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination "generic/platform=iOS Simulator" CODE_SIGNING_ALLOWED=NO build | tail -20
+            exit 0
+          fi
+          # Certificado e perfil num keychain temporário
+          KC="$RUNNER_TEMP/assinatura.keychain-db"
+          security create-keychain -p temporaria "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p temporaria "$KC"
+          echo "$CERT" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KC"
+          security set-key-partition-list -S apple-tool:,apple: -k temporaria "$KC"
+          security list-keychain -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          echo "$PROFILE" | base64 -d > "$RUNNER_TEMP/perfil.mobileprovision"
+          UUID=$(security cms -D -i "$RUNNER_TEMP/perfil.mobileprovision" | plutil -extract UUID raw -)
+          NOME_PERFIL=$(security cms -D -i "$RUNNER_TEMP/perfil.mobileprovision" | plutil -extract Name raw -)
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/perfil.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -archivePath "$RUNNER_TEMP/App.xcarchive" -destination "generic/platform=iOS" \
+            CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_IDENTITY="Apple Distribution" PROVISIONING_PROFILE_SPECIFIER="$NOME_PERFIL" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} MARKETING_VERSION=1.0.${{ github.run_number }} archive | tail -20
+          APP_ID=$(node -p "require('../../capacitor.config.json').appId")
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyLists-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key><dict><key>$APP_ID</key><string>$NOME_PERFIL</string></dict>
+          </dict></plist>
+          PLIST
+          sed -i '' 's/^          //' "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath ../../saida | tail -20
+          security delete-keychain "$KC"
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('rh/mobile/saida/*.ipa') != ''
+        with:
+          name: meu-ponto-ios
+          path: rh/mobile/saida/*.ipa

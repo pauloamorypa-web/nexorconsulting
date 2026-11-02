@@ -39,7 +39,8 @@ const NXT = (() => {
     if (!ler("nx-origem-primeira", null)) guardar("nx-origem-primeira", agora);
     guardar("nx-origem", agora);
   }
-  if (agora.fbclid) guardar("nx-fbc", `fb.1.${Date.now()}.${agora.fbclid}`);
+  // O identificador de clique da Meta só é guardado depois do consentimento (ver ligar())
+  const fbclidPendente = agora.fbclid ? `fb.1.${Date.now()}.${agora.fbclid}` : null;
 
   const cookie = (nome) => document.cookie.split("; ").find((c) => c.startsWith(nome + "="))?.split("=")[1];
 
@@ -48,10 +49,16 @@ const NXT = (() => {
     const o = { ...ler("nx-origem", {}) };
     const primeira = ler("nx-origem-primeira", null);
     if (primeira && primeira.quando !== o.quando) o.primeira = primeira;
-    const fbc = cookie("_fbc") || ler("nx-fbc", "");
-    const fbp = cookie("_fbp");
-    if (fbc) o.fbc = fbc;
-    if (fbp) o.fbp = fbp;
+    // Identificadores de anúncio só seguem com o lead se a pessoa aceitou a medição
+    if (consentido === true) {
+      const fbc = cookie("_fbc") || ler("nx-fbc", "");
+      const fbp = cookie("_fbp");
+      if (fbc) o.fbc = fbc;
+      if (fbp) o.fbp = fbp;
+    } else {
+      for (const k of ["gclid", "gbraid", "wbraid", "fbclid"]) delete o[k];
+      if (o.primeira) for (const k of ["gclid", "gbraid", "wbraid", "fbclid"]) delete o.primeira[k];
+    }
     o.pagina = location.href.split("#")[0].slice(0, 300);
     return o;
   };
@@ -72,6 +79,7 @@ const NXT = (() => {
   const ligar = () => {
     if (ligado || !configurado) return;
     ligado = true;
+    if (fbclidPendente) guardar("nx-fbc", fbclidPendente);
     if (RASTREIO.metaPixel) {
       /* Código padrão da Meta, reescrito */
       const fbq = (window.fbq = function () {
@@ -106,7 +114,7 @@ const NXT = (() => {
     b.className = "nx-consent";
     b.setAttribute("role", "dialog");
     b.setAttribute("aria-label", "Cookies");
-    b.innerHTML = `<p>Usamos cookies para medir nossos anúncios e melhorar sua experiência. <a href="privacidade.html">Saiba mais</a></p>
+    b.innerHTML = `<p>Usamos cookies para medir nossos anúncios e melhorar sua experiência. <a href="/privacidade.html">Saiba mais</a></p>
       <div><button type="button" class="btn btn-sm btn-ghost" data-consent="nao">Recusar</button><button type="button" class="btn btn-sm btn-primary" data-consent="sim">Aceitar</button></div>`;
     b.addEventListener("click", (e) => {
       const r = e.target.closest("[data-consent]");
@@ -118,6 +126,35 @@ const NXT = (() => {
     });
     document.body.append(b);
   };
+
+  /** Rever a escolha (link "Preferências de cookies" no rodapé). Ao recusar depois de aceitar, apaga os cookies de medição. */
+  const preferencias = () => {
+    const antes = consentido;
+    try {
+      localStorage.removeItem("nx-consentimento");
+      localStorage.removeItem("nx-fbc");
+    } catch {
+      /* sem armazenamento */
+    }
+    consentido = null;
+    if (!configurado) return alert("Este site não usa cookies de medição de anúncios no momento.");
+    banner();
+    document.querySelector(".nx-consent")?.addEventListener("click", (e) => {
+      const r = e.target.closest("[data-consent]");
+      if (r && antes === true && r.dataset.consent === "nao") {
+        const dominio = location.hostname.split(".").slice(-3).join(".");
+        for (const c of document.cookie.split("; ").map((x) => x.split("=")[0]).filter((n) => /^(_fbp|_fbc|_ga|_gid|_gcl|_gat)/.test(n)))
+          for (const d of ["", `; domain=.${dominio}`, `; domain=.${location.hostname}`]) document.cookie = `${c}=; Max-Age=0; path=/${d}`;
+        location.reload();
+      }
+    });
+  };
+  document.addEventListener("click", (e) => {
+    if (e.target.closest?.("[data-cookies]")) {
+      e.preventDefault();
+      preferencias();
+    }
+  });
 
   if (configurado) {
     if (consentido === true) ligar();
@@ -159,5 +196,5 @@ const NXT = (() => {
     if (a) evento("Contact", { content_name: a.textContent.trim().slice(0, 60) || "whatsapp" });
   });
 
-  return { origem, lead, evento };
+  return { origem, lead, evento, preferencias, consentimento: () => consentido === true };
 })();

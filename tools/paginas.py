@@ -45,7 +45,7 @@ P = [
   h1="Criação de <em>sites profissionais</em> feitos para gerar clientes",
   sub="Sites e landing pages rápidos, bonitos no celular e preparados para aparecer no Google. Cada página pensada para transformar visita em contato no WhatsApp.",
   dores=["Site bonito que não traz nenhum cliente", "Página lenta e quebrada no celular", "Empresa que não aparece quando alguém procura no Google"],
-  recursos=["Design exclusivo e responsivo", "Otimização para o Google (SEO)", "Botões e formulários que levam ao WhatsApp", "Assistente de IA no próprio site", "Medição de visitas e de contatos", "Hospedagem, domínio e e-mail configurados"],
+  recursos=["Design exclusivo e responsivo", "Otimização para o Google (SEO)", "Botões e formulários que levam ao WhatsApp", "Assistente de IA no próprio site", "Medição de visitas e de contatos", "Hospedagem, domínio e e-mail configurados na conta da sua empresa"],
   publico=["Prestadores de serviço", "Clínicas e escritórios", "Restaurantes", "Imobiliárias", "Indústrias e distribuidoras", "Lançamentos e campanhas"],
   faq=[("O site vai aparecer no Google?", "O site já sai com a estrutura técnica para o Google: velocidade, versão para celular, títulos, descrições, dados estruturados e sitemap. A posição também depende de concorrência e conteúdo, e orientamos você no Perfil da Empresa no Google."),
        ("Consigo editar o conteúdo depois?", "Sim. Combinamos no projeto como você prefere atualizar textos, fotos e preços."),
@@ -106,6 +106,15 @@ P = [
        ("Consigo instalar um programa em todas as máquinas de uma vez?", "Sim. Você escolhe uma máquina, um grupo ou todas e acompanha o resultado no painel."),
        ("Por quanto tempo a auditoria fica guardada?", "O histórico de ações fica registrado por 2 anos.")]),
 ]
+
+# Modelo de implantação da Nexor (vale para todos os produtos): o sistema roda no ambiente do cliente,
+# que é o controlador dos dados perante a LGPD. A consultoria de LGPD é vendida à parte.
+FAQ_LGPD = [
+    ("Onde ficam os dados da minha empresa?", "No ambiente da sua empresa. Implantamos o sistema no seu servidor físico ou na conta de nuvem da sua empresa (AWS, Azure, Google Cloud ou outra). A Nexor não guarda os dados dos seus clientes e colaboradores."),
+    ("Quem é responsável pela LGPD?", "A sua empresa, como controladora dos dados que o sistema trata. O sistema traz recursos que ajudam na adequação (controle de acesso, criptografia, registro de auditoria), e a Nexor oferece consultoria de LGPD como serviço à parte."),
+]
+for _p in P:
+    _p["faq"] = _p["faq"] + FAQ_LGPD
 
 def esc(s): return html.escape(s, quote=True)
 
@@ -248,7 +257,7 @@ def pagina(p):
 <footer class="site-footer">
   <div class="container footer-bottom">
     <p>© 2026 Nexor Consulting · Inteligência • Desenvolvimento • Automação</p>
-    <p><a href="/">Início</a> · <a href="https://www.instagram.com/nexorconsultingit/" target="_blank" rel="noopener">Instagram</a> · <a href="/privacidade.html">Privacidade</a></p>
+    <p><a href="/">Início</a> · <a href="https://www.instagram.com/nexorconsultingit/" target="_blank" rel="noopener">Instagram</a> · <a href="/privacidade.html">Privacidade</a> · <a href="#" data-cookies>Cookies</a></p>
   </div>
 </footer>
 

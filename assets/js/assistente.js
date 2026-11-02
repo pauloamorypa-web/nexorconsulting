@@ -33,7 +33,7 @@
         <textarea id="nx-chat-campo" rows="1" maxlength="2000" placeholder="Escreva sua mensagem…"></textarea>
         <button type="submit" aria-label="Enviar"><svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg></button>
       </form>
-      <p class="nx-chat-aviso">Seus dados são usados só para a Nexor falar com você (LGPD). Prefere uma pessoa? WhatsApp (34) 99733-7499.</p>
+      <p class="nx-chat-aviso">A conversa é respondida por inteligência artificial e usada só para a Nexor atender você. Não envie dados sensíveis (saúde, documentos, senhas). <a href="/privacidade.html" target="_blank" rel="noopener">Privacidade</a> · Prefere uma pessoa? WhatsApp (34) 99733-7499.</p>
     </section>`;
   document.body.appendChild(raiz);
 
@@ -117,6 +117,7 @@
 
   /* ---------- Atendimento guiado (sem servidor) ---------- */
   const SOLUCAO_POR_TEMA = [
+    [/\brh\b|ponto|funcion[aá]rio|colaborador|folha|f[eé]rias|esocial|holerite|biometria|recursos humanos/i, "Nexor RH, ponto pelo celular com digital ou QR Code, folha e eSocial"],
     [/whats|atend|venda|vender|instagram|cliente/i, "Nexor Atende IA, que atende e vende no WhatsApp 24h"],
     [/loja|e-?commerce|marketplace|mercado livre|shopee/i, "Nexor Commerce, loja virtual integrada aos marketplaces"],
     [/sistema|gest|erp|crm|planilha|estoque|financeiro/i, "Nexor Gestão, ERP e CRM sob medida"],

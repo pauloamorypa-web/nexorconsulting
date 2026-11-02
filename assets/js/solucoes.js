@@ -13,6 +13,16 @@ const SOLUCOES = [
     accent2: "#22d3ee",
     recursos: ["Responde, qualifica e agenda sozinha, a qualquer hora", "Treinada com seus produtos, preços e regras", "Integrada ao seu CRM, ERP e agenda", "Passa para sua equipe quando precisa"],
     modelos: [
+      {
+        nome: "Painel de conversas",
+        texto: "Tela real do sistema: todas as conversas num só lugar, com temperatura do lead, resumo e próxima ação calculados pela IA. Você assume quando quiser.",
+        p: { type: "foto", url: "atendimento.suaempresa.com.br", img: "assets/img/atende/conversa.webp", alt: "Tela real do Nexor Atende IA: caixa de entrada com a IA atendendo e agendando" },
+      },
+      {
+        nome: "Painel de resultados",
+        texto: "Tela real do sistema: quanto a IA resolveu sozinha, tempo de resposta, horas economizadas, funil de vendas e leads quentes.",
+        p: { type: "foto", url: "atendimento.suaempresa.com.br/inicio", img: "assets/img/atende/painel.webp", alt: "Tela real do Nexor Atende IA: painel com indicadores, gráfico e funil" },
+      },
       { nome: "WhatsApp", texto: "Seu cliente pergunta, a IA responde e agenda na hora.", p: { type: "chat", d: { nome: "Auto Center Prime", avatar: "A" } } },
       {
         nome: "Chat no site",
@@ -23,11 +33,6 @@ const SOLUCOES = [
         nome: "Instagram Direct",
         texto: "Comentou ou chamou no Direct? A resposta chega em segundos.",
         p: { type: "chat", accent: "#e1306c", accent2: "#f77737", d: { nome: "Bella Moda", avatar: "B", status: "Instagram · online", msgs: [["in", "Esse vestido tem no M?"], ["out", "Tem sim! 💖 No M temos azul e areia. Quer o link para comprar?"], ["in", "Quero o azul"], ["out", "Aqui está: <b>bellamoda.com/v-azul-m</b>. Frete grátis para sua região!"]] } },
-      },
-      {
-        nome: "Painel de conversas",
-        texto: "Todas as conversas num só lugar. Você vê o que a IA resolveu e assume quando quiser.",
-        p: { type: "inbox", url: "atendimento.suaempresa.com.br", d: { conversas: [["Marina Souza", "WhatsApp", "agora", "ok"], ["Pedro Lima", "Instagram", "2 min", "ok"], ["João Reis", "Site", "5 min", "warn"], ["Ana Costa", "WhatsApp", "12 min", "ok"]], msgs: [["in", "Vocês entregam em Uberlândia?"], ["out", "Entregamos sim! Prazo de 1 dia útil. Posso fechar seu pedido?"], ["in", "Pode sim"]] } },
       },
     ],
   },
@@ -79,6 +84,49 @@ const SOLUCOES = [
         p: { type: "app", url: "erp.suaempresa.com.br/estoque", d: { titulo: "Estoque", selo: "3 itens para repor", colunas: ["Produto", "Saldo", "Mínimo", "Situação"], linhas: [["Cabo HDMI 2m", "184", "50", "OK|ok"], ["Mouse sem fio", "22", "40", "Repor|warn"], ["Teclado ABNT2", "9", "30", "Crítico|bad"], ["Monitor 24\"", "61", "20", "OK|ok"], ["Headset USB", "35", "30", "Atenção|info"]] } },
       },
       { nome: "BI e indicadores", texto: "Receita, metas e previsão de vendas com IA.", p: { type: "dashboard", variant: "bi", accent: "#6366f1", accent2: "#22d3ee" } },
+    ],
+  },
+  {
+    id: "rh",
+    grupo: "negocio",
+    nome: "Nexor RH",
+    resumo: "RH completo com ponto pelo celular (digital ou QR Code), folha e eSocial.",
+    selo: "Ponto no bolso",
+    icone: "i-users",
+    accent: "#0066ff",
+    accent2: "#22c55e",
+    recursos: ["Ponto pelo app com digital ou rosto do celular, QR Code e cerca de GPS", "Espelho, horas extras, banco de horas e arquivos AFD/AEJ da Portaria 671", "Folha, férias, 13º e rescisão, com holerite no app do colaborador", "Eventos do eSocial gerados e assinados com o certificado da empresa"],
+    modelos: [
+      {
+        nome: "App do colaborador",
+        texto: "Tela real do sistema: o colaborador bate o ponto com a digital, recebe o comprovante na hora e vê o holerite no celular.",
+        p: { type: "foto", url: "rh.suaempresa.com.br/app", img: "assets/img/rh/app.webp", alt: "Telas reais do app Nexor RH: botão de ponto com biometria, comprovante e holerite" },
+      },
+      {
+        nome: "Painel do RH",
+        texto: "Tela real do sistema: quem está trabalhando agora, atrasos, pedidos para aprovar, férias a vencer e aniversariantes.",
+        p: { type: "foto", url: "rh.suaempresa.com.br", img: "assets/img/rh/painel.webp", alt: "Tela real do Nexor RH: painel com quem está trabalhando agora" },
+      },
+      {
+        nome: "Espelho de ponto",
+        texto: "Tela real do sistema: horas trabalhadas, extras, adicional noturno, atrasos e faltas calculados pela CLT.",
+        p: { type: "foto", url: "rh.suaempresa.com.br/ponto", img: "assets/img/rh/espelho.webp", alt: "Tela real do Nexor RH: espelho de ponto do mês" },
+      },
+      {
+        nome: "Quiosque com QR Code",
+        texto: "Tela real do sistema: um tablet na entrada mostra um QR que muda a cada 30 segundos. Foto ou print não funcionam.",
+        p: { type: "foto", url: "rh.suaempresa.com.br/quiosque", img: "assets/img/rh/quiosque.webp", alt: "Tela real do quiosque Nexor RH com QR Code rotativo" },
+      },
+      {
+        nome: "Folha de pagamento",
+        texto: "Tela real do sistema: folha calculada com INSS, IRRF, FGTS, extras e benefícios, pronta para fechar.",
+        p: { type: "foto", url: "rh.suaempresa.com.br/folha", img: "assets/img/rh/folha.webp", alt: "Tela real do Nexor RH: folha de pagamento do mês" },
+      },
+      {
+        nome: "eSocial",
+        texto: "Tela real do sistema: admissões, afastamentos, desligamentos e folha viram eventos do eSocial sozinhos.",
+        p: { type: "foto", url: "rh.suaempresa.com.br/esocial", img: "assets/img/rh/esocial.webp", alt: "Tela real do Nexor RH: fila de eventos do eSocial" },
+      },
     ],
   },
   {
