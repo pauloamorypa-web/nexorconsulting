@@ -1,0 +1,67 @@
+/* Nexor RH — estilos específicos do painel (complementam app.css) */
+
+.form-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
+.form-grade .largo, .form-grade .form-secao { grid-column: 1 / -1; }
+.form-secao { margin: 10px 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--texto-3); border-top: 1px solid var(--linha); padding-top: 14px; }
+.form-secao:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.linha-check.largo { grid-column: 1 / -1; }
+.linha-check .campo-ajuda { margin-left: auto; }
+.acoes-topo { display: flex; gap: 8px; flex-wrap: wrap; }
+.mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; }
+.pequeno { font-size: 12.5px; }
+.chip-info { background: color-mix(in srgb, var(--azul) 13%, transparent); color: var(--azul); }
+.perigo { color: var(--vermelho); }
+.indicador strong { font-size: clamp(17px, 1.5vw, 26px); white-space: nowrap; line-height: 1.15; }
+.guia-topo { display: block; }
+.guia-topo .passos { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+
+.perfil-cabeca { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.perfil-cabeca h1 { margin: 0; }
+.perfil-cabeca .item-texto { flex: 1; min-width: 220px; display: grid; gap: 4px; justify-items: start; }
+.dados { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.dado { display: grid; gap: 2px; min-width: 0; }
+.dado small { color: var(--texto-3); font-size: 12px; }
+.dado strong { font-weight: 600; overflow-wrap: anywhere; }
+
+.codigo-grande { font: 700 44px/1 var(--fonte-titulo); letter-spacing: 0.2em; text-align: center; padding: 18px; border-radius: 14px; background: var(--superficie-3); color: var(--azul); }
+
+.horas-dia { display: flex; gap: 4px; flex-wrap: wrap; }
+.hora-chip { font: 600 12.5px/1 ui-monospace, Menlo, monospace; padding: 4px 6px; border-radius: 6px; background: var(--superficie-3); color: var(--texto); }
+.hora-chip.bio { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--verde) 55%, transparent); }
+.hora-chip.incluida { background: color-mix(in srgb, var(--amarelo) 18%, transparent); color: var(--amarelo); font-style: italic; }
+
+.grade-painel.tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grade-painel:not(.tres) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.barras-h { display: grid; gap: 10px; }
+.barra-h { display: grid; grid-template-columns: minmax(90px, 1fr) 2fr auto; gap: 10px; align-items: center; font-size: 13.5px; }
+.barra-h-trilho { height: 10px; border-radius: 99px; background: var(--superficie-3); overflow: hidden; }
+.barra-h-trilho i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--azul), var(--ciano)); }
+
+.jornada-dia { display: grid; grid-template-columns: 48px 1fr 1fr 110px; gap: 8px; align-items: center; }
+.jornada-dia.cab small { color: var(--texto-3); }
+
+.recibo { font-size: 13.5px; }
+.holerite-totais { display: flex; gap: 18px; justify-content: flex-end; flex-wrap: wrap; padding: 12px 0; border-top: 2px solid var(--linha); }
+.holerite-totais strong { font-size: 16px; }
+.comunicado .texto-longo, .texto-longo { white-space: pre-wrap; line-height: 1.55; color: var(--texto-2); }
+.copiavel code { word-break: break-all; }
+.citacao { margin: 0; padding: 10px 14px; border-left: 3px solid var(--azul); background: var(--superficie-2); border-radius: 0 8px 8px 0; white-space: pre-wrap; }
+
+@media (max-width: 1100px) {
+  .grade-painel.tres, .grade-painel:not(.tres) { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .form-grade { grid-template-columns: 1fr; }
+  .jornada-dia { grid-template-columns: 40px 1fr 1fr 70px; }
+  .perfil-cabeca .acoes-topo { width: 100%; }
+}
+
+@media print {
+  .lateral, .topo-movel, .abas, .acoes-topo, .barra-salvar, .modal-rodape, .btn, .filtros-linha, #toasts { display: none !important; }
+  body, .principal, .conteudo { background: #fff !important; color: #000; }
+  .cartao { box-shadow: none; border-color: #ccc; }
+  .modal-fundo { position: static; background: none; }
+  .modal-fundo ~ * { display: none; }
+}
+
+.lista-itens { list-style: none; margin: 0; padding: 0; }

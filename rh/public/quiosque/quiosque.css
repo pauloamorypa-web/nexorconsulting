@@ -1,0 +1,28 @@
+:root { --fundo: #060b16; --sup: #0c1424; --linha: #1c2a45; --texto: #e8eef9; --texto-2: #a7b4ca; --azul: #3b8dff; --verde: #22c55e; --vermelho: #f87171; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--fundo); color: var(--texto); font-family: Inter, system-ui, sans-serif; }
+#q { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 4vw; align-items: center; padding: 4vh 5vw; }
+.marca { display: flex; align-items: center; gap: 12px; color: var(--texto-2); font-weight: 600; }
+.marca img { width: 40px; height: 44px; }
+h1 { font: 700 clamp(28px, 4.2vw, 60px)/1.05 "Space Grotesk", Inter, sans-serif; margin: 3vh 0 1vh; }
+.relogio { font: 700 clamp(56px, 9vw, 140px)/1 "Space Grotesk", Inter, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.data { color: var(--texto-2); font-size: clamp(16px, 1.8vw, 26px); margin-top: 1vh; }
+.passos { list-style: none; padding: 0; margin: 4vh 0 0; display: grid; gap: 14px; font-size: clamp(15px, 1.5vw, 22px); color: var(--texto-2); }
+.passos b { display: inline-grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 50%; background: var(--azul); color: #fff; margin-right: 10px; font-size: 0.8em; }
+.qr-caixa { background: #fff; border-radius: 28px; padding: 3%; aspect-ratio: 1; width: min(100%, 72vh); justify-self: center; position: relative; box-shadow: 0 30px 80px rgba(59, 141, 255, 0.25); }
+.qr-caixa img { width: 100%; height: 100%; display: block; }
+.barra { position: absolute; left: 8%; right: 8%; bottom: -18px; height: 6px; border-radius: 6px; background: var(--linha); overflow: hidden; }
+.barra i { display: block; height: 100%; background: var(--azul); transform-origin: left; }
+.local { text-align: center; color: var(--texto-2); margin-top: 34px; font-size: clamp(14px, 1.4vw, 20px); }
+.btn { font: 600 18px Inter, sans-serif; border-radius: 14px; border: 1px solid var(--linha); background: var(--sup); color: var(--texto); padding: 14px 22px; cursor: pointer; }
+.btn-primario { background: var(--azul); border-color: var(--azul); color: #fff; }
+.pin { margin-top: 3vh; }
+.aviso { grid-column: 1 / -1; text-align: center; color: var(--texto-2); font-size: 20px; }
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: grid; place-items: center; z-index: 5; }
+.caixa { background: var(--sup); border: 1px solid var(--linha); border-radius: 22px; padding: 28px; width: min(440px, 92vw); display: grid; gap: 14px; }
+.caixa input { font: 600 26px Inter, sans-serif; padding: 14px; border-radius: 12px; border: 1px solid var(--linha); background: var(--fundo); color: var(--texto); text-align: center; letter-spacing: 0.15em; }
+.teclado { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.teclado button { font: 700 26px "Space Grotesk", sans-serif; padding: 16px 0; border-radius: 14px; border: 1px solid var(--linha); background: var(--fundo); color: var(--texto); }
+.ok { color: var(--verde); font: 700 34px "Space Grotesk", sans-serif; text-align: center; }
+.erro { color: var(--vermelho); text-align: center; min-height: 1.4em; }
+@media (orientation: portrait) { #q { grid-template-columns: 1fr; text-align: center; } .marca { justify-content: center; } .passos { justify-items: center; } .qr-caixa { width: min(80vw, 60vh); } }

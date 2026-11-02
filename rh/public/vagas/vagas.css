@@ -1,0 +1,8 @@
+.vagas-pagina { max-width: 860px; margin: 0 auto; padding: 40px 16px 80px; display: grid; gap: 16px; }
+.vagas-cabeca h1 { font-size: clamp(28px, 5vw, 42px); margin: 6px 0; }
+.vaga { display: grid; gap: 10px; }
+.vaga h2 { margin: 0; }
+.vaga .texto-longo { white-space: pre-wrap; color: var(--texto-2); line-height: 1.55; }
+.vaga form { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.vaga form .largo { grid-column: 1 / -1; }
+@media (max-width: 600px) { .vaga form { grid-template-columns: 1fr; } }
