@@ -194,7 +194,10 @@ test("app nativo: chave do aparelho protegida por biometria assina o ponto", asy
   // Como o app faz no celular (WebCrypto): par de chaves P-256, a pública vai para o servidor
   const par = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
   const jwk = await crypto.subtle.exportKey("jwk", par.publicKey);
+  // Chave fora do chip de segurança (app antigo): recusada
   let r = await app.post("/api/app/aparelho", { id: "aparelho-teste-0001", chave: { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y }, aparelho: "iPhone" });
+  assert.equal(r.status, 426, "só chave no chip do celular");
+  r = await app.post("/api/app/aparelho", { id: "aparelho-teste-0001", chave: { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y }, hardware: true, aparelho: "iPhone" });
   assert.equal(r.status, 200, JSON.stringify(r.dados));
   const assinar = async (chave, texto) => Buffer.from(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, chave, new TextEncoder().encode(texto))).toString("base64url");
   let prep = (await app.post("/api/app/ponto/preparar")).dados;

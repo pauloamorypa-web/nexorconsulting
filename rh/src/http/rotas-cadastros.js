@@ -84,7 +84,7 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
         endereco: endereco.optional(),
         config: z
           .object({
-            ponto: z.object({ exige_biometria: z.boolean(), permitir_quiosque_pin: z.boolean(), lembrar_marcacao: z.boolean() }).partial().optional(),
+            ponto: z.object({ exige_biometria: z.boolean(), permitir_quiosque_pin: z.boolean(), lembrar_marcacao: z.boolean(), qr_exige_gps: z.boolean() }).partial().optional(),
             esocial: z.object({ ativo: z.boolean(), ambiente: z.union([z.literal(1), z.literal(2)]), class_trib: op(2), cnae: op(7), fpas: op(3), cod_tercs: op(4), rat: op(1), fap: op(6), inicio_validade: op(7) }).partial().optional(),
             registro_inpi: op(17),
             transmissor_cnpj: op(18),

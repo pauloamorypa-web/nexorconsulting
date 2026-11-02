@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { cnpjValido, email, empresaPublica, op, senha, t, usuarioPublico, validar } from "./validacao.js";
-import { conferirSenha, gerarHashSenha, gerarToken, sha256 } from "../seguranca.js";
+import { conferirSenha, gerarHashSenha, gerarToken, precisaRefazerHash, sha256 } from "../seguranca.js";
 import { configCompleta } from "../servicos/nucleo.js";
 import { rotasApp } from "./rotas-app.js";
 import { rotasCadastros } from "./rotas-cadastros.js";
@@ -138,6 +138,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
     const u = repo.usuarioPorEmail(d.email);
     const senhaOk = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
     if (!u || !senhaOk) falha(401, "E-mail ou senha incorretos.");
+    // Senha guardada com a proteção antiga: refaz o hash com a força atual
+    if (precisaRefazerHash(u.senha_hash)) repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", gerarHashSenha(d.senha), u.id);
     iniciarSessao(res, { usuario_id: u.id });
     repo.auditar(u.empresa_id, u.nome, "login");
     return { ok: true };

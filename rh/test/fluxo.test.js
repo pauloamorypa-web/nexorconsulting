@@ -155,11 +155,18 @@ test("quiosque com QR Code rotativo", async () => {
   r = await app.post("/api/app/ponto", { lat: -23.5506, lng: -46.6334 });
   assert.equal(r.status, 400);
   assert.match(r.dados.erro, /QR Code/);
+  // Foto do QR enviada a um colega: sem localização ou longe do local, não vale
   r = await app.post("/api/app/ponto", { qr: token });
+  assert.equal(r.status, 400, "QR sem localização não vale");
+  assert.match(r.dados.erro, /localização/);
+  r = await app.post("/api/app/ponto", { qr: token, lat: -22.9068, lng: -43.1729 });
+  assert.equal(r.status, 400, "QR longe do local não vale");
+  assert.match(r.dados.erro, /QR Code|Registre o ponto no local/);
+  r = await app.post("/api/app/ponto", { qr: token, lat: -23.5506, lng: -46.6334 });
   assert.equal(r.status, 200, JSON.stringify(r.dados));
   assert.equal(r.dados.marcacao.qr, true);
   relogio += 120_000;
-  r = await app.post("/api/app/ponto", { qr: token });
+  r = await app.post("/api/app/ponto", { qr: token, lat: -23.5506, lng: -46.6334 });
   assert.equal(r.status, 400, "QR antigo não vale");
   assert.match(r.dados.erro, /expirado/);
   // PIN no quiosque

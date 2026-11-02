@@ -14,7 +14,7 @@ import { dataLocal, feriadosNacionais, instante, somarDias } from "../ponto/cale
 import { calcularEspelho } from "../ponto/espelho.js";
 
 export const CONFIG_PADRAO = {
-  ponto: { exige_biometria: false, permitir_quiosque_pin: true, lembrar_marcacao: true },
+  ponto: { exige_biometria: false, permitir_quiosque_pin: true, lembrar_marcacao: true, qr_exige_gps: true },
   esocial: { ativo: true, ambiente: 2, class_trib: "99", cnae: "", fpas: "515", cod_tercs: "0115", rat: "1", fap: "1.0000", inicio_validade: "" },
   registro_inpi: "",
   transmissor_cnpj: "",

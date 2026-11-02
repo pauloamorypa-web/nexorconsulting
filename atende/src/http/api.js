@@ -4,7 +4,7 @@
 import { z } from "zod";
 import { CONFIG_PADRAO, configCompleta, ETAPAS } from "../db.js";
 import { criarCloudAPI, ErroMeta, trocarCodigoPorToken, variaveisDoModelo } from "../meta/cloud-api.js";
-import { conferirSenha, gerarHashSenha, gerarToken, mascarar, sha256 } from "../seguranca.js";
+import { conferirSenha, gerarHashSenha, gerarToken, mascarar, precisaRefazerHash, sha256 } from "../seguranca.js";
 import { formatarQuando, horariosLivres, instanteDe, situacaoHorario } from "../servicos/agenda.js";
 import { janelaAberta } from "../servicos/atendimento.js";
 import { tipoWhatsApp } from "../servicos/midia.js";
@@ -89,6 +89,26 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     res.setHeader("Set-Cookie", atributos.join("; "));
   }
 
+  /* Limite de uso das rotas caras (IA e envio de arquivos): por usuário e por empresa.
+     Protege os créditos de IA e o disco contra abuso, mesmo de uma conta legítima comprometida. */
+  const usos = new Map();
+  function limitarUso(chave, quantidade, janelaMs, mensagem) {
+    const t0 = agora();
+    const lista = (usos.get(chave) ?? []).filter((x) => t0 - x < janelaMs);
+    if (lista.length >= quantidade) falha(429, mensagem);
+    lista.push(t0);
+    usos.set(chave, lista);
+    if (usos.size > 50_000) for (const [k, v] of usos) if (t0 - v.at(-1) >= 60 * 60_000) usos.delete(k);
+  }
+  const limitarIa = (empresa, usuario) => {
+    limitarUso(`ia:u:${usuario?.id}`, cfg.limites.iaPorUsuario, 10 * 60_000, "Muitos pedidos à IA em pouco tempo. Aguarde alguns minutos.");
+    limitarUso(`ia:e:${empresa.id}`, cfg.limites.iaPorEmpresaHora, 60 * 60_000, "A empresa atingiu o limite de pedidos à IA nesta hora. Tente mais tarde.");
+  };
+  const limitarEnvioArquivo = (empresa, usuario) => {
+    limitarUso(`up:u:${usuario?.id}`, cfg.limites.arquivosPorUsuario, 10 * 60_000, "Muitos arquivos enviados em pouco tempo. Aguarde alguns minutos.");
+    limitarUso(`up:e:${empresa.id}`, cfg.limites.arquivosPorEmpresaHora, 60 * 60_000, "A empresa atingiu o limite de arquivos enviados nesta hora.");
+  };
+
   function limitarLogin(chave) {
     const t0 = agora();
     const lista = (tentativas.get(chave) ?? []).filter((x) => t0 - x < 15 * 60_000);
@@ -137,6 +157,8 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     const confere = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
     if (!u || !confere) falha(401, "E-mail ou senha incorretos.");
     tentativas.delete(`login:${d.email}`);
+    // Senha guardada com a proteção antiga: refaz o hash com a força atual
+    if (precisaRefazerHash(u.senha_hash)) repo.db.prepare("UPDATE usuarios SET senha_hash = ? WHERE id = ?").run(gerarHashSenha(d.senha), u.id);
     iniciarSessao(res, u);
     repo.auditar(u.empresa_id, u.id, "login");
     return { ok: true };
@@ -333,7 +355,8 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     }
   });
 
-  r.post("/api/midia", async ({ req, empresa }) => {
+  r.post("/api/midia", async ({ usuario, req, empresa }) => {
+    limitarEnvioArquivo(empresa, usuario);
     const tipo = String(req.headers["content-type"] ?? "").split(";")[0];
     if (!tipo || tipo.startsWith("multipart/")) falha(400, "Envie o arquivo direto no corpo, com o Content-Type do arquivo.");
     const dados = await lerCorpo(req, cfg.limites.tamanhoCorpo);
@@ -413,7 +436,8 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     return repo.conversa(empresa.id, c.id);
   });
 
-  r.post("/api/conversas/:id/sugerir", async ({ params, empresa, corpo }) => {
+  r.post("/api/conversas/:id/sugerir", async ({ usuario, params, empresa, corpo }) => {
+    limitarIa(empresa, usuario);
     const c = minhaConversa(empresa, params.id);
     const d = validar(z.object({ orientacao: op(500) }), await corpo());
     const contato = repo.contato(empresa.id, c.contato_id);
@@ -468,7 +492,8 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     }
   });
 
-  r.post("/api/ia/reescrever", async ({ empresa, corpo }) => {
+  r.post("/api/ia/reescrever", async ({ usuario, empresa, corpo }) => {
+    limitarIa(empresa, usuario);
     const d = validar(z.object({ texto: t(4000), estilo: z.enum(["corrigir", "amigavel", "profissional", "curto", "persuasivo", "empatico"]) }), await corpo());
     return { texto: await copiloto.reescrever({ empresa, ...d }) };
   });
@@ -598,7 +623,8 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     const d = validar(z.object({ consulta: t(300) }), await corpo());
     return conhecimento.indice(empresa.id).buscar(d.consulta, 5);
   });
-  r.post("/api/conhecimento/organizar", { papeis: ["dono", "admin"] }, async ({ empresa, corpo }) => {
+  r.post("/api/conhecimento/organizar", { papeis: ["dono", "admin"] }, async ({ usuario, empresa, corpo }) => {
+    limitarIa(empresa, usuario);
     const d = validar(z.object({ texto: t(60_000, 20) }), await corpo());
     return copiloto.organizarConhecimento({ empresa, texto: d.texto });
   });
@@ -711,7 +737,8 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     repo.sincronizarModelos(empresa.id, c.id, await atendimento.apiDoCanal(c).modelos().catch(() => []));
     return { ok: true };
   });
-  r.post("/api/modelos/sugerir", async ({ empresa, corpo }) => {
+  r.post("/api/modelos/sugerir", async ({ usuario, empresa, corpo }) => {
+    limitarIa(empresa, usuario);
     const d = validar(z.object({ objetivo: t(500), categoria: z.enum(["MARKETING", "UTILITY"]) }), await corpo());
     return copiloto.sugerirModelo({ empresa, ...d });
   });
@@ -753,7 +780,8 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
 
   /* ---------- Playground ---------- */
 
-  r.post("/api/playground", async ({ empresa, corpo }) => {
+  r.post("/api/playground", async ({ usuario, empresa, corpo }) => {
+    limitarIa(empresa, usuario);
     const d = validar(
       z.object({
         mensagens: z.array(z.object({ autor: z.enum(["cliente", "ia"]), texto: z.string().max(4000), opcoes: z.array(z.string()).optional(), tipo: z.string().optional() })).min(1).max(60),
