@@ -10,7 +10,8 @@ export const GUPY_PADRAO = { base: "https://api.gupy.io/api/v1", vagas: "/jobs?s
 const lista = (r) => (Array.isArray(r) ? r : (r?.results ?? r?.data ?? r?.items ?? []));
 
 async function obter(fetchFn, url, token) {
-  const r = await fetchFn(url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } });
+  // Sem seguir redirecionamentos: o token não pode ser levado para outro endereço
+  const r = await fetchFn(url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }, redirect: "error" });
   if (r.status === 401 || r.status === 403) throw Object.assign(new Error("A Gupy recusou o token. Gere um novo token de API na Gupy e salve de novo."), { status: 400 });
   if (!r.ok) throw Object.assign(new Error(`A Gupy respondeu HTTP ${r.status} em ${new URL(url).pathname}. Confira o endereço da API nas integrações.`), { status: 502 });
   return r.json();

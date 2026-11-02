@@ -11,6 +11,10 @@ export function lerConfig(env = process.env) {
     urlPublica: (env.PUBLIC_URL ?? "").replace(/\/$/, ""),
     producao: env.NODE_ENV === "production",
     pastaDados: env.DATA_DIR ?? "./data",
+    // Quantos proxies reversos (Render, nginx, balanceador) ficam na frente do servidor. O IP do cliente é lido do
+    // X-Forwarded-For contando a partir da direita (o que o proxy acrescentou), nunca do começo (que o cliente forja).
+    // 0 = sem proxy: usa o IP da conexão e ignora o cabeçalho.
+    proxies: Math.max(0, Math.floor(numero(env.TRUST_PROXY, 1))),
     // Criptografa o certificado digital e outros segredos no banco. Obrigatória em produção.
     chaveMestra: env.MASTER_KEY ?? "",
     permitirCadastro: env.ALLOW_SIGNUP === "true",

@@ -11,7 +11,7 @@ import { conferirGps, conferirQr } from "../ponto/presenca.js";
 import { comprovante, ErroMarcacao, registrarMarcacao } from "../ponto/registro.js";
 import { periodosFerias } from "../folha/calculo.js";
 import { competencia, cpf, data, horario, op, t, validar } from "./validacao.js";
-import { enviarArquivo } from "./rotas-cadastros.js";
+import { enviarArquivo, nomeArquivo } from "./rotas-cadastros.js";
 import { falha, lerCorpo } from "./roteador.js";
 import { COOKIE_APP } from "./validacao.js";
 
@@ -25,6 +25,11 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
   };
   const credenciaisDe = (id, tipo) => repo.todos(`SELECT * FROM credenciais WHERE colaborador_id = ?${tipo ? " AND tipo = ?" : ""}`, id, ...(tipo ? [tipo] : []));
   const ctxApp = (ctx) => ({ ...ctx, usuario: null });
+  /** O id da credencial vem do aparelho: não pode substituir a credencial de outro colaborador */
+  const idLivre = (id, colaborador_id) => {
+    const dono = repo.um("SELECT colaborador_id FROM credenciais WHERE id = ?", id);
+    if (dono && dono.colaborador_id !== colaborador_id) falha(409, "Esta credencial já está cadastrada para outra pessoa.");
+  };
 
   /* ---------- Ativação ---------- */
 
@@ -35,6 +40,8 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
     const d = validar(z.object({ cpf, codigo: z.string().regex(/^\d{6}$/, "O código tem 6 números.") }), await corpo());
     limitar(`ativar:${ip}`, 20);
     limitar(`ativar:${d.cpf}`, 6);
+    // Teto diário por CPF: o código tem 6 números e vale 7 dias, então as tentativas precisam ser poucas no total
+    limitar(`ativar-dia:${d.cpf}`, 15, 86400_000);
     const candidatos = repo.todos("SELECT * FROM colaboradores WHERE cpf = ? AND status != 'desligado'", d.cpf);
     const c = candidatos.find((x) => repo.um("SELECT 1 FROM convites_app WHERE codigo_hash = ? AND expira_em > ?", sha256(`${x.id}:${d.codigo}`), agora()));
     if (!c) falha(401, "CPF ou código incorretos (ou o código venceu). Peça um novo código ao RH.");
@@ -102,6 +109,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
     } catch (e) {
       falha(400, `Não foi possível cadastrar a biometria: ${e.message}`);
     }
+    idLivre(cred.id, ctx.colaborador.id);
     repo.rodar("INSERT OR REPLACE INTO credenciais (id, colaborador_id, chave, alg, contador, aparelho, criada_em) VALUES (?,?,?,?,?,?,?)", cred.id, ctx.colaborador.id, cred.chave, cred.alg, cred.contador, d.aparelho ?? null, agora());
     auditar(ctxApp(ctx), "biometria_cadastrada", { aparelho: d.aparelho });
     return { ok: true };
@@ -116,6 +124,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
     } catch {
       falha(400, "Chave do aparelho inválida.");
     }
+    idLivre(`ap:${d.id}`, ctx.colaborador.id);
     repo.rodar("INSERT OR REPLACE INTO credenciais (id, colaborador_id, chave, alg, contador, aparelho, criada_em, tipo) VALUES (?,?,?,?,?,?,?,?)", `ap:${d.id}`, ctx.colaborador.id, JSON.stringify({ kty: "EC", crv: "P-256", x: d.chave.x, y: d.chave.y }), -7, 0, d.aparelho ?? null, agora(), "aparelho");
     auditar(ctxApp(ctx), "biometria_cadastrada", { aparelho: d.aparelho, app: "nativo" });
     return { ok: true, id: `ap:${d.id}` };
@@ -277,7 +286,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
     if (!dados.length) falha(400, "Arquivo vazio.");
     const mime = String(ctx.req.headers["content-type"] ?? "");
     if (!/^(image\/(jpeg|png|webp|heic)|application\/pdf)$/.test(mime)) falha(400, "Envie uma foto ou um PDF.");
-    const a = await nucleo.salvarArquivo({ empresa_id: ctx.empresa.id, nome: decodeURIComponent(ctx.req.headers["x-nome"] ?? "atestado"), mime, dados, enviado_por: ctx.colaborador.nome, colaborador_id: ctx.colaborador.id });
+    const a = await nucleo.salvarArquivo({ empresa_id: ctx.empresa.id, nome: nomeArquivo(ctx.req, "atestado"), mime, dados, enviado_por: ctx.colaborador.nome, colaborador_id: ctx.colaborador.id });
     return { id: a.id, nome: a.nome };
   });
   r.get("/api/app/atestados", APP, ({ colaborador: c, empresa }) => repo.listar("afastamentos", empresa.id, { colaborador_id: c.id }, { ordem: "inicio DESC", limite: 50 }));
@@ -313,9 +322,9 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
   });
 
   r.get("/api/app/documentos", APP, ({ colaborador: c, empresa }) => repo.todos("SELECT d.id, d.tipo, d.nome, d.arquivo, d.validade, d.criado_em FROM documentos d JOIN arquivos a ON a.id = d.arquivo WHERE d.colaborador_id = ? AND d.empresa_id = ? AND a.publico = 1 ORDER BY d.criado_em DESC", c.id, empresa.id));
-  r.get("/api/app/arquivos/:id", APP, async ({ colaborador: c, params, res }) => {
+  r.get("/api/app/arquivos/:id", APP, async ({ colaborador: c, empresa, params, res }) => {
     const a = await nucleo.lerArquivo(params.id);
-    if (!a || a.colaborador_id !== c.id || (!a.publico && a.enviado_por !== c.nome)) falha(404, "Arquivo não encontrado.");
+    if (!a || a.empresa_id !== empresa.id || a.colaborador_id !== c.id || (!a.publico && a.enviado_por !== c.nome)) falha(404, "Arquivo não encontrado.");
     enviarArquivo(res, a);
   });
 }

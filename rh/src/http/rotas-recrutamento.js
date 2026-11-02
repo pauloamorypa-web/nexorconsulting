@@ -24,6 +24,23 @@ export const CANAIS = [
   ["instagram", "Instagram", null],
 ];
 
+/** Endereço da API externa: só https e nunca a rede interna (o servidor mandaria o token para lá e leria a resposta) */
+export function enderecoExterno(texto) {
+  let u;
+  try {
+    u = new URL(texto);
+  } catch {
+    return false;
+  }
+  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (u.protocol !== "https:" || u.username || u.password) return false;
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || host.endsWith(".local") || !host.includes(".") && !host.includes(":")) return false;
+  // IPs literais privados, de loopback, link-local (metadados da nuvem) e equivalentes IPv6
+  if (/^(0|10|127)\.|^169\.254\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\.|^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)) return false;
+  if (host.includes(":") && (/^(::1?|fc|fd|fe80|::ffff:)/.test(host))) return false;
+  return true;
+}
+
 export function rotasRecrutamento({ r, repo, cofre, agora, auditar, aviso, limitar, base, fetchFn = fetch }) {
   const cfgRec = (empresa) => empresa.config.recrutamento ?? {};
   const salvarCfg = (empresa, mudanca) => {
@@ -76,7 +93,7 @@ export function rotasRecrutamento({ r, repo, cofre, agora, auditar, aviso, limit
   r.delete("/api/recrutamento/webhook-token", RH, (ctx) => (salvarCfg(ctx.empresa, { webhook_hash: null }), { ok: true }));
 
   r.put("/api/recrutamento/gupy", RH, async (ctx) => {
-    const d = validar(z.object({ token: z.string().trim().min(10).max(2000).optional(), base: z.string().url().max(200).optional(), remover: z.boolean().optional() }), await ctx.corpo());
+    const d = validar(z.object({ token: z.string().trim().min(10).max(2000).optional(), base: z.string().url().max(200).refine(enderecoExterno, "base: use um endereço https:// público da API").optional(), remover: z.boolean().optional() }), await ctx.corpo());
     if (d.remover) {
       salvarCfg(ctx.empresa, { gupy: null });
       return { ok: true };
