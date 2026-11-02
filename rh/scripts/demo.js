@@ -86,11 +86,11 @@ const vt = repo.inserir("beneficios", { empresa_id: emp.id, nome: "Vale-transpor
 const vr = repo.inserir("beneficios", { empresa_id: emp.id, nome: "Vale-refeição", tipo: "vr", valor_centavos: 55000, desconto_tipo: "percentual", desconto_valor: 10 });
 for (const c of colabs) repo.definirBeneficios(c.id, [{ beneficio_id: vt.id }, { beneficio_id: vr.id }]);
 
-// Um mês de marcações (outubro/2026 até hoje), com biometria, QR e pequenas variações
+// Dois meses de marcações (setembro/2026 até hoje), com biometria, QR e pequenas variações
 const hoje = dataLocal(Date.now());
 const feriados = nucleo.feriados(emp.id, 2026);
 const agoraMs = Date.now();
-for (let d = "2026-10-01"; d <= hoje; d = somarDias(d, 1)) {
+for (let d = "2026-09-01"; d <= hoje; d = somarDias(d, 1)) {
   for (const [i, c] of colabs.entries()) {
     if (d < c.admissao) continue;
     const j = repo.obter("jornadas", emp.id, c.jornada_id);

@@ -1282,3 +1282,42 @@ img.nx-blue-av, img.nx-chat-avatar { object-fit: cover; padding: 0; background: 
 @media (max-width: 1180px) { .breve-grade { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 900px) { .breve-grade { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .breve-grade { grid-template-columns: 1fr; } }
+
+/* ---------- Teste do Nexor RH ---------- */
+.ta-rh-cel { display: grid; gap: 12px; justify-items: center; }
+.ta-rh-cel h4 { justify-self: stretch; }
+.ta-rh-tela { width: min(100%, 300px); padding: 22px 18px 18px; border-radius: 34px; border: 8px solid #1c2a45; background: #f4f6fb; color: #0f172a; display: grid; justify-items: center; gap: 8px; box-shadow: 0 24px 60px rgba(0, 102, 255, .18); }
+.ta-rh-tela .muted { color: #64748b; }
+.ta-rh-ola { font: 700 1.15rem var(--font-head); justify-self: start; }
+.ta-rh-relogio { font: 700 2.3rem var(--font-head); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.ta-rh-botao { width: 168px; aspect-ratio: 1; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-content: center; justify-items: center; gap: 6px; color: #fff; font: 600 .95rem/1.25 var(--font-body); padding: 14px; text-align: center; background: radial-gradient(circle at 30% 25%, #3b8dff, #0050d8 70%); box-shadow: 0 14px 34px rgba(0, 102, 255, .35); transition: transform .12s; }
+.ta-rh-botao:active { transform: scale(.96); }
+.ta-rh-botao:disabled { opacity: .75; cursor: default; }
+.ta-rh-botao.lendo { animation: ta-rh-pulso 0.9s ease-in-out infinite; }
+@keyframes ta-rh-pulso { 50% { box-shadow: 0 0 0 16px rgba(0, 102, 255, .15), 0 14px 34px rgba(0, 102, 255, .35); } }
+@media (prefers-reduced-motion: reduce) { .ta-rh-botao.lendo { animation: none; } }
+.ta-rh-dedo { font-size: 2.2rem; line-height: 1; }
+.ta-rh-selos { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.ta-rh-selos .ta-chip:not(.ok) { background: #e2e8f0; color: #334155; }
+.ta-rh-marcas { list-style: none; margin: 4px 0 0; padding: 0; width: 100%; display: grid; gap: 6px; font-size: .86rem; }
+.ta-rh-marcas li { display: flex; gap: 8px; align-items: baseline; padding-left: 10px; border-left: 3px solid #0066ff; }
+.ta-rh-marcas li.muted { border: 0; padding: 0; }
+.ta-rh-marcas b { font: 700 1rem var(--font-head); font-variant-numeric: tabular-nums; }
+.ta-rh-marcas small { margin-left: auto; color: #64748b; font-size: .72rem; }
+.ta-rh-painel { display: grid; gap: 12px; }
+.ta-rh-painel code { font: 600 .8rem var(--font-mono); padding: 2px 6px; border-radius: 6px; background: rgba(255, 255, 255, .06); }
+.ta-rh-comp { display: grid; justify-items: center; gap: 6px; text-align: center; }
+.ta-rh-ok { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: #16a34a; color: #fff; font-size: 1.8rem; }
+.ta-rh-comp > b { font: 700 2rem var(--font-head); }
+.ta-rh-comp dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; text-align: left; width: 100%; font-size: .86rem; margin: 6px 0; }
+.ta-rh-comp dt { color: var(--muted); }
+.ta-rh-comp dd { margin: 0; overflow-wrap: anywhere; }
+.ta-rh-sim { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ta-check { display: flex !important; align-items: center; gap: 8px; flex-direction: row !important; align-self: end; padding-bottom: 10px; }
+.ta-check input { width: 18px !important; height: 18px; flex: none; padding: 0; accent-color: #3b8dff; }
+@media (max-width: 480px) { .ta-rh-sim { grid-template-columns: 1fr; } }
+.ta-rh-hol { list-style: none; margin: 12px 0 0; padding: 0; display: grid; }
+.ta-rh-hol li { display: flex; justify-content: space-between; padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.ta-rh-hol .neg { color: #f87171; }
+.ta-rh-hol .total { border-bottom: 0; border-top: 2px solid var(--line-strong); font-size: 1.05rem; }
+.ta-rh-hol .total b { color: #4ade80; }

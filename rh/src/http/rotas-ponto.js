@@ -28,17 +28,20 @@ export function rotasPonto({ r, repo, nucleo, cfg, agora, filtroEquipe, exigirCo
     const feriado = nucleo.feriados(empresa.id, Number(hoje.slice(0, 4))).has(hoje);
     const colaboradores = repo.todos(`SELECT * FROM colaboradores WHERE empresa_id = ? AND status != 'desligado'${f.sql} ORDER BY nome`, empresa.id, ...f.params).map((c) => repo.ler("colaboradores", c));
     const jornadas = new Map(repo.listar("jornadas", empresa.id).map((j) => [j.id, j]));
-    const desde = instante(hoje) - 6 * 3600_000;
+    const desde = agora() - 20 * 3600_000;
     const marcas = repo.todos("SELECT colaborador_id, momento, origem, biometria, qr FROM marcacoes WHERE empresa_id = ? AND momento >= ? AND status = 'valida' ORDER BY momento", empresa.id, desde);
     const porColab = new Map();
     for (const m of marcas) porColab.set(m.colaborador_id, [...(porColab.get(m.colaborador_id) ?? []), m]);
     const agoraMin = minutos(horaLocal(agora()));
     const lista = colaboradores.map((c) => {
-      const prev = c.status === "ativo" && !feriado ? previstoNoDia(jornadas.get(c.jornada_id), hoje) : null;
-      const ms = (porColab.get(c.id) ?? []).filter((m) => dataLocal(m.momento) === hoje || (prev && m.momento >= instante(hoje, prev.entrada) - 4 * 3600_000));
+      const jornada = jornadas.get(c.jornada_id);
+      const prev = c.status === "ativo" && !feriado ? previstoNoDia(jornada, hoje) : null;
+      const ms = turnoAtual(porColab.get(c.id) ?? [], agora());
       let situacao = c.status === "ferias" ? "ferias" : c.status === "afastado" ? "afastado" : !prev ? "folga" : "aguardando";
-      if (ms.length) situacao = ms.length % 2 ? "trabalhando" : ms.length === 2 && prev && minutos(prev.saida) > agoraMin + 60 ? "intervalo" : "saiu";
-      else if (prev && agoraMin > minutos(prev.entrada) + (jornadas.get(c.jornada_id)?.tolerancia_min ?? 5)) situacao = "atrasado";
+      if (ms.length) {
+        const ultima = ms.at(-1).momento;
+        situacao = ms.length % 2 ? "trabalhando" : ms.length === 2 && agora() - ultima < ((prev ?? previstoNoDia(jornada, somarDias(hoje, -1)))?.intervalo_min ?? 60) * 60_000 + 30 * 60_000 ? "intervalo" : "saiu";
+      } else if (prev && agoraMin > minutos(prev.entrada) + (jornada?.tolerancia_min ?? 5)) situacao = "atrasado";
       return { id: c.id, nome: c.nome, matricula: c.matricula, departamento_id: c.departamento_id, situacao, previsto: prev, marcacoes: ms.map((m) => ({ hora: horaLocal(m.momento), origem: m.origem, biometria: Boolean(m.biometria), qr: Boolean(m.qr) })) };
     });
     const conta = (s) => lista.filter((x) => x.situacao === s).length;
@@ -247,6 +250,18 @@ export function rotasPonto({ r, repo, nucleo, cfg, agora, filtroEquipe, exigirCo
     aviso(emp.id, "marcacao", { colaborador_id: c.id });
     return { nome: c.nome.split(" ")[0], hora: horaLocal(m.momento), comprovante: comprovante({ empresa: emp, estabelecimento: e, colaborador: c, marcacao: m, registroInpi: emp.config.registro_inpi }) };
   });
+}
+
+/** Marcações do turno atual: a sequência mais recente com intervalos menores que 5 h (cobre turnos que viram a
+    noite). Um turno já encerrado (número par de marcações) há mais de 4 h não conta como o de agora. */
+export function turnoAtual(marcacoes, agora) {
+  const turno = [];
+  for (let i = marcacoes.length - 1; i >= 0; i--) {
+    if (turno.length && turno[0].momento - marcacoes[i].momento >= 5 * 3600_000) break;
+    turno.unshift(marcacoes[i]);
+  }
+  if (turno.length && turno.length % 2 === 0 && agora - turno.at(-1).momento > 4 * 3600_000) return [];
+  return turno;
 }
 
 export function baixar(res, nome, conteudo, tipo) {

@@ -12,6 +12,7 @@ import { cpfValido, cnpjValido } from "../src/http/validacao.js";
 import { el } from "../src/esocial/xml.js";
 import { consultarLote } from "../src/esocial/cliente.js";
 import { CPF, subir } from "./ajuda.js";
+import { turnoAtual } from "../src/http/rotas-ponto.js";
 
 const T = TABELAS_PADRAO;
 
@@ -93,6 +94,16 @@ test("presença: QR rotativo e cerca de GPS", () => {
   const est = [{ id: "a", nome: "Loja", lat: -23.5505, lng: -46.6333, raio_m: 100, ativo: true }];
   assert.equal(conferirGps(est, -23.5509, -46.6333, 10).ok, true);
   assert.equal(conferirGps(est, -23.553, -46.6333, 10).ok, false);
+});
+
+test("turno atual: madrugada já encerrada e dia em andamento", () => {
+  const m = (iso) => ({ momento: Date.parse(iso) });
+  const noite = [m("2026-10-29T22:01:00-03:00"), m("2026-10-30T01:33:00-03:00"), m("2026-10-30T02:29:00-03:00"), m("2026-10-30T06:04:00-03:00")];
+  assert.equal(turnoAtual(noite, Date.parse("2026-10-30T10:40:00-03:00")).length, 0, "saiu às 6h: às 10h40 não está trabalhando");
+  assert.equal(turnoAtual(noite.slice(0, 2), Date.parse("2026-10-30T01:50:00-03:00")).length, 2, "entrou ontem às 22h e está no intervalo");
+  assert.equal(turnoAtual(noite.slice(0, 3), Date.parse("2026-10-30T03:00:00-03:00")).length, 3, "virando a noite");
+  const ontem = [m("2026-10-29T08:00:00-03:00"), m("2026-10-29T12:00:00-03:00"), m("2026-10-29T13:00:00-03:00"), m("2026-10-29T17:48:00-03:00")];
+  assert.equal(turnoAtual([...ontem, m("2026-10-30T08:00:00-03:00")], Date.parse("2026-10-30T10:40:00-03:00")).length, 1, "só a entrada de hoje");
 });
 
 test("validação de CPF e CNPJ", () => {
