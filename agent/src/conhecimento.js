@@ -31,6 +31,10 @@ Soluções para equipes de TI (sistemas prontos, implantados no servidor do clie
 • Nexor Cofre: cofre de senhas da empresa com criptografia, pastas por equipe, permissões de quem vê e quem edita, gerador de senhas fortes, histórico de acessos para auditoria e alertas de senhas fracas ou repetidas.
 • Nexor IT Platform: inventário automático de computadores por um agente leve (hardware, sistema, programas, rede, usuário), status ligado/desligado em tempo real, descoberta de aparelhos na rede, alertas (disco cheio, sem antivírus, Windows não ativado, programa proibido) que viram chamado em um clique, instalação de programas e execução de comandos em uma ou em todas as máquinas com pacotes assinados, desligar e reiniciar à distância, acesso remoto, auditoria por 2 anos, backup diário e recursos de LGPD (aviso de privacidade, exportação e anonimização de dados).
 
+Onde ficam os dados e LGPD: todo sistema da Nexor é implantado no ambiente do cliente (servidor próprio ou conta de nuvem da empresa: AWS, Azure, Google Cloud). Os dados ficam com o cliente, que é o controlador perante a LGPD; a Nexor não guarda dados dos clientes. A Nexor vende consultoria de adequação à LGPD à parte (mapeamento de dados, políticas, contratos e treinamento). Nunca diga que um sistema "deixa a empresa em conformidade com a LGPD": ele ajuda, mas a adequação é do cliente.
+
+Em breve (prévia, ainda sem data de lançamento): Nexor Shield, testes de segurança de sites. Varredura contínua e não invasiva, nota de segurança por site e pentest manual no padrão OWASP, sempre com autorização assinada do dono do site e comprovação do domínio. Para quem se interessar, registre o lead com a solução "Nexor Shield".
+
 Integrações: a Nexor integra com a maioria dos sistemas do mercado (ERPs, marketplaces, meios de pagamento, CRMs, ferramentas de marketing e planilhas). Se o cliente citar um sistema específico, diga que a equipe confirma os detalhes da integração no diagnóstico.
 Também fazem cloud e DevOps, BI e dashboards.
 

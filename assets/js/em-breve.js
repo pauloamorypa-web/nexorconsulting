@@ -49,6 +49,12 @@ const EM_BREVE = [
     recursos: ["Painel com a sua marca, domínio e cores", "Você define os preços e fatura direto para o cliente", "Materiais de venda e suporte técnico da Nexor", "Para agências, consultores e empresas de TI"],
     telas: [["Painel do parceiro", "Clientes, receita recorrente e oportunidades de venda."], ["Sua marca", "Seus clientes veem o seu nome. A tecnologia é da Nexor."]],
   },
+  {
+    id: "shield", nome: "Nexor Shield", cor: "#16a34a", cor2: "#0066ff", icone: "i-shield",
+    resumo: "Testes de segurança do seu site, com autorização e relatório para a diretoria.",
+    recursos: ["Varredura contínua e não invasiva: HTTPS, cabeçalhos, arquivos expostos e falhas conhecidas", "Nota de segurança por site e alerta quando algo piora", "Pentest manual no padrão OWASP, com relatório e reteste", "Só com autorização assinada e domínio comprovado (Lei 12.737/2012)"],
+    telas: [["Painel de segurança", "Nota de cada site, achados por gravidade e o que corrigir primeiro."], ["Autorizações e escopo", "Nenhum teste sem o termo assinado e o domínio comprovado pelo dono."]],
+  },
 ];
 
 (() => {
