@@ -18,7 +18,9 @@ Regra de ouro: toda peça leva para o site (teste grátis de 12 horas ou lista d
 | `antes-depois.png` | Post 4:5 | Instagram, Facebook, anúncio |
 | `diagnostico.png` | Post 4:5 | Instagram, LinkedIn, anúncio |
 | `indicacao.png` | Post 4:5 | Grupos de networking, BNI, WhatsApp |
-| `linkedin-capa.png` | Capa do LinkedIn (1584×396) | Perfil e página da empresa |
+| `linkedin-capa.png` | Capa do perfil pessoal no LinkedIn (1584×396) | Perfil do fundador |
+| `linkedin-capa-pagina.png` | Capa da página da empresa no LinkedIn (1128×191, em 2x) | Página da empresa |
+| `linkedin-logo.png` | Logo quadrado (400×400) | Página da empresa no LinkedIn |
 | `folheto-a5.png` | Folheto A5 com QR codes (1748×2480) | Impressão para eventos, BNI, balcão |
 
 ---
@@ -120,7 +122,7 @@ Frase de 30 segundos para a apresentação semanal do BNI:
 > “Eu sou [nome], da Nexor Consulting. Nós colocamos inteligência artificial para atender e vender no WhatsApp 24 horas, e criamos sistemas, lojas virtuais e sites. Esta semana procuro uma clínica ou consultório que demora para responder os pacientes. A frase para me indicar é: ‘conheço uma empresa que coloca IA atendendo no WhatsApp, quer testar grátis por 12 horas?’”
 
 ### `linkedin-capa.png` — Capa do LinkedIn
-Use no perfil pessoal e na página da empresa. O lado esquerdo fica livre para a foto do perfil.
+Use no perfil pessoal. Na página da empresa, use `linkedin-capa-pagina.png`, que tem a proporção certa (1128×191) e deixa o canto do logo livre. O lado esquerdo fica livre para a foto do perfil.
 Título sugerido para o perfil: **Fundador da Nexor Consulting · IA no WhatsApp, sistemas e sites que vendem**
 
 ### `folheto-a5.png` — Folheto para eventos e BNI
