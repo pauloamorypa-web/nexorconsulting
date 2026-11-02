@@ -48,7 +48,7 @@ const config = {
   appName: process.env.APP_NAME ?? "Meu Ponto",
   webDir: "www",
   plugins: {
-    SplashScreen: { launchShowDuration: 900, launchAutoHide: true, backgroundColor: "#060b16", showSpinner: false },
+    SplashScreen: { launchShowDuration: 900, launchAutoHide: true, backgroundColor: "#010524", showSpinner: false },
   },
   android: { allowMixedContent: false },
   ios: { contentInset: "never" },
