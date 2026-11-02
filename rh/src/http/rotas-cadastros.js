@@ -1,6 +1,8 @@
 /* Cadastros: empresa, estabelecimentos (com cerca de GPS e quiosque), departamentos, cargos, jornadas,
    feriados, usuários do painel, colaboradores (ficha completa, dependentes, documentos, convite do app). */
 
+import { randomInt } from "node:crypto";
+import QRCode from "qrcode";
 import { z } from "zod";
 import { gerarHashSenha, gerarToken, sha256 } from "../seguranca.js";
 import { feriadosNacionais } from "../ponto/calendario.js";
@@ -262,14 +264,26 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
   r.delete("/api/dependentes/:id", RH, ({ empresa, params }) => ({ ok: repo.remover("dependentes", empresa.id, params.id) }));
 
   /* Convite do aplicativo: código de 6 dígitos válido por 7 dias */
-  r.post("/api/colaboradores/:id/convite", RH, (ctx) => {
+  r.post("/api/colaboradores/:id/convite", RH, async (ctx) => {
     const c = exigirColaborador(ctx, ctx.params.id);
-    const codigo = String(Math.floor(100000 + Math.random() * 900000));
+    const codigo = String(randomInt(100000, 1000000));
     repo.rodar("DELETE FROM convites_app WHERE colaborador_id = ?", c.id);
     repo.rodar("INSERT INTO convites_app (codigo_hash, colaborador_id, expira_em) VALUES (?,?,?)", sha256(`${c.id}:${codigo}`), c.id, agora() + 7 * 86400_000);
     auditar(ctx, "convite_app", { nome: c.nome });
-    const link = `${base(ctx.req)}/baixar`;
-    return { codigo, link, mensagem: `Olá, ${c.nome.split(" ")[0]}! Baixe o app de ponto da ${ctx.empresa.nome_fantasia || ctx.empresa.razao_social} (iPhone ou Android): ${link} . Depois entre com seu CPF e o código ${codigo}. O código vale por 7 dias.` };
+    const b = base(ctx.req);
+    const link = `${b}/baixar`;
+    // Link de ativação: o app das lojas lê este QR e já sabe o endereço do sistema da empresa e o código
+    const ativacao = `${b}/app/?ativar=${codigo}`;
+    const qr = await QRCode.toString(ativacao, { type: "svg", margin: 1, errorCorrectionLevel: "M" });
+    const empresa = ctx.empresa.nome_fantasia || ctx.empresa.razao_social;
+    return {
+      codigo,
+      link,
+      ativacao,
+      servidor: b.replace(/^https?:\/\//, ""),
+      qr,
+      mensagem: `Olá, ${c.nome.split(" ")[0]}! Instale o app Meu Ponto (${link}). Na primeira vez, toque em "Conectar à empresa" e informe o endereço ${b.replace(/^https?:\/\//, "")}, ou abra este link no celular: ${ativacao} . Depois entre com seu CPF e o código ${codigo}. O código vale por 7 dias.`,
+    };
   });
   /** Desconecta o celular do colaborador e apaga as biometrias (troca de aparelho) */
   r.delete("/api/colaboradores/:id/app", RH, (ctx) => {

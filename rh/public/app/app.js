@@ -1,9 +1,9 @@
 /* App do trabalhador: ativação, ponto com biometria (WebAuthn), GPS e QR Code, espelho, pedidos, holerites,
    comunicados e documentos. Funciona como app instalado (PWA). */
 
-import { api, definirAoDeslogar, get, post, put } from "/js/api.js";
+import { api, cabecalhosApi, configurarApi, definirAoDeslogar, get, post, put, urlApi } from "/js/api.js";
 import { acao, aviso, h, icone, janela, limpar, reais } from "/js/ui.js";
-import { aoAbrirLink, assinarComBiometria, biometriaDisponivel, criarChaveAparelho, lerQrNativo, localizarNativo, nativo, plataforma } from "/app/nativo.js";
+import { aoAbrirLink, apagarSessao, assinarComBiometria, biometriaDisponivel, criarChaveAparelho, escanearUrl, guardarSessao, lerQrNativo, lerSessao, localizarNativo, nativo, plataforma, salvarServidor, servidorSalvo } from "/app/nativo.js";
 
 const raiz = document.getElementById("app");
 const estado = { eu: null, aba: "inicio", qr: null };
@@ -25,8 +25,10 @@ const nomeAparelho = () => {
 };
 const vibrar = (p) => navigator.vibrate?.(p);
 
-// QR Code lido pela câmera do celular abre /app/?q=TOKEN
+// QR Code lido pela câmera do celular abre /app/?q=TOKEN; o convite do RH abre /app/?ativar=CODIGO
 const q = new URLSearchParams(location.search).get("q");
+let codigoConvite = new URLSearchParams(location.search).get("ativar");
+if (codigoConvite) history.replaceState(null, "", "/app/");
 if (q) {
   estado.qr = { token: q, lido: Date.now() };
   history.replaceState(null, "", "/app/");
@@ -46,7 +48,7 @@ aoAbrirLink((token) => {
 /* ---------- Ativação ---------- */
 function telaAtivacao() {
   const cpf = h("input", { class: "entrada entrada-grande", inputmode: "numeric", autocomplete: "username", placeholder: "000.000.000-00", maxlength: 14, oninput: (e) => { const d = e.target.value.replace(/\D/g, "").slice(0, 11); e.target.value = d.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2"); } });
-  const codigo = h("input", { class: "entrada entrada-grande codigo", inputmode: "numeric", autocomplete: "one-time-code", placeholder: "••••••", maxlength: 6 });
+  const codigo = h("input", { class: "entrada entrada-grande codigo", inputmode: "numeric", autocomplete: "one-time-code", placeholder: "••••••", maxlength: 6, value: codigoConvite ?? "" });
   const botao = h("button", { class: "btn btn-primario btn-grande", type: "submit" }, "Entrar");
   limpar(
     raiz,
@@ -56,11 +58,80 @@ function telaAtivacao() {
       h("img", { src: "/img/logo-mark.webp", alt: "", width: 64, height: 64 }),
       h("h1", {}, "Meu Ponto"),
       h("p", { class: "suave" }, "Entre com seu CPF e o código de 6 números que o RH enviou."),
-      h("form", { class: "pilha", onsubmit: (e) => (e.preventDefault(), acao(botao, async () => (await post("/app/ativar", { cpf: cpf.value, codigo: codigo.value }), iniciar()))) }, h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "CPF"), cpf), h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "Código do RH"), codigo), botao),
+      nativo ? h("p", { class: "chip" }, icone("predio", 12), " ", servidorSalvo()?.replace(/^https:\/\//, "")) : null,
+      h(
+        "form",
+        {
+          class: "pilha",
+          onsubmit: (e) => (
+            e.preventDefault(),
+            acao(botao, async () => {
+              const r = await api("/app/ativar", { metodo: "POST", corpo: { cpf: cpf.value, codigo: codigo.value }, cabecalhos: nativo ? { "x-app-nativo": "1" } : {} });
+              if (nativo && r.token) {
+                await guardarSessao(r.token);
+                configurarApi({ base: servidorSalvo(), token: r.token });
+              }
+              codigoConvite = null;
+              iniciar();
+            })
+          ),
+        },
+        h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "CPF"), cpf),
+        h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "Código do RH"), codigo),
+        botao,
+      ),
+      nativo ? h("button", { class: "btn-link", type: "button", onclick: () => (salvarServidor(null), telaConectar()) }, "Trocar de empresa") : null,
       h("p", { class: "suave pequeno" }, "Depois de entrar, você fica conectado neste celular. Seus dados são protegidos pela LGPD."),
     ),
   );
   cpf.focus();
+}
+
+/* ---------- App das lojas: conectar ao sistema da empresa ---------- */
+async function conferirServidor(endereco) {
+  const t = String(endereco ?? "").trim().replace(/\/+$/, "").replace(/\/app$/, "");
+  if (!t) throw new Error("Informe o endereço do sistema da sua empresa.");
+  const url = new URL(/^https?:\/\//.test(t) ? t : `https://${t}`);
+  if (url.protocol !== "https:") throw new Error("O endereço precisa ser seguro (https).");
+  const r = await fetch(`${url.origin}/api/app/servidor`).then((x) => x.json()).catch(() => null);
+  if (r?.sistema !== "Nexor RH") throw new Error("Não encontramos o sistema de ponto nesse endereço. Confira com o RH.");
+  return url.origin;
+}
+
+function telaConectar(erroInicial) {
+  const endereco = h("input", { class: "entrada entrada-grande", inputmode: "url", autocapitalize: "off", autocomplete: "url", placeholder: "rh.suaempresa.com.br" });
+  const botao = h("button", { class: "btn btn-primario btn-grande", type: "submit" }, "Conectar");
+  const conectar = async (origem, codigo) => {
+    salvarServidor(origem);
+    configurarApi({ base: origem });
+    codigoConvite = codigo ?? codigoConvite;
+    telaAtivacao();
+  };
+  limpar(
+    raiz,
+    h(
+      "main",
+      { class: "ativacao" },
+      h("img", { src: "/img/logo-mark.webp", alt: "", width: 64, height: 64 }),
+      h("h1", {}, "Conectar à empresa"),
+      h("p", { class: "suave" }, "Leia o QR Code de ativação que o RH enviou ou digite o endereço do sistema de ponto da sua empresa."),
+      h("button", {
+        class: "btn btn-primario btn-grande",
+        type: "button",
+        onclick: (e) =>
+          acao(e.currentTarget, async () => {
+            const u = await escanearUrl("Aponte para o QR Code de ativação do RH");
+            if (!u) return;
+            const origem = await conferirServidor(u.origin);
+            await conectar(origem, u.searchParams.get("ativar"));
+          }),
+      }, icone("qr", 18), "Ler QR Code de ativação"),
+      h("p", { class: "suave pequeno" }, "ou"),
+      h("form", { class: "pilha", onsubmit: (e) => (e.preventDefault(), acao(botao, async () => conectar(await conferirServidor(endereco.value)))) }, h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "Endereço do sistema"), endereco), botao),
+      h("p", { class: "suave pequeno" }, "O sistema e os seus dados ficam no servidor da sua empresa."),
+    ),
+  );
+  if (erroInicial) aviso(erroInicial, "erro");
 }
 
 /* ---------- Biometria ---------- */
@@ -101,9 +172,10 @@ const localizar = () =>
 async function lerQr() {
   if (nativo) {
     try {
-      const t = await lerQrNativo();
-      if (!t) aviso("Este QR Code não é do quiosque de ponto.", "erro");
-      return t;
+      const r = await lerQrNativo();
+      if (!r) return aviso("Este QR Code não é do quiosque de ponto.", "erro"), null;
+      if (r.origem !== servidorSalvo()) return aviso("Este QR Code é de outra empresa.", "erro"), null;
+      return r.q;
     } catch (e) {
       aviso(e.message, "erro", 6000);
       return null;
@@ -261,7 +333,7 @@ function pedirAjuste(area) {
 }
 
 async function subirArquivo(arquivo) {
-  const r = await fetch("/api/app/arquivos", { method: "POST", headers: { "x-nexor": "1", "Content-Type": arquivo.type, "x-nome": encodeURIComponent(arquivo.name) }, body: arquivo });
+  const r = await fetch(urlApi("/app/arquivos"), { method: "POST", headers: cabecalhosApi({ "Content-Type": arquivo.type, "x-nome": encodeURIComponent(arquivo.name) }), body: arquivo });
   const d = await r.json();
   if (!r.ok) throw new Error(d.erro);
   return d.id;
@@ -318,16 +390,25 @@ async function mais(area) {
     area,
     h("div", { class: "topo-app" }, h("h1", {}, "Mais")),
     h("section", { class: "cartao" }, h("h2", {}, "Comunicados"), coms.length ? h("ul", { class: "lista-itens" }, coms.map((c) => h("li", { class: "item-linha clicavel", onclick: async () => { janela({ titulo: c.titulo, conteudo: h("p", { class: "texto-longo" }, c.texto) }); if (!c.lido_em) await post(`/app/comunicados/${c.id}/lido`); } }, h("span", {}, c.fixado ? "📌" : c.lido_em ? "📄" : "🔵"), h("div", { class: "item-texto" }, h("strong", {}, c.titulo), h("small", { class: "suave" }, new Date(c.criado_em).toLocaleDateString("pt-BR")))))) : h("p", { class: "suave" }, "Nenhum comunicado.")),
-    docs.length ? h("section", { class: "cartao" }, h("h2", {}, "Meus documentos"), h("ul", { class: "lista-itens" }, docs.map((d) => h("li", { class: "item-linha" }, icone("nota", 20), h("a", { href: `/api/app/arquivos/${d.arquivo}`, target: "_blank" }, d.nome))))) : null,
+    docs.length ? h("section", { class: "cartao" }, h("h2", {}, "Meus documentos"), h("ul", { class: "lista-itens" }, docs.map((d) => h("li", { class: "item-linha" }, icone("nota", 20), h("a", { href: "#", onclick: (e) => (e.preventDefault(), abrirArquivo(d.arquivo)) }, d.nome))))) : null,
     h(
       "section",
       { class: "cartao" },
       h("h2", {}, "Minha conta"),
       h("p", {}, `${eu.colaborador.nome}`, h("br"), h("small", { class: "suave" }, `${eu.colaborador.cargo ?? ""} · matrícula ${eu.colaborador.matricula} · desde ${dataBR(eu.colaborador.admissao)}`)),
-      h("div", { class: "pilha" }, h("button", { class: "btn btn-fantasma", onclick: (e) => acao(e.currentTarget, async () => (await cadastrarBiometria(), desenhar())) }, icone("digital", 16), biometriaAtiva(eu) ? "Cadastrar outra biometria" : "Ativar digital ou rosto"), h("button", { class: "btn btn-fantasma", onclick: () => definirPin() }, icone("escudo", 16), eu.colaborador.tem_pin ? "Trocar PIN do quiosque" : "Criar PIN do quiosque"), h("button", { class: "btn btn-perigo-fantasma", onclick: async () => { await post("/app/sair"); location.reload(); } }, icone("sair", 16), "Sair deste celular")),
+      h("div", { class: "pilha" }, h("button", { class: "btn btn-fantasma", onclick: (e) => acao(e.currentTarget, async () => (await cadastrarBiometria(), desenhar())) }, icone("digital", 16), biometriaAtiva(eu) ? "Cadastrar outra biometria" : "Ativar digital ou rosto"), h("button", { class: "btn btn-fantasma", onclick: () => definirPin() }, icone("escudo", 16), eu.colaborador.tem_pin ? "Trocar PIN do quiosque" : "Criar PIN do quiosque"), h("button", { class: "btn btn-perigo-fantasma", onclick: async () => { await post("/app/sair").catch(() => {}); if (nativo) await apagarSessao(); location.reload(); } }, icone("sair", 16), "Sair deste celular"),
+        nativo ? h("button", { class: "btn btn-fantasma", onclick: async () => { await post("/app/sair").catch(() => {}); await apagarSessao(); salvarServidor(null); location.reload(); } }, icone("predio", 16), "Trocar de empresa") : null),
     ),
     h("p", { class: "suave pequeno centro" }, "Nexor RH · nexorconsultingit.com.br"),
   );
+}
+
+async function abrirArquivo(id) {
+  const r = await fetch(urlApi(`/app/arquivos/${id}`), { headers: cabecalhosApi() });
+  if (!r.ok) return aviso("Não foi possível abrir o documento.", "erro");
+  const url = URL.createObjectURL(await r.blob());
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 function definirPin() {
@@ -352,7 +433,19 @@ async function desenhar() {
 }
 
 async function iniciar() {
-  definirAoDeslogar(() => estado.eu && ((estado.eu = null), telaAtivacao()));
+  definirAoDeslogar(() => estado.eu && ((estado.eu = null), nativo && apagarSessao(), telaAtivacao()));
+  if (nativo) {
+    let servidor = servidorSalvo();
+    if (!servidor) {
+      // Versão com a marca do cliente: o endereço vem embutido no app (app/padrao.json)
+      const padrao = await fetch("/app/padrao.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+      if (padrao.servidor) salvarServidor((servidor = padrao.servidor));
+    }
+    if (!servidor) return telaConectar();
+    const token = await lerSessao();
+    configurarApi({ base: servidor, token });
+    if (!token) return telaAtivacao();
+  }
   try {
     estado.eu = await api("/app/eu");
   } catch (e) {

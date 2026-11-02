@@ -45,11 +45,15 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
     res.setHeader("Set-Cookie", [...(Array.isArray(atual) ? atual : atual ? [atual] : []), a.join("; ")]);
   }
 
-  function iniciarSessao(res, { usuario_id, colaborador_id }) {
+  /** Abre a sessão. O app nativo (lojas) recebe o token na resposta e o guarda no cofre do celular;
+      o navegador recebe um cookie HttpOnly. */
+  function iniciarSessao(res, { usuario_id, colaborador_id }, { nativo = false } = {}) {
     const token = gerarToken();
     const dias = colaborador_id ? cfg.sessaoAppDias : cfg.sessaoDias;
     repo.criarSessao(sha256(token), { usuario_id, colaborador_id }, dias);
+    if (nativo && colaborador_id) return token;
     cookie(res, colaborador_id ? COOKIE_APP : COOKIE_PAINEL, token, dias);
+    return null;
   }
 
   /** Usuário do painel da sessão (ou null) */
@@ -61,8 +65,10 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
   }
 
   /** Colaborador da sessão do aplicativo (ou null). A sessão é renovada a cada uso. */
-  function sessaoApp(cookies) {
-    const token = cookies[COOKIE_APP];
+  /** Token do app: cabeçalho Authorization (app das lojas) ou cookie (navegador) */
+  const tokenApp = (cookies, req) => String(req?.headers?.authorization ?? "").match(/^Bearer\s+([\w-]{20,200})$/)?.[1] ?? cookies[COOKIE_APP];
+  function sessaoApp(cookies, req) {
+    const token = tokenApp(cookies, req);
     const s = token ? repo.sessao(sha256(token)) : null;
     if (!s?.colaborador_id) return null;
     const c = repo.obter("colaboradores", null, s.colaborador_id);
@@ -157,7 +163,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
     return usuarioPublico(repo.atualizar("usuarios", null, usuario.id, { nome: d.nome || undefined, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined }));
   });
 
-  const deps = { r, repo, nucleo, cofre, cfg, agora, limitar, iniciarSessao, sessaoApp, filtroEquipe, exigirColaborador, auditar, aviso, base, fetchSoap, fetchFn, configCompleta };
+  const deps = { r, repo, nucleo, cofre, cfg, agora, limitar, iniciarSessao, sessaoApp, tokenApp, filtroEquipe, exigirColaborador, auditar, aviso, base, fetchSoap, fetchFn, configCompleta };
   rotasCadastros(deps);
   rotasPonto(deps);
   rotasFolha(deps);
@@ -166,5 +172,5 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
   rotasApp(deps);
   const recrutamento = rotasRecrutamento(deps);
 
-  return { roteador: r, sessaoPainel, sessaoApp, paginasVagas: recrutamento.paginas };
+  return { roteador: r, sessaoPainel, sessaoApp, tokenApp, paginasVagas: recrutamento.paginas };
 }

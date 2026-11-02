@@ -103,8 +103,13 @@ test("lead sem contato ou com tipo inválido é recusado", async () => {
   assert.equal((await lead({ sessao: "x1234567", tipo: "spam", dados: { telefone: "1" } })).status, 400);
 });
 
-test("lead guarda a origem da campanha, calcula a temperatura e vai para a Meta", async () => {
+test("lead guarda a origem da campanha, calcula a temperatura e vai para a Meta (com consentimento)", async () => {
+  const antes = paraMeta.length;
+  await lead({ id: "sem-consent-1", sessao: "camp9999", tipo: "interesse", dados: { nome: "Ana", telefone: "34977775555" }, pontuacao: 4 });
+  assert.equal(paraMeta.length, antes, "sem consentimento de cookies, nada vai para a Meta");
+  assert.equal(leads.at(-1).consentimento_medicao, false);
   const r = await lead({
+    consentimento: true,
     id: "abc-12345678",
     sessao: "camp1234",
     tipo: "interesse",

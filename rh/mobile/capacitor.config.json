@@ -2,13 +2,6 @@
   "appId": "br.com.nexorconsultingit.ponto",
   "appName": "Meu Ponto",
   "webDir": "www",
-  "server": {
-    "url": "https://rh.nexorconsultingit.com.br/app/",
-    "allowNavigation": [
-      "rh.nexorconsultingit.com.br"
-    ],
-    "errorPath": "offline.html"
-  },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 900,
@@ -21,7 +14,6 @@
     "allowMixedContent": false
   },
   "ios": {
-    "contentInset": "never",
-    "limitsNavigationsToAppBoundDomains": false
+    "contentInset": "never"
   }
 }

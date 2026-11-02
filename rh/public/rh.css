@@ -66,3 +66,7 @@
 
 .lista-itens { list-style: none; margin: 0; padding: 0; }
 .copiavel { display: block; } .copiavel code { display: block; word-break: break-all; white-space: normal; }
+.convite-qr { display: grid; grid-template-columns: 180px 1fr; gap: 16px; align-items: center; }
+.convite-qr img { background: #fff; border-radius: 12px; padding: 8px; }
+.convite-qr .codigo-grande { font-size: 32px; padding: 10px; }
+@media (max-width: 560px) { .convite-qr { grid-template-columns: 1fr; justify-items: center; } }

@@ -1,15 +1,18 @@
 # App "Meu Ponto" para iPhone e Android
 
-App nativo do Nexor RH, feito com [Capacitor](https://capacitorjs.com) 8. Ele abre o app do trabalhador
-(`/app/` do servidor) e usa os recursos nativos do celular:
+App nativo do Nexor RH, feito com [Capacitor](https://capacitorjs.com) 8, **só para o colaborador**.
+
+**Um app para todos os clientes.** Pela regra da Nexor, cada cliente roda o Nexor RH no próprio servidor ou na própria nuvem, e os dados ficam lá. O app das lojas é um só: as telas vêm embutidas no app, e no primeiro acesso o colaborador **conecta o app ao sistema da empresa dele**. Ele lê o QR Code de ativação que o RH gera no convite ou digita o endereço. Depois o app guarda o endereço e o token de acesso no cofre do celular e conversa só com o servidor da empresa. A Nexor não recebe nenhum dado.
+
+Recursos nativos:
 
 | Recurso | Como funciona no app nativo |
 | --- | --- |
 | **Biometria** | Digital ou Face ID do sistema. O app cria uma chave guardada no cofre do celular (Keychain no iPhone, Keystore no Android), presa a este aparelho, e só a usa depois da biometria. O servidor confere a assinatura. A digital e o rosto nunca saem do celular. |
 | **QR Code** | Leitor de código nativo (`@capacitor/barcode-scanner`). Funciona no iPhone e no Android. |
 | **GPS** | Localização nativa, pedida só na hora de bater o ponto. |
-| **Link do QR abre o app** | O QR do quiosque é um link `https://SEU-SERVIDOR/app/?q=…`. Com o app instalado, a câmera do celular abre direto o app (Android App Links e iOS Universal Links). |
-| **Atualizações** | As telas vêm do servidor: melhorias chegam a todos sem nova versão nas lojas. Só recursos nativos novos exigem publicar de novo. |
+| **QR do quiosque** | Lido pelo botão "Ler QR Code do quiosque". O app confere se o QR é do servidor da empresa dele. |
+| **Atualizações** | Telas novas exigem publicar uma nova versão nas lojas (o workflow gera os arquivos). O servidor de cada cliente é atualizado separadamente. |
 
 No navegador (sem instalar), o mesmo `/app/` continua funcionando como PWA, com WebAuthn para a biometria.
 
@@ -25,7 +28,7 @@ Para o Android também dá para distribuir o APK direto (sem loja), pela página
 
 O workflow `.github/workflows/app-meu-ponto.yml` compila nos servidores do GitHub:
 
-1. Em **Settings → Secrets and variables → Actions → Variables**, crie `NEXOR_RH_URL` com o endereço do servidor.
+1. Para o **app genérico das lojas**, não configure `NEXOR_RH_URL`. Só crie essa variável para gerar um app com a marca de **um** cliente, com o endereço embutido.
 2. Em **Actions → App Meu Ponto → Run workflow**.
 3. No fim, baixe os arquivos em **Artifacts**:
    - Sem chaves configuradas: `meu-ponto-teste.apk`, que instala em qualquer Android para teste. O iOS só confere se compila.
@@ -52,7 +55,9 @@ No portal da Apple (Certificates, Identifiers & Profiles):
 Secrets: `IOS_CERTIFICATE_P12_BASE64` (`base64 -i cert.p12`), `IOS_CERTIFICATE_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64` e `APPLE_TEAM_ID`.
 Envie o `.ipa` gerado pelo app **Transporter** (Mac) ou pelo Xcode para o App Store Connect e distribua pelo TestFlight ou pela loja.
 
-## Fazer o QR Code abrir o app (links verificados)
+## App com a marca de um cliente: fazer o QR abrir o app (opcional)
+
+No app genérico, a câmera do celular não abre o app sozinha, porque cada cliente tem um domínio diferente: o colaborador usa o leitor de dentro do app. Num app com a marca de um cliente (`NEXOR_RH_URL` definido), dá para ligar os links verificados:
 
 No servidor do Nexor RH (variáveis de ambiente):
 

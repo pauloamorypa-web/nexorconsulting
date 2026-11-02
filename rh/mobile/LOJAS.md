@@ -58,14 +58,14 @@ O painel do RH continua no navegador, no endereço do servidor.
 
 ## Para a revisão (Apple e Google)
 
-As lojas testam o app. Como ele exige login, informe uma conta de demonstração:
+As lojas testam o app. Como ele exige login, use o **servidor de demonstração da Nexor** (`rh.nexorconsultingit.com.br`, só com dados fictícios, conforme a regra de implantação) e informe uma conta de teste:
 
-1. No painel do RH (empresa de demonstração), cadastre o colaborador "Revisor Apple/Google".
+1. No painel do RH da empresa de demonstração, cadastre o colaborador "Revisor Apple/Google".
 2. Coloque-o num local **sem** "exigir GPS" e **sem** "exigir QR Code" (os revisores não estão na sua empresa).
 3. Gere o código de ativação no painel, válido por 7 dias. Gere outro se a revisão demorar.
 4. No campo de notas da revisão, escreva:
 
-> Este app é de uso interno de empresas clientes. Para testar: CPF 000.000.000-00, código de ativação 000000.
+> Este app é de uso interno de empresas clientes do Nexor RH; cada empresa tem o próprio servidor. Para testar: na primeira tela, digite o endereço rh.nexorconsultingit.com.br e toque em Conectar. Depois use CPF 000.000.000-00 e código de ativação 000000.
 > Toque em "Registrar entrada" para bater o ponto. A biometria é opcional na conta de teste.
 
 ## Segurança dos dados (Google Play) e Privacidade (App Store)
@@ -78,6 +78,7 @@ As lojas testam o app. Como ele exige login, informe uma conta de demonstração
 | Biometria | **Não** sai do aparelho | — | — |
 
 Criptografia em trânsito: sim. Exclusão: o colaborador pede ao RH da empresa (o empregador é o controlador dos dados).
+Os dados ficam no servidor da empresa do colaborador, não em servidores da Nexor.
 
 ## Capturas de tela
 

@@ -17,7 +17,7 @@ import { COOKIE_APP } from "./validacao.js";
 
 const APP = { app: true };
 
-export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, auditar, aviso, base }) {
+export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, tokenApp, auditar, aviso, base }) {
   const desafios = criarDesafios();
   const rp = (req) => {
     const u = new URL(base(req));
@@ -28,7 +28,10 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
 
   /* ---------- Ativação ---------- */
 
-  r.post("/api/app/ativar", { publico: true }, async ({ corpo, res, ip }) => {
+  /** O app das lojas confere se o endereço digitado é um servidor do Nexor RH (sem expor dados) */
+  r.get("/api/app/servidor", { publico: true }, () => ({ sistema: "Nexor RH", versao: cfg.sistema.versao, app: true }));
+
+  r.post("/api/app/ativar", { publico: true }, async ({ corpo, res, ip, req }) => {
     const d = validar(z.object({ cpf, codigo: z.string().regex(/^\d{6}$/, "O código tem 6 números.") }), await corpo());
     limitar(`ativar:${ip}`, 20);
     limitar(`ativar:${d.cpf}`, 6);
@@ -36,13 +39,16 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
     const c = candidatos.find((x) => repo.um("SELECT 1 FROM convites_app WHERE codigo_hash = ? AND expira_em > ?", sha256(`${x.id}:${d.codigo}`), agora()));
     if (!c) falha(401, "CPF ou código incorretos (ou o código venceu). Peça um novo código ao RH.");
     repo.rodar("DELETE FROM convites_app WHERE colaborador_id = ?", c.id);
-    iniciarSessao(res, { colaborador_id: c.id });
-    repo.auditar(c.empresa_id, c.nome, "app_ativado", { ip });
-    return { ok: true };
+    const nativo = req.headers["x-app-nativo"] === "1";
+    const token = iniciarSessao(res, { colaborador_id: c.id }, { nativo });
+    repo.auditar(c.empresa_id, c.nome, "app_ativado", { ip, nativo });
+    const emp = repo.obter("empresas", null, c.empresa_id);
+    return { ok: true, ...(token ? { token } : {}), empresa: emp.nome_fantasia || emp.razao_social };
   });
 
-  r.post("/api/app/sair", APP, ({ cookies, res }) => {
-    if (cookies[COOKIE_APP]) repo.encerrarSessao(sha256(cookies[COOKIE_APP]));
+  r.post("/api/app/sair", APP, ({ cookies, res, req }) => {
+    const t = tokenApp(cookies, req);
+    if (t) repo.encerrarSessao(sha256(t));
     res.setHeader("Set-Cookie", `${COOKIE_APP}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
     return { ok: true };
   });
