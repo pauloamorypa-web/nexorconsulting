@@ -2,6 +2,12 @@
 
 const EM_BREVE = [
   {
+    id: "one", nome: "Nexor One", cor: "#0058fa", cor2: "#00e1fb", icone: "i-layers",
+    resumo: "Uma IA trabalhando em todos os setores da empresa, num sistema só, com os dados no seu servidor.",
+    recursos: ["Atendimento, vendas, estoque, financeiro, RH, TI e segurança num só sistema", "A Blue atende o cliente e já age no estoque, na nota fiscal, no Pix e na entrega", "Montado para o seu segmento: você liga só os módulos que precisa", "Roda no servidor ou na nuvem da sua empresa, com o código-fonte entregue", "Segurança incluída: criptografia, 2 fatores, auditoria LGPD e testes contínuos"],
+    telas: [["Central da empresa", "Um pedido no WhatsApp vira reserva de estoque, nota fiscal, Pix e entrega, sem ninguém digitar nada."], ["Monte a sua", "Escolha o segmento, os módulos e onde os dados ficam. A Blue aprende o jeito da sua empresa."]],
+  },
+  {
     id: "cobra", nome: "Nexor Cobra IA", cor: "#22c55e", cor2: "#22d3ee", icone: "i-chart",
     resumo: "Cobrança inteligente no WhatsApp: lembra, envia o Pix e negocia sozinha.",
     recursos: ["Lembretes antes e no vencimento, com Pix copia e cola", "Negocia parcelas e descontos dentro das suas regras", "Baixa automática quando o cliente paga", "Equipe entra só nos casos difíceis, com o histórico"],
