@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { dataLocal, diasEntre, somarDias } from "../ponto/calendario.js";
 import { periodosFerias } from "../folha/calculo.js";
-import { op, t, validar } from "./validacao.js";
+import { linkHttp, op, t, validar } from "./validacao.js";
 import { falha } from "./roteador.js";
 
 const RH = { papeis: ["admin", "rh"] };
@@ -71,7 +71,7 @@ export function rotasPessoas({ r, repo, nucleo, agora, filtroEquipe, auditar, av
     return repo.todos(`SELECT c.*, v.titulo vaga FROM candidatos c JOIN vagas v ON v.id = c.vaga_id WHERE c.empresa_id = ? ${vaga ? "AND c.vaga_id = ?" : ""} ORDER BY c.atualizado_em DESC LIMIT 2000`, empresa.id, ...(vaga ? [vaga] : []));
   });
   r.post("/api/candidatos", RH, async (ctx) => {
-    const d = validar(z.object({ vaga_id: t(40), nome: t(150), email: op(160), telefone: op(20), cidade: op(80), linkedin: op(200), mensagem: op(4000) }), await ctx.corpo());
+    const d = validar(z.object({ vaga_id: t(40), nome: t(150), email: op(160), telefone: op(20), cidade: op(80), linkedin: linkHttp, mensagem: op(4000) }), await ctx.corpo());
     if (!repo.obter("vagas", ctx.empresa.id, d.vaga_id)) falha(400, "Vaga inválida.");
     return repo.inserir("candidatos", { ...d, empresa_id: ctx.empresa.id });
   });
@@ -104,7 +104,8 @@ export function rotasPessoas({ r, repo, nucleo, agora, filtroEquipe, auditar, av
         email: z.string().trim().toLowerCase().email().max(160),
         telefone: t(20, 8),
         cidade: op(80),
-        linkedin: op(200),
+        // Só links http(s): o RH abre este endereço no painel (javascript: viraria XSS)
+        linkedin: linkHttp,
         mensagem: op(4000),
         origem: op(20),
         consentimento: z.literal(true, { message: "É preciso aceitar o uso dos dados para a seleção (LGPD)." }),
@@ -114,7 +115,7 @@ export function rotasPessoas({ r, repo, nucleo, agora, filtroEquipe, auditar, av
     );
     let curriculo = null;
     if (d.curriculo) curriculo = (await nucleo.salvarArquivo({ empresa_id: v.empresa_id, nome: d.curriculo.nome, mime: d.curriculo.tipo, dados: Buffer.from(d.curriculo.base64, "base64"), enviado_por: d.nome })).id;
-    const c = repo.inserir("candidatos", { empresa_id: v.empresa_id, vaga_id: v.id, nome: d.nome, email: d.email, telefone: d.telefone, cidade: d.cidade, linkedin: d.linkedin, mensagem: d.mensagem, curriculo, origem: ORIGENS_PUBLICAS.has(d.origem) ? d.origem : "site" });
+    const c = repo.inserir("candidatos", { empresa_id: v.empresa_id, vaga_id: v.id, nome: d.nome, email: d.email, telefone: d.telefone, cidade: d.cidade, linkedin: d.linkedin || null, mensagem: d.mensagem, curriculo, origem: ORIGENS_PUBLICAS.has(d.origem) ? d.origem : "site" });
     aviso(v.empresa_id, "candidato", { id: c.id, vaga: v.titulo });
     return { ok: true };
   });

@@ -35,8 +35,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
     if (lista.length >= maximo) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
     lista.push(t0);
     tentativas.set(chave, lista);
-    if (tentativas.size > 20_000) tentativas.delete(tentativas.keys().next().value);
+    if (tentativas.size > 20_000) {
+      // Primeiro descarta as chaves vencidas; só se ainda estiver cheio apaga a mais antiga
+      for (const [k, l] of tentativas) if (!l.some((x) => t0 - x < janelaMs)) tentativas.delete(k);
+      if (tentativas.size > 20_000) tentativas.delete(tentativas.keys().next().value);
+    }
   }
+  // Hash de referência: o login confere a senha mesmo quando o e-mail não existe (mesmo tempo de resposta)
+  const HASH_FALSO = gerarHashSenha(gerarToken());
 
   function cookie(res, nome, token, dias) {
     const a = [`${nome}=${token}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${dias * 86400}`];
@@ -130,7 +136,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
     limitar(`login:${ip}`);
     limitar(`login:${d.email}`);
     const u = repo.usuarioPorEmail(d.email);
-    if (!u || !conferirSenha(d.senha, u.senha_hash)) falha(401, "E-mail ou senha incorretos.");
+    const senhaOk = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
+    if (!u || !senhaOk) falha(401, "E-mail ou senha incorretos.");
     iniciarSessao(res, { usuario_id: u.id });
     repo.auditar(u.empresa_id, u.nome, "login");
     return { ok: true };
@@ -157,9 +164,11 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
     };
   });
 
-  r.put("/api/eu", async ({ corpo, usuario }) => {
+  r.put("/api/eu", async ({ corpo, usuario, cookies }) => {
     const d = validar(z.object({ nome: op(120), senha: senha.optional(), senha_atual: z.string().max(200).optional() }), await corpo());
     if (d.senha && !conferirSenha(d.senha_atual ?? "", usuario.senha_hash)) falha(400, "Senha atual incorreta.");
+    // Trocou a senha: encerra as outras sessões (quem tinha a senha antiga perde o acesso)
+    if (d.senha) repo.rodar("DELETE FROM sessoes WHERE usuario_id = ? AND token_hash != ?", usuario.id, sha256(cookies[COOKIE_PAINEL] ?? ""));
     return usuarioPublico(repo.atualizar("usuarios", null, usuario.id, { nome: d.nome || undefined, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined }));
   });
 

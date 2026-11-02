@@ -8,7 +8,7 @@
 
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { config as configPadrao } from "./config.js";
 import { abrirBanco } from "./db.js";
@@ -28,6 +28,15 @@ const seguranca = (permissoes) => ({
   "Permissions-Policy": permissoes,
   "Content-Security-Policy": CSP,
 });
+
+/** IP do cliente. Atrás de N proxies, vale a N-ésima entrada do X-Forwarded-For contando da direita: as da
+    esquerda vêm do próprio cliente e podem ser forjadas (burlariam o limite de tentativas e o IP gravado no ponto). */
+export function ipCliente(req, proxies = 1) {
+  const direto = String(req.socket?.remoteAddress ?? "");
+  if (!proxies) return direto;
+  const lista = String(req.headers["x-forwarded-for"] ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  return lista.length ? (lista[Math.max(0, lista.length - proxies)] ?? direto) : direto;
+}
 
 /** Eventos em tempo real para o painel (SSE), por empresa */
 function criarEventos() {
@@ -67,7 +76,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     const area = ["app", "quiosque", "vagas"].find((a) => relativo === a || relativo.startsWith(`${a}/`));
     if (relativo === "" || relativo === area) relativo = area ? `${area}/index.html` : "index.html";
     let alvo = normalize(join(PUBLICO, relativo));
-    if (!alvo.startsWith(PUBLICO)) return false;
+    if (alvo !== PUBLICO && !alvo.startsWith(PUBLICO + sep)) return false;
     let info = await stat(alvo).catch(() => null);
     if (info?.isDirectory()) {
       alvo = join(alvo, "index.html");
@@ -138,7 +147,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       usuario,
       colaborador,
       empresa,
-      ip: String(req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "").split(",")[0].trim(),
+      ip: ipCliente(req, cfg.proxies ?? 1),
       corpo: async () => {
         if (lido === undefined) {
           const b = await lerCorpo(req, 10 * 1024 * 1024);
@@ -157,6 +166,12 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
 
   const servidor = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
+    // Cabeçalhos de segurança padrão em toda resposta (páginas e arquivos podem trocar o CSP pelo seu)
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Content-Security-Policy", CSP);
+    if (cfg.producao) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     try {
       if (url.pathname === "/health") return json(res, 200, { ok: true });
       if (req.method === "GET" && url.pathname.startsWith("/.well-known/")) {

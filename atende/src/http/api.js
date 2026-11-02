@@ -95,8 +95,15 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     if (lista.length >= cfg.limites.tentativasLogin) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
     lista.push(t0);
     tentativas.set(chave, lista);
-    if (tentativas.size > 10_000) tentativas.delete(tentativas.keys().next().value);
+    if (tentativas.size > 50_000) {
+      // Primeiro descarta o que já expirou: assim, inundar o mapa com chaves novas não "zera" o limite de um e-mail atacado
+      for (const [k, v] of tentativas) if (t0 - v.at(-1) >= 15 * 60_000) tentativas.delete(k);
+      if (tentativas.size > 50_000) tentativas.delete(tentativas.keys().next().value);
+    }
   }
+
+  // Hash de mentira: quem não existe também paga o custo do scrypt, então o tempo da resposta não revela quais e-mails têm conta
+  const HASH_FALSO = gerarHashSenha(gerarToken());
 
   const sessaoDe = (cookies) => (cookies[COOKIE] ? repo.sessao(sha256(cookies[COOKIE])) : null);
 
@@ -127,7 +134,8 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     limitarLogin(`login:${ip}`);
     limitarLogin(`login:${d.email}`);
     const u = repo.usuarioComSenha(d.email);
-    if (!u || !conferirSenha(d.senha, u.senha_hash)) falha(401, "E-mail ou senha incorretos.");
+    const confere = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
+    if (!u || !confere) falha(401, "E-mail ou senha incorretos.");
     tentativas.delete(`login:${d.email}`);
     iniciarSessao(res, u);
     repo.auditar(u.empresa_id, u.id, "login");
@@ -341,7 +349,17 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     if (params.empresa !== empresa.id) falha(404, "Arquivo não encontrado.");
     const arquivo = `${params.empresa}/${params.arquivo}`;
     const dados = await midia.ler(arquivo).catch(() => falha(404, "Arquivo não encontrado."));
-    res.writeHead(200, { "Content-Type": midia.tipoDe(arquivo), "Cache-Control": "private, max-age=86400", "Content-Length": dados.length, "X-Content-Type-Options": "nosniff", "Content-Disposition": "inline" });
+    const tipo = midia.tipoDe(arquivo);
+    // Arquivos vindos de clientes: só mídia e PDF abrem no navegador; o resto baixa. A CSP isola qualquer conteúdo ativo.
+    const abre = /^(image|audio|video)\//.test(tipo) || tipo === "application/pdf";
+    res.writeHead(200, {
+      "Content-Type": tipo,
+      "Cache-Control": "private, max-age=86400",
+      "Content-Length": dados.length,
+      "X-Content-Type-Options": "nosniff",
+      "Content-Disposition": abre ? "inline" : "attachment",
+      "Content-Security-Policy": "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox",
+    });
     res.end(dados);
     return undefined;
   });
@@ -778,15 +796,23 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     repo.auditar(empresa.id, usuario.id, "usuario_criado", { email: d.email, papel: d.papel });
     return u;
   });
-  r.put("/api/usuarios/:id", async ({ params, empresa, usuario, corpo }) => {
+  r.put("/api/usuarios/:id", async ({ params, empresa, usuario, corpo, res }) => {
     const proprio = params.id === usuario.id;
     if (!proprio && !["dono", "admin"].includes(usuario.papel)) falha(403, "Sem permissão.");
     const d = validar(z.object({ nome: op(120), papel: z.enum(["admin", "atendente"]).optional(), ativo: z.boolean().optional(), senha: senha.optional(), senha_atual: z.string().max(200).optional() }), await corpo());
     const alvo = repo.usuarios(empresa.id).find((u) => u.id === params.id) ?? falha(404, "Pessoa não encontrada.");
+    // Só o próprio dono altera os dados dele: um admin trocando a senha do dono tomaria a conta
+    if (alvo.papel === "dono" && !proprio) falha(403, "Só o dono pode alterar os próprios dados.");
     if (alvo.papel === "dono" && (d.papel || d.ativo === false)) falha(400, "O dono da conta não pode ser alterado.");
     if (proprio && (d.papel || d.ativo === false)) falha(400, "Você não pode mudar o próprio papel.");
     if (proprio && d.senha && !conferirSenha(d.senha_atual ?? "", repo.usuarioComSenha(usuario.email)?.senha_hash)) falha(400, "Senha atual incorreta.");
-    return repo.atualizarUsuario(empresa.id, params.id, { nome: d.nome, papel: d.papel, ativo: d.ativo, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined });
+    const u = repo.atualizarUsuario(empresa.id, params.id, { nome: d.nome, papel: d.papel, ativo: d.ativo, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined });
+    if (d.senha) {
+      // Senha nova derruba as sessões abertas (ex.: de quem descobriu a senha antiga); quem trocou a própria continua logado
+      if (proprio) iniciarSessao(res, u);
+      repo.auditar(empresa.id, usuario.id, "senha_alterada", { usuario: params.id });
+    }
+    return u;
   });
   r.get("/api/auditoria", { papeis: ["dono", "admin"] }, ({ empresa }) => repo.auditoriaRecente(empresa.id).map((a) => ({ ...a, detalhe: a.detalhe ? JSON.parse(a.detalhe) : null })));
 

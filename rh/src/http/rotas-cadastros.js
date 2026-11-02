@@ -173,7 +173,8 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
     if (ctx.params.id === ctx.usuario.id && (d.papel || d.ativo === false)) falha(400, "Você não pode mudar o próprio perfil.");
     const u = repo.atualizar("usuarios", ctx.empresa.id, ctx.params.id, { ...d, senha: undefined, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined });
     if (!u) falha(404, "Usuário não encontrado.");
-    if (d.ativo === false) repo.rodar("DELETE FROM sessoes WHERE usuario_id = ?", u.id);
+    // Desativado ou com senha nova: as sessões abertas deixam de valer
+    if (d.ativo === false || (d.senha && u.id !== ctx.usuario.id)) repo.rodar("DELETE FROM sessoes WHERE usuario_id = ?", u.id);
     return usuarioPublico(u);
   });
 
@@ -302,15 +303,19 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
   /* ---------- Arquivos e documentos ---------- */
 
   r.post("/api/arquivos", RH, async (ctx) => {
+    // O colaborador do arquivo precisa ser desta empresa (senão o arquivo apareceria no app de outra empresa)
+    const colaborador = ctx.query.get("colaborador") ? exigirColaborador(ctx, ctx.query.get("colaborador")) : null;
     const dados = await lerCorpo(ctx.req, cfg.limites.tamanhoArquivo);
     if (!dados.length) falha(400, "Arquivo vazio.");
-    const a = await nucleo.salvarArquivo({ empresa_id: ctx.empresa.id, nome: decodeURIComponent(ctx.req.headers["x-nome"] ?? "arquivo"), mime: ctx.req.headers["content-type"], dados, enviado_por: ctx.usuario.nome, colaborador_id: ctx.query.get("colaborador") || null });
+    const a = await nucleo.salvarArquivo({ empresa_id: ctx.empresa.id, nome: nomeArquivo(ctx.req, "arquivo"), mime: ctx.req.headers["content-type"], dados, enviado_por: ctx.usuario.nome, colaborador_id: colaborador?.id ?? null });
     return { id: a.id, nome: a.nome, tamanho: a.tamanho };
   });
   r.get("/api/arquivos/:id", TODOS, async (ctx) => {
     const a = await nucleo.lerArquivo(ctx.params.id);
     if (!a || a.empresa_id !== ctx.empresa.id) falha(404, "Arquivo não encontrado.");
     if (a.colaborador_id) exigirColaborador(ctx, a.colaborador_id);
+    // Arquivos sem colaborador (currículos, anexos gerais) são só do RH: o gestor vê apenas os da equipe
+    else if (!["admin", "rh"].includes(ctx.usuario.papel)) falha(404, "Arquivo não encontrado.");
     enviarArquivo(ctx.res, a);
   });
 
@@ -329,6 +334,15 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
     await nucleo.removerArquivo(doc.arquivo);
     return { ok: true };
   });
+}
+
+/** Nome do arquivo enviado no cabeçalho x-nome (codificado); se vier malformado, usa o padrão */
+export function nomeArquivo(req, padrao) {
+  try {
+    return decodeURIComponent(String(req.headers["x-nome"] ?? padrao)) || padrao;
+  } catch {
+    return padrao;
+  }
 }
 
 export function enviarArquivo(res, a) {

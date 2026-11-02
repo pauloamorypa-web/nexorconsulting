@@ -39,6 +39,18 @@ P = [
   faq=[("Quanto custa desenvolver um software sob medida?", "Depende do escopo e das integrações. Começamos com um diagnóstico gratuito e apresentamos uma proposta por etapas, com prazos e entregas claras."),
        ("Em quanto tempo fica pronto?", "Trabalhamos em ciclos curtos, com versões funcionais desde as primeiras entregas. O prazo total depende do tamanho do projeto."),
        ("O código fica com a minha empresa?", "Sim. O código-fonte e a documentação são entregues para você, sem aprisionamento tecnológico.")]),
+ dict(slug="sistema-de-ponto-eletronico", id="rh", nome="Nexor RH", icone="i-users",
+  title="Sistema de ponto eletrônico por app, folha e eSocial | Nexor",
+  desc="Ponto eletrônico pelo celular com digital, rosto, QR Code e GPS, dentro da Portaria 671 (REP-P), com espelho, banco de horas, folha, holerite no app e eSocial. Teste grátis.",
+  h1="Sistema de <em>ponto eletrônico</em> no celular, com folha e eSocial",
+  sub="O colaborador bate o ponto no app com a digital ou o rosto, e o RH recebe espelho, horas extras, banco de horas, folha e eventos do eSocial prontos, num sistema só.",
+  dores=["Ponto em papel ou relógio que vive quebrado e gera discussão no fim do mês", "Horas extras e banco de horas calculados na mão, com risco trabalhista", "Folha, holerite e eSocial em sistemas diferentes que não conversam"],
+  recursos=["Ponto pelo app com digital ou rosto do celular, cerca de GPS e QR Code do quiosque", "Dentro da Portaria 671 (REP-P), com comprovante, AFD e AEJ", "Espelho, horas extras, adicional noturno e banco de horas pela CLT", "Folha, férias, 13º e rescisão, com holerite no app do colaborador", "Eventos do eSocial gerados e assinados com o certificado da empresa", "Quiosque com QR que muda a cada 30 segundos: foto ou print não funcionam"],
+  publico=["Comércio e varejo", "Indústrias", "Restaurantes e padarias", "Clínicas e hospitais", "Empresas com equipe externa", "Redes com várias unidades"],
+  faq=[("O ponto pelo celular é válido pela lei?", "Sim. A Portaria 671 do Ministério do Trabalho reconhece o registro por programa (REP-P), inclusive no celular, desde que gere comprovante, AFD e AEJ e siga as regras de segurança. O Nexor RH foi feito dentro dessas regras."),
+       ("O colaborador pode bater o ponto de casa?", "Você define. Dá para exigir a cerca de GPS do local de trabalho, o QR Code do quiosque ou os dois, por unidade ou por colaborador."),
+       ("Funciona para quem não tem celular?", "Sim. No quiosque, quem está sem celular bate o ponto com CPF e PIN."),
+       ("A digital do colaborador fica guardada no sistema?", "Não. A biometria é conferida pelo próprio celular e nunca sai do aparelho; o sistema recebe só uma assinatura digital que comprova que foi aquela pessoa.")]),
  dict(slug="criacao-de-sites", id="sitepro", nome="Nexor Site Pro", icone="i-globe",
   title="Criação de sites profissionais que vendem | Nexor",
   desc="Criação de sites e landing pages rápidos, responsivos e otimizados para o Google, com botões para o WhatsApp e assistente de IA. Para empresas que querem mais clientes.",
@@ -141,6 +153,8 @@ def pagina(p):
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://connect.facebook.net https://www.googletagmanager.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>{esc(p["title"])}</title>
   <meta name="description" content="{esc(p["desc"])}">
   <meta name="robots" content="index, follow, max-image-preview:large">
@@ -266,12 +280,7 @@ def pagina(p):
 <script src="/assets/js/solucoes.js"></script>
 <script src="/assets/js/leads.js"></script>
 <script src="/assets/js/assistente.js"></script>
-<script>
-  (() => {{
-    const t = document.querySelector(".nav-toggle"), n = document.getElementById("menu");
-    t.addEventListener("click", () => {{ const o = !n.classList.contains("open"); n.classList.toggle("open", o); t.setAttribute("aria-expanded", String(o)); }});
-  }})();
-</script>
+<script src="/assets/js/menu.js"></script>
 </body>
 </html>
 '''

@@ -6,9 +6,9 @@ import forge from "node-forge";
 import { lerConfig } from "../src/config.js";
 import { montarAplicacao } from "../src/servidor.js";
 
-export async function subir({ agora, fetchSoap, fetchFn } = {}) {
+export async function subir({ agora, fetchSoap, fetchFn, cfg: extra = {} } = {}) {
   const pasta = mkdtempSync(join(tmpdir(), "nexor-rh-"));
-  const cfg = { ...lerConfig({}), pastaDados: pasta, chaveMestra: "teste-chave-mestra" };
+  const cfg = { ...lerConfig({}), pastaDados: pasta, chaveMestra: "teste-chave-mestra", ...extra };
   const app = montarAplicacao({ cfg, caminhoBanco: ":memory:", agora, fetchSoap, fetchFn });
   await new Promise((r) => app.servidor.listen(0, r));
   const url = `http://localhost:${app.servidor.address().port}`;

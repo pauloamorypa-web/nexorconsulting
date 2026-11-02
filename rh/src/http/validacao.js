@@ -18,6 +18,15 @@ export const cpf = z
   .refine(cpfValido, "CPF inválido");
 export const email = z.string().trim().toLowerCase().email().max(160);
 export const senha = z.string().min(8, "A senha precisa ter pelo menos 8 caracteres.").max(200);
+/** Link digitado pela pessoa (LinkedIn, portfólio): só http(s). Sem esquema, vira https://; javascript: e outros são recusados. */
+export const linkHttp = z
+  .string()
+  .trim()
+  .max(200)
+  .transform((v) => (!v ? null : /^[a-z][a-z0-9+.-]*:/i.test(v) ? v : `https://${v}`))
+  .refine((v) => v === null || /^https?:\/\/[^\s]+$/i.test(v), "use um endereço que comece com https://")
+  .optional()
+  .nullable();
 export const centavos = z.number().int().min(0).max(1_000_000_000);
 
 export function validar(esquema, dados) {

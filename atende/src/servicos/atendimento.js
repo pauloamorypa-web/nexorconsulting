@@ -294,7 +294,9 @@ export function criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia
     }
 
     if (ev.tipo === "reaction") {
-      const alvo = repo.mensagemPorWamid(ev.reacao?.wamid);
+      const achada = repo.mensagemPorWamid(ev.reacao?.wamid);
+      // A reação só entra na conversa da mensagem se ela for desta empresa
+      const alvo = achada?.empresa_id === empresa.id ? achada : null;
       const m = repo.salvarMensagem({ empresa_id: empresa.id, conversa_id: alvo?.conversa_id ?? conversa.id, wamid: ev.wamid, direcao: "entrada", autor: "cliente", tipo: "reaction", texto: ev.reacao?.emoji ?? "", conteudo: { alvo: ev.reacao?.wamid } });
       eventos.emitir(empresa.id, "mensagem", m);
       return;
@@ -331,10 +333,13 @@ export function criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia
   }
 
   function receberStatus(ev) {
-    const m = repo.atualizarStatusMensagem(ev.wamid, ev.status, ev.erro ? `${ev.erro.codigo}: ${ERRO(ev.erro)}` : null);
+    // O status só mexe em mensagens e campanhas da empresa dona do número que o enviou
+    const canal = repo.canalPorNumero(ev.idNumero);
+    if (!canal) return;
+    const m = repo.atualizarStatusMensagem(ev.wamid, ev.status, ev.erro ? `${ev.erro.codigo}: ${ERRO(ev.erro)}` : null, canal.empresa_id);
     if (m) eventos.emitir(m.empresa_id, "status", { id: m.id, conversa_id: m.conversa_id, wamid: ev.wamid, status: m.status, erro: m.erro });
     const envio = repo.envioPorWamid(ev.wamid);
-    if (envio && envio.status !== "respondido") {
+    if (envio && envio.status !== "respondido" && repo.campanha(canal.empresa_id, envio.campanha_id)) {
       const mapa = { enviada: "enviado", entregue: "entregue", lida: "lido", falhou: "falhou" };
       const ordem = ["fila", "enviado", "entregue", "lido", "respondido"];
       const novo = mapa[ev.status];

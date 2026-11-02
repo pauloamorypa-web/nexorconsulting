@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://connect.facebook.net https://www.googletagmanager.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Automação de processos com IA para empresas | Nexor</title>
   <meta name="description" content="Automação de processos com inteligência artificial: leitura de notas, boletos e contratos, relatórios e follow-ups automáticos. Calcule quanto sua empresa economiza.">
   <meta name="robots" content="index, follow, max-image-preview:large">
@@ -139,7 +141,7 @@
   <section class="sp-bloco">
     <div class="container">
       <h2>Outras soluções da Nexor</h2>
-      <div class="sp-outras"><a href="/solucoes/chatbot-whatsapp-com-ia/"><svg class="ic"><use href="#i-whatsapp"/></svg>Nexor Atende IA</a><a href="/solucoes/sistema-erp/"><svg class="ic"><use href="#i-layers"/></svg>Nexor Gestão</a><a href="/solucoes/software-sob-medida/"><svg class="ic"><use href="#i-code"/></svg>Nexor Sob Medida</a><a href="/solucoes/criacao-de-sites/"><svg class="ic"><use href="#i-globe"/></svg>Nexor Site Pro</a><a href="/solucoes/loja-virtual/"><svg class="ic"><use href="#i-store"/></svg>Nexor Commerce</a><a href="/solucoes/sistema-de-chamados/"><svg class="ic"><use href="#i-headset"/></svg>Nexor Service Desk</a><a href="/solucoes/cofre-de-senhas/"><svg class="ic"><use href="#i-shield"/></svg>Nexor Cofre</a><a href="/solucoes/inventario-de-ti/"><svg class="ic"><use href="#i-monitor"/></svg>Nexor IT Platform</a></div>
+      <div class="sp-outras"><a href="/solucoes/chatbot-whatsapp-com-ia/"><svg class="ic"><use href="#i-whatsapp"/></svg>Nexor Atende IA</a><a href="/solucoes/sistema-erp/"><svg class="ic"><use href="#i-layers"/></svg>Nexor Gestão</a><a href="/solucoes/software-sob-medida/"><svg class="ic"><use href="#i-code"/></svg>Nexor Sob Medida</a><a href="/solucoes/sistema-de-ponto-eletronico/"><svg class="ic"><use href="#i-users"/></svg>Nexor RH</a><a href="/solucoes/criacao-de-sites/"><svg class="ic"><use href="#i-globe"/></svg>Nexor Site Pro</a><a href="/solucoes/loja-virtual/"><svg class="ic"><use href="#i-store"/></svg>Nexor Commerce</a><a href="/solucoes/sistema-de-chamados/"><svg class="ic"><use href="#i-headset"/></svg>Nexor Service Desk</a><a href="/solucoes/cofre-de-senhas/"><svg class="ic"><use href="#i-shield"/></svg>Nexor Cofre</a><a href="/solucoes/inventario-de-ti/"><svg class="ic"><use href="#i-monitor"/></svg>Nexor IT Platform</a></div>
     </div>
   </section>
 </main>
@@ -156,11 +158,6 @@
 <script src="/assets/js/solucoes.js"></script>
 <script src="/assets/js/leads.js"></script>
 <script src="/assets/js/assistente.js"></script>
-<script>
-  (() => {
-    const t = document.querySelector(".nav-toggle"), n = document.getElementById("menu");
-    t.addEventListener("click", () => { const o = !n.classList.contains("open"); n.classList.toggle("open", o); t.setAttribute("aria-expanded", String(o)); });
-  })();
-</script>
+<script src="/assets/js/menu.js"></script>
 </body>
 </html>

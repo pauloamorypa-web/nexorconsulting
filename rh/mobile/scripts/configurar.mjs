@@ -62,7 +62,8 @@ const trocar = (arquivo, re, novo) => {
 };
 if (url) {
   const host = new URL(url).host;
-  trocar("../android/app/src/main/AndroidManifest.xml", /android:host="[^"]*" android:pathPrefix="\/app" \/><!-- nexor-host -->/, `android:host="${host}" android:pathPrefix="/app" /><!-- nexor-host -->`);
+  // O comentário <!-- nexor-host --> fica na linha seguinte do manifesto: o \s* aceita a quebra de linha
+  trocar("../android/app/src/main/AndroidManifest.xml", /android:host="[^"]*" android:pathPrefix="\/app" \/>(\s*)<!-- nexor-host -->/, `android:host="${host}" android:pathPrefix="/app" />$1<!-- nexor-host -->`);
   trocar("../ios/App/App/App.entitlements", /applinks:[^<]+/, `applinks:${host}`);
 }
 console.log(`Meu Ponto (${config.appId}): ${url ? `app do cliente ${url}` : "app genérico: o colaborador conecta ao servidor da empresa no primeiro acesso"}`);
