@@ -108,6 +108,42 @@ Figurinha de link: **Testar grátis** → `https://www.nexorconsultingit.com.br/
 
 ---
 
+## Para contadores (Nexor Contábil, em breve)
+
+Público: escritórios de contabilidade e contadores autônomos. Use também em grupos de contadores, eventos do CRC e na ACIUB. Página de destino: `/solucoes/sistema-para-escritorio-de-contabilidade/`.
+
+### `contabil-dor.png` — Quantas horas você perde cobrando documento?
+> Contador, quantas horas por semana o seu escritório gasta cobrando extrato, nota e recibo pelo WhatsApp? 📎
+>
+> Cliente que esquece, arquivo perdido em grupo, conciliação na mão e retrabalho que ninguém cobra. A gente conhece essa rotina, e está criando uma IA para acabar com ela.
+>
+> Em breve: Nexor Contábil. Comenta "EU" que te mando a prévia.
+>
+> #contabilidade #contador #escritoriocontabil #reformatributaria #inteligenciaartificial #uberlandia
+
+### `contabil-produto.png` — Escritório no piloto automático
+> Imagina o assistente do seu escritório no WhatsApp cobrando os documentos, recebendo, lendo e arquivando tudo por cliente e competência. Com a sua marca. 🤖
+>
+> E mais: pré-lançamentos para o sistema contábil que você já usa, rentabilidade por cliente e simulador da reforma tributária.
+>
+> Nexor Contábil, em breve. Link na bio para ver a prévia.
+>
+> #contabilidade #contador #automacao #ia #escritoriocontabil
+
+### `contabil-fundadores.png` — Procuramos escritórios fundadores
+> Estamos selecionando escritórios de contabilidade para serem fundadores do Nexor Contábil. 🚀
+>
+> Quem entra primeiro usa antes de todo mundo, ajuda a moldar o produto para a rotina real do escritório e garante condição especial no lançamento.
+>
+> Vagas limitadas. Chama no WhatsApp (34) 99733-7499 ou pelo link na bio.
+>
+> #contador #contabilidade #escritoriocontabil #inovacao #uberlandia
+
+### `contabil-story.png` — Story “Nunca mais cobre documento”
+Use com a figurinha de link para `nexorconsultingit.com.br/solucoes/sistema-para-escritorio-de-contabilidade/` e uma enquete: "Quantas horas por semana você cobra documento? 1-5 / 5-10 / +10". As respostas da enquete viram dado para a pesquisa com os escritórios.
+
+**Roteiro de entrevista com escritórios:** `marketing/produtos/nexor-contabil-entrevista.md`.
+
 ## Sugestões
 
 ### `antes-depois.png` — Antes × Depois

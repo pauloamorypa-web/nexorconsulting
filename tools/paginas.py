@@ -117,6 +117,21 @@ P = [
   faq=[("Precisa instalar algo nas máquinas?", "Sim, um agente leve em cada computador, que envia o inventário e permite instalar programas e executar comandos com segurança."),
        ("Consigo instalar um programa em todas as máquinas de uma vez?", "Sim. Você escolhe uma máquina, um grupo ou todas e acompanha o resultado no painel."),
        ("Por quanto tempo a auditoria fica guardada?", "O histórico de ações fica registrado por 2 anos.")]),
+ dict(slug="sistema-para-escritorio-de-contabilidade", id="contabil", nome="Nexor Contábil", icone="i-chart", breve=True, dores_titulo="Isso acontece no seu escritório?",
+  title="Sistema com IA para escritório de contabilidade | Nexor Contábil",
+  desc="Nexor Contábil: a IA cobra, recebe, lê e organiza os documentos dos clientes do escritório pelo WhatsApp, prepara pré-lançamentos para o seu sistema contábil e mostra a rentabilidade por cliente.",
+  h1="Seu escritório de contabilidade <em>no piloto automático</em>",
+  sub="Um assistente com a marca do escritório cobra, recebe, lê e arquiva os documentos dos clientes pelo WhatsApp. Sua equipe para de correr atrás de papel e o contador volta a ser consultor.",
+  dores=["Equipe perdendo horas cobrando documento de cliente pelo WhatsApp", "Arquivos perdidos em conversas, grupos e celulares pessoais", "Retrabalho manual em lançamentos e conciliação bancária", "Cliente que dá prejuízo e honorário que nunca é reajustado", "Reforma tributária chegando sem tempo para orientar cada cliente"],
+  recursos=["Assistente no WhatsApp com a marca do escritório: cobra, recebe, lê e arquiva por cliente e competência", "Leitura de notas e extratos com IA e pré-lançamentos para o sistema contábil que você já usa", "Conciliação bancária sugerida e captura de XML e certidões", "Prazos, guias e pendências de cada cliente num painel só", "Rentabilidade por cliente, retrabalho e reajuste de honorário com dados", "Simulador da reforma tributária (IBS e CBS) por cliente", "Instalado no servidor do escritório: sigilo e LGPD sob controle"],
+  publico=["Contadores autônomos", "Escritórios de contabilidade", "Escritórios com várias unidades", "BPO financeiro", "Departamento pessoal terceirizado", "Contabilidades digitais"],
+  passos=[("Diagnóstico", "Medimos quantas horas sua equipe gasta cobrando e organizando documentos."), ("Fundadores", "Os primeiros escritórios usam a primeira versão e ajudam a moldar o produto."), ("Implantação", "Conectamos o WhatsApp do escritório e o seu sistema contábil, sem migração."), ("Resultado", "Você acompanha as horas poupadas e o retrabalho reduzido mês a mês.")],
+  final="Os primeiros escritórios usam o Nexor Contábil antes de todo mundo, ajudam a moldar o produto e garantem condição especial.",
+  telas=[("/assets/img/em-breve/contabil-0.webp", "Central do escritório: documentos chegando pelo WhatsApp, lidos e arquivados pela IA"), ("/assets/img/em-breve/contabil-1.webp", "Rentabilidade por cliente e simulador da reforma tributária")],
+  faq=[("Preciso trocar o meu sistema contábil?", "Não. O Nexor Contábil funciona junto com o sistema que o escritório já usa e prepara os pré-lançamentos no formato de importação dele. A compatibilidade com o seu sistema é confirmada no diagnóstico."),
+       ("A IA envia guias e valores sozinha para o cliente?", "Não. A IA prepara e organiza, e o contador confere e aprova antes de qualquer guia ou valor chegar ao cliente. A responsabilidade técnica continua com o profissional."),
+       ("O WhatsApp aparece com o nome do escritório?", "Sim. O assistente usa o número, o nome e a marca do escritório. O cliente fala com o escritório, não com a Nexor."),
+       ("Quando o Nexor Contábil fica pronto?", "Ele está em desenvolvimento. Os escritórios fundadores entram primeiro, participam dos testes e garantem condição especial no lançamento.")]),
 ]
 
 # Modelo de implantação da Nexor (vale para todos os produtos): o sistema roda no ambiente do cliente,
@@ -147,6 +162,30 @@ def pagina(p):
             {"@type": "ListItem", "position": 3, "name": p["nome"], "item": url}]},
         {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in p["faq"]]}]}
     msg = f"Olá! Vi a página do {p['nome']} no site da Nexor e quero saber mais."
+    breve = p.get("breve", False)
+    if breve:
+        msg = f"Olá! Vi a página do {p['nome']} e quero ser um escritório fundador."
+        cta_nav = '<a class="btn btn-sm btn-primary" href="#fundador">Quero ser fundador</a>'
+        cta_hero = f'<a class="btn btn-lg btn-primary" href="{wa(msg)}" target="_blank" rel="noopener">Quero ser escritório fundador <svg class="ic"><use href="#i-arrow"/></svg></a>'
+        nota = "Em breve · lista de fundadores aberta · condição especial para os primeiros escritórios"
+        passos = "".join(f"<li><b>{esc(a)}</b><span>{esc(b)}</span></li>" for a, b in p["passos"])
+        final_h, final_p = "Seja um escritório fundador", p["final"]
+        final_cta = f'<a class="btn btn-lg btn-primary" href="{wa(msg)}" target="_blank" rel="noopener">Entrar na lista de fundadores</a>'
+    else:
+        cta_nav = f'<a class="btn btn-sm btn-primary" href="/#testar-{p["id"]}">Testar grátis</a>'
+        cta_hero = f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Testar grátis por 12h <svg class="ic"><use href="#i-arrow"/></svg></a>'
+        nota = "Sem cartão de crédito · Integra com a maioria dos sistemas do mercado"
+        passos = ('<li><b>Teste grátis</b><span>Use a demonstração por 12 horas, com a cara da sua empresa.</span></li>'
+                  '<li><b>Diagnóstico</b><span>Entendemos seu processo e estimamos o retorno, sem custo.</span></li>'
+                  '<li><b>Implantação</b><span>Configuramos com seus dados e integramos aos seus sistemas.</span></li>'
+                  '<li><b>Acompanhamento</b><span>Suporte, ajustes e indicadores para você ver o resultado.</span></li>')
+        final_h, final_p = "Veja funcionando na sua empresa", f"Teste o {p['nome']} grátis por 12 horas ou fale com um especialista."
+        final_cta = f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Começar teste grátis</a>'
+    previa = ""
+    if p.get("telas"):
+        previa = ('<section class="sp-bloco"><div class="container"><h2>Prévia do produto</h2><div class="sp-previa">'
+                  + "".join(f'<figure><img src="{src}" alt="{esc(alt)}" width="1600" height="1000" loading="lazy" decoding="async"><figcaption>{esc(alt)}</figcaption></figure>' for src, alt in p["telas"])
+                  + '</div><p class="sp-nota">Telas ilustrativas de produto em desenvolvimento, com dados fictícios.</p></div></section>')
     outras = "".join(f'<a href="/solucoes/{o["slug"]}/"><svg class="ic"><use href="#{o["icone"]}"/></svg>{esc(o["nome"])}</a>' for o in P if o is not p)
     return f'''<!doctype html>
 <html lang="pt-BR">
@@ -190,7 +229,7 @@ def pagina(p):
       <a href="/#ti">Para TI</a>
       <a href="/#roi">Calcule seu retorno</a>
       <a href="/#faq">FAQ</a>
-      <a class="btn btn-sm btn-primary" href="/#testar-{p["id"]}">Testar grátis</a>
+      {cta_nav}
     </nav>
   </div>
 </header>
@@ -203,17 +242,17 @@ def pagina(p):
       <h1>{p["h1"]}</h1>
       <p class="sp-sub">{esc(p["sub"])}</p>
       <div class="sp-ctas">
-        <a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Testar grátis por 12h <svg class="ic"><use href="#i-arrow"/></svg></a>
+        {cta_hero}
         <a class="btn btn-lg btn-ghost" href="{wa(msg)}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-whatsapp"/></svg>Falar no WhatsApp</a>
       </div>
-      <p class="sp-nota">Sem cartão de crédito · Integra com a maioria dos sistemas do mercado</p>
+      <p class="sp-nota">{nota}</p>
     </div>
   </section>
 
   <section class="sp-bloco">
     <div class="container sp-duas">
       <div>
-        <h2>Isso acontece na sua empresa?</h2>
+        <h2>{esc(p.get("dores_titulo", "Isso acontece na sua empresa?"))}</h2>
         <ul class="sp-dores">{"".join(f"<li>{esc(d)}</li>" for d in p["dores"])}</ul>
       </div>
       <div class="sp-card">
@@ -223,15 +262,11 @@ def pagina(p):
     </div>
   </section>
 
+  {previa}
   <section class="sp-bloco">
     <div class="container">
       <h2>Como funciona</h2>
-      <ol class="sp-passos">
-        <li><b>Teste grátis</b><span>Use a demonstração por 12 horas, com a cara da sua empresa.</span></li>
-        <li><b>Diagnóstico</b><span>Entendemos seu processo e estimamos o retorno, sem custo.</span></li>
-        <li><b>Implantação</b><span>Configuramos com seus dados e integramos aos seus sistemas.</span></li>
-        <li><b>Acompanhamento</b><span>Suporte, ajustes e indicadores para você ver o resultado.</span></li>
-      </ol>
+      <ol class="sp-passos">{passos}</ol>
     </div>
   </section>
 
@@ -249,12 +284,12 @@ def pagina(p):
     </div>
   </section>
 
-  <section class="sp-final">
+  <section class="sp-final" id="fundador">
     <div class="container">
-      <h2>Veja funcionando na sua empresa</h2>
-      <p>Teste o {esc(p["nome"])} grátis por 12 horas ou fale com um especialista.</p>
+      <h2>{final_h}</h2>
+      <p>{esc(final_p)}</p>
       <div class="sp-ctas">
-        <a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Começar teste grátis</a>
+        {final_cta}
         <a class="btn btn-lg btn-whats" href="{wa(msg)}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-whatsapp"/></svg>(34) 99733-7499</a>
       </div>
     </div>

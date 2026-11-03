@@ -42,3 +42,9 @@
 .sp-outras .ic { width: 20px; height: 20px; color: var(--cyan); flex: none; }
 .pg-solucao .footer-bottom a { color: var(--muted); }
 @media (max-width: 640px) { .sp-ctas .btn { width: 100%; justify-content: center; } .sp-final { text-align: left; } .sp-final .sp-ctas { justify-content: flex-start; } }
+/* Prévia de produto em breve */
+.sp-previa { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.sp-previa figure { margin: 0; display: grid; gap: 8px; }
+.sp-previa img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line-strong); background: #f4f6fb; box-shadow: 0 30px 60px -30px rgba(0, 102, 255, .45); }
+.sp-previa figcaption { color: var(--muted); font-size: var(--fs-sm); }
+@media (max-width: 420px) { .sp-previa { grid-template-columns: 1fr; } }
