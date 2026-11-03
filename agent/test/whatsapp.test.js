@@ -34,3 +34,13 @@ test("divide textos longos sem perder conteúdo", () => {
   assert.ok(partes.every((p) => p.length <= 1000));
   assert.equal(partes.join("\n").replace(/\s/g, ""), longo.replace(/\s/g, ""));
 });
+
+test("resposta em balões como no WhatsApp, com pausa proporcional", async () => {
+  const { emBaloes, pausaDigitando } = await import("../src/whatsapp.js");
+  assert.deepEqual(emBaloes("Oi!\n\nMe conta uma coisa:\n\ncomo é hoje?"), ["Oi!", "Me conta uma coisa:", "como é hoje?"]);
+  assert.deepEqual(emBaloes("a\n\nb\n\nc\n\nd\n\ne"), ["a", "b", "c", "d\n\ne"]);
+  assert.deepEqual(emBaloes("linha 1\nlinha 2"), ["linha 1\nlinha 2"]);
+  assert.deepEqual(emBaloes(""), []);
+  assert.equal(pausaDigitando("oi"), 800);
+  assert.equal(pausaDigitando("x".repeat(1000)), 3500);
+});

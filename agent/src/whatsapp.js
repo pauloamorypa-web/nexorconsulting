@@ -49,6 +49,17 @@ export function dividirTexto(texto, limite = LIMITE_TEXTO) {
   return partes;
 }
 
+/** Divide a resposta em balões, como uma pessoa digitando no WhatsApp: cada bloco separado
+    por linha em branco vira uma mensagem (no máximo 4; o excesso vai junto no último). */
+export function emBaloes(texto, maximo = 4) {
+  const blocos = String(texto ?? "").split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  if (blocos.length <= maximo) return blocos;
+  return [...blocos.slice(0, maximo - 1), blocos.slice(maximo - 1).join("\n\n")];
+}
+
+/** Pausa de "digitando" entre balões, proporcional ao tamanho do texto (0,8 s a 3,5 s) */
+export const pausaDigitando = (texto) => Math.min(3500, Math.max(800, 500 + String(texto).length * 20));
+
 export const whatsappConfigurado = () => Boolean(config.whatsapp.token && config.whatsapp.idNumero);
 
 /** Envia uma mensagem de texto. Fora da janela de 24 h da última mensagem do contato, a Meta exige template. */
@@ -73,7 +84,8 @@ export async function marcarComoLida(idMensagem) {
     await fetch(`https://graph.facebook.com/${versaoGraph}/${idNumero}/messages`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ messaging_product: "whatsapp", status: "read", message_id: idMensagem }),
+      // typing_indicator mostra "digitando..." para o cliente enquanto a Blue prepara a resposta
+      body: JSON.stringify({ messaging_product: "whatsapp", status: "read", message_id: idMensagem, typing_indicator: { type: "text" } }),
     });
   } catch {
     /* ignorado */

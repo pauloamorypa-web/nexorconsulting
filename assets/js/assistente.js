@@ -4,7 +4,7 @@
 
 (() => {
   const SUGESTOES = ["Quero vender mais pelo WhatsApp", "Preciso de um sistema de gestão", "Quero um site novo", "Sou da área de TI"];
-  const BOAS_VINDAS = "Oi! Eu sou a Blue, a assistente de IA da Nexor 💙 Me conta: o que você quer melhorar na sua empresa?";
+  const BOAS_VINDAS = "Oi! Que bom te ver por aqui 💙 Eu sou a Blue, a assistente de IA da Nexor. Me conta: o que anda tomando mais tempo aí na sua empresa?";
   const CHAVE = "nexor-blue";
   const comIA = Boolean(NEXOR_API_URL);
 
@@ -134,29 +134,33 @@
         d.mensagem = texto;
         const s = SOLUCAO_POR_TEMA.find(([re]) => re.test(texto));
         estado.etapa = 1;
-        return [(s ? `Ótimo! Para isso, a solução ideal é o ${s[1]}. ` : "Entendi! A Nexor tem uma solução para isso. ") + "Para eu te ajudar melhor, qual é o seu nome?"];
+        return [
+          s ? `Entendi! Isso é bem comum, e dá pra resolver com o ${s[1]}.` : "Entendi! Esse tipo de situação a gente resolve bastante por aqui.",
+          "Antes de eu te mostrar como funcionaria no seu caso: como posso te chamar?",
+        ];
       }
       case 1:
         d.nome = texto.replace(/^(meu nome [eé]|sou o|sou a|eu sou)\s+/i, "").slice(0, 80);
         estado.etapa = 2;
-        return [`Prazer, ${d.nome.split(" ")[0]}! Qual o nome da sua empresa e o ramo?`];
+        return [`Prazer, ${d.nome.split(" ")[0]}! 😊 E a sua empresa, como se chama e trabalha com o quê?`];
       case 2:
         d.empresa = texto.slice(0, 120);
         estado.etapa = 3;
-        return ["Perfeito. Qual o seu WhatsApp com DDD? Assim um especialista te manda uma proposta e um diagnóstico gratuito."];
+        return ["Boa! Me passa seu WhatsApp com DDD? Assim alguém do time te chama pra entender melhor e te mostrar um diagnóstico gratuito, sem compromisso."];
       case 3: {
-        if (texto.replace(/\D/g, "").length < 10) return ["Parece que faltou algum número. Pode mandar o WhatsApp com DDD? Ex.: (34) 99999-9999"];
+        if (texto.replace(/\D/g, "").length < 10) return ["Acho que faltou algum número 😅 Pode mandar com o DDD? Tipo (34) 99999-9999"];
         d.telefone = texto;
         estado.etapa = 4;
         NX.enviarLead("blue", d, { formulario: "blue" });
         const resumo = `Olá! Conversei com a Blue no site. Sou ${d.nome}, da ${d.empresa}. Preciso de: ${d.mensagem}`;
         return [
-          `Prontinho, ${d.nome.split(" ")[0]}! Já passei tudo para a equipe e um especialista vai te chamar no WhatsApp. Enquanto isso, você pode testar nossas soluções grátis por 12 horas aqui no site.`,
-          { texto: "Se preferir, já pode chamar agora:", link: whatsUrl(resumo) },
+          `Prontinho, ${d.nome.split(" ")[0]}! Já contei tudo pro time, e logo alguém te chama no WhatsApp.`,
+          "Enquanto isso, se der vontade, dá pra testar nossas soluções grátis por 12 horas aqui no site 😉",
+          { texto: "Ou, se preferir, já chama a gente agora:", link: whatsUrl(resumo) },
         ];
       }
       default:
-        return [{ texto: "Sua solicitação já está com a equipe. Quer adiantar a conversa?", link: whatsUrl(`Olá! Conversei com a Blue no site. Sou ${d.nome}, da ${d.empresa}.`) }];
+        return [{ texto: "Já tá tudo com o time, viu? Se quiser adiantar a conversa, é só chamar:", link: whatsUrl(`Olá! Conversei com a Blue no site. Sou ${d.nome}, da ${d.empresa}.`) }];
     }
   };
 
@@ -188,17 +192,25 @@
           body: JSON.stringify({ sessao: NX.sessao, mensagem: texto, contexto: `viu ${NX.interesses().slice(0, 8).join(", ") || "a página inicial"}` }),
         });
         if (!r.ok) throw new Error(String(r.status));
-        respostas = [(await r.json()).resposta];
+        // Cada bloco separado por linha em branco vira um balão, como no WhatsApp
+        respostas = String((await r.json()).resposta ?? "").split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean);
       } catch {
-        respostas = [{ texto: "Não consegui responder agora. Fale com a equipe pelo WhatsApp:", link: whatsUrl("Olá! Vim pelo site da Nexor.") }];
+        respostas = [{ texto: "Ops, minha conexão falhou aqui 😕 Mas o time tá no WhatsApp e responde rapidinho:", link: whatsUrl("Olá! Vim pelo site da Nexor.") }];
       }
     } else {
-      await new Promise((r) => setTimeout(r, 650));
+      await new Promise((r) => setTimeout(r, 900 + Math.random() * 500));
       respostas = guiado(texto);
     }
-    digitando.remove();
-    for (const r of respostas) {
+    // Balões um de cada vez, com uma pausa de "digitando" proporcional ao tamanho, como uma pessoa
+    const calma = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    for (const [i, r] of respostas.entries()) {
       const m = typeof r === "string" ? { de: "ia", texto: r } : { de: "ia", ...r };
+      if (i > 0 && !calma) {
+        lista.appendChild(digitando);
+        lista.scrollTop = lista.scrollHeight;
+        await new Promise((ok) => setTimeout(ok, Math.min(2200, Math.max(700, String(m.texto ?? "").length * 18))));
+      }
+      digitando.remove();
       estado.mensagens.push(m);
       desenharMensagem(m);
     }

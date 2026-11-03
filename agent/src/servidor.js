@@ -16,7 +16,7 @@ import { INSTRUCOES_DEMO } from "./conhecimento.js";
 import { limparOrigem, rotuloOrigem, temperatura } from "./leads.js";
 import { enviarParaMeta } from "./meta.js";
 import { gerarRelatorio } from "./relatorio.js";
-import { assinaturaValida, enviarTexto, extrairMensagens, marcarComoLida, whatsappConfigurado } from "./whatsapp.js";
+import { assinaturaValida, emBaloes, enviarTexto, extrairMensagens, marcarComoLida, pausaDigitando, whatsappConfigurado } from "./whatsapp.js";
 
 const LIMITE_CORPO = 256 * 1024;
 const SESSAO_VALIDA = /^[A-Za-z0-9_-]{8,64}$/;
@@ -246,7 +246,12 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
           texto: m.nome ? `${texto}\n\n(nome no perfil do WhatsApp: ${m.nome})` : texto,
           telefone: m.de,
         });
-        if (resposta) await enviarTexto(m.de, resposta);
+        // Resposta em balões, com uma pausa de "digitando" entre eles, como uma pessoa
+        const baloes = emBaloes(resposta);
+        for (const [i, balao] of baloes.entries()) {
+          if (i > 0) await new Promise((r) => setTimeout(r, pausaDigitando(balao)));
+          await enviarTexto(m.de, balao);
+        }
       } catch (err) {
         console.error(`[whatsapp] falha ao responder ${m.de}:`, err.message ?? err);
       }
