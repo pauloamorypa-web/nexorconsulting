@@ -550,11 +550,14 @@ svg.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-wid
 .contact-fields input, .contact-fields textarea { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(2, 6, 16, .7); color: var(--text); font: 400 .95rem var(--font-body); }
 .contact-fields input:focus, .contact-fields textarea:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(34, 211, 238, .15); }
 .builder-summary { position: sticky; top: 92px; border-radius: 18px; border: 1px solid var(--line-strong); background: #040a17; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0, 102, 255, .7); }
-.builder-summary .code { min-height: 230px; max-height: 300px; overflow: auto; font-size: .76rem; white-space: pre-wrap; }
+.builder-summary .code { min-height: 150px; max-height: 300px; overflow: auto; font-size: .76rem; white-space: pre-wrap; margin-bottom: 18px; }
 .complexity { padding: 0 20px; font-size: .85rem; color: var(--muted); }
 .complexity > div:first-child { display: flex; justify-content: space-between; }
 .complexity strong { color: #fff; font-family: var(--font-mono); }
-.builder-summary .btn, .builder-summary .form-error, .builder-summary .note { margin-inline: 20px; width: calc(100% - 40px); }
+.complexity { margin-bottom: 18px; }
+.builder-summary .btn, .builder-summary .form-error, .builder-summary .note, .builder-summary .lgpd { margin-inline: 20px; width: calc(100% - 40px); }
+.builder-summary .note { margin-block: 12px 6px; }
+.builder-summary .lgpd { margin-block: 0 20px; line-height: 1.5; }
 .form-error { margin-bottom: 10px; color: #ff7b7b; font-size: .85rem; }
 .form-error:empty { display: none; }
 .note { font-size: .8rem; color: var(--muted); margin: 12px 0 20px; }

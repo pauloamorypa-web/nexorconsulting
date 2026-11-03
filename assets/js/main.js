@@ -649,7 +649,8 @@ const builder = $("#builder");
 const briefingEl = $("#briefing");
 const cxLabel = $("#cx-label");
 const cxBar = $("#cx-bar");
-const TIPO_PESO = { "Site / Landing page": 1, "E-commerce": 2, "Sistema empresarial": 3, "Automação com IA": 2.5, "Aplicativo mobile": 2.5, "Software sob medida": 3 };
+// As chaves precisam ser iguais aos "value" dos botões de tipo no index.html
+const TIPO_PESO = { "Site / Landing page": 1, "Atendimento com IA no WhatsApp": 1.5, "E-commerce": 2, "Automação de processos com IA": 2.5, "Sistema empresarial (ERP/CRM)": 3, "Software sob medida / App": 3 };
 const PORTE_PESO = { "Pequeno porte": 0, "Médio porte": 1, "Grande porte": 2.5 };
 
 const readBuilder = () => {
@@ -676,7 +677,7 @@ const updateBriefing = () => {
     cliente: d.empresa || d.nome || "—",
   };
   briefingEl.innerHTML = highlight(JSON.stringify(json, null, 2), "ts");
-  const score = TIPO_PESO[d.tipo] + PORTE_PESO[d.porte] + d.recursos.length * 0.45;
+  const score = (TIPO_PESO[d.tipo] ?? 2) + (PORTE_PESO[d.porte] ?? 0) + d.recursos.length * 0.45;
   const [label, pct] = score < 2.2 ? ["Baixa", 25] : score < 3.8 ? ["Média", 50] : score < 5.5 ? ["Alta", 75] : ["Enterprise", 100];
   cxLabel.textContent = label;
   cxBar.style.setProperty("--w", pct + "%");
