@@ -8,6 +8,12 @@ const EM_BREVE = [
     telas: [["Central da empresa", "Um pedido no WhatsApp vira reserva de estoque, nota fiscal, Pix e entrega, sem ninguém digitar nada."], ["Monte a sua", "Escolha o segmento, os módulos e onde os dados ficam. A Blue aprende o jeito da sua empresa."]],
   },
   {
+    id: "agente", nome: "Nexor Agente", cor: "#7c3aed", cor2: "#00e1fb", icone: "i-brain",
+    resumo: "Sua IA pessoal no WhatsApp: você ensina do seu jeito e ela faz o trabalho nos sistemas da empresa.",
+    recursos: ["Você dá o nome, o jeito de falar e as regras, tudo conversando pelo WhatsApp", "Consulta e age no ERP, no CRM, no financeiro e em qualquer sistema com API", "Criar, editar ou apagar dados só depois do seu toque em Aprovar", "Só o seu número dá ordens, e cada ação fica registrada na auditoria", "Senhas e tokens ficam no servidor: a IA nunca vê", "Roda no servidor da sua empresa"],
+    telas: [["No WhatsApp", "Você pede, ela consulta o estoque, prepara o pedido e só cria depois do seu Aprovar."], ["Do seu jeito", "Nome, jeito de falar, instruções e memórias ensinados conversando."]],
+  },
+  {
     id: "contabil", nome: "Nexor Contábil", cor: "#0f766e", cor2: "#22d3ee", icone: "i-chart",
     resumo: "O escritório de contabilidade no piloto automático: a IA cobra, recebe e organiza os documentos dos clientes.",
     recursos: ["Assistente no WhatsApp com a marca do escritório: cobra, recebe, lê e arquiva os documentos", "Leitura de notas e extratos com IA e pré-lançamentos para o sistema contábil que você já usa", "Prazos, guias, certidões e pendências de cada cliente num painel só", "Rentabilidade por cliente, honorários, retrabalho e reajuste com dados", "Simulador da reforma tributária (IBS e CBS) por cliente, pronto para virar consultoria", "Instalado no servidor do escritório: sigilo e LGPD sob controle"],

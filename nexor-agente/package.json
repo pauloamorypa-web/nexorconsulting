@@ -1,0 +1,19 @@
+{
+  "name": "nexor-agente",
+  "version": "0.1.0",
+  "description": "Nexor Agente: IA pessoal no WhatsApp que o cliente personaliza e que age nos sistemas da empresa, com aprovação do dono",
+  "type": "module",
+  "private": true,
+  "main": "src/servidor.js",
+  "scripts": {
+    "start": "node src/servidor.js",
+    "chat": "node src/chat-cli.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
