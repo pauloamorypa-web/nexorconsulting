@@ -8,6 +8,12 @@ const EM_BREVE = [
     telas: [["Central da empresa", "Um pedido no WhatsApp vira reserva de estoque, nota fiscal, Pix e entrega, sem ninguém digitar nada."], ["Monte a sua", "Escolha o segmento, os módulos e onde os dados ficam. A Blue aprende o jeito da sua empresa."]],
   },
   {
+    id: "contabil", nome: "Nexor Contábil", cor: "#0f766e", cor2: "#22d3ee", icone: "i-chart",
+    resumo: "O escritório de contabilidade no piloto automático: a IA cobra, recebe e organiza os documentos dos clientes.",
+    recursos: ["Assistente no WhatsApp com a marca do escritório: cobra, recebe, lê e arquiva os documentos", "Leitura de notas e extratos com IA e pré-lançamentos para o sistema contábil que você já usa", "Prazos, guias, certidões e pendências de cada cliente num painel só", "Rentabilidade por cliente, honorários, retrabalho e reajuste com dados", "Simulador da reforma tributária (IBS e CBS) por cliente, pronto para virar consultoria", "Instalado no servidor do escritório: sigilo e LGPD sob controle"],
+    telas: [["Central do escritório", "Documentos de cada cliente chegando pelo WhatsApp, lidos e arquivados pela IA, com a cobrança do que falta."], ["Rentabilidade e reforma", "Quanto cada cliente rende, onde está o retrabalho e o impacto do IBS e da CBS."]],
+  },
+  {
     id: "cobra", nome: "Nexor Cobra IA", cor: "#22c55e", cor2: "#22d3ee", icone: "i-chart",
     resumo: "Cobrança inteligente no WhatsApp: lembra, envia o Pix e negocia sozinha.",
     recursos: ["Lembretes antes e no vencimento, com Pix copia e cola", "Negocia parcelas e descontos dentro das suas regras", "Baixa automática quando o cliente paga", "Equipe entra só nos casos difíceis, com o histórico"],
