@@ -1,0 +1,42 @@
+{
+  "http": [
+    {
+      "nome": "crm",
+      "descricao": "CRM da empresa: clientes, oportunidades e tarefas",
+      "base": "https://api.seucrm.com.br/v1",
+      "cabecalhos": { "Authorization": "Bearer ${CRM_TOKEN}" },
+      "caminhos_permitidos": ["/clientes", "/oportunidades", "/tarefas"],
+      "leitura": "livre",
+      "escrita": "aprovar",
+      "guia": "GET /clientes?busca=nome lista clientes; POST /tarefas cria tarefa com {titulo, cliente_id, vencimento}; PATCH /oportunidades/{id} muda {etapa, valor}"
+    },
+    {
+      "nome": "erp",
+      "descricao": "ERP: pedidos, estoque e financeiro",
+      "base": "https://erp.suaempresa.com.br/api",
+      "cabecalhos": { "X-Api-Key": "${ERP_API_KEY}" },
+      "caminhos_permitidos": ["/pedidos", "/produtos", "/contas-receber"],
+      "leitura": "livre",
+      "escrita": "aprovar",
+      "guia": "GET /produtos?sku= consulta estoque; POST /pedidos cria pedido {cliente_id, itens:[{sku, qtd}]}; GET /contas-receber?vencidas=true lista atrasados"
+    },
+    {
+      "nome": "nexor-rh",
+      "descricao": "Nexor RH: colaboradores, ponto e férias",
+      "base": "https://rh.suaempresa.com.br/api",
+      "cabecalhos": { "Authorization": "Bearer ${NEXOR_RH_TOKEN}" },
+      "caminhos_permitidos": ["/colaboradores", "/ponto"],
+      "leitura": "livre",
+      "escrita": "bloqueada"
+    }
+  ],
+  "mcp": [
+    {
+      "nome": "google",
+      "descricao": "Google Agenda e Gmail da empresa (somente leitura)",
+      "url": "https://mcp.seuprovedor.com/google/sse",
+      "token": "${GOOGLE_MCP_TOKEN}",
+      "ferramentas": ["list_events", "search_emails"]
+    }
+  ]
+}

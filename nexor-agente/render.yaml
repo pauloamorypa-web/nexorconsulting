@@ -1,0 +1,40 @@
+# Blueprint separado do Nexor Agente (não cria nada sozinho junto com os outros serviços).
+# No Render: New → Blueprint → este repositório → Blueprint Path: nexor-agente/render.yaml
+services:
+  - type: web
+    name: nexor-agente
+    runtime: node
+    rootDir: nexor-agente
+    plan: starter # o disco persistente guarda perfil e auditoria
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    disk:
+      name: dados-agente
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: CONECTORES
+        value: /etc/secrets/conectores.json
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NEXOR_MODEL
+        value: claude-opus-5-5
+      - key: NEXOR_EFFORT
+        value: medium
+      - key: DONOS
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        generateValue: true
+      - key: WHATSAPP_APP_SECRET
+        sync: false
