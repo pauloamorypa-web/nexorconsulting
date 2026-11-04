@@ -3,6 +3,8 @@
 > **Passo a passo completo de todos os cenários** (servidor Linux ou Windows, mini PC, nuvem, notebook com configuração contra hibernação, servidor da Nexor) **e dos casos com e sem domínio: [GUIA-INSTALACAO.md](GUIA-INSTALACAO.md).**
 
 > **Nexor Contábil** (escritórios de contabilidade): manual completo em **[contabil/MANUAL-IMPLANTACAO.md](../contabil/MANUAL-IMPLANTACAO.md)**. Instale com `sudo SISTEMAS="contabil" ./instalar.sh`, ou com `SISTEMAS="rh contabil"` para os dois.
+
+> **Nexor Barber** (barbearias): manual completo em **[barber/MANUAL-IMPLANTACAO.md](../barber/MANUAL-IMPLANTACAO.md)**. Instale com `sudo SISTEMAS="barber" ./instalar.sh`. No túnel da Cloudflare, aponte o endereço para `http://barber:8795`.
 >
 > **Quais sistemas sobem:** a linha `SISTEMAS=` do `.env` (`rh`, `contabil` ou `rh contabil`). Instalações antigas, sem essa linha, continuam como `rh`. Todos os scripts (`atualizar.sh`, `backup-agora.sh`, `empresa.sh`) leem essa linha.
 

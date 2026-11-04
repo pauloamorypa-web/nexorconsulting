@@ -3,6 +3,7 @@
 # Uso (na pasta implantacao/ do repositório):
 #   sudo ./instalar.sh                          → pergunta os sistemas (Nexor RH e/ou Nexor Contábil) + HTTPS pela Cloudflare
 #   sudo SISTEMAS="contabil" ./instalar.sh       → só o Nexor Contábil (escritório de contabilidade)
+#   sudo SISTEMAS="barber" ./instalar.sh         → só o Nexor Barber (barbearia)
 #   sudo PERFIS="tunel agente" ./instalar.sh     → também o Nexor Agente
 #   sudo PERFIS="caddy" ./instalar.sh            → HTTPS com portas 80/443 abertas, em vez do túnel
 # Rodar de novo com o .env já criado só reconstrói e sobe (sem perguntar nada).
@@ -26,14 +27,15 @@ if [ ! -f .env ]; then
   cp .env.exemplo .env
   read -rp "Identificador da empresa (ex.: padaria-pao-dourado): " EMPRESA
   [[ "$EMPRESA" =~ ^[a-z0-9-]{3,40}$ ]] || erro "Identificador inválido: use letras minúsculas, números e hífen."
-  if [ -z "${SISTEMAS:-}" ]; then read -rp "Sistemas desta empresa (rh, contabil ou 'rh contabil') [rh]: " SISTEMAS; fi
+  if [ -z "${SISTEMAS:-}" ]; then read -rp "Sistemas desta empresa (rh, contabil, barber; ex.: 'rh barber') [rh]: " SISTEMAS; fi
   SISTEMAS="${SISTEMAS:-rh}"
-  for s in $SISTEMAS; do [[ "$s" =~ ^(rh|contabil)$ ]] || erro "Sistema desconhecido: $s (use rh e/ou contabil)."; done
+  for s in $SISTEMAS; do [[ "$s" =~ ^(rh|contabil|barber)$ ]] || erro "Sistema desconhecido: $s (use rh, contabil ou barber)."; done
   sed -i "s|^EMPRESA=.*|EMPRESA=${EMPRESA}|; s|^SISTEMAS=.*|SISTEMAS=${SISTEMAS}|" .env
   for s in $SISTEMAS; do
     case "$s" in
       rh) read -rp "Endereço do Nexor RH (ex.: rh.paodourado.com.br): " DOM; P=RH ;;
       contabil) read -rp "Endereço do Nexor Contábil (ex.: contabil.limacontabilidade.com.br): " DOM; P=CONTABIL ;;
+      barber) read -rp "Endereço do Nexor Barber (ex.: agenda.barbearianavalha.com.br): " DOM; P=BARBER ;;
     esac
     [[ "$DOM" =~ ^[a-z0-9.-]+\.[a-z]{2,}$ ]] || erro "Endereço inválido."
     sed -i "s|^${P}_PUBLIC_URL=.*|${P}_PUBLIC_URL=https://${DOM}|; s|^${P}_DOMINIO=.*|${P}_DOMINIO=${DOM}|; s|^${P}_MASTER_KEY=.*|${P}_MASTER_KEY=$(chave)|" .env
@@ -77,14 +79,14 @@ for s in $LISTA_SISTEMAS; do
     sleep 2
   done
   [ "$OKS" = 1 ] || { docker compose logs --tail 50 "$s"; erro "O sistema $s não respondeu. Veja o log acima."; }
-  P="$( [ "$s" = rh ] && echo RH || echo CONTABIL )"
+  P="$(echo "$s" | tr '[:lower:]' '[:upper:]')"
   DOM="$(grep "^${P}_DOMINIO=" .env | cut -d= -f2)"
   COD="$(docker compose exec -T "$s" sh -c 'cat /dados/codigo-instalacao.txt 2>/dev/null' || true)"
-  if [ "$s" = rh ]; then
-    echo "  Nexor RH:                https://${DOM}   (app do colaborador: https://${DOM}/app/)"
-  else
-    echo "  Nexor Contábil:          https://${DOM}   (portal dos clientes: https://${DOM}/portal/)"
-  fi
+  case "$s" in
+    rh) echo "  Nexor RH:                https://${DOM}   (app do colaborador: https://${DOM}/app/)" ;;
+    contabil) echo "  Nexor Contábil:          https://${DOM}   (portal dos clientes: https://${DOM}/portal/)" ;;
+    barber) echo "  Nexor Barber:            https://${DOM}   (app dos clientes: https://${DOM}/app/)" ;;
+  esac
   [ -n "$COD" ] && echo "    Código de instalação:  ${COD}   (use para criar o primeiro usuário)"
 done
 echo "  Backups diários em:      $(pwd)/backups   (copie para fora do servidor: ver README)"

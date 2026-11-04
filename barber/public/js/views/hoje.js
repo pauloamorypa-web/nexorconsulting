@@ -175,7 +175,9 @@ export async function render(area, ctx) {
           )
         : null,
     );
-    corpo.querySelector(".lt-agora")?.scrollIntoView({ block: "center", behavior: "instant" });
+    const grade = corpo.querySelector(".linha-tempo-grade");
+    const alvo = corpo.querySelector(".lt-agora") ?? corpo.querySelector(".lt-card");
+    if (grade && alvo) grade.scrollTop = Math.max(0, alvo.offsetTop - 120);
     ctx.recarregarEu().catch(() => {});
   }
   await carregar();

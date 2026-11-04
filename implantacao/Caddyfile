@@ -10,6 +10,12 @@
 # 	reverse_proxy contabil:8793
 # }
 
+# Nexor Barber: descomente e defina BARBER_DOMINIO no .env
+# {$BARBER_DOMINIO} {
+# 	encode gzip
+# 	reverse_proxy barber:8795
+# }
+
 # Nexor Atende IA: descomente e defina ATENDE_DOMINIO no .env
 # {$ATENDE_DOMINIO} {
 # 	reverse_proxy atende:8790
