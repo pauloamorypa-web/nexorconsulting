@@ -95,6 +95,16 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
       }),
       await ctx.corpo(),
     );
+    // Campos escondidos pelo Suporte Nexor: o cliente não altera nem pela API
+    if (!ctx.usuario.nexor) {
+      const oc = repo.ocultos(ctx.empresa.id);
+      const tentou = (k, cond) => oc.includes(k) && cond && falha(403, "Este campo é mantido pela Nexor.");
+      tentou("campo.dados_empresa", ["razao_social", "nome_fantasia", "cnpj", "endereco"].some((k) => d[k] !== undefined));
+      tentou("campo.regras_ponto", d.config?.ponto !== undefined);
+      tentou("campo.registro_inpi", d.config?.registro_inpi !== undefined);
+      tentou("config.esocial", d.config?.esocial !== undefined || d.config?.transmissor_cnpj !== undefined);
+      tentou("config.tabelas", d.config?.tabelas !== undefined);
+    }
     const atual = ctx.empresa.config;
     const config = d.config
       ? { ...atual, ...d.config, ponto: { ...atual.ponto, ...(d.config.ponto ?? {}) }, esocial: { ...atual.esocial, ...(d.config.esocial ?? {}) }, tabelas: d.config.tabelas === null ? undefined : d.config.tabelas ?? atual.tabelas }
@@ -160,7 +170,9 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
 
   /* ---------- Usuários do painel ---------- */
 
-  r.get("/api/usuarios", ADM, ({ empresa }) => repo.listar("usuarios", empresa.id, {}, { ordem: "nome ASC" }).map(usuarioPublico));
+  // O Suporte Nexor não aparece na lista nem pode ser alterado pelo cliente: só entra pelo link da Nexor Central,
+  // e cada acesso fica registrado na Auditoria
+  r.get("/api/usuarios", ADM, ({ empresa }) => repo.listar("usuarios", empresa.id, { nexor: false }, { ordem: "nome ASC" }).map(usuarioPublico));
   r.post("/api/usuarios", ADM, async (ctx) => {
     const d = validar(ESQ.usuario, await ctx.corpo());
     if (repo.usuarioPorEmail(d.email)) falha(409, "Já existe um usuário com este e-mail.");
@@ -171,6 +183,7 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
   r.put("/api/usuarios/:id", ADM, async (ctx) => {
     const d = validar(z.object({ nome: op(120), papel: z.enum(["admin", "rh", "gestor"]).optional(), departamento_id: op(40), ativo: z.boolean().optional(), senha: senha.optional() }), await ctx.corpo());
     if (ctx.params.id === ctx.usuario.id && (d.papel || d.ativo === false)) falha(400, "Você não pode mudar o próprio perfil.");
+    if (repo.obter("usuarios", ctx.empresa.id, ctx.params.id)?.nexor) falha(404, "Usuário não encontrado.");
     const u = repo.atualizar("usuarios", ctx.empresa.id, ctx.params.id, { ...d, senha: undefined, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined });
     if (!u) falha(404, "Usuário não encontrado.");
     // Desativado ou com senha nova: as sessões abertas deixam de valer

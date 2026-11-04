@@ -1,0 +1,25 @@
+/* Nexor Central: complementos do visual dos sistemas Nexor */
+.sit-ativo { --c: var(--verde); }
+.sit-aviso { --c: var(--amarelo); }
+.sit-restrito, .sit-bloqueado, .sit-offline { --c: var(--vermelho); }
+.sit-backup { --c: var(--amarelo); }
+.ponto-sit { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--texto-3)); margin-right: 6px; vertical-align: middle; }
+.alertas { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.alertas li { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; background: var(--superficie-2, var(--superficie-3)); cursor: pointer; }
+.alertas li:hover { outline: 1px solid var(--azul); }
+.grade-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; align-items: start; }
+.lista-sistemas { display: grid; gap: 10px; }
+.sistema { border: 1px solid var(--linha); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; }
+.sistema-topo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sistema-topo strong { margin-right: auto; }
+.saude { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--texto-2); }
+.env { white-space: pre-wrap; word-break: break-all; font-size: 12px; background: var(--superficie-3); padding: 12px; border-radius: 10px; user-select: all; }
+.acoes-linha { display: flex; gap: 6px; flex-wrap: wrap; }
+.totp { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.totp img { width: 200px; height: 200px; border-radius: 10px; background: #fff; padding: 6px; }
+.totp code { font-size: 13px; letter-spacing: .08em; word-break: break-all; }
+.filtros { display: flex; gap: 6px; flex-wrap: wrap; }
+.valor-grande { font-size: 15px; font-weight: 600; }
+@media (max-width: 640px) {
+  .grade-2 { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,131 @@
+/* Banco da Nexor Central (SQLite nativo do Node). Guarda só dados comerciais e técnicos dos clientes:
+   nenhum dado de colaborador dos sistemas sai da instalação do cliente para cá. */
+
+import { randomUUID } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+
+const ESQUEMA = `
+CREATE TABLE IF NOT EXISTS usuarios (
+  id TEXT PRIMARY KEY, nome TEXT NOT NULL, email TEXT NOT NULL UNIQUE, senha_hash TEXT NOT NULL,
+  papel TEXT NOT NULL CHECK (papel IN ('dono','financeiro','suporte')), totp TEXT,
+  ativo INTEGER NOT NULL DEFAULT 1, ultimo_acesso INTEGER, criado_em INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sessoes (
+  token_hash TEXT PRIMARY KEY, usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  fase TEXT NOT NULL DEFAULT 'senha', totp_novo TEXT, expira_em INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS clientes (
+  id TEXT PRIMARY KEY, razao_social TEXT NOT NULL, nome_fantasia TEXT, cnpj TEXT NOT NULL,
+  contato_nome TEXT, email TEXT, telefone TEXT, cidade TEXT, plano TEXT,
+  valor_centavos INTEGER NOT NULL DEFAULT 0, dia_vencimento INTEGER NOT NULL DEFAULT 10, inicio_cobranca TEXT,
+  regras TEXT NOT NULL DEFAULT '{}', bloqueio_manual TEXT, liberado_ate TEXT,
+  status TEXT NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo','cancelado')),
+  asaas_cliente_id TEXT, observacoes TEXT, criado_em INTEGER NOT NULL, atualizado_em INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sistemas (
+  id TEXT PRIMARY KEY, cliente_id TEXT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+  produto TEXT NOT NULL CHECK (produto IN ('rh','atende','agente','one','contabil')), nome TEXT, url TEXT,
+  token_hash TEXT NOT NULL UNIQUE, prefixo TEXT NOT NULL, ativo INTEGER NOT NULL DEFAULT 1,
+  ultimo_contato INTEGER, versao TEXT, saude TEXT NOT NULL DEFAULT '{}', ip TEXT, situacao TEXT, criado_em INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS faturas (
+  id TEXT PRIMARY KEY, cliente_id TEXT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+  competencia TEXT, descricao TEXT NOT NULL, valor_centavos INTEGER NOT NULL, vencimento TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'aberta' CHECK (status IN ('aberta','paga','cancelada')),
+  pago_em TEXT, forma TEXT, externo_id TEXT, link TEXT, erro_cobranca TEXT, criado_em INTEGER NOT NULL, atualizado_em INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS faturas_mensal ON faturas (cliente_id, competencia) WHERE competencia IS NOT NULL;
+CREATE INDEX IF NOT EXISTS faturas_status ON faturas (status, vencimento);
+CREATE TABLE IF NOT EXISTS auditoria (id TEXT PRIMARY KEY, autor TEXT, acao TEXT NOT NULL, cliente_id TEXT, detalhe TEXT, criado_em INTEGER NOT NULL);
+`;
+
+const JSON_COLS = { clientes: ["regras"], sistemas: ["saude"], auditoria: ["detalhe"] };
+const BOOL_COLS = new Set(["ativo"]);
+const lerJson = (v, padrao) => {
+  try {
+    return v ? JSON.parse(v) : padrao;
+  } catch {
+    return padrao;
+  }
+};
+
+export function abrirBanco(caminho, agora = () => Date.now()) {
+  if (caminho !== ":memory:") mkdirSync(dirname(caminho), { recursive: true });
+  const db = new DatabaseSync(caminho);
+  db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
+  db.exec(ESQUEMA);
+  const cache = new Map();
+  const q = (sql) => {
+    let s = cache.get(sql);
+    if (!s) cache.set(sql, (s = db.prepare(sql)));
+    return s;
+  };
+  const colunas = {};
+  for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()) colunas[name] = new Set(db.prepare(`PRAGMA table_info(${name})`).all().map((c) => c.name));
+
+  const ler = (tabela, r) => {
+    if (!r) return null;
+    const o = { ...r };
+    for (const c of JSON_COLS[tabela] ?? []) if (c in o) o[c] = lerJson(o[c], {});
+    for (const c of Object.keys(o)) if (BOOL_COLS.has(c)) o[c] = Boolean(o[c]);
+    return o;
+  };
+  const gravar = (tabela, campos) => {
+    const r = {};
+    for (const [k, v] of Object.entries(campos)) {
+      if (!colunas[tabela].has(k) || v === undefined) continue;
+      r[k] = (JSON_COLS[tabela] ?? []).includes(k) && v !== null ? JSON.stringify(v) : typeof v === "boolean" ? (v ? 1 : 0) : v;
+    }
+    return r;
+  };
+
+  const repo = {
+    db,
+    fechar: () => db.close(),
+    transacao(fn) {
+      db.exec("BEGIN");
+      try {
+        const r = fn();
+        db.exec("COMMIT");
+        return r;
+      } catch (e) {
+        db.exec("ROLLBACK");
+        throw e;
+      }
+    },
+    um: (sql, ...p) => q(sql).get(...p),
+    todos: (sql, ...p) => q(sql).all(...p),
+    rodar: (sql, ...p) => q(sql).run(...p),
+    ler,
+    inserir(tabela, campos) {
+      const extra = {};
+      if (colunas[tabela].has("criado_em")) extra.criado_em = agora();
+      if (colunas[tabela].has("atualizado_em")) extra.atualizado_em = agora();
+      const r = gravar(tabela, { id: randomUUID(), ...extra, ...campos });
+      const ks = Object.keys(r);
+      q(`INSERT INTO ${tabela} (${ks.join(",")}) VALUES (${ks.map(() => "?").join(",")})`).run(...Object.values(r));
+      return repo.obter(tabela, r.id);
+    },
+    obter: (tabela, id) => ler(tabela, q(`SELECT * FROM ${tabela} WHERE id = ?`).get(id)),
+    atualizar(tabela, id, campos) {
+      const r = gravar(tabela, { ...campos, ...(colunas[tabela].has("atualizado_em") ? { atualizado_em: agora() } : {}) });
+      delete r.id;
+      const ks = Object.keys(r);
+      if (ks.length) q(`UPDATE ${tabela} SET ${ks.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`).run(...Object.values(r), id);
+      return repo.obter(tabela, id);
+    },
+    lista: (tabela, sql = "", ...p) => q(`SELECT * FROM ${tabela} ${sql}`).all(...p).map((r) => ler(tabela, r)),
+
+    contarUsuarios: () => q("SELECT COUNT(*) n FROM usuarios").get().n,
+    usuarioPorEmail: (email) => q("SELECT * FROM usuarios WHERE email = ? AND ativo = 1").get(String(email).toLowerCase()),
+    criarSessao(token_hash, usuario_id, horas, fase = "senha") {
+      q("DELETE FROM sessoes WHERE expira_em < ?").run(agora());
+      q("INSERT INTO sessoes (token_hash, usuario_id, fase, expira_em) VALUES (?,?,?,?)").run(token_hash, usuario_id, fase, agora() + horas * 3600_000);
+    },
+    sessao: (token_hash) => q("SELECT * FROM sessoes WHERE token_hash = ? AND expira_em > ?").get(token_hash, agora()),
+    auditar: (autor, acao, cliente_id = null, detalhe = null) => repo.inserir("auditoria", { autor, acao, cliente_id, detalhe }),
+  };
+  return repo;
+}

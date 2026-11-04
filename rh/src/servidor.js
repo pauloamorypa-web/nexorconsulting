@@ -6,7 +6,7 @@
    /api/*       → API
    /health      → verificação de saúde */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -17,6 +17,8 @@ import { abrirBanco } from "./db.js";
 import { criarApi } from "./http/api.js";
 import { arquivosConhecidos, paginaBaixar } from "./http/baixar.js";
 import { ErroHttp, json, lerCookies, lerCorpo } from "./http/roteador.js";
+import { criarCentralNexor } from "./nexor/central.js";
+import { bloqueadoPorAjuste, recusaPorLicenca } from "./nexor/politica.js";
 import { criarCofre } from "./seguranca.js";
 import { criarNucleo } from "./servicos/nucleo.js";
 
@@ -65,6 +67,34 @@ function criarEventos() {
   };
 }
 
+/** Saúde enviada à Nexor Central: só contagens e datas técnicas, nenhum dado pessoal */
+function saudeDaInstalacao(repo, cfg, agora) {
+  const n = (sql, ...p) => repo.um(sql, ...p)?.n ?? 0;
+  const inicioDoDia = agora() - ((agora() - 3 * 3600_000) % 86400_000);
+  let banco_mb;
+  let backup_ultimo;
+  try {
+    banco_mb = Math.round(statSync(join(cfg.pastaDados, "rh.db")).size / 1048576);
+  } catch {
+    /* banco em memória (testes) */
+  }
+  try {
+    backup_ultimo = JSON.parse(readFileSync(join(cfg.pastaDados, "ultimo-backup.json"), "utf8")).em;
+  } catch {
+    /* sem backup ainda */
+  }
+  return {
+    empresas: n("SELECT COUNT(*) n FROM empresas"),
+    colaboradores: n("SELECT COUNT(*) n FROM colaboradores WHERE status != 'desligado'"),
+    usuarios: n("SELECT COUNT(*) n FROM usuarios WHERE ativo = 1 AND nexor = 0"),
+    marcacoes_hoje: n("SELECT COUNT(*) n FROM marcacoes WHERE momento >= ?", inicioDoDia),
+    banco_mb,
+    backup_ultimo,
+    uptime_s: Math.round(process.uptime()),
+    node: process.version,
+  };
+}
+
 /** Monta todas as peças. Os testes trocam o relógio e o cliente SOAP do eSocial. */
 /** Em produção, o endereço público é obrigatório: links do QR, da biometria (WebAuthn) e das vagas
     não podem depender do cabeçalho Host de cada acesso (envenenamento de cache e de links). */
@@ -102,7 +132,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   }
   const nucleo = criarNucleo({ repo, cofre, cfg, agora });
   const eventos = criarEventos();
-  const api = criarApi({ repo, nucleo, cofre, cfg, eventos, agora, fetchSoap, fetchFn });
+  const central = criarCentralNexor({ repo, cfg, agora, fetchFn, versao: cfg.sistema.versao, saude: () => saudeDaInstalacao(repo, cfg, agora) });
+  const api = criarApi({ repo, nucleo, cofre, cfg, eventos, central, agora, fetchSoap, fetchFn });
 
   async function arquivoEstatico(caminho, res) {
     let relativo = decodeURIComponent(caminho).replace(/^\/+/, "");
@@ -170,6 +201,17 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       if (rota.opcoes.papeis && !rota.opcoes.papeis.includes(usuario.papel)) return json(res, 403, { erro: "Seu perfil não tem permissão para esta ação." });
       empresa = nucleo.empresa(usuario.empresa_id);
     }
+    // Contrato com a Nexor e itens escondidos pelo Suporte Nexor (que nunca é barrado)
+    if (rota.opcoes.nexor && !usuario?.nexor) return json(res, 403, { erro: "Área exclusiva do Suporte Nexor." });
+    if (!usuario?.nexor) {
+      const lic = central.estado();
+      const recusa = recusaPorLicenca(lic, req.method, url.pathname);
+      if (recusa) return json(res, 423, { erro: recusa, codigo: "licenca", situacao: lic.situacao, link: lic.link });
+      if (usuario) {
+        const oculto = bloqueadoPorAjuste(repo.ocultos(usuario.empresa_id), req.method, url.pathname);
+        if (oculto) return json(res, 403, { erro: `${oculto} não está disponível no seu plano. Fale com a Nexor.` });
+      }
+    }
     let lido;
     const ctx = {
       req,
@@ -234,7 +276,9 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     repo,
     nucleo,
     cfg,
+    central,
     fechar() {
+      central.parar();
       eventos.fechar();
       servidor.close();
       repo.fechar();
@@ -244,6 +288,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const app = montarAplicacao();
+  app.central.iniciar();
   app.servidor.listen(app.cfg.porta, () => {
     console.log(`Nexor RH no ar em http://localhost:${app.cfg.porta}`);
     console.log(`Painel: /   ·   App do trabalhador: /app/   ·   Quiosque: /quiosque/   ·   Vagas: /vagas/`);
