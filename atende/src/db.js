@@ -253,7 +253,7 @@ const ler = {
   mensagem: (r) => r && { ...r, conteudo: json(r.conteudo, {}) },
   modelo: (r) => r && { ...r, componentes: json(r.componentes, []) },
   campanha: (r) => r && { ...r, variaveis: json(r.variaveis, []), filtro: json(r.filtro, {}) },
-  usuario: (r) => r && (({ senha_hash, ...resto }) => ({ ...resto, ativo: Boolean(resto.ativo) }))(r),
+  usuario: (r) => r && (({ senha_hash, ...resto }) => ({ ...resto, ativo: Boolean(resto.ativo), nexor: Boolean(resto.nexor) }))(r),
 };
 
 export const ETAPAS = ["novo", "qualificado", "proposta", "negociacao", "cliente", "perdido"];
@@ -314,6 +314,9 @@ export function abrirBanco(caminho) {
   const db = new DatabaseSync(caminho);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(ESQUEMA);
+  // Usuário "Suporte Nexor" (entra só pelo link da Nexor Central) e itens escondidos pelo Suporte
+  if (!db.prepare("PRAGMA table_info(usuarios)").all().some((c) => c.name === "nexor")) db.exec("ALTER TABLE usuarios ADD COLUMN nexor INTEGER NOT NULL DEFAULT 0");
+  db.exec("CREATE TABLE IF NOT EXISTS nexor_ajustes (empresa_id TEXT PRIMARY KEY, ocultos TEXT NOT NULL DEFAULT '[]', atualizado_por TEXT, atualizado_em INTEGER)");
 
   const cache = new Map();
   const q = (sql) => {
@@ -343,7 +346,27 @@ export function abrirBanco(caminho) {
     fechar: () => db.close(),
 
     /* ---------- Empresas e usuários ---------- */
-    contarUsuarios: () => um("SELECT COUNT(*) n FROM usuarios").n,
+    contarUsuarios: () => um("SELECT COUNT(*) n FROM usuarios WHERE nexor = 0").n,
+    ocultos(empresa_id) {
+      try {
+        return JSON.parse(um("SELECT ocultos FROM nexor_ajustes WHERE empresa_id = ?", empresa_id)?.ocultos ?? "[]");
+      } catch {
+        return [];
+      }
+    },
+    gravarOcultos: (empresa_id, ocultos, autor) => rodar("INSERT INTO nexor_ajustes (empresa_id, ocultos, atualizado_por, atualizado_em) VALUES (?,?,?,?) ON CONFLICT (empresa_id) DO UPDATE SET ocultos = excluded.ocultos, atualizado_por = excluded.atualizado_por, atualizado_em = excluded.atualizado_em", empresa_id, JSON.stringify(ocultos), autor, agora()),
+    ajustesNexor: (empresa_id) => um("SELECT atualizado_por, atualizado_em FROM nexor_ajustes WHERE empresa_id = ?", empresa_id) ?? null,
+    /** Cria (ou reativa) o usuário Suporte Nexor da empresa */
+    usuarioNexor(empresa_id, nome) {
+      const u = um("SELECT id FROM usuarios WHERE empresa_id = ? AND nexor = 1", empresa_id);
+      if (u) {
+        rodar("UPDATE usuarios SET nome = ?, ativo = 1 WHERE id = ?", nome, u.id);
+        return repo.usuario(u.id);
+      }
+      const id = randomUUID();
+      rodar("INSERT INTO usuarios (id, empresa_id, nome, email, senha_hash, papel, nexor, criado_em) VALUES (?,?,?,?,?,?,1,?)", id, empresa_id, nome, `suporte-${empresa_id}@nexor.invalid`, "!sem-senha", "admin", agora());
+      return repo.usuario(id);
+    },
 
     criarEmpresa({ nome, segmento, config = {} }) {
       const id = randomUUID();
@@ -380,8 +403,9 @@ export function abrirBanco(caminho) {
       return repo.usuario(id);
     },
     usuario: (id) => ler.usuario(um("SELECT * FROM usuarios WHERE id = ?", id)),
-    usuarioComSenha: (email) => um("SELECT * FROM usuarios WHERE email = ? AND ativo = 1", String(email).toLowerCase()),
-    usuarios: (empresa_id) => todos("SELECT * FROM usuarios WHERE empresa_id = ? ORDER BY criado_em", empresa_id).map(ler.usuario),
+    usuarioComSenha: (email) => um("SELECT * FROM usuarios WHERE email = ? AND ativo = 1 AND nexor = 0", String(email).toLowerCase()),
+    // O Suporte Nexor não aparece na equipe do cliente
+    usuarios: (empresa_id) => todos("SELECT * FROM usuarios WHERE empresa_id = ? AND nexor = 0 ORDER BY criado_em", empresa_id).map(ler.usuario),
     atualizarUsuario(empresa_id, id, campos) {
       const u = um("SELECT * FROM usuarios WHERE id = ? AND empresa_id = ?", id, empresa_id);
       if (!u) return null;

@@ -127,3 +127,7 @@ Para oferecer o botão **Conectar com o Facebook** (cadastro incorporado), confi
 - O consumo de tokens por empresa e por dia fica na tabela `uso_ia`.
 - Se o modelo recusar um pedido por política, a API tenta outro modelo na mesma chamada (fallback do servidor).
 - Áudios de voz são guardados e tocam no painel; a IA pede com gentileza que o cliente escreva, porque o Claude não transcreve áudio. Para transcrever, ligue um serviço de transcrição em `conteudo.transcricao` da mensagem (o agente já usa esse campo).
+
+## Nexor Central
+
+Com as variáveis `NEXOR_CENTRAL_URL`, `NEXOR_INSTANCIA`, `NEXOR_TOKEN` e `NEXOR_CHAVE_PUBLICA` (geradas na Nexor Central), o sistema envia a saúde da instalação e aplica a situação do contrato: aviso, somente leitura ou suspenso. Sem elas, funciona normalmente. Detalhes em [central/README.md](../central/README.md).

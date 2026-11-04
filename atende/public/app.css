@@ -599,3 +599,17 @@ audio { max-width: 280px; height: 40px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Faixa de situação do contrato (Nexor Central) e acesso do Suporte Nexor */
+.faixa { display: flex; align-items: center; gap: 10px; padding: 9px 18px; font-size: 13.5px; line-height: 1.4; border-bottom: 1px solid var(--linha); }
+.faixa a { margin-left: auto; font-weight: 600; color: inherit; text-decoration: underline; white-space: nowrap; }
+.faixa-aviso { background: color-mix(in srgb, var(--amarelo) 14%, var(--superficie)); color: color-mix(in srgb, var(--amarelo) 70%, var(--texto)); }
+.faixa-restrito { background: color-mix(in srgb, var(--vermelho) 11%, var(--superficie)); color: color-mix(in srgb, var(--vermelho) 75%, var(--texto)); }
+.faixa-nexor { background: color-mix(in srgb, var(--azul) 10%, var(--superficie)); color: color-mix(in srgb, var(--azul) 75%, var(--texto)); }
+.suspenso { max-width: 620px; margin: 6vh auto 0; text-align: center; display: grid; gap: 14px; justify-items: center; padding: 34px 26px; }
+.suspenso h1 { margin: 0; font-size: 24px; }
+.suspenso p { margin: 0; max-width: 52ch; }
+.suspenso-icone { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--vermelho) 12%, transparent); color: var(--vermelho); }
+.suspenso-acoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.nexor-grupo { display: grid; gap: 8px; }
+.nexor-grupo h3 { margin: 6px 0 2px; font-size: 14px; }

@@ -5,7 +5,7 @@
    POST /webhook/whatsapp    → mensagens e status da WhatsApp Cloud API
    GET  /health              → verificação de saúde */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve, sep } from "node:path";
@@ -19,6 +19,8 @@ import { criarAgente } from "./ia/agente.js";
 import { criarCacheConhecimento } from "./ia/conhecimento.js";
 import { criarCopiloto } from "./ia/copiloto.js";
 import { assinaturaValida } from "./meta/webhook.js";
+import { criarCentralNexor } from "./nexor/central.js";
+import { bloqueadoPorAjuste, iaLiberada, recusaPorLicenca } from "./nexor/politica.js";
 import { criarCofre, gerarToken, iguais } from "./seguranca.js";
 import { criarAgendador } from "./servicos/agendador.js";
 import { criarAtendimento } from "./servicos/atendimento.js";
@@ -50,6 +52,25 @@ function tokenVerificacao(cfg) {
   return t;
 }
 
+/** Saúde enviada à Nexor Central: só contagens, nenhum dado de conversa ou contato */
+function saudeDaInstalacao(repo, cfg, agora) {
+  const n = (sql, ...p) => repo.db.prepare(sql).get(...p)?.n ?? 0;
+  const inicioDoDia = agora() - ((agora() - 3 * 3600_000) % 86400_000);
+  let banco_mb;
+  try {
+    banco_mb = Math.round(statSync(join(cfg.pastaDados, "atende.db")).size / 1048576);
+  } catch {
+    /* banco em memória (testes) */
+  }
+  let conversas_hoje;
+  try {
+    conversas_hoje = n("SELECT COUNT(*) n FROM conversas WHERE ultima_msg_em >= ?", inicioDoDia);
+  } catch {
+    conversas_hoje = undefined;
+  }
+  return { empresas: n("SELECT COUNT(*) n FROM empresas"), usuarios: n("SELECT COUNT(*) n FROM usuarios WHERE ativo = 1 AND nexor = 0"), conversas_hoje, banco_mb, uptime_s: Math.round(process.uptime()), node: process.version };
+}
+
 /** Monta todas as peças. Os testes trocam o cliente do Claude e o fetch da Meta por versões falsas. */
 export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, fetchFn = fetch, agora = () => Date.now(), atrasoAgrupamento } = {}) {
   const cofre = criarCofre(cfg);
@@ -61,9 +82,10 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
   const eventos = criarEventos();
   const agente = criarAgente({ cliente, repo, conhecimento, carregarMidia: (a) => midia.ler(a), agora, ia: cfg.ia });
   const copiloto = criarCopiloto({ cliente, repo, conhecimento, ia: cfg.ia });
-  const atendimento = criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia, fetchFn, agora, ia: cfg.ia, versaoGraph: cfg.meta.versaoGraph, atrasoAgrupamento });
+  const central = criarCentralNexor({ cfg, agora, fetchFn, produto: "atende", versao: "1.0.0", saude: () => saudeDaInstalacao(repo, cfg, agora) });
+  const atendimento = criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia, fetchFn, agora, ia: cfg.ia, versaoGraph: cfg.meta.versaoGraph, atrasoAgrupamento, iaLiberada: () => iaLiberada(central.estado()) });
   const agendador = criarAgendador({ repo, atendimento, eventos, agora });
-  const api = criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eventos, midia, cfg, fetchFn, agora });
+  const api = criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eventos, midia, cfg, fetchFn, agora, central });
 
   /** O webhook pode ser assinado pelo app global (META_APP_SECRET) ou pelo app próprio da empresa */
   function webhookAutentico(corpo, assinatura) {
@@ -122,6 +144,17 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
       if (rota.opcoes.papeis && !rota.opcoes.papeis.includes(usuario.papel)) return json(res, 403, { erro: "Seu perfil não tem permissão para esta ação." });
       const e = repo.empresa(usuario.empresa_id);
       empresa = { ...e, config: configCompleta(e.config) };
+    }
+    // Contrato com a Nexor e itens escondidos pelo Suporte Nexor (que nunca é barrado)
+    if (rota.opcoes.nexor && !usuario?.nexor) return json(res, 403, { erro: "Área exclusiva do Suporte Nexor." });
+    if (!usuario?.nexor) {
+      const lic = central.estado();
+      const recusa = recusaPorLicenca(lic, req.method, url.pathname);
+      if (recusa) return json(res, 423, { erro: recusa, codigo: "licenca", situacao: lic.situacao, link: lic.link });
+      if (usuario) {
+        const oculto = bloqueadoPorAjuste(repo.ocultos(usuario.empresa_id), req.method, url.pathname);
+        if (oculto) return json(res, 403, { erro: `${oculto} não está disponível no seu plano. Fale com a Nexor.` });
+      }
     }
     let lido;
     const ctx = {
@@ -189,12 +222,14 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
   return {
     servidor,
     repo,
+    central,
     atendimento,
     agendador,
     eventos,
     cofre,
     cfg,
     fechar() {
+      central.parar();
       agendador.parar();
       atendimento.parar();
       servidor.close();
@@ -207,6 +242,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const app = montarAplicacao();
   app.agendador.iniciar();
+  app.central.iniciar();
   app.servidor.listen(app.cfg.porta, () => {
     console.log(`Nexor Atende IA no ar em http://localhost:${app.cfg.porta} · modelo ${app.cfg.ia.modelo}`);
     console.log(`Webhook: ${app.cfg.urlPublica || "https://SEU-SERVIDOR"}/webhook/whatsapp · token de verificação: ${app.cfg.meta.tokenVerificacao}`);

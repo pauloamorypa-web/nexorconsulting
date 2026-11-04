@@ -25,6 +25,9 @@ const COOKIE = "nx_central";
 export const PRODUTOS = { rh: "Nexor RH e Ponto", atende: "Atende IA", agente: "Nexor Agente", one: "Nexor One", contabil: "Nexor Contábil" };
 const PAPEIS = ["dono", "financeiro", "suporte"];
 const ONLINE_MS = 15 * 60_000;
+// Produtos com painel em que o Suporte Nexor entra pelo link assinado
+const COM_ACESSO = new Set(["rh", "atende"]);
+const PREFIXO_ENV = { atende: "ATENDE_", agente: "AGENTE_" };
 
 class ErroHttp extends Error {
   constructor(status, mensagem) {
@@ -157,7 +160,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   const online = (s) => Boolean(s.ultimo_contato && agora() - s.ultimo_contato < ONLINE_MS);
   const sistemaPublico = (s) => {
     const { token_hash, ...resto } = s;
-    return { ...resto, online: online(s), produto_nome: PRODUTOS[s.produto] ?? s.produto };
+    return { ...resto, online: online(s), produto_nome: PRODUTOS[s.produto] ?? s.produto, acesso: COM_ACESSO.has(s.produto) };
   };
 
   /** Gera as mensalidades devidas e manda para o Asaas as que ainda não têm cobrança */
@@ -465,7 +468,8 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   function credenciais(s, token) {
     return {
       token,
-      env: [`NEXOR_CENTRAL_URL=${cfg.urlPublica || "http://localhost:" + cfg.porta}`, `NEXOR_INSTANCIA=${s.id}`, `NEXOR_TOKEN=${token}`, `NEXOR_CHAVE_PUBLICA=${assinador.chavePublica}`].join("\n"),
+      // No .env do pacote de implantação, Atende e Agente usam nomes com prefixo (cada sistema tem o seu token)
+      env: [`NEXOR_CENTRAL_URL=${cfg.urlPublica || "http://localhost:" + cfg.porta}`, `NEXOR_CHAVE_PUBLICA=${assinador.chavePublica}`, `${PREFIXO_ENV[s.produto] ?? ""}NEXOR_INSTANCIA=${s.id}`, `${PREFIXO_ENV[s.produto] ?? ""}NEXOR_TOKEN=${token}`].join("\n"),
     };
   }
   rota("GET", "/api/sistemas", TODOS, () => repo.todos("SELECT s.*, COALESCE(c.nome_fantasia, c.razao_social) cliente FROM sistemas s JOIN clientes c ON c.id = s.cliente_id ORDER BY c.razao_social, s.produto").map((s) => ({ ...sistemaPublico(repo.ler("sistemas", s)), cliente: s.cliente })));
@@ -496,7 +500,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("POST", "/api/sistemas/:id/acesso", SUP, (ctx) => {
     const s = exigirSistema(ctx.params.id);
     if (!s.ativo) falha(409, "Sistema desativado.");
-    if (s.produto !== "rh") falha(400, "O acesso direto de suporte está disponível para o Nexor RH.");
+    if (!COM_ACESSO.has(s.produto)) falha(400, "O acesso direto de suporte está disponível para o Nexor RH e o Atende IA.");
     if (!s.url) falha(400, "Cadastre o endereço do sistema (ex.: https://rh.cliente.com.br) antes.");
     const token = assinador.assinar({ v: 1, tipo: "acesso", inst: s.id, nome: ctx.usuario.nome, email: ctx.usuario.email, exp: agora() + cfg.acessoSegundos * 1000, nonce: gerarToken(16) });
     auditar(ctx, "acesso_suporte", s.cliente_id, { sistema: s.id });
@@ -505,7 +509,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("GET", "/api/chave-publica", TODOS, () => ({ chave: assinador.chavePublica }));
 
   // Sincronização: o sistema do cliente manda a saúde (só contagens, nenhum dado pessoal) e recebe a licença
-  const SAUDE = { colaboradores: "n", usuarios: "n", empresas: "n", marcacoes_hoje: "n", banco_mb: "n", disco_livre_mb: "n", backup_ultimo: "n", uptime_s: "n", node: "s", erros_24h: "n", conversas_hoje: "n" };
+  const SAUDE = { colaboradores: "n", usuarios: "n", empresas: "n", marcacoes_hoje: "n", banco_mb: "n", disco_livre_mb: "n", backup_ultimo: "n", uptime_s: "n", node: "s", erros_24h: "n", conversas_hoje: "n", conectores: "n" };
   rota("POST", "/api/v1/sincronizar", { publico: true, maquina: true }, async (ctx) => {
     const token = String(ctx.req.headers.authorization ?? "").match(/^Bearer\s+(nxs_[\w-]{20,80})$/)?.[1];
     limitar(`sync:${ctx.ip}`, 120, 5 * 60_000);

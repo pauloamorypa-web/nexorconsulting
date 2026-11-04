@@ -3,7 +3,7 @@
    acesso do Suporte Nexor por link de uso único e itens escondidos pelo Suporte. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
@@ -104,7 +104,7 @@ test("atraso: aviso, depois somente leitura, depois bloqueio; o pagamento libera
 
 test("licença forjada ou de outra instalação é ignorada", async () => {
   const antes = rh.app.central.estado().situacao;
-  rh.app.repo.rodar("UPDATE nexor_licenca SET token = ? WHERE id = 1", Buffer.from(JSON.stringify({ tipo: "licenca", inst: sistema.id, situacao: "bloqueado", valido_ate: relogio + DIA })).toString("base64url") + ".assinaturafalsa");
+  writeFileSync(join(rh.app.cfg.pastaDados, "nexor-licenca.json"), JSON.stringify({ token: Buffer.from(JSON.stringify({ tipo: "licenca", inst: sistema.id, situacao: "bloqueado", valido_ate: relogio + DIA })).toString("base64url") + ".assinaturafalsa" }));
   assert.equal(rh.app.central.estado().origem, "aguardando", "assinatura inválida não vale");
   await sincronizar();
   assert.equal(rh.app.central.estado().situacao, antes);
