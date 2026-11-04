@@ -1,0 +1,20 @@
+{
+  "name": "nexor-barber",
+  "version": "1.0.0",
+  "description": "Nexor Barber: agendamento para barbearias com app do cliente, clube de assinatura, produtos, comissões, lista de espera e retorno no tempo certo",
+  "type": "module",
+  "private": true,
+  "main": "src/servidor.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/servidor.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/servidor.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-timeout=60000 test/*.test.js",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}

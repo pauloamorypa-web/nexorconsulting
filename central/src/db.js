@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS clientes (
 );
 CREATE TABLE IF NOT EXISTS sistemas (
   id TEXT PRIMARY KEY, cliente_id TEXT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
-  produto TEXT NOT NULL CHECK (produto IN ('rh','atende','agente','one','contabil')), nome TEXT, url TEXT,
+  produto TEXT NOT NULL CHECK (produto IN ('rh','atende','agente','one','contabil','barber')), nome TEXT, url TEXT,
   token_hash TEXT NOT NULL UNIQUE, prefixo TEXT NOT NULL, ativo INTEGER NOT NULL DEFAULT 1,
   ultimo_contato INTEGER, versao TEXT, saude TEXT NOT NULL DEFAULT '{}', ip TEXT, situacao TEXT, criado_em INTEGER NOT NULL
 );
@@ -68,6 +68,14 @@ export function abrirBanco(caminho, agora = () => Date.now()) {
   const db = new DatabaseSync(caminho);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(ESQUEMA);
+  // Produto novo na lista (SQLite não altera CHECK): recria a tabela de sistemas mantendo os dados
+  const sqlSistemas = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'sistemas'").get()?.sql ?? "";
+  if (!sqlSistemas.includes("'barber'")) {
+    const criar = /CREATE TABLE IF NOT EXISTS sistemas \(([\s\S]*?)\n\);/.exec(ESQUEMA)[1];
+    db.exec("PRAGMA foreign_keys = OFF");
+    db.exec(`BEGIN; CREATE TABLE sistemas_novo (${criar}); INSERT INTO sistemas_novo SELECT * FROM sistemas; DROP TABLE sistemas; ALTER TABLE sistemas_novo RENAME TO sistemas; COMMIT;`);
+    db.exec("PRAGMA foreign_keys = ON");
+  }
   // Código do cliente (NX-XXXX-XXXX): vincula qualquer sistema Nexor ao cliente na hora
   if (!db.prepare("PRAGMA table_info(clientes)").all().some((c) => c.name === "codigo")) db.exec("ALTER TABLE clientes ADD COLUMN codigo TEXT");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS clientes_codigo ON clientes (codigo)");

@@ -22,12 +22,12 @@ const PUBLICO = resolve(fileURLToPath(new URL("../public", import.meta.url)));
 const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".ico": "image/x-icon", ".json": "application/json" };
 const CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 const COOKIE = "nx_central";
-export const PRODUTOS = { rh: "Nexor RH e Ponto", atende: "Atende IA", agente: "Nexor Agente", one: "Nexor One", contabil: "Nexor Contábil" };
+export const PRODUTOS = { rh: "Nexor RH e Ponto", atende: "Atende IA", agente: "Nexor Agente", one: "Nexor One", contabil: "Nexor Contábil", barber: "Nexor Barber" };
 const PAPEIS = ["dono", "financeiro", "suporte"];
 const ONLINE_MS = 15 * 60_000;
 // Produtos com painel em que o Suporte Nexor entra pelo link assinado
-const COM_ACESSO = new Set(["rh", "atende", "contabil"]);
-const PREFIXO_ENV = { atende: "ATENDE_", agente: "AGENTE_", contabil: "CONTABIL_" };
+const COM_ACESSO = new Set(["rh", "atende", "contabil", "barber"]);
+const PREFIXO_ENV = { atende: "ATENDE_", agente: "AGENTE_", contabil: "CONTABIL_", barber: "BARBER_" };
 
 class ErroHttp extends Error {
   constructor(status, mensagem) {
@@ -507,7 +507,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("POST", "/api/sistemas/:id/acesso", SUP, (ctx) => {
     const s = exigirSistema(ctx.params.id);
     if (!s.ativo) falha(409, "Sistema desativado.");
-    if (!COM_ACESSO.has(s.produto)) falha(400, "O acesso direto de suporte está disponível para o Nexor RH, o Atende IA e o Nexor Contábil.");
+    if (!COM_ACESSO.has(s.produto)) falha(400, "O acesso direto de suporte está disponível para o Nexor RH, o Atende IA, o Nexor Contábil e o Nexor Barber.");
     if (!s.url) falha(400, "Cadastre o endereço do sistema (ex.: https://rh.cliente.com.br) antes.");
     const token = assinador.assinar({ v: 1, tipo: "acesso", inst: s.id, nome: ctx.usuario.nome, email: ctx.usuario.email, exp: agora() + cfg.acessoSegundos * 1000, nonce: gerarToken(16) });
     auditar(ctx, "acesso_suporte", s.cliente_id, { sistema: s.id });
@@ -516,7 +516,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("GET", "/api/chave-publica", TODOS, () => ({ chave: assinador.chavePublica }));
 
   // Sincronização: o sistema do cliente manda a saúde (só contagens, nenhum dado pessoal) e recebe a licença
-  const SAUDE = { colaboradores: "n", usuarios: "n", empresas: "n", marcacoes_hoje: "n", banco_mb: "n", disco_livre_mb: "n", backup_ultimo: "n", uptime_s: "n", node: "s", erros_24h: "n", conversas_hoje: "n", conectores: "n", carteira: "n", documentos_mes: "n", pendencias: "n", tarefas_atrasadas: "n" };
+  const SAUDE = { colaboradores: "n", usuarios: "n", empresas: "n", marcacoes_hoje: "n", banco_mb: "n", disco_livre_mb: "n", backup_ultimo: "n", uptime_s: "n", node: "s", erros_24h: "n", conversas_hoje: "n", conectores: "n", carteira: "n", documentos_mes: "n", pendencias: "n", tarefas_atrasadas: "n", barbeiros: "n", clientes: "n", agendamentos_mes: "n", assinantes: "n", estoque_baixo: "n" };
   // Vinculação imediata: o sistema instalado no cliente manda o código do cliente (NX-XXXX-XXXX) e recebe a
   // instância, o token e a chave pública. Reinstalação do mesmo produto no mesmo endereço reaproveita a instância.
   rota("POST", "/api/v1/vincular", { publico: true, maquina: true }, async (ctx) => {
