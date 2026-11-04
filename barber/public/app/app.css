@@ -142,3 +142,13 @@ label.campo { display: grid; gap: 6px; font-size: 13.5px; color: var(--texto2); 
 @keyframes desce { from { transform: translateY(-10px); opacity: 0; } }
 .vazio { text-align: center; padding: 22px 8px; color: var(--texto2); }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* Assinante */
+.faixa-clube { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 14px; background: color-mix(in srgb, var(--ok) 13%, var(--sup)); border: 1px solid color-mix(in srgb, var(--ok) 40%, var(--linha)); color: var(--texto); font-size: 13.5px; margin-bottom: 12px; }
+.faixa-clube svg { color: var(--ok); flex: none; }
+.faixa-clube.atencao { background: color-mix(in srgb, var(--alerta) 13%, var(--sup)); border-color: color-mix(in srgb, var(--alerta) 45%, var(--linha)); }
+.faixa-clube.atencao svg { color: var(--alerta); }
+.faixa-clube .btn { margin-left: auto; }
+.opcao-clube { border-color: color-mix(in srgb, var(--ok) 45%, var(--linha)); }
+.opcao-clube > svg { color: var(--ok); }
+.aviso-clube { color: var(--alerta); font-size: 12.5px; }

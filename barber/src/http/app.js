@@ -179,9 +179,17 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
   r.get("/api/app/horarios", APP, ({ query, cliente }) => {
     const d = validar(z.object({ servico: id, barbeiro: id.optional(), dia }), Object.fromEntries(query));
     const res = nucleo.livres({ servicoId: d.servico, barbeiroId: d.barbeiro ?? null, dia: d.dia });
-    const cob = nucleo.coberturaDoCliente(cliente.id, d.servico, d.dia);
-    return { dia: res.dia, horarios: res.horarios, clube: { coberto: cob.coberto, motivo: cob.motivo ?? null } };
+    return { dia: res.dia, horarios: res.horarios, clube: nucleo.identificarAssinante(cliente.id, d.servico, d.dia) };
   });
+  /** O app pergunta antes de mostrar os serviços: o que o clube do cliente cobre em cada um */
+  r.get("/api/app/clube/servicos", APP, ({ cliente, query }) => {
+    const d = validar(z.object({ dia: dia.optional() }), Object.fromEntries(query));
+    const base = nucleo.identificarAssinante(cliente.id);
+    if (!base.assinante) return { assinante: false, servicos: {} };
+    const servicos = Object.fromEntries(repo.lista("servicos", "WHERE ativo = 1").map((s) => [s.id, nucleo.identificarAssinante(cliente.id, s.id, d.dia ?? hojeBR(agora()))]).map(([k, v]) => [k, { coberto: v.coberto, restante: v.restante, motivo: v.motivo }]));
+    return { ...base, servicos };
+  });
+
   r.post("/api/app/agendar", APP, async (ctx) => {
     const d = validar(z.object({ servico_id: id, barbeiro_id: id.optional().nullable(), dia, hora, observacao: op(300), reservas: z.array(z.object({ produto_id: id, quantidade: z.number().int().min(1).max(5) })).max(5).optional() }), await ctx.corpo());
     limitar(`agendar:${ctx.cliente.id}`, 12, 3600_000);
