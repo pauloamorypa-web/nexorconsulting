@@ -3,7 +3,7 @@
 
 import { z } from "zod";
 import { DEPARTAMENTOS, REGIMES } from "../regras/catalogo.js";
-import { diasEntre, hojeBR, somarDias } from "../regras/datas.js";
+import { competenciaAnterior, diasEntre, hojeBR, somarDias } from "../regras/datas.js";
 import { gerarPendencias, gerarTarefas, prazoInterno, prazoLegal, semearEscritorio, semearEsperados } from "../regras/geracao.js";
 import { TIPOS_DOCUMENTO } from "../ia/leitura.js";
 import { conferirSenha, gerarHashSenha, gerarToken, iguais, precisaRefazerHash, sha256 } from "../seguranca.js";
@@ -135,9 +135,10 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const id = empresa.id;
     const h = hoje();
     const n = (sql, ...p) => repo.um(sql, ...p).n;
-    const comp = repo.um("SELECT MAX(competencia) c FROM pendencias WHERE empresa_id = ?", id)?.c ?? null;
-    const totalPend = comp ? n("SELECT COUNT(*) n FROM pendencias WHERE empresa_id = ? AND competencia = ? AND status != 'dispensado'", id, comp) : 0;
-    const recebidas = comp ? n("SELECT COUNT(*) n FROM pendencias WHERE empresa_id = ? AND competencia = ? AND status = 'recebido'", id, comp) : 0;
+    // O mês que o escritório está fechando: a competência anterior (as variáveis de folha do mês atual ficam fora)
+    const comp = competenciaAnterior(h);
+    const totalPend = n("SELECT COUNT(*) n FROM pendencias WHERE empresa_id = ? AND competencia = ? AND status != 'dispensado'", id, comp);
+    const recebidas = n("SELECT COUNT(*) n FROM pendencias WHERE empresa_id = ? AND competencia = ? AND status = 'recebido'", id, comp);
     return {
       hoje: h,
       competencia: comp,
@@ -552,13 +553,15 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     if (d.whatsapp) {
       const { token, segredo_app, ...resto } = d.whatsapp;
       Object.assign(w, Object.fromEntries(Object.entries(resto).filter(([, v]) => v !== undefined && v !== null)));
-      if (token) w.token_cripto = cofre.cifrar(token);
-      if (segredo_app) w.segredo_cripto = cofre.cifrar(segredo_app);
+      // "true"/"false" é o marcador de "configurado" que vai ao navegador: nunca vira segredo
+      const valido = (v) => v && !["true", "false"].includes(v);
+      if (valido(token)) w.token_cripto = cofre.cifrar(token);
+      if (valido(segredo_app)) w.segredo_cripto = cofre.cifrar(segredo_app);
       if (!w.verificacao) w.verificacao = gerarToken(18);
     }
     const em = { ...c.email };
     if (d.email) {
-      if (d.email.chave) em.chave_cripto = cofre.cifrar(d.email.chave);
+      if (d.email.chave && !["true", "false"].includes(d.email.chave)) em.chave_cripto = cofre.cifrar(d.email.chave);
       if (d.email.remetente !== undefined) em.remetente = d.email.remetente ?? "";
     }
     auditar(ctx, "canais_alterados");

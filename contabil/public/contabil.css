@@ -87,3 +87,30 @@
 .nexor-grupo h3 { margin: 6px 0 2px; font-size: 14px; }
 .marca-oculto { opacity: .55; }
 .selo-nexor { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--azul) 14%, transparent); color: var(--azul); margin-left: 6px; }
+
+/* Nexor Contábil */
+.doc-grade { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.doc-previa { width: 100%; height: 72vh; border: 1px solid var(--linha); border-radius: 12px; background: var(--superficie-3); }
+.doc-previa-img { max-width: 100%; border-radius: 12px; border: 1px solid var(--linha); }
+.alerta-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.alerta-lista li { padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--amarelo) 12%, var(--superficie)); color: color-mix(in srgb, var(--amarelo) 70%, var(--texto)); font-size: 13.5px; }
+.lanc-tabela input { width: 100%; min-width: 90px; }
+.lanc-tabela td { vertical-align: middle; }
+.lanc-conc { font-size: 12px; color: var(--verde); }
+.dados-lidos { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13.5px; }
+.dados-lidos dt { color: var(--texto-3); }
+.dados-lidos dd { margin: 0; word-break: break-word; }
+.area-envio { border: 2px dashed var(--linha); border-radius: 14px; padding: 22px; text-align: center; color: var(--texto-2); cursor: pointer; }
+.area-envio.sobre { border-color: var(--azul); background: color-mix(in srgb, var(--azul) 6%, transparent); }
+.filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.filtros .entrada { width: auto; min-width: 150px; }
+.conversa { display: grid; gap: 8px; max-height: 50vh; overflow-y: auto; }
+.balao { padding: 9px 12px; border-radius: 12px; max-width: 85%; background: var(--superficie-3); white-space: pre-wrap; }
+.balao.escritorio { justify-self: end; background: color-mix(in srgb, var(--azul) 12%, var(--superficie)); }
+.balao small { display: block; color: var(--texto-3); margin-top: 4px; }
+.prazo-atrasado { color: var(--vermelho); font-weight: 600; }
+.prazo-hoje { color: var(--amarelo); font-weight: 600; }
+@media (max-width: 900px) {
+  .doc-grade { grid-template-columns: 1fr; }
+  .doc-previa { height: 55vh; }
+}

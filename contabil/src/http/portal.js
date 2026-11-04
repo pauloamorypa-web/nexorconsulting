@@ -87,7 +87,7 @@ export function rotasPortal({ r, repo, nucleo, cfg, agora, limitar, cookie }) {
     return { ok: true };
   });
 
-  r.get("/api/portal/pendencias", P, ({ portal }) => repo.lista("pendencias", "WHERE cliente_id = ? AND status != 'dispensado' ORDER BY status = 'pendente' DESC, prazo DESC LIMIT 60", portal.cliente.id).map(({ cobrancas, ultima_cobranca, ...p }) => p));
+  r.get("/api/portal/pendencias", P, ({ portal }) => repo.lista("pendencias", "WHERE cliente_id = ? AND status != 'dispensado' ORDER BY status = 'pendente' DESC, CASE WHEN status = 'pendente' THEN prazo END ASC, prazo DESC LIMIT 60", portal.cliente.id).map(({ cobrancas, ultima_cobranca, ...p }) => p));
   r.get("/api/portal/documentos", P, ({ portal }) => repo.todos("SELECT id, nome, mime, tamanho, origem, competencia, status, motivo, criado_em FROM documentos WHERE cliente_id = ? ORDER BY criado_em DESC LIMIT 200", portal.cliente.id));
   r.post("/api/portal/documentos", P, async (ctx) => {
     const c = ctx.portal.cliente;
