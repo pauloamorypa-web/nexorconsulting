@@ -1,4 +1,4 @@
-# Nexor Central no servidor da Nexor:  docker compose up -d --build
+# Nexor Central no servidor da Nexor:  sudo ./instalar.sh   (ou: docker compose --profile tunel up -d --build)
 # Dados (banco + chave que assina as licenças) no volume central-dados. Backup diário em ./backups.
 x-padrao: &padrao
   restart: unless-stopped
@@ -28,11 +28,14 @@ services:
     entrypoint: ["sh", "-c", "while true; do node --disable-warning=ExperimentalWarning scripts/backup.js || echo 'BACKUP FALHOU'; sleep 86400; done"]
     healthcheck: { disable: true }
 
+  # HTTPS pela Cloudflare sem abrir portas (perfil "tunel"). Sem ele, publique a porta 127.0.0.1:8800
+  # no proxy que o servidor já tem (nginx, Caddy) com HTTPS.
   tunel:
     <<: *padrao
+    profiles: [tunel]
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run
-    environment: { TUNNEL_TOKEN: "${TUNNEL_TOKEN:?defina TUNNEL_TOKEN no .env}" }
+    environment: { TUNNEL_TOKEN: "${TUNNEL_TOKEN:-}" }
     depends_on: [central]
 
 volumes:

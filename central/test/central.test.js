@@ -195,3 +195,17 @@ test("perfil financeiro não abre sistemas de clientes; suporte não mexe em fat
   assert.equal((await sup.post(`/api/sistemas/${sis.id}/acesso`)).status, 200);
   assert.equal((await fin.get("/api/usuarios")).status, 403);
 });
+
+test("código do cliente: formato, normalização e troca", async () => {
+  const { novoCodigo, normalizarCodigo } = await import("../src/db.js");
+  const c = novoCodigo();
+  assert.match(c, /^NX-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
+  assert.equal(normalizarCodigo(c.toLowerCase().replace(/-/g, " ")), c);
+  assert.equal(normalizarCodigo("nx abc"), null);
+  const cli = (await dono.get("/api/clientes")).dados[0];
+  assert.match(cli.codigo, /^NX-/);
+  const novo = (await dono.post(`/api/clientes/${cli.id}/codigo`)).dados.codigo;
+  assert.notEqual(novo, cli.codigo);
+  const r = await fetch(url + "/api/v1/vincular", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ codigo: cli.codigo, produto: "rh" }) });
+  assert.equal(r.status, 404, "o código antigo não vincula mais");
+});

@@ -33,6 +33,12 @@ if [ ! -f .env ]; then
     read -rsp "Token do Cloudflare Tunnel (Zero Trust → Networks → Tunnels → seu túnel): " TOKEN; echo
     sed -i "s|^CLOUDFLARE_TUNNEL_TOKEN=.*|CLOUDFLARE_TUNNEL_TOKEN=${TOKEN}|" .env
   fi
+  read -rp "Código do cliente na Nexor Central (NX-XXXX-XXXX, Enter para pular): " NXCOD
+  if [ -n "$NXCOD" ]; then
+    sed -i "s|^NEXOR_CODIGO=.*|NEXOR_CODIGO=${NXCOD}|" .env
+    read -rp "Endereço da sua Nexor Central (Enter = https://central.nexorconsultingit.com.br): " NXURL
+    [ -n "$NXURL" ] && sed -i "s|^NEXOR_CENTRAL_URL=.*|NEXOR_CENTRAL_URL=${NXURL%/}|" .env
+  fi
   chmod 600 .env
   printf '\n\033[1;33m⚠ GUARDE AGORA no cofre da Nexor a RH_MASTER_KEY do arquivo .env.\n  Sem ela, o certificado digital e os arquivos dos colaboradores não podem ser lidos (nem pelos backups).\033[0m\n'
   read -rp "Já guardou a chave? (s/n) " OK

@@ -132,7 +132,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   }
   const nucleo = criarNucleo({ repo, cofre, cfg, agora });
   const eventos = criarEventos();
-  const central = criarCentralNexor({ repo, cfg, agora, fetchFn, versao: cfg.sistema.versao, saude: () => saudeDaInstalacao(repo, cfg, agora) });
+  const central = criarCentralNexor({ cfg, agora, fetchFn, produto: "rh", versao: cfg.sistema.versao, saude: () => saudeDaInstalacao(repo, cfg, agora) });
   const api = criarApi({ repo, nucleo, cofre, cfg, eventos, central, agora, fetchSoap, fetchFn });
 
   async function arquivoEstatico(caminho, res) {

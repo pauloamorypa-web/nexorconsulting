@@ -405,6 +405,20 @@ async function empresa(alvo) {
         h("li", {}, "Você pode exportar ou excluir os dados de um contato a qualquer momento (Contatos)."),
       ),
     ),
+    !eu.licenca?.vinculado && ["dono", "admin"].includes(eu.usuario.papel) ? cartaoVincular(alvo) : null,
+  );
+}
+
+/** Ainda sem vínculo com a Nexor Central: o dono digita o código do cliente (NX-XXXX-XXXX) */
+function cartaoVincular(alvo) {
+  const codigo = entrada({ placeholder: "NX-XXXX-XXXX", maxlength: 20, autocomplete: "off", style: { textTransform: "uppercase", letterSpacing: ".06em" } });
+  return h(
+    "section",
+    { class: "cartao" },
+    h("h2", {}, "Vincular à Nexor"),
+    h("p", { class: "suave" }, "Digite o código do cliente informado pela Nexor. O sistema passa a receber suporte, licença e monitoramento."),
+    campo("Código do cliente", codigo),
+    h("button", { class: "btn btn-primario", onclick: (e) => acao(e.currentTarget, async () => { const r = await post("/nexor/vincular", { codigo: codigo.value }); aviso(`Sistema vinculado à Nexor (${r.cliente}).`); await empresa(alvo); }) }, "Vincular"),
   );
 }
 

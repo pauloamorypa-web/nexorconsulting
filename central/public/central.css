@@ -23,3 +23,6 @@
 @media (max-width: 640px) {
   .grade-2 { grid-template-columns: 1fr; }
 }
+.codigo-cliente { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; padding: 12px 14px; border: 1px dashed color-mix(in srgb, var(--azul) 45%, var(--linha)); border-radius: 12px; background: color-mix(in srgb, var(--azul) 5%, var(--superficie)); margin-bottom: 12px; }
+.codigo-cliente p { grid-column: 1 / -1; margin: 0; }
+.codigo-cliente .codigo { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 20px; letter-spacing: .06em; }
