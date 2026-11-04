@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fontes/fontes.css">
+<style>
+:root { --fundo:#010524; --azul:#0058fa; --azul2:#3b8dff; --ciano:#00e1fb; --texto:#eef2fa; --suave:#a9b6cf; --linha:#1c2a47; --painel:#0a1426; --painel2:#0f1b33; --ok:#22c55e; --alerta:#f5b13d; --perigo:#f2555a; --whats:#25d366; --acento:#3b8dff; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { width:1080px; height:1920px; overflow:hidden; background:var(--fundo); color:var(--texto); font-family:"Inter",sans-serif; }
+#palco { position:absolute; inset:0; overflow:hidden; }
+#fundo { position:absolute; inset:-200px; }
+.bolha { position:absolute; border-radius:50%; filter:blur(120px); opacity:.55; }
+#grade { position:absolute; inset:0; background-image:linear-gradient(rgba(59,141,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(59,141,255,.06) 1px, transparent 1px); background-size:90px 90px; }
+#topo { position:absolute; top:70px; left:70px; right:70px; display:flex; align-items:center; gap:18px; z-index:5; }
+#topo img { width:64px; height:64px; }
+#topo .marca { font-family:"Michroma"; letter-spacing:.32em; font-size:28px; }
+#topo .produto { margin-left:auto; font:600 26px "Space Grotesk"; color:var(--suave); }
+#barra { position:absolute; left:70px; right:70px; bottom:70px; height:6px; border-radius:6px; background:rgba(255,255,255,.08); z-index:5; overflow:hidden; }
+#barra i { display:block; height:100%; background:linear-gradient(90deg,var(--azul2),var(--ciano)); }
+.cena { position:absolute; inset:0; opacity:0; }
+.titulo { font:700 92px/1.04 "Space Grotesk"; letter-spacing:-1.5px; text-wrap:balance; }
+.sub { font:500 46px/1.32 "Inter"; color:var(--suave); text-wrap:balance; }
+.gradiente { background:linear-gradient(90deg,var(--azul2),var(--ciano)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.olho { font:700 30px "Space Grotesk"; letter-spacing:.18em; text-transform:uppercase; color:var(--ciano); }
+.cartao { background:rgba(10,20,38,.92); border:2px solid var(--linha); border-radius:36px; }
+.linha-x { position:absolute; display:flex; align-items:center; gap:30px; left:90px; right:90px; padding:38px 40px; }
+.x { width:76px; height:76px; border-radius:50%; flex:none; display:grid; place-items:center; background:rgba(242,85,90,.16); color:var(--perigo); }
+.v { background:rgba(34,197,94,.16); color:var(--ok); }
+.linha-x span { font:600 46px/1.2 "Inter"; }
+/* celular */
+.cel { position:absolute; left:50%; width:640px; height:1080px; margin-left:-320px; border-radius:76px; background:#060d1c; border:4px solid #22345a; padding:22px; box-shadow:0 40px 120px rgba(0,88,250,.25); }
+.cel .tela { width:100%; height:100%; border-radius:56px; overflow:hidden; background:#0b141a; position:relative; }
+.wa-topo { position:relative; z-index:2; height:120px; background:#1f2c34; display:flex; align-items:center; gap:20px; padding:0 30px; }
+.av { width:70px; height:70px; border-radius:50%; background:linear-gradient(135deg,var(--azul),var(--ciano)); display:grid; place-items:center; font:700 28px "Space Grotesk"; flex:none; }
+.wa-topo b { display:block; font-size:30px; }
+.wa-topo small { font-size:24px; color:var(--whats); }
+.msgs { position:absolute; left:24px; right:24px; bottom:30px; display:flex; flex-direction:column; gap:16px; }
+.m { max-width:86%; padding:18px 22px; border-radius:24px; font-size:30px; line-height:1.36; white-space:pre-line; color:#e9edef; }
+.m.in { background:#202c33; align-self:flex-start; border-top-left-radius:6px; }
+.m.out { background:#005c4b; align-self:flex-end; border-top-right-radius:6px; }
+.dig { display:flex; gap:9px; padding:22px 26px; }
+.dig i { width:12px; height:12px; border-radius:50%; background:#8696a0; }
+.botoes { display:flex; gap:14px; margin-top:14px; }
+.botoes span { flex:1; text-align:center; padding:14px; border-radius:16px; background:#111b21; color:#53bdeb; font-weight:600; font-size:28px; border:2px solid #2a3942; }
+.botoes span.sim { background:#103529; color:var(--whats); border-color:var(--whats); }
+/* painel */
+.painel { position:absolute; left:70px; right:70px; padding:40px; }
+.kpis { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.kpi { background:var(--painel2); border-radius:26px; padding:30px; }
+.kpi b { display:block; font:700 82px "Space Grotesk"; font-variant-numeric:tabular-nums; }
+.kpi small { font-size:30px; color:var(--suave); }
+.linhas { margin-top:30px; display:grid; gap:16px; }
+.lin { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; border-radius:22px; background:var(--painel2); font-size:32px; }
+.chip { font:600 26px "Inter"; padding:8px 20px; border-radius:99px; white-space:nowrap; }
+.c-ok { background:rgba(34,197,94,.16); color:var(--ok); } .c-al { background:rgba(245,177,61,.16); color:var(--alerta); } .c-pe { background:rgba(242,85,90,.16); color:var(--perigo); } .c-az { background:rgba(59,141,255,.18); color:#8cbcff; }
+.grade-rec { position:absolute; left:70px; right:70px; display:grid; grid-template-columns:1fr 1fr; gap:26px; }
+.rec { padding:40px 34px; display:grid; gap:16px; }
+.rec .ic { width:84px; height:84px; border-radius:24px; display:grid; place-items:center; background:rgba(59,141,255,.14); color:var(--ciano); }
+.rec b { font:700 40px/1.15 "Space Grotesk"; }
+.rec span { font-size:29px; line-height:1.35; color:var(--suave); }
+.btn-cta { display:inline-flex; align-items:center; gap:20px; padding:40px 64px; border-radius:999px; background:linear-gradient(90deg,var(--azul),var(--azul2)); font:700 52px "Space Grotesk"; box-shadow:0 20px 80px rgba(0,88,250,.55); }
+.selo { display:inline-flex; align-items:center; gap:12px; font:600 30px "Inter"; padding:12px 24px; border-radius:99px; }
+</style>
+</head>
+<body>
+<div id="palco">
+  <div id="fundo"><div class="bolha" id="b1"></div><div class="bolha" id="b2"></div><div class="bolha" id="b3"></div><div id="grade"></div></div>
+  <div id="topo"><img src="logo-mark.webp" alt=""><span class="marca">NEXOR</span><span class="produto" id="nome-produto"></span></div>
+  <div id="cenas"></div>
+  <div id="barra"><i id="progresso"></i></div>
+</div>
+<script>
+/* ---------- utilidades ---------- */
+const $ = (s) => document.querySelector(s);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+const cl = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const sai = (x) => 1 - Math.pow(1 - cl(x), 3);            // easeOutCubic
+const mola = (x) => { x = cl(x); return 1 + 2.4 * Math.pow(x - 1, 3) + 1.4 * Math.pow(x - 1, 2); }; // leve "overshoot"
+const janela = (t, ini, dur) => cl((t - ini) / dur);
+function entra(e, t, ini, { dur = .55, y = 60, x = 0, s = 1 } = {}) {
+  const p = sai(janela(t, ini, dur));
+  e.style.opacity = p;
+  e.style.transform = `translate(${x * (1 - p)}px, ${y * (1 - p)}px) scale(${s + (1 - s) * p})`;
+}
+const ICONES = {
+  x: "M18 6 6 18M6 6l12 12", check: "M20 6 9 17l-5-5", relogio: "M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z",
+  digital: "M12 11v4M8.5 8a5 5 0 0 1 8 4v2M7 12v3a5 5 0 0 0 2 4M17 17a5 5 0 0 1-1 2M12 3a9 9 0 0 1 9 9v1M3 13v-1a9 9 0 0 1 4-7.5",
+  doc: "M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M8 13h8M8 17h6",
+  calendario: "M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z",
+  chat: "M21 12a8 8 0 0 1-11.8 7L3 21l2-6A8 8 0 1 1 21 12z", raio: "M13 2 3 14h9l-1 8 10-12h-9z", coroa: "M3 18h18M4 18 3 7l5 4 4-6 4 6 5-4-1 11",
+  cadeado: "M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4", escudo: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z", dinheiro: "M3 7h18v10H3zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  pessoas: "M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM21 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
+  grafico: "M3 3v18h18M7 15l4-4 3 3 5-6", sacola: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0",
+  link: "M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1", tesoura: "M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12",
+  livro: "M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z", seta: "M5 12h14M13 6l6 6-6 6", celular: "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2",
+};
+const ic = (n, t = 44) => `<svg width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONES[n] ?? ICONES.check}"/></svg>`;
+
+/* ---------- cabeçalho de cena com legenda ---------- */
+function legenda(c, cena, topo = 230) {
+  const box = el("div");
+  box.style.cssText = `position:absolute;left:80px;right:80px;top:${topo}px;display:grid;gap:22px`;
+  const t = el("div", "titulo", cena.titulo); t.style.fontSize = (cena.tamanho ?? 78) + "px";
+  const s = cena.texto ? el("div", "sub", cena.texto) : null; if (s) s.style.fontSize = "40px";
+  box.append(t); if (s) box.append(s); c.append(box);
+  return (tt) => { entra(t, tt, .1, { y: 50 }); if (s) entra(s, tt, .35, { y: 40 }); };
+}
+
+/* ---------- tipos de cena ---------- */
+const TIPOS = {
+  gancho(c, cena) {
+    const box = el("div"); box.style.cssText = "position:absolute;left:80px;right:80px;top:640px;display:grid;gap:10px";
+    const ls = cena.linhas.map((l, i) => { const d = el("div", "titulo" + (i === cena.linhas.length - 1 ? " gradiente" : ""), l); d.style.fontSize = "112px"; box.append(d); return d; });
+    c.append(box);
+    return (t) => ls.forEach((d, i) => entra(d, t, .2 + i * .55, { y: 90, dur: .7 }));
+  },
+  dores(c, cena) {
+    const cab = el("div", "olho", cena.titulo); cab.style.cssText = "position:absolute;left:90px;top:380px;font-size:38px";
+    c.append(cab);
+    const itens = cena.itens.map((txt, i) => { const d = el("div", "linha-x cartao", `<div class="x">${ic("x", 44)}</div><span>${txt}</span>`); d.style.top = 520 + i * 300 + "px"; c.append(d); return d; });
+    return (t) => { entra(cab, t, .1); itens.forEach((d, i) => entra(d, t, .45 + i * .75, { x: 260, y: 0 })); };
+  },
+  revela(c, cena) {
+    const anel = el("div"); anel.style.cssText = "position:absolute;left:50%;top:700px;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;border:4px solid var(--ciano)";
+    const logo = el("img"); logo.src = "logo-mark.webp"; logo.style.cssText = "position:absolute;left:50%;top:700px;width:260px;height:260px;margin:-130px 0 0 -130px";
+    const pre = el("div", "olho", cena.pre ?? "Conheça"); pre.style.cssText = "position:absolute;left:0;right:0;top:930px;text-align:center;font-size:36px";
+    const bloco = el("div"); bloco.style.cssText = "position:absolute;left:60px;right:60px;top:1000px;display:grid;gap:40px;justify-items:center;text-align:center";
+    const nome = el("div", "titulo", cena.produto); nome.style.fontSize = (cena.produto.length > 13 ? 108 : 124) + "px";
+    const frase = el("div", "sub", cena.frase); frase.style.cssText = "color:var(--texto);font-size:50px;max-width:860px";
+    bloco.append(nome, frase);
+    c.append(anel, logo, pre, bloco);
+    return (t) => {
+      const p = janela(t, .1, 1.1); anel.style.opacity = (1 - p) * .9; anel.style.transform = `scale(${.6 + p * 2.6})`;
+      const q = mola(janela(t, .05, .8)); logo.style.opacity = cl(q * 2); logo.style.transform = `scale(${.3 + .7 * q}) rotate(${(1 - q) * -40}deg)`;
+      logo.style.filter = `drop-shadow(0 0 ${40 + 30 * Math.sin(t * 3)}px rgba(0,225,251,.55))`;
+      entra(pre, t, .55); entra(nome, t, .75, { y: 70, dur: .7 }); entra(frase, t, 1.3, { y: 40 });
+    };
+  },
+  recurso(c, cena) {
+    const anima = legenda(c, cena);
+    const vis = VISUAIS[cena.visual.tipo](c, cena.visual, cena.dur);
+    return (t) => { anima(t); vis(t); };
+  },
+  diferencial(c, cena) {
+    const cab = el("div", "titulo", cena.titulo); cab.style.cssText = "position:absolute;left:90px;right:90px;top:360px;font-size:96px";
+    c.append(cab);
+    const itens = cena.itens.map((txt, i) => { const d = el("div", "linha-x cartao", `<div class="x v">${ic("check", 44)}</div><span>${txt}</span>`); d.style.top = 640 + i * 290 + "px"; d.style.borderColor = "rgba(34,197,94,.35)"; c.append(d); return d; });
+    return (t) => { entra(cab, t, .1, { y: 60 }); itens.forEach((d, i) => entra(d, t, .5 + i * .6, { s: .8, y: 30 })); };
+  },
+  cta(c, cena) {
+    const caixa = el("div"); caixa.style.cssText = "position:absolute;left:80px;right:80px;bottom:880px;display:grid;gap:36px;text-align:center";
+    const t1 = el("div", "titulo", cena.titulo); t1.style.fontSize = "100px";
+    const s = el("div", "sub", cena.sub); s.style.fontSize = "44px";
+    caixa.append(t1, s);
+    const bw = el("div"); bw.style.cssText = "position:absolute;left:0;right:0;top:1120px;display:flex;justify-content:center";
+    const b = el("div", "btn-cta", `${cena.botao} ${ic("seta", 54)}`); bw.append(b);
+    const site = el("div", "sub", "nexorconsultingit.com.br"); site.style.cssText = "position:absolute;left:0;right:0;top:1390px;text-align:center;color:var(--texto);font:600 46px 'Space Grotesk'";
+    const logo = el("img"); logo.src = "logo-lockup.webp"; logo.style.cssText = "position:absolute;left:50%;top:1500px;height:120px;transform:translateX(-50%)";
+    c.append(caixa, bw, site, logo);
+    return (t) => {
+      entra(t1, t, .1, { y: 70, dur: .7 }); entra(s, t, .5); entra(site, t, 1.2); entra(logo, t, 1.4);
+      const p = mola(janela(t, .8, .7)); bw.style.opacity = cl(p * 2); b.style.transform = `scale(${(.5 + .5 * p) * (1 + .035 * Math.sin(t * 5))})`;
+    };
+  },
+};
+
+/* ---------- visuais das funcionalidades ---------- */
+const VISUAIS = {
+  /* conversa de WhatsApp num celular; mensagens entram ao longo da cena */
+  chat(c, v, dur) {
+    const cel = el("div", "cel"); cel.style.top = "700px";
+    cel.innerHTML = `<div class="tela"><div class="wa-topo"><div class="av">${v.iniciais ?? "N"}</div><div><b>${v.contato}</b><small>${v.status ?? "online"}</small></div></div><div class="msgs"></div></div>`;
+    c.append(cel);
+    const caixa = cel.querySelector(".msgs");
+    const passo = (dur - 2.2) / v.mensagens.length;
+    const itens = v.mensagens.map((m, i) => {
+      const d = el("div", `m ${m.l}`, m.t);
+      let bts = null;
+      if (m.botoes) { bts = el("div", "botoes", m.botoes.map((b) => `<span>${b}</span>`).join("")); d.append(bts); }
+      const dig = m.l === "in" ? el("div", "m in dig", "<i></i><i></i><i></i>") : null;
+      return { d, dig, bts, ini: 1.1 + i * passo, m };
+    });
+    return (t) => {
+      entra(cel, t, .3, { y: 140, dur: .7 });
+      caixa.replaceChildren();
+      for (const it of itens) {
+        if (it.dig && t > it.ini - .7 && t < it.ini) { caixa.append(it.dig); it.dig.querySelectorAll("i").forEach((k, j) => (k.style.opacity = .35 + .65 * Math.abs(Math.sin(t * 6 - j)))); }
+        if (t >= it.ini) { caixa.append(it.d); const p = sai(janela(t, it.ini, .35)); it.d.style.opacity = p; it.d.style.transform = `translateY(${30 * (1 - p)}px) scale(${.92 + .08 * p})`; }
+        if (it.bts && it.m.escolhe !== undefined) it.bts.children[it.m.escolhe].classList.toggle("sim", t > it.ini + passo * .55);
+      }
+    };
+  },
+  /* indicadores que contam e linhas que deslizam */
+  kpis(c, v) {
+    const p = el("div", "painel cartao"); p.style.top = "640px";
+    const g = el("div", "kpis"); const nums = v.itens.map((k) => { const d = el("div", "kpi", `<b>0</b><small>${k.rot}</small>`); d.querySelector("b").style.color = k.cor ?? "var(--texto)"; g.append(d); return { d, k }; });
+    const ls = el("div", "linhas"); const lins = (v.linhas ?? []).map((l) => { const d = el("div", "lin", `<span>${l.a}</span><span class="chip ${l.c ?? "c-az"}">${l.b}</span>`); ls.append(d); return d; });
+    p.append(g, ls); if (v.nota) { const n = el("div", "", v.nota); n.style.cssText = "margin-top:22px;font-size:24px;color:var(--suave);text-align:right"; p.append(n); }
+    c.append(p);
+    return (t) => {
+      entra(p, t, .3, { y: 120, dur: .7 });
+      nums.forEach(({ d, k }, i) => { const q = sai(janela(t, .7 + i * .15, 1.4)); d.querySelector("b").textContent = (k.pre ?? "") + Math.round(k.valor * q).toLocaleString("pt-BR") + (k.suf ?? ""); });
+      lins.forEach((d, i) => entra(d, t, 1.6 + i * .45, { x: 160, y: 0 }));
+    };
+  },
+  /* lista de linhas com etiqueta à direita */
+  linhas(c, v) {
+    const p = el("div", "painel cartao"); p.style.top = "660px";
+    if (v.cab) { const h = el("div", "", v.cab); h.style.cssText = "font:600 30px 'Inter';color:var(--suave);margin-bottom:10px"; p.append(h); }
+    const ls = el("div", "linhas"); ls.style.marginTop = "10px";
+    const lins = v.itens.map((l) => { const d = el("div", "lin", `<span>${l.a}</span><span class="chip ${l.c ?? "c-az"}">${l.b}</span>`); d.style.fontSize = "34px"; d.style.padding = "30px"; ls.append(d); return d; });
+    p.append(ls); c.append(p);
+    return (t) => { entra(p, t, .3, { y: 100 }); lins.forEach((d, i) => entra(d, t, .9 + i * .5, { x: 180, y: 0 })); };
+  },
+  /* grade de recursos */
+  lista(c, v) {
+    const g = el("div", "grade-rec"); g.style.top = "660px";
+    const cs = v.itens.map((r) => { const d = el("div", "rec cartao", `<div class="ic">${ic(r.ic, 46)}</div><b>${r.t}</b><span>${r.d}</span>`); g.append(d); return d; });
+    c.append(g);
+    return (t) => cs.forEach((d, i) => entra(d, t, .6 + i * .3, { s: .7, y: 40 }));
+  },
+  /* ponto no celular: digital, localização e comprovante */
+  ponto(c) {
+    const cel = el("div", "cel"); cel.style.top = "660px";
+    cel.innerHTML = `<div class="tela" style="background:#0f1b33;display:flex;flex-direction:column;align-items:center;padding:80px 40px;gap:34px">
+      <div style="font:700 130px 'Space Grotesk'" class="hora">08:02</div><div style="font-size:30px;color:var(--suave)">Ana Souza · Loja Centro</div>
+      <div class="botao" style="width:330px;height:330px;border-radius:50%;display:grid;place-items:center;text-align:center;font:700 40px 'Space Grotesk';background:radial-gradient(circle at 35% 30%,#3b8dff,#0058fa)">Registrar<br>entrada</div>
+      <div class="chk c1" style="font-size:32px;width:100%;display:flex;gap:16px;align-items:center"><span class="x v" style="width:46px;height:46px">${ic("check", 28)}</span>Digital conferida</div>
+      <div class="chk c2" style="font-size:32px;width:100%;display:flex;gap:16px;align-items:center"><span class="x v" style="width:46px;height:46px">${ic("check", 28)}</span>No local, a 18 m</div>
+      <div class="rec2" style="width:100%;border:3px dashed var(--ok);border-radius:24px;padding:22px 26px;font:500 28px/1.55 monospace">Comprovante · Entrada 08:02<br>NSR 000001288</div></div>`;
+    c.append(cel);
+    const b = cel.querySelector(".botao"), c1 = cel.querySelector(".c1"), c2 = cel.querySelector(".c2"), r = cel.querySelector(".rec2");
+    return (t) => {
+      entra(cel, t, .3, { y: 140, dur: .7 });
+      const toque = janela(t, 1.7, .3); b.style.transform = `scale(${1 + .04 * Math.sin(t * 4) - .1 * Math.sin(toque * Math.PI)})`;
+      b.style.boxShadow = `0 0 0 ${24 + 10 * Math.sin(t * 4)}px rgba(59,141,255,.16)`;
+      if (t > 2.6) { b.innerHTML = ic("check", 120); b.style.background = "radial-gradient(circle at 35% 30%,#3ee08a,#16a34a)"; }
+      entra(c1, t, 2.2, { x: -60, y: 0 }); entra(c2, t, 2.6, { x: -60, y: 0 }); entra(r, t, 3.1, { y: 40 });
+    };
+  },
+  /* documento lido pela IA */
+  leitura(c) {
+    const p = el("div", "painel cartao"); p.style.top = "640px"; p.style.padding = "36px";
+    p.innerHTML = `<div class="doc" style="position:relative;height:330px;border-radius:24px;background:#060d1c;border:2px solid var(--linha);padding:26px 30px;font:500 27px/1.6 monospace;color:#6a7a96;overflow:hidden">DANFE · NF-e Nº 004.512<br>EMITENTE: DISTRIBUIDORA EXEMPLO S.A.<br>CNPJ 11.222.333/0001-81<br>EMISSÃO 28/10/2026 · CFOP 1102<br>VALOR TOTAL ............ 8.430,00<div class="laser" style="position:absolute;left:0;right:0;height:5px;background:var(--ciano);box-shadow:0 0 30px var(--ciano)"></div></div>
+      <div class="campos" style="display:grid;gap:14px;margin-top:26px"></div><div class="oks" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px"></div>`;
+    const campos = [["Emitente", "Distribuidora Exemplo"], ["CNPJ", "11.222.333/0001-81"], ["Valor", "R$ 8.430,00"], ["Lançamento", "Estoque × Fornecedores"]].map(([a, b]) => { const d = el("div", "lin", `<span style="color:var(--suave)">${a}</span><b style="font-weight:600">${b}</b>`); p.querySelector(".campos").append(d); return d; });
+    const oks = ["CNPJ válido", "Cliente certo", "Sem duplicidade"].map((x) => { const d = el("span", "chip c-ok", "✓ " + x); d.style.fontSize = "28px"; p.querySelector(".oks").append(d); return d; });
+    c.append(p);
+    const laser = p.querySelector(".laser");
+    return (t) => {
+      entra(p, t, .3, { y: 120 });
+      laser.style.top = `${(((t - .8) * 230) % 330 + 330) % 330}px`; laser.style.opacity = t > .8 && t < 3.4 ? 1 : 0;
+      campos.forEach((d, i) => entra(d, t, 1.2 + i * .45, { x: 120, y: 0 }));
+      oks.forEach((d, i) => entra(d, t, 3.2 + i * .3, { s: .6, y: 0 }));
+    };
+  },
+  /* agenda da barbearia em linha do tempo */
+  agenda(c, v) {
+    const p = el("div", "painel cartao"); p.style.cssText += ";top:640px;padding:30px;height:1000px;overflow:hidden";
+    const cols = el("div"); cols.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:16px;height:100%";
+    const cards = [];
+    v.colunas.forEach((col) => {
+      const d = el("div"); d.style.cssText = "position:relative;border-radius:20px;background:#0c1730;height:100%";
+      d.innerHTML = `<div style="padding:20px;font:700 32px 'Space Grotesk';display:flex;gap:12px;align-items:center"><i style="width:18px;height:18px;border-radius:50%;background:${col.cor}"></i>${col.nome}</div>`;
+      col.cartoes.forEach(([top, alt, nome, serv, estado]) => {
+        const k = el("div"); k.style.cssText = `position:absolute;left:10px;right:10px;top:${top}px;height:${alt}px;border-radius:16px;padding:14px 16px;border-left:7px solid ${col.cor};background:color-mix(in srgb, ${col.cor} 22%, #0a1426);font-size:26px;line-height:1.3`;
+        k.innerHTML = `<b>${nome}</b><br><span style="color:var(--suave)">${serv}</span>`;
+        if (estado === "chegou") k.dataset.chegou = "1";
+        d.append(k); cards.push(k);
+      });
+      cols.append(d);
+    });
+    const agora = el("div"); agora.style.cssText = "position:absolute;left:30px;right:30px;height:4px;background:var(--perigo);top:520px";
+    p.append(cols, agora); c.append(p);
+    return (t) => {
+      entra(p, t, .3, { y: 120 });
+      cards.forEach((k, i) => { entra(k, t, .9 + i * .22, { y: -40, s: .9 }); if (k.dataset.chegou) k.style.boxShadow = `0 0 0 ${4 + 5 * Math.abs(Math.sin(t * 3))}px rgba(245,177,61,.7)`; });
+      agora.style.top = 500 + t * 6 + "px";
+    };
+  },
+  /* app do cliente: "o de sempre" em um toque */
+  desempre(c) {
+    const cel = el("div", "cel"); cel.style.top = "660px";
+    cel.innerHTML = `<div class="tela" style="background:#070b14;padding:70px 34px;display:grid;align-content:start;gap:28px">
+      <div style="font:700 52px 'Space Grotesk'">Olá, Lucas!</div>
+      <div class="card" style="border-radius:34px;padding:34px;background:radial-gradient(120% 140% at 100% 0%,rgba(59,141,255,.45),transparent 60%),#0f1626;border:2px solid #2b4b80;display:grid;gap:20px">
+        <div style="font:700 24px 'Inter';letter-spacing:.12em;color:#8cbcff">⚡ O DE SEMPRE, EM UM TOQUE</div>
+        <div style="font:700 56px/1.1 'Space Grotesk'">terça às 18:00</div>
+        <div style="display:flex;gap:16px;align-items:center;font-size:30px;color:var(--suave)"><span class="av" style="width:62px;height:62px;background:#a855f7">R</span>Corte com Rafael</div>
+        <div class="bt" style="text-align:center;padding:30px;border-radius:24px;background:#3b8dff;font:700 34px 'Space Grotesk'">Agendar o de sempre</div>
+      </div>
+      <div class="ok" style="display:grid;justify-items:center;gap:20px;margin-top:30px"><div style="width:150px;height:150px;border-radius:50%;display:grid;place-items:center;background:rgba(34,197,94,.18);color:var(--ok)">${ic("check", 80)}</div><div style="font:700 46px 'Space Grotesk'">Horário marcado!</div><div style="font-size:28px;color:var(--suave)">Lembrete no WhatsApp antes do corte</div></div></div>`;
+    c.append(cel);
+    const card = cel.querySelector(".card"), bt = cel.querySelector(".bt"), ok = cel.querySelector(".ok");
+    return (t) => {
+      entra(cel, t, .3, { y: 140, dur: .7 }); entra(card, t, .9, { s: .85 });
+      const toque = janela(t, 2.4, .3); bt.style.transform = `scale(${1 - .08 * Math.sin(toque * Math.PI)})`;
+      bt.style.background = t > 2.6 ? "#16a34a" : "#3b8dff";
+      const q = mola(janela(t, 2.9, .6)); ok.style.opacity = cl(q * 2); ok.style.transform = `scale(${.4 + .6 * q})`;
+    };
+  },
+  /* vaga relâmpago: cancelou, a fila recebe, um confirma */
+  fila(c) {
+    const box = el("div"); box.style.cssText = "position:absolute;left:70px;right:70px;top:660px;height:1000px";
+    box.innerHTML = `<div class="cancel cartao" style="padding:34px;display:flex;gap:24px;align-items:center;border-color:rgba(242,85,90,.5)"><span class="x">${ic("x", 40)}</span><div><b style="font:700 40px 'Space Grotesk'">18:00 cancelado</b><div style="font-size:30px;color:var(--suave)">Corte com Rafael · quarta</div></div></div>
+      <div class="raio" style="text-align:center;color:var(--ciano);margin:30px 0">${ic("raio", 90)}</div>
+      <div class="filas" style="display:grid;gap:22px"></div>`;
+    const nomes = [["Pedro", "Quero esta vaga!", true], ["João", "Vaga oferecida", false], ["Caio", "Vaga oferecida", false]];
+    const fs = nomes.map(([n, s, ganha]) => { const d = el("div", "cartao", `<div style="display:flex;align-items:center;gap:22px;padding:28px 32px"><span class="av" style="width:72px;height:72px">${n[0]}</span><div style="flex:1"><b style="font:700 36px 'Space Grotesk'">${n}</b><div class="st" style="font-size:28px;color:var(--suave)">⚡ ${s}</div></div><span class="chip ${ganha ? "c-ok" : "c-az"} fim">${ganha ? "confirmou" : "na fila"}</span></div>`); d.dataset.ganha = ganha ? "1" : ""; box.querySelector(".filas").append(d); return d; });
+    c.append(box);
+    const cancel = box.querySelector(".cancel"), raio = box.querySelector(".raio");
+    return (t) => {
+      entra(cancel, t, .4, { x: -200, y: 0 }); entra(raio, t, 1.1, { s: .3, y: 0 });
+      fs.forEach((d, i) => { entra(d, t, 1.5 + i * .25, { x: 200, y: 0 }); const fim = d.querySelector(".fim"); fim.style.opacity = t > 3.2 ? 1 : 0; if (d.dataset.ganha) d.style.borderColor = t > 3.2 ? "var(--ok)" : "var(--linha)"; else d.style.opacity = t > 3.6 ? .5 : d.style.opacity; });
+    };
+  },
+  /* clube: assinante reconhecido e usos do ciclo */
+  clube(c) {
+    const cel = el("div", "cel"); cel.style.top = "660px";
+    cel.innerHTML = `<div class="tela" style="background:#070b14;padding:70px 34px;display:grid;align-content:start;gap:26px">
+      <div class="faixa" style="display:flex;gap:16px;align-items:center;padding:24px;border-radius:24px;background:rgba(34,197,94,.14);border:2px solid rgba(34,197,94,.45);font-size:28px;line-height:1.35"><span style="color:var(--ok)">${ic("coroa", 44)}</span><span>Você é assinante do <b>Clube Navalha</b></span></div>
+      <div class="s1 cartao" style="padding:28px;display:flex;justify-content:space-between;align-items:center;border-color:rgba(34,197,94,.45)"><b style="font:700 36px 'Space Grotesk'">Corte</b><span class="chip c-ok">👑 incluído</span></div>
+      <div class="s2 cartao" style="padding:28px;display:flex;justify-content:space-between;align-items:center;border-color:rgba(34,197,94,.45)"><b style="font:700 36px 'Space Grotesk'">Barba</b><span class="chip c-ok">clube · restam 2</span></div>
+      <div class="uso cartao" style="padding:28px;display:grid;gap:16px"><div style="display:flex;justify-content:space-between;font-size:28px"><span>Barbas no ciclo</span><span>1 de 2</span></div><div style="height:16px;border-radius:99px;background:#161f33;overflow:hidden"><i class="tr" style="display:block;height:100%;width:0;background:linear-gradient(90deg,#3b8dff,#00e1fb)"></i></div></div>
+      <div class="val cartao" style="padding:28px;display:flex;justify-content:space-between;font-size:32px"><span style="color:var(--suave)">Valor</span><span class="chip c-ok">pelo clube</span></div></div>`;
+    c.append(cel);
+    const partes = [".faixa", ".s1", ".s2", ".uso", ".val"].map((s) => cel.querySelector(s));
+    return (t) => { entra(cel, t, .3, { y: 140, dur: .7 }); partes.forEach((d, i) => entra(d, t, 1 + i * .45, { x: 120, y: 0 })); cel.querySelector(".tr").style.width = 50 * sai(janela(t, 2.9, 1)) + "%"; };
+  },
+};
+
+/* ---------- montagem do vídeo ---------- */
+let CENAS = [];
+let TOTAL = 0;
+const TRANS = .4;
+function montar(roteiro) {
+  document.documentElement.style.setProperty("--acento", roteiro.cor ?? "#3b8dff");
+  $("#nome-produto").textContent = roteiro.produto;
+  const raiz = $("#cenas");
+  let ini = 0;
+  CENAS = roteiro.cenas.map((cena) => {
+    const c = el("div", "cena"); raiz.append(c);
+    const atualizar = TIPOS[cena.tipo](c, cena);
+    const r = { c, ini, dur: cena.dur, atualizar };
+    ini += cena.dur;
+    return r;
+  });
+  TOTAL = ini;
+  const [a, b] = roteiro.bolhas ?? ["#0058fa", "#00e1fb"];
+  Object.assign($("#b1").style, { width: "900px", height: "900px", background: a });
+  Object.assign($("#b2").style, { width: "800px", height: "800px", background: b, opacity: .3 });
+  Object.assign($("#b3").style, { width: "700px", height: "700px", background: "#7c3aed", opacity: .22 });
+  return TOTAL;
+}
+function quadro(t) {
+  $("#b1").style.transform = `translate(${100 + 160 * Math.sin(t * .25)}px, ${200 + 120 * Math.cos(t * .2)}px)`;
+  $("#b2").style.transform = `translate(${500 + 140 * Math.cos(t * .22)}px, ${1300 + 160 * Math.sin(t * .18)}px)`;
+  $("#b3").style.transform = `translate(${-100 + 120 * Math.sin(t * .3)}px, ${1000 + 140 * Math.cos(t * .27)}px)`;
+  $("#grade").style.transform = `translateY(${(t * 18) % 90}px)`;
+  $("#progresso").style.width = (100 * t) / TOTAL + "%";
+  for (const s of CENAS) {
+    const lt = t - s.ini;
+    const vis = lt > -TRANS && lt < s.dur;
+    s.c.style.display = vis ? "block" : "none";
+    if (!vis) continue;
+    const entrada = cl((lt + TRANS) / TRANS), saida = cl((s.dur - lt) / TRANS);
+    const ultimo = s === CENAS.at(-1);
+    s.c.style.opacity = Math.min(entrada, ultimo ? 1 : saida);
+    s.c.style.transform = `translateY(${(1 - saida) * -40}px)`;
+    s.atualizar(Math.max(0, lt));
+  }
+}
+window.montar = montar;
+window.quadro = quadro;
+</script>
+</body>
+</html>
