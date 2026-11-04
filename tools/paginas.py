@@ -117,21 +117,47 @@ P = [
   faq=[("Precisa instalar algo nas máquinas?", "Sim, um agente leve em cada computador, que envia o inventário e permite instalar programas e executar comandos com segurança."),
        ("Consigo instalar um programa em todas as máquinas de uma vez?", "Sim. Você escolhe uma máquina, um grupo ou todas e acompanha o resultado no painel."),
        ("Por quanto tempo a auditoria fica guardada?", "O histórico de ações fica registrado por 2 anos.")]),
- dict(slug="sistema-para-escritorio-de-contabilidade", id="contabil", nome="Nexor Contábil", icone="i-chart", breve=True, dores_titulo="Isso acontece no seu escritório?",
+ dict(slug="sistema-para-escritorio-de-contabilidade", id="contabil", nome="Nexor Contábil", icone="i-chart", dores_titulo="Isso acontece no seu escritório?",
   title="Sistema com IA para escritório de contabilidade | Nexor Contábil",
-  desc="Nexor Contábil: a IA cobra, recebe, lê e organiza os documentos dos clientes do escritório pelo WhatsApp, prepara pré-lançamentos para o seu sistema contábil e mostra a rentabilidade por cliente.",
+  desc="Nexor Contábil: cobra os documentos dos clientes por WhatsApp e e-mail, lê notas e extratos com IA, sugere os lançamentos para o seu sistema contábil e controla obrigações e prazos. Teste grátis.",
   h1="Seu escritório de contabilidade <em>no piloto automático</em>",
-  sub="Um assistente com a marca do escritório cobra, recebe, lê e arquiva os documentos dos clientes pelo WhatsApp. Sua equipe para de correr atrás de papel e o contador volta a ser consultor.",
-  dores=["Equipe perdendo horas cobrando documento de cliente pelo WhatsApp", "Arquivos perdidos em conversas, grupos e celulares pessoais", "Retrabalho manual em lançamentos e conciliação bancária", "Cliente que dá prejuízo e honorário que nunca é reajustado", "Reforma tributária chegando sem tempo para orientar cada cliente"],
-  recursos=["Assistente no WhatsApp com a marca do escritório: cobra, recebe, lê e arquiva por cliente e competência", "Leitura de notas e extratos com IA e pré-lançamentos para o sistema contábil que você já usa", "Conciliação bancária sugerida e captura de XML e certidões", "Prazos, guias e pendências de cada cliente num painel só", "Rentabilidade por cliente, retrabalho e reajuste de honorário com dados", "Simulador da reforma tributária (IBS e CBS) por cliente", "Instalado no servidor do escritório: sigilo e LGPD sob controle"],
+  sub="O sistema cobra os documentos do mês, a IA lê e confere cada nota e extrato e prepara os lançamentos. Sua equipe para de correr atrás de papel e o contador volta a ser consultor.",
+  dores=["Equipe perdendo horas cobrando documento de cliente pelo WhatsApp", "Arquivos perdidos em conversas, grupos e celulares pessoais", "Nota de outra empresa ou repetida que só aparece no fechamento", "Retrabalho manual em lançamentos e conciliação bancária", "Prazo de obrigação descoberto em cima da hora"],
+  recursos=["Régua automática que cobra os documentos do mês por WhatsApp e e-mail", "Leitura de notas, extratos e recibos com IA, com conferência de CNPJ, duplicidade e competência", "Pré-lançamentos que aprendem com o contador, conciliação com o extrato e exportação para o seu sistema contábil", "Obrigações por cliente e competência, com prazo legal, prazo interno, responsável e tempo gasto", "Portal do cliente com a marca do escritório: pendências, envio, guias e chamados", "Instalado no servidor do escritório, com arquivos criptografados"],
   publico=["Contadores autônomos", "Escritórios de contabilidade", "Escritórios com várias unidades", "BPO financeiro", "Departamento pessoal terceirizado", "Contabilidades digitais"],
-  passos=[("Diagnóstico", "Medimos quantas horas sua equipe gasta cobrando e organizando documentos."), ("Fundadores", "Os primeiros escritórios usam a primeira versão e ajudam a moldar o produto."), ("Implantação", "Conectamos o WhatsApp do escritório e o seu sistema contábil, sem migração."), ("Resultado", "Você acompanha as horas poupadas e o retrabalho reduzido mês a mês.")],
-  final="Os primeiros escritórios usam o Nexor Contábil antes de todo mundo, ajudam a moldar o produto e garantem condição especial.",
-  telas=[("/assets/img/em-breve/contabil-0.webp", "Central do escritório: documentos chegando pelo WhatsApp, lidos e arquivados pela IA"), ("/assets/img/em-breve/contabil-1.webp", "Rentabilidade por cliente e simulador da reforma tributária")],
-  faq=[("Preciso trocar o meu sistema contábil?", "Não. O Nexor Contábil funciona junto com o sistema que o escritório já usa e prepara os pré-lançamentos no formato de importação dele. A compatibilidade com o seu sistema é confirmada no diagnóstico."),
-       ("A IA envia guias e valores sozinha para o cliente?", "Não. A IA prepara e organiza, e o contador confere e aprova antes de qualquer guia ou valor chegar ao cliente. A responsabilidade técnica continua com o profissional."),
-       ("O WhatsApp aparece com o nome do escritório?", "Sim. O assistente usa o número, o nome e a marca do escritório. O cliente fala com o escritório, não com a Nexor."),
-       ("Quando o Nexor Contábil fica pronto?", "Ele está em desenvolvimento. Os escritórios fundadores entram primeiro, participam dos testes e garantem condição especial no lançamento.")]),
+  telas=[("/assets/img/contabil/leitura.webp", "Nota fiscal lida pela IA, com pré-lançamento para o contador conferir"), ("/assets/img/contabil/cobranca.webp", "Cobrança de documentos por cliente, com a régua de lembretes"), ("/assets/img/contabil/lancamentos.webp", "Lançamentos sugeridos a partir da nota e do extrato"), ("/assets/img/contabil/portal.webp", "Portal do cliente com as pendências do mês")],
+  video=("/assets/video/nexor-contabil.mp4", "/assets/video/nexor-contabil.webp"),
+  faq=[("Preciso trocar o meu sistema contábil?", "Não. O Nexor Contábil funciona junto com o sistema que o escritório já usa e exporta os lançamentos conferidos no layout de importação dele. O layout e o plano de contas são configurados na implantação."),
+       ("A IA lança sozinha?", "Não. A leitura da IA é sempre uma sugestão: o contador confere, corrige se precisar e só os documentos conferidos entram na exportação. Quando você corrige uma conta, o sistema aprende para as próximas notas do mesmo fornecedor."),
+       ("O cliente fala com o escritório ou com a Nexor?", "Com o escritório. O WhatsApp, o portal e os e-mails usam o nome e a marca do escritório."),
+       ("Os prazos das obrigações já vêm prontos?", "Sim, com um catálogo padrão de obrigações e dias úteis que o escritório confere e ajusta no início de cada ano, inclusive prazos estaduais e municipais.")]),
+ dict(slug="sistema-para-barbearia", id="barber", nome="Nexor Barber", icone="i-scissors",
+  title="Sistema para barbearia com app de agendamento e clube | Nexor Barber",
+  desc="Sistema para barbearia com app do cliente: agendamento em um toque, login com Google, WhatsApp ou SMS, clube de assinatura, produtos com estoque vendidos no agendamento, comanda e comissões. Teste grátis.",
+  h1="Sistema para barbearia com <em>app de agendamento</em> e clube de assinatura",
+  sub="Seu cliente agenda o de sempre em um toque, o assinante é reconhecido no app e ainda separa a pomada para pagar junto com o corte. Você atende sem largar a navalha para responder mensagem.",
+  dores=["Celular tocando o dia todo para marcar horário, no meio do corte", "Cliente que cancela em cima da hora e deixa a cadeira vazia", "Cliente fiel que some e ninguém percebe", "Produto parado na prateleira e estoque controlado no caderno", "Comissão do barbeiro calculada na mão no fim do mês"],
+  recursos=["App do cliente que instala no celular: entra com Google, código no WhatsApp ou SMS", "O de sempre em um toque: o app lembra o barbeiro, o serviço e o horário de cada cliente", "Clube de assinatura com cobrança recorrente por Pix, boleto ou cartão: o app mostra o que o plano cobre em cada agendamento", "Produtos com estoque: o cliente reserva no app e paga junto com o corte", "Vaga relâmpago: cancelou, a vaga vai na hora para até 3 pessoas da lista de espera", "Retorno no tempo certo: passou do ciclo de corte, o cliente recebe um lembrete no WhatsApp", "Comanda, caixa do dia e comissão de cada barbeiro calculados sozinhos"],
+  publico=["Barbearias de bairro", "Barbearias com vários barbeiros", "Redes e franquias de barbearia", "Salões masculinos", "Barbeiros autônomos", "Studios de barba e cabelo"],
+  telas=[("/assets/img/barber/app-agendar.webp", "App do cliente: o de sempre em um toque, com o que o clube cobre"), ("/assets/img/barber/app-loja.webp", "Produto reservado no agendamento e pago junto com o corte"), ("/assets/img/barber/agenda.webp", "Agenda do dia por barbeiro"), ("/assets/img/barber/caixa.webp", "Caixa do dia por forma de pagamento")],
+  video=("/assets/video/nexor-barber.mp4", "/assets/video/nexor-barber.webp"),
+  faq=[("O cliente precisa baixar o app na loja?", "Não. O app abre por um link e pode ser instalado na tela do celular, sem loja de aplicativos. O cliente entra com a conta Google ou com um código recebido no WhatsApp ou por SMS."),
+       ("Como funciona o clube de assinatura?", "Você cria os planos com os serviços incluídos (ilimitado ou um número por mês), os dias válidos e o desconto em produtos. A cobrança recorrente sai pelo Asaas por Pix, boleto ou cartão, ou você recebe no balcão. No agendamento, o app mostra ao assinante o que está incluído e quantos usos restam."),
+       ("Cada barbeiro tem o próprio acesso?", "Sim. O barbeiro entra com login próprio e vê a sua agenda, folgas, horários e comissões. A recepção cuida da agenda, dos clientes, do clube e do caixa."),
+       ("Preciso da Nexor para mudar horários e preços?", "Não. Expediente, feriados, serviços, preços, barbeiros, comissões, regras da agenda e os canais de WhatsApp e SMS são configurados no painel pela própria barbearia.")]),
+ dict(slug="agente-de-ia-no-whatsapp", id="agente", nome="Nexor Agente", icone="i-brain",
+  title="Agente de IA no WhatsApp que executa tarefas nos seus sistemas | Nexor",
+  desc="Nexor Agente: sua IA pessoal no WhatsApp que consulta e executa tarefas no ERP, CRM e financeiro da empresa, com aprovação do dono antes de qualquer alteração e auditoria completa. Teste grátis.",
+  h1="Um <em>agente de IA</em> no seu WhatsApp que faz o trabalho nos seus sistemas",
+  sub="Pergunte o estoque, peça um pedido, consulte o financeiro. A IA busca nos sistemas da empresa e prepara a ação, que só acontece depois do seu toque em Aprovar.",
+  dores=["Precisar abrir três sistemas para responder uma pergunta simples", "Ficar dependendo de alguém da equipe para puxar um número", "Medo de dar acesso a uma IA e ela mexer onde não devia", "Tarefas repetitivas que tomam o seu dia"],
+  recursos=["Você dá o nome, o jeito de falar, as instruções e as memórias, tudo conversando no WhatsApp", "Consulta e age no ERP, CRM, financeiro e em qualquer sistema com API", "Criar, editar ou apagar só depois do seu toque em Aprovar, com pedido que expira em 30 minutos", "Só os números autorizados dão ordens: qualquer outro recebe uma recusa", "Senhas e tokens ficam no servidor da empresa e nunca vão para a IA", "Auditoria de tudo que foi pedido, aprovado, recusado e executado"],
+  publico=["Donos e diretores", "Gestores comerciais", "Distribuidoras e atacados", "Indústrias", "Empresas de serviço", "Quem vive no WhatsApp"],
+  video=("/assets/video/nexor-agente.mp4", "/assets/video/nexor-agente.webp"),
+  faq=[("A IA pode apagar ou alterar dados sem eu saber?", "Não. Toda ação que cria, edita ou apaga gera um pedido com resumo em português e os botões Aprovar e Recusar no seu WhatsApp. O pedido vale uma vez só, expira em 30 minutos e só quem pediu pode aprovar."),
+       ("Com quais sistemas ele funciona?", "Com qualquer sistema que tenha API, como ERP, CRM e financeiro. Cada sistema entra como um conector, e você define por sistema se a escrita precisa de aprovação, é livre ou é bloqueada."),
+       ("Outra pessoa pode mandar ordens para o agente?", "Não. Só os números autorizados pela empresa dão ordens. Qualquer outro número recebe uma recusa educada e nada é executado."),
+       ("A IA vê as senhas dos meus sistemas?", "Não. As credenciais ficam no servidor da empresa e são usadas só na hora da chamada. A IA recebe apenas os dados da resposta, tratados como dados e não como ordens.")]),
 ]
 
 # Modelo de implantação da Nexor (vale para todos os produtos): o sistema roda no ambiente do cliente,
@@ -182,10 +208,17 @@ def pagina(p):
         final_h, final_p = "Veja funcionando na sua empresa", f"Teste o {p['nome']} grátis por 12 horas ou fale com um especialista."
         final_cta = f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Começar teste grátis</a>'
     previa = ""
+    if p.get("video"):
+        mp4, poster = p["video"]
+        previa += (f'<section class="sp-bloco"><div class="container sp-video"><div><h2>Veja em 1 minuto</h2><p class="sp-sub">A dor, o que muda e como o {esc(p["nome"])} resolve, do jeito que o seu cliente vai usar.</p>'
+                   f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Testar grátis por 12h <svg class="ic"><use href="#i-arrow"/></svg></a></div>'
+                   f'<video controls playsinline preload="none" poster="{poster}" width="720" height="1280" aria-label="Vídeo de apresentação do {esc(p["nome"])}"><source src="{mp4}" type="video/mp4"></video></div></section>')
     if p.get("telas"):
-        previa = ('<section class="sp-bloco"><div class="container"><h2>Prévia do produto</h2><div class="sp-previa">'
+        nota_telas = "Telas ilustrativas de produto em desenvolvimento, com dados fictícios." if breve else "Telas reais do sistema, com dados de demonstração de empresas fictícias."
+        titulo_telas = "Prévia do produto" if breve else "Telas reais do sistema"
+        previa += (f'<section class="sp-bloco"><div class="container"><h2>{titulo_telas}</h2><div class="sp-previa">'
                   + "".join(f'<figure><img src="{src}" alt="{esc(alt)}" width="1600" height="1000" loading="lazy" decoding="async"><figcaption>{esc(alt)}</figcaption></figure>' for src, alt in p["telas"])
-                  + '</div><p class="sp-nota">Telas ilustrativas de produto em desenvolvimento, com dados fictícios.</p></div></section>')
+                  + f'</div><p class="sp-nota">{nota_telas}</p></div></section>')
     outras = "".join(f'<a href="/solucoes/{o["slug"]}/"><svg class="ic"><use href="#{o["icone"]}"/></svg>{esc(o["nome"])}</a>' for o in P if o is not p)
     return f'''<!doctype html>
 <html lang="pt-BR">
@@ -335,6 +368,6 @@ if __name__ == "__main__":
     urls = [f"{DOM}/"] + [f"{DOM}/solucoes/{p['slug']}/" for p in P] + [f"{DOM}/privacidade.html"]
     pri = {f"{DOM}/": "1.0", f"{DOM}/privacidade.html": "0.3"}
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "".join(
-        f'  <url><loc>{u}</loc><lastmod>2026-11-01</lastmod><priority>{pri.get(u, "0.8")}</priority></url>\n' for u in urls) + "</urlset>\n"
+        f'  <url><loc>{u}</loc><lastmod>2026-11-04</lastmod><priority>{pri.get(u, "0.8")}</priority></url>\n' for u in urls) + "</urlset>\n"
     open(os.path.join(raiz, "sitemap.xml"), "w").write(sm)
     print(len(P), "páginas")
