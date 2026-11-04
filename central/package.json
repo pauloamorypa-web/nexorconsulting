@@ -1,0 +1,19 @@
+{
+  "name": "nexor-central",
+  "version": "1.0.0",
+  "description": "Nexor Central: centro de controle dos clientes, cobranças, licenças e acesso de suporte aos sistemas Nexor",
+  "type": "module",
+  "private": true,
+  "main": "src/servidor.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/servidor.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/servidor.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}

@@ -50,6 +50,13 @@ if (existsSync(arquivos)) cpSync(arquivos, join(destino, "arquivos"), { recursiv
 
 writeFileSync(join(destino, "LEIA-ME.txt"), `Backup do Nexor RH de ${new Date().toISOString()}\nColaboradores: ${colaboradores} · Marcações de ponto: ${marcacoes}\nRestaurar: pare o servidor, copie rh.db e arquivos/ para DATA_DIR e suba de novo (com a mesma MASTER_KEY).\n`);
 
+// Marca o último backup bom na pasta de dados: o sistema informa à Nexor Central (alerta de backup atrasado)
+try {
+  writeFileSync(join(pasta, "ultimo-backup.json"), JSON.stringify({ em: Date.now(), colaboradores, marcacoes }));
+} catch {
+  /* pasta de dados só leitura: segue sem a marca */
+}
+
 // 3. Retenção
 const backups = readdirSync(destinoBase)
   .filter((n) => n.startsWith("rh-") && statSync(join(destinoBase, n)).isDirectory())

@@ -19,11 +19,13 @@ export async function render(raiz, ctx, [sub]) {
 
 async function desenhar() {
   const adm = ctxAtual.pode("admin");
-  const itens = [["empresa", "Empresa"], ["locais", "Locais e quiosque"], ["jornadas", "Jornadas"], ["cargos", "Cargos"], ["departamentos", "Departamentos"], ["feriados", "Feriados"], adm ? ["usuarios", "Usuários"] : null, adm ? ["esocial", "eSocial"] : null, ["tabelas", "Tabelas da folha"], adm ? ["integracoes", "Integrações"] : null, adm ? ["auditoria", "Auditoria"] : null].filter(Boolean);
+  const itens = [["empresa", "Empresa"], ["locais", "Locais e quiosque"], ["jornadas", "Jornadas"], ["cargos", "Cargos"], ["departamentos", "Departamentos"], ["feriados", "Feriados"], adm ? ["usuarios", "Usuários"] : null, adm ? ["esocial", "eSocial"] : null, ["tabelas", "Tabelas da folha"], adm ? ["integracoes", "Integrações"] : null, adm ? ["auditoria", "Auditoria"] : null, ctxAtual.nexor ? ["nexor", "Nexor · desenvolvedor", "escudo"] : null]
+    .filter(Boolean)
+    .filter(([id]) => !ctxAtual.oculto(`config.${id}`));
   if (!itens.some(([i]) => i === aba)) aba = "empresa";
   const corpo = h("div", { class: "aba-corpo" });
   limpar(raizAtual, h("div", { class: "pagina" }, topo("Configurações"), abas(itens, aba, (x) => ((aba = x), history.replaceState(null, "", `#/config/${x}`), desenhar())), corpo));
-  limpar(corpo, await { empresa, locais, jornadas, cargos, departamentos, feriados, usuarios, esocial, tabelas, integracoes, auditoria }[aba]());
+  limpar(corpo, await { empresa, locais, jornadas, cargos, departamentos, feriados, usuarios, esocial, tabelas, integracoes, auditoria, nexor }[aba]());
 }
 
 async function empresa() {
@@ -34,11 +36,17 @@ async function empresa() {
     { nome: "permitir_quiosque_pin", rotulo: "Permitir ponto no quiosque com CPF + PIN (quem está sem celular)", tipo: "check", largura: 2 },
   ], e.config.ponto);
   const inpi = formulario([{ nome: "registro_inpi", rotulo: "Registro do REP-P no INPI", ajuda: "Exigido pela Portaria 671 para o REP-P. Aparece no comprovante, no AFD e no AEJ." }], e.config);
+  // Campos que o Suporte Nexor pode esconder do cliente
+  const semDados = ctxAtual.oculto("campo.dados_empresa");
+  const semRegras = ctxAtual.oculto("campo.regras_ponto");
+  const semInpi = ctxAtual.oculto("campo.registro_inpi");
+  const cartaoPonto = semRegras && semInpi ? null : h("form", { class: "cartao", onsubmit: (ev) => (ev.preventDefault(), acao(ev.submitter, async () => (await put("/empresa", { config: { ...(semRegras ? {} : { ponto: p.ler() }), ...(semInpi ? {} : inpi.ler()) } }), aviso("Regras do ponto salvas.")))) }, h("h2", {}, "Regras do ponto"), semRegras ? null : p.el, semInpi ? null : inpi.el, h("p", { class: "suave pequeno" }, "GPS e QR Code obrigatórios são definidos por local, na aba Locais e quiosque."), h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "submit" }, "Salvar")));
   return h(
     "div",
     { class: "grade-form" },
-    h("form", { class: "cartao", onsubmit: (ev) => (ev.preventDefault(), acao(ev.submitter, async () => (await put("/empresa", f.ler()), aviso("Empresa salva."), ctxAtual.recarregarEu()))) }, h("h2", {}, "Dados da empresa"), f.el, h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "submit" }, "Salvar"))),
-    h("form", { class: "cartao", onsubmit: (ev) => (ev.preventDefault(), acao(ev.submitter, async () => (await put("/empresa", { config: { ponto: p.ler(), ...inpi.ler() } }), aviso("Regras do ponto salvas.")))) }, h("h2", {}, "Regras do ponto"), p.el, inpi.el, h("p", { class: "suave pequeno" }, "GPS e QR Code obrigatórios são definidos por local, na aba Locais e quiosque."), h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "submit" }, "Salvar"))),
+    semDados ? null : h("form", { class: "cartao", onsubmit: (ev) => (ev.preventDefault(), acao(ev.submitter, async () => (await put("/empresa", f.ler()), aviso("Empresa salva."), ctxAtual.recarregarEu()))) }, h("h2", {}, "Dados da empresa"), f.el, h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "submit" }, "Salvar"))),
+    cartaoPonto,
+    semDados && !cartaoPonto ? h("p", { class: "suave" }, "Os dados da empresa são mantidos pela Nexor.") : null,
   );
 }
 
@@ -279,3 +287,45 @@ async function auditoria() {
 }
 
 void api;
+
+/* ---------- Área do Suporte Nexor ---------- */
+
+async function nexor() {
+  const d = await get("/nexor/ajustes");
+  const marcados = new Set(d.ocultos);
+  const grupo = (titulo, itens) =>
+    h(
+      "div",
+      { class: "nexor-grupo" },
+      h("h3", {}, titulo),
+      Object.entries(itens).map(([k, item]) => h("label", { class: "linha-check" }, h("input", { type: "checkbox", checked: marcados.has(k), onchange: (e) => (e.target.checked ? marcados.add(k) : marcados.delete(k)) }), h("span", {}, item.rotulo))),
+    );
+  const lic = d.licenca;
+  const c = d.central;
+  const rotuloSit = { ativo: ["Ativo", "ok"], aviso: ["Aviso de fatura", "alerta"], restrito: ["Somente leitura", "perigo"], bloqueado: ["Bloqueado", "perigo"] }[lic.situacao] ?? [lic.situacao, ""];
+  return h(
+    "div",
+    { class: "grade-form" },
+    h(
+      "section",
+      { class: "cartao" },
+      h("h2", {}, "O que o cliente vê"),
+      h("p", { class: "suave pequeno" }, "Marque o que fica escondido para os usuários do cliente. Módulos somem do menu e a API recusa o acesso; abas de configuração somem e não aceitam alterações. Você, como Suporte Nexor, continua vendo tudo."),
+      grupo("Módulos", d.catalogo.modulos),
+      grupo("Abas de configuração", d.catalogo.abas),
+      grupo("Campos da empresa", d.catalogo.campos),
+      d.atualizado_por ? h("p", { class: "suave pequeno" }, `Última alteração: ${d.atualizado_por}, ${dataHora(d.atualizado_em)}`) : null,
+      h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "button", onclick: (e) => acao(e.currentTarget, async () => (await put("/nexor/ajustes", { ocultos: [...marcados] }), aviso("Ajustes salvos. O cliente vê as mudanças ao recarregar a página."), ctxAtual.recarregarEu())) }, "Salvar")),
+    ),
+    h(
+      "section",
+      { class: "cartao" },
+      h("h2", {}, "Contrato e Nexor Central"),
+      h("p", {}, "Situação: ", h("span", { class: `chip chip-${rotuloSit[1]}` }, rotuloSit[0])),
+      lic.mensagem ? h("p", { class: "suave" }, lic.mensagem) : null,
+      h("p", { class: "suave pequeno" }, c.configurada ? `Central: ${c.central} · último contato: ${c.ultimo_contato ? dataHora(c.ultimo_contato) : "nenhum"}` : "Central não configurada nesta instalação (variáveis NEXOR_* vazias): o sistema funciona sem licença."),
+      c.erro ? h("p", { class: "pequeno", style: { color: "var(--vermelho)" } }, `Último erro: ${c.erro}`) : null,
+      c.configurada ? h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-fantasma", type: "button", onclick: (e) => acao(e.currentTarget, async () => { const r = await post("/nexor/sincronizar"); aviso(r.ok ? `Sincronizado: ${r.situacao}.` : `Falhou: ${r.erro}`, r.ok ? "ok" : "erro"); await ctxAtual.recarregarEu(); desenhar(); }) }, "Sincronizar agora")) : null,
+    ),
+  );
+}

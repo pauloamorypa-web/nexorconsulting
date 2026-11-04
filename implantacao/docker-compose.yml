@@ -35,6 +35,11 @@ services:
       APP_STORE_URL: ${APP_STORE_URL:-}
       PLAY_STORE_URL: ${PLAY_STORE_URL:-}
       APK_URL: ${APK_URL:-}
+      # Nexor Central: licença, cobrança e acesso de suporte (gerados na Central ao cadastrar o sistema)
+      NEXOR_CENTRAL_URL: ${NEXOR_CENTRAL_URL:-}
+      NEXOR_INSTANCIA: ${NEXOR_INSTANCIA:-}
+      NEXOR_TOKEN: ${NEXOR_TOKEN:-}
+      NEXOR_CHAVE_PUBLICA: ${NEXOR_CHAVE_PUBLICA:-}
     volumes: [rh-dados:/dados]
     # Acesso direto pela rede local da empresa (painel no computador do RH), sem passar pela internet
     # (padrão: porta aleatória só no próprio servidor, para várias empresas não brigarem pela mesma porta)

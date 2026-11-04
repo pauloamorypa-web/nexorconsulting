@@ -32,6 +32,14 @@ export function lerConfig(env = process.env) {
       versao: "1.0.0",
       desenvolvedorCnpj: (env.DEVELOPER_CNPJ ?? "").replace(/\D/g, ""),
     },
+    // Nexor Central: licença (situação do contrato), saúde da instalação e acesso de suporte
+    nexor: {
+      central: (env.NEXOR_CENTRAL_URL ?? "").replace(/\/$/, ""),
+      instancia: env.NEXOR_INSTANCIA ?? "",
+      token: env.NEXOR_TOKEN ?? "",
+      chavePublica: (env.NEXOR_CHAVE_PUBLICA ?? "").trim(),
+      intervaloMin: numero(env.NEXOR_SYNC_MINUTES, 5),
+    },
     limites: { tamanhoArquivo: 10 * 1024 * 1024, tentativasLogin: 8 },
     // App nativo nas lojas (página /baixar e links que abrem o app a partir do QR Code)
     apps: {

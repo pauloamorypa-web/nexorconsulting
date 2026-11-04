@@ -12,6 +12,7 @@ import { rotasApp } from "./rotas-app.js";
 import { rotasCadastros } from "./rotas-cadastros.js";
 import { rotasEsocial } from "./rotas-esocial.js";
 import { rotasIntegracao } from "./rotas-integracao.js";
+import { rotasNexor } from "./rotas-nexor.js";
 import { rotasFolha } from "./rotas-folha.js";
 import { rotasPessoas } from "./rotas-pessoas.js";
 import { rotasPonto } from "./rotas-ponto.js";
@@ -26,7 +27,7 @@ import { COOKIE_APP, COOKIE_PAINEL } from "./validacao.js";
  * @param {ReturnType<import('../db.js').abrirBanco>} d.repo
  * @param {ReturnType<import('../servicos/nucleo.js').criarNucleo>} d.nucleo
  */
-export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date.now(), fetchSoap, fetchFn = fetch }) {
+export function criarApi({ repo, nucleo, cofre, cfg, eventos, central, agora = () => Date.now(), fetchSoap, fetchFn = fetch }) {
   const r = criarRoteador();
   const tentativas = new Map();
 
@@ -158,9 +159,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
 
   r.get("/api/eu", ({ usuario, empresa }) => {
     const pend = (sql, ...p) => repo.um(sql, ...p).n;
+    const lic = central.estado();
     return {
       usuario: usuarioPublico(usuario),
       empresa: empresaPublica(empresa),
+      // Situação do contrato com a Nexor (faixa de aviso, somente leitura ou suspensão)
+      licenca: { situacao: lic.situacao, mensagem: lic.mensagem, link: lic.link, contato: lic.contato },
+      // O que o Suporte Nexor escondeu (o próprio Suporte Nexor vê tudo, com a marcação)
+      ocultos: repo.ocultos(empresa.id),
       contagem: {
         ajustes: pend("SELECT COUNT(*) n FROM ajustes WHERE empresa_id = ? AND status = 'pendente'", empresa.id),
         ferias: pend("SELECT COUNT(*) n FROM ferias WHERE empresa_id = ? AND status = 'solicitada'", empresa.id),
@@ -179,7 +185,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
     return usuarioPublico(repo.atualizar("usuarios", null, usuario.id, { nome: d.nome || undefined, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined }));
   });
 
-  const deps = { r, repo, nucleo, cofre, cfg, agora, limitar, iniciarSessao, sessaoApp, tokenApp, filtroEquipe, exigirColaborador, auditar, aviso, base, fetchSoap, fetchFn, configCompleta };
+  const deps = { r, repo, nucleo, cofre, cfg, central, agora, limitar, iniciarSessao, sessaoApp, tokenApp, filtroEquipe, exigirColaborador, auditar, aviso, base, fetchSoap, fetchFn, configCompleta };
   rotasCadastros(deps);
   rotasPonto(deps);
   rotasFolha(deps);
@@ -187,6 +193,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
   rotasEsocial(deps);
   rotasApp(deps);
   rotasIntegracao(deps);
+  rotasNexor(deps);
   const recrutamento = rotasRecrutamento(deps);
 
   return { roteador: r, sessaoPainel, sessaoApp, tokenApp, paginasVagas: recrutamento.paginas };

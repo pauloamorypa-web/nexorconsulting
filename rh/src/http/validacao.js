@@ -72,5 +72,5 @@ export function empresaPublica(e) {
   };
 }
 
-export const usuarioPublico = ({ senha_hash, ...u }) => ({ ...u, ativo: Boolean(u.ativo) });
+export const usuarioPublico = ({ senha_hash, ...u }) => ({ ...u, ativo: Boolean(u.ativo), nexor: Boolean(u.nexor) });
 

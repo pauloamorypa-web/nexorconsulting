@@ -1,0 +1,39 @@
+# Nexor Central no servidor da Nexor:  docker compose up -d --build
+# Dados (banco + chave que assina as licenças) no volume central-dados. Backup diário em ./backups.
+x-padrao: &padrao
+  restart: unless-stopped
+  logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+
+services:
+  central:
+    <<: *padrao
+    build: .
+    image: nexor/central:local
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: "8800"
+      DATA_DIR: /dados
+      TRUST_PROXY: "1"
+    volumes: [central-dados:/dados]
+    ports: ["127.0.0.1:8800:8800"]
+
+  backup:
+    <<: *padrao
+    image: nexor/central:local
+    depends_on: [central]
+    environment: { DATA_DIR: /dados, BACKUP_DIR: /backups }
+    volumes: [central-dados:/dados, "./backups:/backups"]
+    user: "1000:1000"
+    entrypoint: ["sh", "-c", "while true; do node --disable-warning=ExperimentalWarning scripts/backup.js || echo 'BACKUP FALHOU'; sleep 86400; done"]
+    healthcheck: { disable: true }
+
+  tunel:
+    <<: *padrao
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment: { TUNNEL_TOKEN: "${TUNNEL_TOKEN:?defina TUNNEL_TOKEN no .env}" }
+    depends_on: [central]
+
+volumes:
+  central-dados:

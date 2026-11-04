@@ -1,0 +1,7 @@
+node_modules
+data
+dados
+backups
+.env
+*.log
+test

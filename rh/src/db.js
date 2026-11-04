@@ -149,6 +149,7 @@ CREATE TABLE IF NOT EXISTS esocial_lotes (
   resposta TEXT, enviado_em INTEGER NOT NULL, consultado_em INTEGER
 );
 CREATE TABLE IF NOT EXISTS arquivos (id TEXT PRIMARY KEY, empresa_id TEXT NOT NULL, nome TEXT NOT NULL, mime TEXT, tamanho INTEGER NOT NULL, enviado_por TEXT, colaborador_id TEXT, publico INTEGER NOT NULL DEFAULT 0, criado_em INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS nexor_ajustes (empresa_id TEXT PRIMARY KEY, ocultos TEXT NOT NULL DEFAULT '[]', atualizado_por TEXT, atualizado_em INTEGER);
 CREATE TABLE IF NOT EXISTS auditoria (id TEXT PRIMARY KEY, empresa_id TEXT NOT NULL, autor TEXT, acao TEXT NOT NULL, detalhe TEXT, criado_em INTEGER NOT NULL);
 `;
 
@@ -166,7 +167,7 @@ const JSON_COLS = {
   esocial_lotes: ["resposta"],
   auditoria: ["detalhe"],
 };
-const BOOL_COLS = new Set(["ativo", "exige_qr", "exige_gps", "banco_horas", "periculosidade", "irrf", "salario_familia", "biometria", "qr", "online", "adiantar_13", "incide_inss", "incide_irrf", "incide_fgts", "fixado", "publico"]);
+const BOOL_COLS = new Set(["nexor", "ativo", "exige_qr", "exige_gps", "banco_horas", "periculosidade", "irrf", "salario_familia", "biometria", "qr", "online", "adiantar_13", "incide_inss", "incide_irrf", "incide_fgts", "fixado", "publico"]);
 
 const lerJson = (v, padrao) => {
   if (v === null || v === undefined || v === "") return padrao;
@@ -199,6 +200,8 @@ export function abrirBanco(caminho) {
     ["vagas", "estado", "TEXT"],
     ["vagas", "tipo_contrato", "TEXT"],
     ["vagas", "validade", "TEXT"],
+    // Usuário "Suporte Nexor": administrador que só entra pelo link assinado da Nexor Central (sem senha)
+    ["usuarios", "nexor", "INTEGER NOT NULL DEFAULT 0"],
   ];
   for (const [tabela, coluna, def] of MIGRACOES) {
     const existe = db.prepare(`PRAGMA table_info(${tabela})`).all().some((c) => c.name === coluna);
@@ -289,8 +292,16 @@ export function abrirBanco(caminho) {
     ler,
 
     /* ---------- Específicos ---------- */
-    contarUsuarios: () => q("SELECT COUNT(*) n FROM usuarios").get().n,
-    usuarioPorEmail: (email) => q("SELECT * FROM usuarios WHERE email = ? AND ativo = 1").get(String(email).toLowerCase()),
+    contarUsuarios: () => q("SELECT COUNT(*) n FROM usuarios WHERE nexor = 0").get().n,
+    usuarioPorEmail: (email) => q("SELECT * FROM usuarios WHERE email = ? AND ativo = 1 AND nexor = 0").get(String(email).toLowerCase()),
+    /** Itens que o Suporte Nexor escondeu desta empresa */
+    ocultos(empresa_id) {
+      try {
+        return JSON.parse(q("SELECT ocultos FROM nexor_ajustes WHERE empresa_id = ?").get(empresa_id)?.ocultos ?? "[]");
+      } catch {
+        return [];
+      }
+    },
     colaboradorPorCpf: (cpf) => ler("colaboradores", q("SELECT * FROM colaboradores WHERE cpf = ? AND status != 'desligado' ORDER BY criado_em DESC LIMIT 1").get(cpf)),
 
     criarSessao(token_hash, { usuario_id = null, colaborador_id = null }, dias) {

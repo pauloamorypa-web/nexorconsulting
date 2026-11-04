@@ -84,6 +84,19 @@ Cada empresa fica em `clientes/<empresa>/`, com `.env`, backups e conectores pr�
 
 A API de integração é **somente leitura**, não entrega CPF, salário nem documentos e pode ser revogada no painel a qualquer momento.
 
+## Nexor Central: cobrança, bloqueio automático e suporte
+
+Cada instalação se liga à **[Nexor Central](../central/README.md)**, o painel da Nexor para gerir todos os clientes.
+- **Na Central:** abra Clientes → (cliente) → **Novo sistema** e copie as 4 linhas `NEXOR_*`.
+- **No `.env` desta instalação:** cole as 4 linhas e rode `sudo ./atualizar.sh`.
+
+A partir daí:
+- A Central acompanha a saúde da instalação e o backup.
+- A régua de cobrança (aviso → somente leitura → suspenso) é aplicada sozinha.
+- O botão **Entrar como Suporte Nexor** abre o sistema do cliente como administrador. Lá dá para esconder do cliente módulos, abas e campos.
+
+Sem as variáveis `NEXOR_*`, o sistema funciona normalmente, sem licença.
+
 ## Backup (regra 3-2-1)
 
 - **Automático:** o serviço `backup` faz uma cópia por dia, consistente e com verificação de integridade, em `./backups` (guarda os últimos 14).
@@ -119,4 +132,6 @@ Faz backup antes, baixa a versão nova e reinicia. Os dados ficam nos volumes e 
 - [ ] Certificado digital A1 enviado e eSocial testado no ambiente **produção restrita** antes de ir para produção
 - [ ] Tabelas da folha conferidas (INSS, IRRF, salário mínimo do ano)
 - [ ] Backup diário funcionando **e** cópia externa agendada; uma restauração de teste feita
-- [ ] Contrato assinado com SLA de suporte e cláusula de tratamento de dados (LGPD)
+- [ ] Cliente e sistema cadastrados na **Nexor Central**, `NEXOR_*` no `.env` e o sistema aparecendo **no ar** na Central
+- [ ] Na aba **Nexor · desenvolvedor**, escondido o que o cliente não contratou ou não deve alterar
+- [ ] Contrato assinado com SLA de suporte, cláusula de tratamento de dados (LGPD) e cláusula de suspensão por falta de pagamento
