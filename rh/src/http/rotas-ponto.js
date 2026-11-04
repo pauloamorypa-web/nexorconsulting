@@ -16,14 +16,16 @@ import { falha } from "./roteador.js";
 const RH = { papeis: ["admin", "rh"] };
 const TODOS = {};
 
-export function rotasPonto({ r, repo, nucleo, cfg, agora, filtroEquipe, exigirColaborador, auditar, aviso, base, limitar }) {
+export function rotasPonto(deps) {
+  const { r, repo, nucleo, cfg, agora, filtroEquipe, exigirColaborador, auditar, aviso, base, limitar } = deps;
   const fimDaCompetencia = (comp) => somarDias(somarDias(`${comp}-28`, 4).slice(0, 7) + "-01", -1);
   const fechada = (empresa_id, dia) => Boolean(repo.um("SELECT 1 FROM fechamentos WHERE empresa_id = ? AND competencia = ?", empresa_id, dia.slice(0, 7)));
 
   /* ---------- Agora ---------- */
 
-  r.get("/api/ponto/hoje", TODOS, ({ empresa, usuario }) => {
-    const f = filtroEquipe(usuario);
+  /** Situação de cada colaborador agora (trabalhando, intervalo, atrasado...). usuario = null: empresa inteira */
+  const presencaHoje = (empresa, usuario) => {
+    const f = usuario ? filtroEquipe(usuario) : { sql: "", params: [] };
     const hoje = dataLocal(agora());
     const feriado = nucleo.feriados(empresa.id, Number(hoje.slice(0, 4))).has(hoje);
     const colaboradores = repo.todos(`SELECT * FROM colaboradores WHERE empresa_id = ? AND status != 'desligado'${f.sql} ORDER BY nome`, empresa.id, ...f.params).map((c) => repo.ler("colaboradores", c));
@@ -46,7 +48,9 @@ export function rotasPonto({ r, repo, nucleo, cfg, agora, filtroEquipe, exigirCo
     });
     const conta = (s) => lista.filter((x) => x.situacao === s).length;
     return { data: hoje, feriado, resumo: { trabalhando: conta("trabalhando"), intervalo: conta("intervalo"), atrasados: conta("atrasado"), aguardando: conta("aguardando"), saiu: conta("saiu"), folga: conta("folga"), ferias: conta("ferias"), afastados: conta("afastado") }, lista };
-  });
+  };
+  deps.presencaHoje = presencaHoje;
+  r.get("/api/ponto/hoje", TODOS, ({ empresa, usuario }) => presencaHoje(empresa, usuario));
 
   r.get("/api/ponto/marcacoes", TODOS, ({ empresa, usuario, query }) => {
     const de = query.get("de") ?? dataLocal(agora());

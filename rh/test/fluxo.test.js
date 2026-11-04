@@ -245,6 +245,10 @@ test("eSocial: certificado, assinatura XMLDSig e envio em lotes", async () => {
   assert.ok(!JSON.stringify(emp).includes("v1."), "o certificado não vai para o navegador");
   r = await rh.post("/api/esocial/tabelas");
   assert.ok(r.dados.gerados > 20);
+  const totalTabelas = r.dados.gerados;
+  r = await rh.post("/api/esocial/tabelas");
+  assert.equal(r.dados.gerados, 0, "gerar de novo não duplica os eventos de tabela");
+  assert.equal(r.dados.ja_existiam, totalTabelas);
   const ev = (await rh.get("/api/esocial/eventos?tipo=S-1000")).dados[0];
   assert.equal(ev.status, "assinado");
   const xml = (await rh.get(`/api/esocial/eventos/${ev.id}/xml`)).dados;

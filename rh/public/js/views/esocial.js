@@ -28,7 +28,7 @@ async function desenhar() {
       topo(
         "eSocial",
         `Leiaute S-1.3 · ambiente: ${r.ambiente === 1 ? "PRODUÇÃO" : "produção restrita (testes)"}`,
-        r.tabelas_enviadas ? null : botao("Gerar eventos de tabela (S-1000, S-1005, S-1010, S-1020)", (e) => acao(e.currentTarget, async () => { const x = await post("/esocial/tabelas"); aviso(`${x.gerados} eventos de tabela gerados.`); desenhar(); }), "btn-fantasma", "caixa"),
+        r.tabelas_enviadas ? null : botao("Gerar eventos de tabela (S-1000, S-1005, S-1010, S-1020)", (e) => acao(e.currentTarget, async () => { const x = await post("/esocial/tabelas"); aviso(x.gerados ? `${x.gerados} eventos de tabela gerados.` : "As tabelas já estavam geradas. Nada foi duplicado."); desenhar(); }), "btn-fantasma", "caixa"),
         botao("Consultar retorno", (e) => acao(e.currentTarget, async () => { const x = await post("/esocial/consultar"); aviso(x.lotes.length ? x.lotes.map((l) => `Lote: ${l.status}${l.aceitos !== undefined ? ` (${l.aceitos}/${l.eventos} aceitos)` : ""}`).join(" · ") : "Nenhum lote aguardando retorno."); desenhar(); }), "btn-fantasma", "busca"),
         botao(`Enviar ${prontos} evento(s)`, (e) => acao(e.currentTarget, async () => { if (!(await confirmar(`Assinar e transmitir ${prontos} evento(s) para o eSocial (${r.ambiente === 1 ? "PRODUÇÃO" : "produção restrita"})?`, { botao: "Enviar" }))) return; const x = await post("/esocial/enviar", {}); aviso(x.lotes.map((l) => `Lote do grupo ${l.grupo}: ${l.ok ? "recebido" : "recusado"} (${l.mensagem ?? ""})`).join(" · "), x.lotes.every((l) => l.ok) ? "ok" : "erro", 9000); desenhar(); }), "btn-primario", "enviar"),
       ),

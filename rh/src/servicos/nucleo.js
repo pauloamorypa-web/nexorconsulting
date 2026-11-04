@@ -204,13 +204,26 @@ export function criarNucleo({ repo, cofre, cfg, agora = () => Date.now() }) {
   });
 
   const esocial = {
+    /** Gera os eventos de tabela que ainda faltam. Não duplica: pula o que já foi gerado, assinado,
+        enviado ou aceito (só refaz o que voltou com erro ou foi descartado). */
     tabelasIniciais(emp) {
       const amb = ambiente(emp);
       const inicio = inicioValidade(emp);
-      const criados = [gerarEvento(emp, "S-1000", EV.s1000({ empresa: emp, ambiente: amb, inicio }), `Informações do empregador ${emp.razao_social}`)];
-      for (const e of repo.listar("estabelecimentos", emp.id, { ativo: true })) criados.push(gerarEvento(emp, "S-1005", EV.s1005({ empresa: emp, estabelecimento: e, ambiente: amb, inicio }), `Estabelecimento ${e.nome}`, { estabelecimento_id: e.id }));
-      criados.push(gerarEvento(emp, "S-1020", EV.s1020({ empresa: emp, ambiente: amb, inicio }), "Lotação tributária GERAL"));
-      for (const [codigo, rubrica] of Object.entries(RUBRICAS)) criados.push(gerarEvento(emp, "S-1010", EV.s1010({ empresa: emp, ambiente: amb, inicio, codigo, rubrica }), `Rubrica ${codigo} · ${rubrica.nome}`, { rubrica: codigo }));
+      const existentes = repo
+        .todos("SELECT tipo, referencia FROM esocial_eventos WHERE empresa_id = ? AND tipo IN ('S-1000','S-1005','S-1010','S-1020') AND status != 'erro'", emp.id)
+        .map((e) => `${e.tipo}|${JSON.stringify(typeof e.referencia === "string" ? JSON.parse(e.referencia || "{}") : e.referencia ?? {})}`);
+      const ja = new Set(existentes);
+      const criados = [];
+      let pulados = 0;
+      const talvez = (tipo, referencia, montar, descricao) => {
+        if (ja.has(`${tipo}|${JSON.stringify(referencia)}`)) return pulados++;
+        criados.push(gerarEvento(emp, tipo, montar(), descricao, referencia));
+      };
+      talvez("S-1000", {}, () => EV.s1000({ empresa: emp, ambiente: amb, inicio }), `Informações do empregador ${emp.razao_social}`);
+      for (const e of repo.listar("estabelecimentos", emp.id, { ativo: true })) talvez("S-1005", { estabelecimento_id: e.id }, () => EV.s1005({ empresa: emp, estabelecimento: e, ambiente: amb, inicio }), `Estabelecimento ${e.nome}`);
+      talvez("S-1020", {}, () => EV.s1020({ empresa: emp, ambiente: amb, inicio }), "Lotação tributária GERAL");
+      for (const [codigo, rubrica] of Object.entries(RUBRICAS)) talvez("S-1010", { rubrica: codigo }, () => EV.s1010({ empresa: emp, ambiente: amb, inicio, codigo, rubrica }), `Rubrica ${codigo} · ${rubrica.nome}`);
+      criados.pulados = pulados;
       return criados;
     },
     admissao(emp, c) {

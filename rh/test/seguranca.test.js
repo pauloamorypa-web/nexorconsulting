@@ -118,3 +118,42 @@ test("produção exige PUBLIC_URL https sem caminho", async () => {
   assert.doesNotThrow(() => conferirEnderecoPublico({ producao: true, urlPublica: "https://rh.empresa.com.br" }));
   assert.doesNotThrow(() => conferirEnderecoPublico({ producao: false, urlPublica: "" }));
 });
+
+test("instalação nova: primeira conta só com o código de instalação", async () => {
+  const s = await subir({ cfg: { codigoInstalacao: "ABCD2345" } });
+  try {
+    const c = s.cliente();
+    assert.equal((await c.get("/api/estado")).dados.exigeCodigo, true);
+    const dados = { razao_social: "Empresa X Ltda", cnpj: "11222333000181", nome: "Ana", email: "ana@x.com.br", senha: "SenhaForte!2026" };
+    assert.equal((await c.post("/api/cadastro", dados)).status, 403, "sem código");
+    assert.equal((await c.post("/api/cadastro", { ...dados, codigo_instalacao: "errado00" })).status, 403, "código errado");
+    assert.equal((await c.post("/api/cadastro", { ...dados, codigo_instalacao: "ABCD2345" })).status, 200);
+    assert.equal((await c.get("/api/estado")).dados.exigeCodigo, false, "depois do primeiro administrador o código não vale mais");
+  } finally {
+    s.fechar();
+  }
+});
+
+test("ecossistema: chave de integração só de leitura, sem dados sensíveis e revogável", async () => {
+  const s = await subir();
+  try {
+    const rh = s.cliente();
+    await rh.post("/api/cadastro", { razao_social: "Empresa Y Ltda", cnpj: "11222333000181", nome: "Bia", email: "bia@y.com.br", senha: "SenhaForte!2026" });
+    await rh.post("/api/colaboradores", { nome: "Caio Lima", cpf: "52998224725", admissao: "2026-01-02", salario_centavos: 300000 });
+    const k = (await rh.post("/api/integracoes", { nome: "Nexor Agente" })).dados;
+    assert.match(k.token, /^nxr_/);
+    assert.ok(!JSON.stringify((await rh.get("/api/integracoes")).dados).includes(k.token), "a lista não mostra a chave completa");
+    const api = (caminho, token = k.token) => fetch(`${s.url}/api/integracao/v1${caminho}`, { headers: { authorization: `Bearer ${token}` } });
+    assert.equal((await api("/colaboradores", "nxr_" + "x".repeat(40))).status, 401);
+    const col = await (await api("/colaboradores")).json();
+    assert.equal(col[0].nome, "Caio Lima");
+    assert.ok(!JSON.stringify(col).includes("52998224725") && !JSON.stringify(col).includes("300000"), "sem CPF e sem salário");
+    assert.equal((await api("/presenca")).status, 200);
+    assert.equal((await api("/ausencias")).status, 200);
+    assert.ok([404, 405].includes((await fetch(`${s.url}/api/integracao/v1/colaboradores`, { method: "POST", headers: { authorization: `Bearer ${k.token}` } })).status), "não existe escrita");
+    await rh.del(`/api/integracoes/${k.id}`);
+    assert.equal((await api("/empresa")).status, 401, "revogada deixa de funcionar");
+  } finally {
+    s.fechar();
+  }
+});

@@ -18,6 +18,9 @@ export function lerConfig(env = process.env) {
     // Criptografa o certificado digital e outros segredos no banco. Obrigatória em produção.
     chaveMestra: env.MASTER_KEY ?? "",
     permitirCadastro: env.ALLOW_SIGNUP === "true",
+    // Código pedido na criação da primeira conta (instalação nova). Em produção, se ficar vazio,
+    // o servidor gera um e grava em DATA_DIR/codigo-instalacao.txt: só quem tem acesso ao servidor cria o administrador.
+    codigoInstalacao: env.INSTALL_CODE ?? "",
     sessaoDias: numero(env.SESSION_DAYS, 14),
     // Sessão do aplicativo do trabalhador (renovada a cada uso)
     sessaoAppDias: numero(env.APP_SESSION_DAYS, 90),

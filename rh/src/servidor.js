@@ -6,6 +6,8 @@
    /api/*       → API
    /health      → verificação de saúde */
 
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve, sep } from "node:path";
@@ -78,10 +80,26 @@ export function conferirEnderecoPublico(cfg) {
   if (u.pathname !== "/" || u.search || u.hash || u.username) throw new Error("PUBLIC_URL deve ser só o endereço, sem caminho (ex.: https://rh.suaempresa.com.br).");
 }
 
+/** Lê ou cria DATA_DIR/codigo-instalacao.txt (8 caracteres fáceis de digitar). */
+function codigoDeInstalacao(pasta) {
+  const arquivo = join(pasta, "codigo-instalacao.txt");
+  if (existsSync(arquivo)) return readFileSync(arquivo, "utf8").trim();
+  mkdirSync(pasta, { recursive: true });
+  const letras = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const codigo = [...randomBytes(8)].map((b) => letras[b % letras.length]).join("");
+  writeFileSync(arquivo, codigo + "\n", { mode: 0o600 });
+  console.log(`Instalação nova: código para criar o primeiro administrador em ${arquivo}`);
+  return codigo;
+}
+
 export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () => Date.now(), fetchSoap, fetchFn = fetch } = {}) {
   conferirEnderecoPublico(cfg);
   const cofre = criarCofre(cfg);
   const repo = abrirBanco(caminhoBanco ?? join(cfg.pastaDados, "rh.db"));
+  if (cfg.producao && !cfg.codigoInstalacao && repo.contarUsuarios() === 0) {
+    // Sem administrador ainda: gera o código de instalação e grava só no servidor
+    cfg = { ...cfg, codigoInstalacao: codigoDeInstalacao(cfg.pastaDados) };
+  }
   const nucleo = criarNucleo({ repo, cofre, cfg, agora });
   const eventos = criarEventos();
   const api = criarApi({ repo, nucleo, cofre, cfg, eventos, agora, fetchSoap, fetchFn });
