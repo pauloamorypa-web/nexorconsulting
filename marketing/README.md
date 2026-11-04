@@ -2,7 +2,7 @@
 
 14 peças prontas para postar, com legenda, hashtags e onde usar cada uma. As imagens estão em [`pecas/`](pecas/). Para mudar um texto ou criar novas versões, edite [`fonte/pecas.html`](fonte/pecas.html) (abre no navegador).
 
-Regra de ouro: toda peça leva para o site (teste grátis de 12 horas ou lista de espera) ou para o WhatsApp. Os números de mercado citados vêm das fontes indicadas no site. As telas do Atende IA são reais, com dados de demonstração. As telas dos produtos “Em breve” são prévias ilustrativas.
+Regra de ouro: toda peça leva para o site (teste grátis de 12 horas ou lista de espera) ou para o WhatsApp. Os números de mercado citados vêm das fontes indicadas no site. As telas do Atende IA e do Nexor Contábil são reais, com dados de demonstração. As telas dos produtos “Em breve” são prévias ilustrativas.
 
 | Peça | Formato | Onde usar |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ Regra de ouro: toda peça leva para o site (teste grátis de 12 horas ou lista d
 | `blue-story-em-breve.png` | Story | Stories, status do WhatsApp |
 | `atende-24h.png` | Post 4:5 | Instagram, Facebook, anúncio |
 | `atende-quem-compra.png` | Post 4:5 | Instagram, LinkedIn |
-| `portfolio.png` | Post 4:5 · portfólio atual com 20 soluções | Instagram, LinkedIn, grupos |
+| `portfolio.png` | Post 4:5 · portfólio atual com 23 soluções | Instagram, LinkedIn, grupos |
 | `portfolio-17.png` | Post 4:5 · versão antiga (17 soluções) | Não usar mais |
 | `lgpd-checklist.png` | Post 4:5 · autodiagnóstico de LGPD | LinkedIn, Instagram, anúncio |
 | `em-breve-8.png` | Post 4:5 | Instagram, LinkedIn |
@@ -75,11 +75,11 @@ Dica: use a figurinha de enquete “Qual você quer primeiro?” com duas opçõ
 >
 > #crm #funildevendas #gestaocomercial #IA #vendasonline
 
-### `portfolio.png` — 20 soluções
-> Do atendimento à gestão, das pessoas à TI: são 20 soluções para cada etapa da sua empresa. 🚀
+### `portfolio.png` — 23 soluções
+> Do atendimento à gestão, das pessoas à TI: são 23 soluções para cada etapa da sua empresa. 🚀
 > 🔹 Atende IA · Commerce · Gestão · Site Pro · Automação · Sob Medida
-> 🔹 Nexor RH (ponto, folha, eSocial e recrutamento) · Consultoria de LGPD
-> 🔹 Service Desk · Cofre de senhas · IT Platform
+> 🔹 Nexor RH e Ponto · Nexor Contábil · Nexor Barber · Nexor Agente
+> 🔹 Service Desk · Cofre de senhas · IT Platform · Consultoria de LGPD
 > 🔹 E 9 novidades chegando no Laboratório Nexor, incluindo o Nexor Shield
 > Conheça todas e teste grátis: nexorconsultingit.com.br
 >
@@ -108,34 +108,34 @@ Figurinha de link: **Testar grátis** → `https://www.nexorconsultingit.com.br/
 
 ---
 
-## Para contadores (Nexor Contábil, em breve)
+## Para contadores (Nexor Contábil)
 
 Público: escritórios de contabilidade e contadores autônomos. Use também em grupos de contadores, eventos do CRC e na ACIUB. Página de destino: `/solucoes/sistema-para-escritorio-de-contabilidade/`.
 
 ### `contabil-dor.png` — Quantas horas você perde cobrando documento?
 > Contador, quantas horas por semana o seu escritório gasta cobrando extrato, nota e recibo pelo WhatsApp? 📎
 >
-> Cliente que esquece, arquivo perdido em grupo, conciliação na mão e retrabalho que ninguém cobra. A gente conhece essa rotina, e está criando uma IA para acabar com ela.
+> Cliente que esquece, arquivo perdido em grupo, conciliação na mão e retrabalho que ninguém cobra. A gente conhece essa rotina, e o Nexor Contábil acaba com ela: cobra, recebe e lê os documentos com a marca do seu escritório.
 >
-> Em breve: Nexor Contábil. Comenta "EU" que te mando a prévia.
+> Teste grátis por 12 horas no link da bio. Ou comenta "EU" que te mando o vídeo.
 >
-> #contabilidade #contador #escritoriocontabil #reformatributaria #inteligenciaartificial #uberlandia
+> #contabilidade #contador #escritoriocontabil #inteligenciaartificial #uberlandia
 
 ### `contabil-produto.png` — Escritório no piloto automático
-> Imagina o assistente do seu escritório no WhatsApp cobrando os documentos, recebendo, lendo e arquivando tudo por cliente e competência. Com a sua marca. 🤖
+> O Nexor Contábil cobra os documentos do mês por WhatsApp e e-mail, a IA lê cada nota e extrato, confere CNPJ e duplicidade e sugere os lançamentos. Com a sua marca. 🤖
 >
-> E mais: pré-lançamentos para o sistema contábil que você já usa, rentabilidade por cliente e simulador da reforma tributária.
+> E mais: exportação para o sistema contábil que você já usa, obrigações com prazo e portal do cliente.
 >
-> Nexor Contábil, em breve. Link na bio para ver a prévia.
+> Essa é uma tela real do sistema. Teste grátis por 12 horas: link na bio.
 >
 > #contabilidade #contador #automacao #ia #escritoriocontabil
 
-### `contabil-fundadores.png` — Procuramos escritórios fundadores
-> Estamos selecionando escritórios de contabilidade para serem fundadores do Nexor Contábil. 🚀
+### `contabil-teste.png` — Teste no seu escritório por 12 horas
+> Quer ver a IA ler e conferir uma nota fiscal na hora? 🚀
 >
-> Quem entra primeiro usa antes de todo mundo, ajuda a moldar o produto para a rotina real do escritório e garante condição especial no lançamento.
+> No teste grátis do Nexor Contábil você recebe documentos de exemplo, confere os lançamentos, cobra um cliente e vê a mensagem que ele recebe. Sem cartão de crédito.
 >
-> Vagas limitadas. Chama no WhatsApp (34) 99733-7499 ou pelo link na bio.
+> Link na bio ou chama no WhatsApp (34) 99733-7499.
 >
 > #contador #contabilidade #escritoriocontabil #inovacao #uberlandia
 

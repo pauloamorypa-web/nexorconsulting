@@ -3,7 +3,7 @@
 **Para escritórios de contabilidade e contadores autônomos.**
 Frase do produto: *O escritório no piloto automático. O contador no papel de consultor.*
 
-Status: **em breve** (prévia publicada no site, seção Em breve). Este documento é a especificação de produto: dores, concorrência, módulos, diferenciais, preço, parceria e plano de lançamento.
+Status: **lançado** (sistema em `contabil/`, página e teste grátis no site). Rentabilidade por cliente e simulador da reforma tributária ainda não existem no sistema: não anunciar. Este documento é a especificação de produto: dores, concorrência, módulos, diferenciais, preço, parceria e plano de lançamento.
 
 ---
 

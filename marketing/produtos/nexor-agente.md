@@ -1,7 +1,7 @@
 # Nexor Agente
 
 **IA pessoal no WhatsApp, personalizada pelo próprio cliente, que executa tarefas nos sistemas da empresa com aprovação do dono.**
-Status: **primeira versão funcionando** no código (`nexor-agente/`), prévia "Em breve" no site.
+Status: **lançado** (código em `nexor-agente/`, página e teste grátis no site).
 
 ## A promessa (com honestidade)
 - **"Fala com ela pelo WhatsApp e ela faz o que você pedir"** → sim, dentro dos sistemas **conectados**.
