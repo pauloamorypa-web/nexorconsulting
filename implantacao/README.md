@@ -1,5 +1,7 @@
 # Implantação dos sistemas Nexor por empresa
 
+> **Passo a passo completo de todos os cenários** (servidor Linux ou Windows, mini PC, nuvem, notebook com configuração contra hibernação, servidor da Nexor) **e dos casos com e sem domínio: [GUIA-INSTALACAO.md](GUIA-INSTALACAO.md).**
+
 Cada empresa cliente recebe **o próprio ecossistema Nexor**: o Nexor RH, e quando contratados o Atende IA e o Nexor Agente, rodando juntos numa rede interna só dela, com banco, arquivos, chaves, backups e domínio separados. Nenhuma empresa enxerga os dados de outra, mesmo quando várias rodam no mesmo servidor.
 
 ```
