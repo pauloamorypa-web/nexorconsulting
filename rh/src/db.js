@@ -19,6 +19,12 @@ CREATE TABLE IF NOT EXISTS usuarios (
   papel TEXT NOT NULL CHECK (papel IN ('admin','rh','gestor')), departamento_id TEXT,
   ativo INTEGER NOT NULL DEFAULT 1, criado_em INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS integracoes (
+  id TEXT PRIMARY KEY, empresa_id TEXT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+  nome TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, prefixo TEXT NOT NULL, escopos TEXT NOT NULL DEFAULT '["leitura"]',
+  ativo INTEGER NOT NULL DEFAULT 1, criado_por TEXT, criado_em INTEGER NOT NULL, usado_em INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS sessoes (token_hash TEXT PRIMARY KEY, usuario_id TEXT, colaborador_id TEXT, expira_em INTEGER NOT NULL);
 
 CREATE TABLE IF NOT EXISTS estabelecimentos (
@@ -156,6 +162,7 @@ const JSON_COLS = {
   folhas: ["totais"],
   folha_itens: ["rubricas"],
   esocial_eventos: ["ocorrencias", "referencia"],
+  integracoes: ["escopos"],
   esocial_lotes: ["resposta"],
   auditoria: ["detalhe"],
 };

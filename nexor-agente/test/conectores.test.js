@@ -36,3 +36,9 @@ test("chamada HTTP não segue redirecionamento e corta resposta grande", async (
   assert.equal(opcoes.headers.Authorization, "Bearer segredo-123");
   assert.match(r.texto, /cortada/);
 });
+
+test("rede interna do ecossistema aceita http só para nome de serviço (sem ponto)", () => {
+  const ok = carregarConectores({ env: { NODE_ENV: "production" }, conteudo: { http: [{ nome: "nexor-rh", base: "http://rh:8791/api/integracao/v1" }] } });
+  assert.equal(ok.http[0].base, "http://rh:8791/api/integracao/v1");
+  assert.throws(() => carregarConectores({ env: { NODE_ENV: "production" }, conteudo: { http: [{ nome: "x1", base: "http://exemplo.com" }] } }), /https/);
+});

@@ -6,11 +6,12 @@
 
 import { z } from "zod";
 import { cnpjValido, email, empresaPublica, op, senha, t, usuarioPublico, validar } from "./validacao.js";
-import { conferirSenha, gerarHashSenha, gerarToken, precisaRefazerHash, sha256 } from "../seguranca.js";
+import { conferirSenha, gerarHashSenha, gerarToken, iguais, precisaRefazerHash, sha256 } from "../seguranca.js";
 import { configCompleta } from "../servicos/nucleo.js";
 import { rotasApp } from "./rotas-app.js";
 import { rotasCadastros } from "./rotas-cadastros.js";
 import { rotasEsocial } from "./rotas-esocial.js";
+import { rotasIntegracao } from "./rotas-integracao.js";
 import { rotasFolha } from "./rotas-folha.js";
 import { rotasPessoas } from "./rotas-pessoas.js";
 import { rotasPonto } from "./rotas-ponto.js";
@@ -111,12 +112,16 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
 
   /* ---------- Login do painel ---------- */
 
-  r.get("/api/estado", { publico: true }, ({ cookies }) => ({ primeiroAcesso: repo.contarUsuarios() === 0, cadastroAberto: cfg.permitirCadastro, logado: Boolean(sessaoPainel(cookies)) }));
+  const exigeCodigo = () => repo.contarUsuarios() === 0 && Boolean(cfg.codigoInstalacao);
+  r.get("/api/estado", { publico: true }, ({ cookies }) => ({ primeiroAcesso: repo.contarUsuarios() === 0, exigeCodigo: exigeCodigo(), cadastroAberto: cfg.permitirCadastro, logado: Boolean(sessaoPainel(cookies)) }));
 
   r.post("/api/cadastro", { publico: true }, async ({ corpo, res, ip }) => {
     if (repo.contarUsuarios() > 0 && !cfg.permitirCadastro) falha(403, "O cadastro de novas empresas está fechado. Peça um convite ao administrador.");
     limitar(`cadastro:${ip}`);
-    const d = validar(z.object({ razao_social: t(150), nome_fantasia: op(150), cnpj: z.string().transform((v) => v.replace(/\D/g, "")).refine(cnpjValido, "CNPJ inválido"), nome: t(120), email, senha }), await corpo());
+    const bruto = await corpo();
+    // Instalação nova: a primeira conta (administrador) só com o código de instalação do servidor
+    if (exigeCodigo() && !iguais(String(bruto?.codigo_instalacao ?? "").trim(), cfg.codigoInstalacao)) falha(403, "Código de instalação incorreto. Ele está no arquivo codigo-instalacao.txt do servidor ou com a Nexor.");
+    const d = validar(z.object({ razao_social: t(150), nome_fantasia: op(150), cnpj: z.string().transform((v) => v.replace(/\D/g, "")).refine(cnpjValido, "CNPJ inválido"), nome: t(120), email, senha }), bruto);
     if (repo.usuarioPorEmail(d.email)) falha(409, "Já existe uma conta com este e-mail.");
     const usuario = repo.transacao(() => {
       const emp = repo.inserir("empresas", { razao_social: d.razao_social, nome_fantasia: d.nome_fantasia, cnpj: d.cnpj, config: {} });
@@ -181,6 +186,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, agora = () => Date
   rotasPessoas(deps);
   rotasEsocial(deps);
   rotasApp(deps);
+  rotasIntegracao(deps);
   const recrutamento = rotasRecrutamento(deps);
 
   return { roteador: r, sessaoPainel, sessaoApp, tokenApp, paginasVagas: recrutamento.paginas };

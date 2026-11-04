@@ -27,6 +27,7 @@ export function renderLogin(raiz, estado, aoEntrar) {
             { nome: "nome", rotulo: "Seu nome", obrigatorio: true, largura: 2 },
             { nome: "email", rotulo: "E-mail", tipo: "email", obrigatorio: true, largura: 2 },
             { nome: "senha", rotulo: "Senha", tipo: "senha", obrigatorio: true, largura: 2, ajuda: "Mínimo de 8 caracteres." },
+            ...(estado.exigeCodigo ? [{ nome: "codigo_instalacao", rotulo: "Código de instalação", obrigatorio: true, largura: 2, ajuda: "Fornecido pela Nexor na implantação (arquivo codigo-instalacao.txt do servidor)." }] : []),
           ]);
     const botao = h("button", { class: "btn btn-primario btn-grande", type: "submit" }, modo === "entrar" ? "Entrar" : "Criar conta da empresa");
     const form = h(

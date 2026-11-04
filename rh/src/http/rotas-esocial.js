@@ -52,8 +52,8 @@ export function rotasEsocial({ r, repo, nucleo, cfg, agora, auditar, fetchSoap }
 
   r.post("/api/esocial/tabelas", RH, (ctx) => {
     const criados = nucleo.esocial.tabelasIniciais(ctx.empresa);
-    auditar(ctx, "esocial_tabelas_geradas", { eventos: criados.length });
-    return { gerados: criados.length };
+    auditar(ctx, "esocial_tabelas_geradas", { eventos: criados.length, ja_existiam: criados.pulados });
+    return { gerados: criados.length, ja_existiam: criados.pulados };
   });
   r.post("/api/esocial/assinar", RH, (ctx) => ({ assinados: nucleo.esocial.assinarPendentes(ctx.empresa) }));
 

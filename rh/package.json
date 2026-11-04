@@ -9,7 +9,8 @@
     "start": "node --disable-warning=ExperimentalWarning src/servidor.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch src/servidor.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
-    "demo": "node --disable-warning=ExperimentalWarning scripts/demo.js"
+    "demo": "node --disable-warning=ExperimentalWarning scripts/demo.js",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
   },
   "dependencies": {
     "node-forge": "^1.4.2",

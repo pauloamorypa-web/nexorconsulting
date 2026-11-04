@@ -19,11 +19,11 @@ export async function render(raiz, ctx, [sub]) {
 
 async function desenhar() {
   const adm = ctxAtual.pode("admin");
-  const itens = [["empresa", "Empresa"], ["locais", "Locais e quiosque"], ["jornadas", "Jornadas"], ["cargos", "Cargos"], ["departamentos", "Departamentos"], ["feriados", "Feriados"], adm ? ["usuarios", "Usuários"] : null, adm ? ["esocial", "eSocial"] : null, ["tabelas", "Tabelas da folha"], adm ? ["auditoria", "Auditoria"] : null].filter(Boolean);
+  const itens = [["empresa", "Empresa"], ["locais", "Locais e quiosque"], ["jornadas", "Jornadas"], ["cargos", "Cargos"], ["departamentos", "Departamentos"], ["feriados", "Feriados"], adm ? ["usuarios", "Usuários"] : null, adm ? ["esocial", "eSocial"] : null, ["tabelas", "Tabelas da folha"], adm ? ["integracoes", "Integrações"] : null, adm ? ["auditoria", "Auditoria"] : null].filter(Boolean);
   if (!itens.some(([i]) => i === aba)) aba = "empresa";
   const corpo = h("div", { class: "aba-corpo" });
   limpar(raizAtual, h("div", { class: "pagina" }, topo("Configurações"), abas(itens, aba, (x) => ((aba = x), history.replaceState(null, "", `#/config/${x}`), desenhar())), corpo));
-  limpar(corpo, await { empresa, locais, jornadas, cargos, departamentos, feriados, usuarios, esocial, tabelas, auditoria }[aba]());
+  limpar(corpo, await { empresa, locais, jornadas, cargos, departamentos, feriados, usuarios, esocial, tabelas, integracoes, auditoria }[aba]());
 }
 
 async function empresa() {
@@ -235,6 +235,40 @@ async function tabelas() {
       h("p", { class: "suave" }, "Os valores mudam todo ano (portaria do INSS em janeiro, salário mínimo, IRRF). Edite aqui quando sair a nova tabela. Valores em centavos."),
       area,
       ctxAtual.pode("admin") ? h("div", { class: "barra-salvar" }, botao("Restaurar padrão", (e) => acao(e.currentTarget, async () => (await put("/empresa", { config: { tabelas: null } }), desenhar())), "btn-fantasma"), botao("Salvar tabelas", (e) => acao(e.currentTarget, async () => { let v; try { v = JSON.parse(area.value); } catch { throw new Error("JSON inválido."); } await put("/empresa", { config: { tabelas: v } }); aviso("Tabelas atualizadas."); desenhar(); }), "btn-primario")) : null,
+    ),
+  );
+}
+
+async function integracoes() {
+  const lista = await get("/integracoes");
+  const criar = () => {
+    const f = formulario([{ nome: "nome", rotulo: "Para qual sistema?", obrigatorio: true, largura: 2, placeholder: "Ex.: Nexor Agente, Nexor Atende IA" }]);
+    const b = h("button", { class: "btn btn-primario", type: "submit" }, "Criar chave");
+    const j = janela({
+      titulo: "Nova chave de integração",
+      conteudo: h("form", { class: "pilha", onsubmit: (e) => (e.preventDefault(), acao(b, async () => {
+        const k = await post("/integracoes", f.ler());
+        j.fechar();
+        janela({ titulo: "Copie a chave agora", conteudo: h("div", { class: "pilha" }, h("p", {}, "Ela aparece só esta vez. Cole no sistema que vai se conectar (por exemplo, no conector do Nexor Agente). Se perder, revogue e crie outra."), h("code", { class: "mono", style: "word-break:break-all" }, k.token), h("button", { class: "btn btn-primario", type: "button", onclick: () => copiarTexto(k.token) }, "Copiar chave")) });
+        desenhar();
+      })) }, f.el, b),
+    });
+  };
+  return h(
+    "section",
+    { class: "cartao" },
+    h("div", { class: "linha-entre" }, h("div", {}, h("h2", {}, "Integrações com o ecossistema Nexor"), h("p", { class: "suave" }, "Chaves que permitem a outros sistemas da Nexor da sua empresa consultar colaboradores, quem está trabalhando agora e ausências. Somente leitura: sem CPF, salário ou documentos.")), botao("Nova chave", criar, "btn-primario", "mais")),
+    tabela(
+      [
+        { titulo: "Sistema", valor: (i) => i.nome },
+        { titulo: "Chave", valor: (i) => h("small", { class: "mono" }, `${i.prefixo}…`) },
+        { titulo: "Criada", valor: (i) => `${dataHora(i.criado_em)} · ${i.criado_por ?? ""}` },
+        { titulo: "Último uso", valor: (i) => (i.usado_em ? dataHora(i.usado_em) : "nunca") },
+        { titulo: "Situação", valor: (i) => (i.ativo ? situacao("ativo") : "revogada") },
+        { titulo: "", valor: (i) => (i.ativo ? h("button", { class: "btn btn-perigo-fantasma btn-pequeno", onclick: (e) => confirmar("Revogar esta chave? O sistema que usa ela perde o acesso na hora.").then((ok) => ok && acao(e.target, async () => (await del(`/integracoes/${i.id}`), desenhar()))) }, "Revogar") : "") },
+      ],
+      lista,
+      { vazio: "Nenhuma chave criada." },
     ),
   );
 }

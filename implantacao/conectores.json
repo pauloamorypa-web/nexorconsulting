@@ -1,0 +1,15 @@
+{
+  "http": [
+    {
+      "nome": "nexor-rh",
+      "descricao": "Nexor RH da empresa: colaboradores, quem está trabalhando agora e ausências (somente leitura)",
+      "base": "http://rh:8791/api/integracao/v1",
+      "cabecalhos": { "Authorization": "Bearer ${NEXOR_RH_CHAVE}" },
+      "caminhos_permitidos": ["/empresa", "/colaboradores", "/presenca", "/ausencias"],
+      "leitura": "livre",
+      "escrita": "bloqueada",
+      "guia": "GET /presenca → resumo e lista com situação de cada colaborador agora (trabalhando, intervalo, atrasado, saiu, folga, férias); GET /colaboradores → nome, matrícula, cargo, departamento; GET /ausencias → férias e afastamentos dos próximos 30 dias"
+    }
+  ],
+  "mcp": []
+}
