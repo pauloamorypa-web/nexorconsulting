@@ -284,7 +284,7 @@ function inicio(area) {
   const sempre = e.de_sempre;
   limpar(
     area,
-    h("p", { class: "ola" }, `Olá, ${primeiro}!`),
+    h("div", { class: "linha-esq" }, h("p", { class: "ola" }, `Olá, ${primeiro}!`), e.clube?.status === "ativa" ? h("span", { class: "chip chip-ok" }, ic("coroa", 13), `Assinante ${e.clube.plano.nome}`) : null),
     e.retorno && !e.proximos.length && e.retorno.ciclo_dias && e.retorno.dias >= e.retorno.ciclo_dias ? h("p", { class: "suave" }, `Faz ${e.retorno.dias} dias do seu último corte. Você costuma voltar a cada ${e.retorno.ciclo_dias}.`) : null,
     e.proximos.map(ticket),
     sempre && sempre.dia
@@ -318,12 +318,20 @@ function cartaoClube(c) {
   return h(
     "section",
     { class: "cartao destaque" },
-    h("div", { class: "linha" }, h("span", { class: "rotulo" }, ic("coroa", 14), ` Clube ${c.plano.nome}`), h("span", { class: `chip ${c.status === "ativa" ? "chip-ok" : "chip-alerta"}` }, { ativa: "ativo", pendente: "aguardando pagamento", atrasada: "pagamento em atraso" }[c.status] ?? c.status)),
+    h("div", { class: "linha" }, h("span", { class: "rotulo" }, ic("coroa", 14), ` ${/^clube/i.test(c.plano.nome) ? "" : "Clube "}${c.plano.nome}`), h("span", { class: `chip ${c.status === "ativa" ? "chip-ok" : "chip-alerta"}` }, { ativa: "ativo", pendente: "aguardando pagamento", atrasada: "pagamento em atraso" }[c.status] ?? c.status)),
     c.ciclo_fim ? h("small", { class: "suave" }, `Ciclo até ${c.ciclo_fim.slice(8)}/${c.ciclo_fim.slice(5, 7)}`) : null,
     c.usos.map((u) => h("div", { class: "uso" }, h("div", { class: "linha" }, h("span", {}, u.nome), h("small", { class: "suave" }, u.quantidade ? `${u.usados} de ${u.quantidade}` : `${u.usados} · ilimitado`)), h("div", { class: "trilho" }, h("i", { style: { width: u.quantidade ? `${Math.min(100, (u.usados / u.quantidade) * 100)}%` : "100%" } })))),
     c.link ? h("a", { class: "btn btn-cor btn-bloco", href: c.link, target: "_blank", rel: "noopener" }, "Pagar mensalidade") : null,
     c.status === "pendente" && !c.link ? h("small", { class: "suave" }, "Pague a primeira mensalidade na barbearia para ativar.") : null,
   );
+}
+
+/** Faixa que identifica o assinante logo no começo do agendamento */
+function faixaAssinante() {
+  const c = S.eu?.clube;
+  if (!c) return null;
+  if (c.status === "ativa") return h("div", { class: "faixa-clube" }, ic("coroa", 16), h("span", {}, "Você é assinante do ", h("strong", {}, c.plano.nome), ". Os serviços do plano saem sem cobrança."));
+  return h("div", { class: "faixa-clube atencao" }, ic("coroa", 16), h("span", {}, c.status === "atrasada" ? `A mensalidade do ${c.plano.nome} está em aberto: os horários serão cobrados até o pagamento.` : `Seu ${c.plano.nome} ainda aguarda o primeiro pagamento.`), c.link ? h("a", { class: "btn btn-cor btn-peq", href: c.link, target: "_blank", rel: "noopener" }, "Pagar") : null);
 }
 
 /* ----- Agendar em 4 passos ----- */
@@ -336,7 +344,7 @@ async function agendar(area) {
   const passos = h("div", { class: "passos" }, [1, 2, 3, 4].map((n) => h("i", { class: n <= f.passo ? "feito" : "" })));
   const voltar = f.passo > 1 ? h("button", { class: "voltar", onclick: () => ((f.passo -= 1), desenhar()) }, ic("voltar", 16), "Voltar") : null;
   const corpo = h("div", { class: "pilha" });
-  limpar(area, passos, voltar, corpo);
+  limpar(area, passos, voltar, faixaAssinante(), corpo);
   // Remarcação: no último passo troca o horário em vez de criar outro
   if (f.remarcar && f.passo === 4) {
     limpar(corpo, h("h2", {}, "Confirmar remarcação"), h("section", { class: "cartao" }, h("p", {}, `Novo horário: ${nomeDia(f.dia)} às ${f.hora}.`)), botao("Remarcar", async () => {
@@ -348,7 +356,24 @@ async function agendar(area) {
   }
 
   if (f.passo === 1) {
-    limpar(corpo, h("h2", {}, "Qual serviço?"), h("div", { class: "opcoes" }, S.info.servicos.map((s) => h("button", { class: `opcao ${f.servico === s.id ? "ativa" : ""}`, onclick: () => ((f.servico = s.id), (f.passo = 2), desenhar()) }, ic("tesoura", 20), h("div", { class: "meio" }, h("strong", {}, s.nome), h("small", {}, [`${s.duracao_min} min`, s.descricao ? ` · ${s.descricao}` : ""])), h("span", { class: "preco" }, S.eu.clube?.status === "ativa" && S.eu.clube.usos.some((u) => u.servico_id === s.id) ? h("span", { class: "chip chip-ok" }, "clube") : reais(s.preco_centavos))))));
+    const cob = S.eu.clube ? await api("/clube/servicos").catch(() => null) : null;
+    const etiqueta = (sv) => {
+      const c = cob?.servicos?.[sv.id];
+      if (c?.coberto) return h("span", { class: "chip chip-ok" }, ic("coroa", 12), c.restante !== null ? `clube · restam ${c.restante + 1}` : "incluído no clube");
+      return reais(sv.preco_centavos);
+    };
+    limpar(
+      corpo,
+      h("h2", {}, "Qual serviço?"),
+      h(
+        "div",
+        { class: "opcoes" },
+        S.info.servicos.map((sv) => {
+          const c = cob?.servicos?.[sv.id];
+          return h("button", { class: `opcao ${f.servico === sv.id ? "ativa" : ""} ${c?.coberto ? "opcao-clube" : ""}`, onclick: () => ((f.servico = sv.id), (f.passo = 2), desenhar()) }, ic(c?.coberto ? "coroa" : "tesoura", 20), h("div", { class: "meio" }, h("strong", {}, sv.nome), h("small", {}, [`${sv.duracao_min} min`, sv.descricao ? ` · ${sv.descricao}` : ""]), c && !c.coberto && c.motivo && cob.status === "ativa" ? h("small", { class: "aviso-clube" }, c.motivo) : null), h("span", { class: "preco" }, etiqueta(sv)));
+        }),
+      ),
+    );
   } else if (f.passo === 2) {
     const quem = S.info.barbeiros.filter((b) => !b.servicos?.length || b.servicos.includes(f.servico));
     const ordem = ultimo ? [...quem].sort((a, b) => (b.id === ultimo.barbeiro.id) - (a.id === ultimo.barbeiro.id)) : quem;
@@ -378,9 +403,9 @@ async function agendar(area) {
       corpo,
       h("h2", {}, "Quando?"),
       faixa,
-      horas.clube.coberto ? h("span", { class: "chip chip-ok" }, ic("coroa", 13), "Este dia está coberto pelo seu clube") : horas.clube.motivo ? h("small", { class: "suave" }, horas.clube.motivo) : null,
+      horas.clube.assinante ? (horas.clube.coberto ? h("span", { class: "chip chip-ok" }, ic("coroa", 13), `Neste dia sai pelo seu ${horas.clube.plano.nome}${horas.clube.restante !== null ? ` · restam ${horas.clube.restante + 1} no ciclo` : ""}`) : horas.clube.motivo ? h("small", { class: "aviso-clube" }, ic("coroa", 13), ` ${horas.clube.motivo} Este horário será cobrado normalmente.`) : null) : null,
       grupos.length
-        ? grupos.map(([t, l]) => [h("div", { class: "periodo" }, t), h("div", { class: "horas" }, l.map((x) => h("button", { class: `hora ${x === f.hora ? "ativa" : ""}`, onclick: () => ((f.hora = x), (f.clube = horas.clube.coberto), (f.passo = 4), desenhar()) }, x)))])
+        ? grupos.map(([t, l]) => [h("div", { class: "periodo" }, t), h("div", { class: "horas" }, l.map((x) => h("button", { class: `hora ${x === f.hora ? "ativa" : ""}`, onclick: () => ((f.hora = x), (f.clube = horas.clube.coberto), (f.infoClube = horas.clube), (f.passo = 4), desenhar()) }, x)))])
         : h(
             "section",
             { class: "cartao" },
@@ -400,7 +425,7 @@ async function agendar(area) {
     limpar(
       corpo,
       h("h2", {}, "Confirme"),
-      h("section", { class: "cartao" }, h("dl", { class: "resumo" }, h("dt", {}, "Serviço"), h("dd", {}, s.nome), h("dt", {}, "Barbeiro"), h("dd", {}, b ? b.nome : "Quem estiver livre"), h("dt", {}, "Quando"), h("dd", {}, `${nomeDia(f.dia)} às ${f.hora}`), h("dt", {}, "Valor"), h("dd", {}, f.clube ? h("span", { class: "chip chip-ok" }, "pelo clube") : reais(s.preco_centavos)))),
+      h("section", { class: "cartao" }, h("dl", { class: "resumo" }, h("dt", {}, "Serviço"), h("dd", {}, s.nome), h("dt", {}, "Barbeiro"), h("dd", {}, b ? b.nome : "Quem estiver livre"), h("dt", {}, "Quando"), h("dd", {}, `${nomeDia(f.dia)} às ${f.hora}`), h("dt", {}, "Valor"), h("dd", {}, f.clube ? h("span", { class: "chip chip-ok" }, ic("coroa", 12), "pelo clube") : reais(s.preco_centavos))), f.infoClube?.assinante ? h("p", { class: f.clube ? "suave pequeno" : "aviso-clube" }, f.clube ? `Assinante ${f.infoClube.plano.nome}: este horário não é cobrado${f.infoClube.restante !== null ? `. Depois dele, restam ${f.infoClube.restante} no ciclo` : ""}.` : `${f.infoClube.motivo ?? "Este horário não entra no clube."} O valor será cobrado na barbearia.`) : null),
       loja.length
         ? h(
             "section",
@@ -464,7 +489,7 @@ function sucesso(a) {
         h("div", { class: "check" }, ic("check", 40)),
         h("h2", {}, "Horário marcado!"),
         h("p", { class: "suave" }, `${a.servico.nome} com ${a.barbeiro.nome}, ${nomeDia(a.dia)} às ${a.hora}.`),
-        a.clube ? h("span", { class: "chip chip-ok" }, ic("coroa", 13), "pelo clube") : null,
+        a.clube ? h("span", { class: "chip chip-ok" }, ic("coroa", 13), `Incluído no seu ${a.assinante?.plano.nome ?? "clube"}${a.assinante?.restante !== null && a.assinante?.restante !== undefined ? ` · restam ${a.assinante.restante} no ciclo` : ""}`) : a.assinante ? h("small", { class: "suave" }, "Este horário não entrou no clube e será cobrado na barbearia.") : null,
         h("p", { class: "suave pequeno" }, "Você recebe a confirmação e um lembrete no WhatsApp."),
         h("a", { class: "btn btn-fantasma btn-bloco", href: `/api/app/agendamentos/${a.id}/ics` }, ic("calendario", 18), "Pôr na agenda do celular"),
         h("button", { class: "btn btn-cor btn-bloco", onclick: () => ir("inicio") }, "Pronto"),

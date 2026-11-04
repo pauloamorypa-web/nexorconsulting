@@ -299,3 +299,56 @@ test("rotina: lembrete antes do horário e retorno no tempo certo", async () => 
     s.fechar();
   }
 });
+
+test("app identifica o assinante na hora de agendar: incluído, limite, fora do plano e atraso", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte, barba, servicos, rafael } = await barbeariaPronta(s);
+    const sobrancelha = servicos.find((x) => x.nome === "Sobrancelha");
+    const plano = (await dono.post("/api/planos", { nome: "Clube Navalha", preco_centavos: 8990, itens: [{ servico_id: corte.id, quantidade: 0 }, { servico_id: barba.id, quantidade: 1 }] })).dados;
+    const lucas = await clienteApp(s);
+    // Sem assinatura: nada de clube
+    assert.equal((await lucas.get("/api/app/clube/servicos")).dados.assinante, false);
+    assert.equal((await lucas.get(`/api/app/horarios?servico=${corte.id}&dia=2026-11-11`)).dados.clube.assinante, false);
+
+    // Assinatura feita no balcão: o app reconhece pelo celular
+    const cli = (await dono.get("/api/clientes")).dados.find((c) => c.nome === "Lucas Cliente");
+    await dono.post("/api/assinaturas", { cliente_id: cli.id, plano_id: plano.id, pago_agora: "pix" });
+    const cob = (await lucas.get("/api/app/clube/servicos")).dados;
+    assert.equal(cob.assinante, true);
+    assert.equal(cob.plano.nome, "Clube Navalha");
+    assert.equal(cob.servicos[corte.id].coberto, true);
+    assert.equal(cob.servicos[corte.id].restante, null, "ilimitado");
+    assert.equal(cob.servicos[barba.id].restante, 0, "1 barba: depois desta, restam 0");
+    assert.equal(cob.servicos[sobrancelha.id].coberto, false);
+    assert.match(cob.servicos[sobrancelha.id].motivo, /não faz parte do seu plano/);
+
+    const h = (await lucas.get(`/api/app/horarios?servico=${barba.id}&dia=2026-11-11`)).dados.clube;
+    assert.deepEqual([h.assinante, h.coberto, h.plano.nome, h.status], [true, true, "Clube Navalha", "ativa"]);
+
+    const a = (await lucas.post("/api/app/agendar", { servico_id: barba.id, barbeiro_id: rafael.id, dia: "2026-11-11", hora: "09:00" })).dados;
+    assert.equal(a.preco_centavos, 0);
+    assert.deepEqual(a.assinante, { plano: { id: plano.id, nome: "Clube Navalha", desconto_produtos: 0 }, status: "ativa", coberto: true, restante: 0 });
+    assert.match(s.rede.whatsapp.at(-1).text.body, /Incluído no seu Clube Navalha \(restam 0 no ciclo\)/);
+
+    // Limite do ciclo atingido: identifica o motivo e cobra
+    const h2 = (await lucas.get(`/api/app/horarios?servico=${barba.id}&dia=2026-11-12`)).dados.clube;
+    assert.equal(h2.coberto, false);
+    assert.match(h2.motivo, /já usou os 1/);
+    const b2 = (await lucas.post("/api/app/agendar", { servico_id: sobrancelha.id, barbeiro_id: rafael.id, dia: "2026-11-12", hora: "09:00" })).dados;
+    assert.equal(b2.preco_centavos, 1500);
+    assert.equal(b2.assinante.coberto, false, "assinante identificado, mas fora do plano");
+
+    // O painel vê o assinante no horário
+    const hoje = (await dono.get("/api/hoje?dia=2026-11-11")).dados;
+    assert.equal(hoje.agendamentos[0].assinante.plano.nome, "Clube Navalha");
+
+    // Mensalidade atrasada: identifica e não cobre
+    s.app.repo.rodar("UPDATE assinaturas SET status = 'atrasada'");
+    const h3 = (await lucas.get(`/api/app/horarios?servico=${corte.id}&dia=2026-11-13`)).dados.clube;
+    assert.deepEqual([h3.assinante, h3.coberto, h3.status], [true, false, "atrasada"]);
+    assert.match(h3.motivo, /atraso/);
+  } finally {
+    s.fechar();
+  }
+});

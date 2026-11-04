@@ -73,7 +73,7 @@ export async function render(area, ctx) {
         "div",
         { class: "pilha" },
         h("div", { class: "linha-entre" }, sit(a.status), h("span", { class: "suave pequeno" }, ORIGEM[a.origem])),
-        h("dl", { class: "dados-lidos" }, h("dt", {}, "Serviço"), h("dd", {}, `${a.servico.nome} · ${a.servico.duracao_min} min`), h("dt", {}, "Barbeiro"), h("dd", {}, a.barbeiro.nome), h("dt", {}, "Valor"), h("dd", {}, a.clube ? "Pelo clube" : reais(a.preco_centavos)), a.cliente.fone ? [h("dt", {}, "Celular"), h("dd", {}, h("a", { href: `https://wa.me/${a.cliente.fone}`, target: "_blank", rel: "noopener" }, fone(a.cliente.fone)))] : null, a.observacao ? [h("dt", {}, "Obs."), h("dd", {}, a.observacao)] : null, a.reservas.length ? [h("dt", {}, "Reservou"), h("dd", {}, a.reservas.map((r) => `${r.quantidade}× ${r.nome}`).join(", "))] : null),
+        h("dl", { class: "dados-lidos" }, h("dt", {}, "Serviço"), h("dd", {}, `${a.servico.nome} · ${a.servico.duracao_min} min`), h("dt", {}, "Barbeiro"), h("dd", {}, a.barbeiro.nome), h("dt", {}, "Valor"), h("dd", {}, a.clube ? "Pelo clube" : reais(a.preco_centavos)), a.assinante ? [h("dt", {}, "Clube"), h("dd", {}, h("span", { class: `chip ${a.assinante.status === "ativa" ? "chip-ok" : "chip-alerta"}` }, icone("coroa", 12), ` ${a.assinante.plano.nome}`), a.clube ? (a.assinante.restante !== null ? ` · restam ${a.assinante.restante} no ciclo` : " · ilimitado") : ` · ${a.assinante.status === "ativa" ? "fora do plano: cobrar o serviço" : a.assinante.status === "atrasada" ? "mensalidade em atraso: cobrar o serviço" : "aguardando o 1º pagamento"}`)] : null, a.cliente.fone ? [h("dt", {}, "Celular"), h("dd", {}, h("a", { href: `https://wa.me/${a.cliente.fone}`, target: "_blank", rel: "noopener" }, fone(a.cliente.fone)))] : null, a.observacao ? [h("dt", {}, "Obs."), h("dd", {}, a.observacao)] : null, a.reservas.length ? [h("dt", {}, "Reservou"), h("dd", {}, a.reservas.map((r) => `${r.quantidade}× ${r.nome}`).join(", "))] : null),
       ),
       acoes: btns,
     });
@@ -148,7 +148,7 @@ export async function render(area, ctx) {
           return h(
             "button",
             { class: `lt-card st-${a.status}`, style: { top: `${top}px`, height: `${alt}px`, "--cor": b.cor }, onclick: () => abrirHorario(a) },
-            h("div", { class: "lt-card-linha" }, h("strong", {}, a.hora), h("span", {}, a.cliente.nome), a.clube ? icone("coroa", 13) : null, a.origem === "espera" ? icone("raio", 13) : null),
+            h("div", { class: "lt-card-linha" }, h("strong", {}, a.hora), h("span", {}, a.cliente.nome), a.clube ? icone("coroa", 13) : a.assinante ? h("span", { class: "lt-assinante", title: "Assinante, mas este horário é cobrado" }, icone("coroa", 13)) : null, a.origem === "espera" ? icone("raio", 13) : null),
             alt > 40 ? h("small", {}, a.servico.nome, a.status !== "agendado" ? ` · ${sit(a.status).textContent}` : "") : null,
           );
         }),

@@ -8,7 +8,7 @@ Agendamento para barbearias, com app do cliente, clube de assinatura, produtos, 
 - **Retorno no tempo certo.** Cada cliente tem o próprio ciclo de corte (média dos intervalos entre as visitas). Passou do ciclo sem horário marcado: aviso automático no WhatsApp com o link do app.
 - **Vaga relâmpago.** Cancelou? A vaga vai na hora, pelo WhatsApp, para até 3 pessoas da lista de espera daquele dia. Quem confirmar primeiro leva; os outros continuam na fila.
 - **Entrar sem senha.** Google, código pelo WhatsApp ou por SMS. Quem entra com Google confirma o celular, e o sistema junta o cadastro antigo do balcão.
-- **Clube de assinatura.** Planos com serviços incluídos (ilimitado ou X por ciclo), dias da semana válidos e desconto em produtos. Cobrança recorrente pelo Asaas (Pix, boleto ou cartão) ou pagamento no balcão. O agendamento coberto pelo clube sai com valor zero e o uso é contado sozinho.
+- **Clube de assinatura.** O app identifica o assinante em cada passo do agendamento: o que está incluído, quantos usos restam no ciclo e, quando não cobre (fora do plano, limite atingido, dia não incluído ou mensalidade em atraso), o motivo e o link para pagar. Planos com serviços incluídos (ilimitado ou X por ciclo), dias da semana válidos e desconto em produtos. Cobrança recorrente pelo Asaas (Pix, boleto ou cartão) ou pagamento no balcão. O agendamento coberto pelo clube sai com valor zero e o uso é contado sozinho.
 - **Loja com reserva.** O cliente reserva o produto pelo app e paga junto com o corte. O estoque reservado sai da vitrine.
 - **Estou chegando.** O cliente avisa pelo app e o painel destaca quem chegou.
 - **Autonomia total da barbearia.** Expediente, feriados, serviços, barbeiros, comissões, regras de agenda, WhatsApp, SMS, Google e Asaas são configurados no painel, sem a Nexor. Cada barbeiro tem login próprio: a própria agenda, folgas, expediente e comissões.
@@ -33,7 +33,7 @@ Papéis: **dono/administrador** (tudo), **recepção** (agenda, clientes, clube,
 npm install
 cp .env.exemplo .env
 npm start      # http://localhost:8795 (painel) · /app/ (app do cliente)
-npm test       # 23 testes: regras, fluxo completo, segurança e Nexor Central
+npm test       # 24 testes: regras, fluxo completo, segurança e Nexor Central
 ```
 
 Implantação na barbearia: [MANUAL-IMPLANTACAO.md](MANUAL-IMPLANTACAO.md) (`implantacao/instalar.sh` com `SISTEMAS="barber"`).

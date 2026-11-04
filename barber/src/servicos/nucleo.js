@@ -180,6 +180,23 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
   }
 
   /**
+   * Identifica o cliente como assinante para um serviço num dia: plano, situação, se o horário sai pelo clube,
+   * quantos usos restam e, quando não cobre, o motivo e o link para pagar a mensalidade.
+   */
+  function identificarAssinante(clienteId, servicoId = null, dia = hoje()) {
+    const a = assinaturaAtual(clienteId);
+    if (!a) return { assinante: false };
+    const plano = repo.obter("planos", a.plano_id);
+    const r = { assinante: true, status: a.status, plano: { id: plano.id, nome: plano.nome, desconto_produtos: plano.desconto_produtos }, ciclo_fim: a.ciclo_fim, coberto: false, restante: null, motivo: null, link: a.status !== "ativa" ? a.link : null };
+    if (!servicoId) return r;
+    const cob = cobertura(plano, a, servicoId, dia, usosNoCiclo(a, servicoId));
+    const noPlano = (plano.itens ?? []).some((i) => i.servico_id === servicoId);
+    if (cob.coberto) return { ...r, coberto: true, restante: cob.restante ?? null };
+    if (a.status === "pendente") return { ...r, motivo: "Sua assinatura ainda aguarda o primeiro pagamento." };
+    return { ...r, motivo: cob.motivo ?? (noPlano ? null : "Este serviço não faz parte do seu plano.") };
+  }
+
+  /**
    * Cria um agendamento. Sem barbeiro escolhido, fica com quem estiver livre e com menos atendimentos no dia.
    * encaixe: a equipe pode agendar fora do expediente (nunca por cima de outro cliente).
    */
@@ -228,8 +245,9 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
       return novo;
     });
     const detalhe = detalhar(ag);
+    const clubeTxt = detalhe.assinante?.coberto ? `\n👑 Incluído no seu ${detalhe.assinante.plano.nome}${detalhe.assinante.restante !== null ? ` (restam ${detalhe.assinante.restante} no ciclo)` : ""}.` : "";
     notificar(cliente, "confirmacao", {
-      texto: `✂️ ${cliente.nome.split(" ")[0]}, seu horário na ${b.nome} está confirmado: ${detalhe.servico.nome} com ${detalhe.barbeiro.nome}, ${quando(ag.inicio)}.\nPara remarcar ou cancelar: ${linkApp()}`,
+      texto: `✂️ ${cliente.nome.split(" ")[0]}, seu horário na ${b.nome} está confirmado: ${detalhe.servico.nome} com ${detalhe.barbeiro.nome}, ${quando(ag.inicio)}.${clubeTxt}\nPara remarcar ou cancelar: ${linkApp()}`,
       parametros: [cliente.nome.split(" ")[0], detalhe.servico.nome, quando(ag.inicio), detalhe.barbeiro.nome],
     }).catch(() => {});
     return detalhe;
@@ -246,12 +264,25 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
 
   const disponivel = (p) => p.estoque - repo.um("SELECT COALESCE(SUM(quantidade),0) n FROM reservas WHERE produto_id = ? AND status = 'reservado'", p.id).n;
 
+  /** Assinante no horário: o plano, a situação de hoje e, se saiu pelo clube, quantos usos ainda restam no ciclo */
+  function assinanteDoHorario(a) {
+    const id = identificarAssinante(a.cliente_id);
+    if (!id.assinante) return null;
+    const ass = a.assinatura_id ? repo.obter("assinaturas", a.assinatura_id) : null;
+    let restante = null;
+    if (ass) {
+      const item = (repo.obter("planos", ass.plano_id)?.itens ?? []).find((i) => i.servico_id === a.servico_id);
+      if (item?.quantidade > 0) restante = Math.max(0, item.quantidade - usosNoCiclo(ass, a.servico_id));
+    }
+    return { plano: id.plano, status: id.status, coberto: Boolean(a.assinatura_id), restante };
+  }
+
   function detalhar(a) {
     const servico = repo.obter("servicos", a.servico_id);
     const barbeiro = repo.obter("barbeiros", a.barbeiro_id);
     const cliente = repo.obter("clientes", a.cliente_id);
     const reservas = repo.todos("SELECT r.id, r.quantidade, r.status, p.id produto_id, p.nome, p.preco_centavos FROM reservas r JOIN produtos p ON p.id = r.produto_id WHERE r.agendamento_id = ?", a.id);
-    return { ...a, dia: hojeBR(a.inicio), hora: horaBR(a.inicio), servico: servico && { id: servico.id, nome: servico.nome, duracao_min: servico.duracao_min, preco_centavos: servico.preco_centavos }, barbeiro: barbeiro && { id: barbeiro.id, nome: barbeiro.nome, cor: barbeiro.cor }, cliente: cliente && { id: cliente.id, nome: cliente.nome, fone: cliente.fone }, reservas, clube: Boolean(a.assinatura_id) };
+    return { ...a, dia: hojeBR(a.inicio), hora: horaBR(a.inicio), servico: servico && { id: servico.id, nome: servico.nome, duracao_min: servico.duracao_min, preco_centavos: servico.preco_centavos }, barbeiro: barbeiro && { id: barbeiro.id, nome: barbeiro.nome, cor: barbeiro.cor }, cliente: cliente && { id: cliente.id, nome: cliente.nome, fone: cliente.fone }, reservas, clube: Boolean(a.assinatura_id), assinante: assinanteDoHorario(a) };
   }
 
   /** O cliente pode cancelar ou remarcar sozinho? (até X horas antes) */
@@ -628,6 +659,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     assinaturaAtual,
     usosNoCiclo,
     coberturaDoCliente,
+    identificarAssinante,
     assinar,
     registrarPagamento,
     cancelarAssinatura,
