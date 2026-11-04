@@ -117,6 +117,9 @@
 
   /* ---------- Atendimento guiado (sem servidor) ---------- */
   const SOLUCAO_POR_TEMA = [
+    [/barbe|sal[aã]o|corte de cabelo|agendamento/i, "Nexor Barber, agenda com app do cliente, clube de assinatura e produtos para barbearias"],
+    [/cont[aá]b|contador|escrit[oó]rio cont/i, "Nexor Contábil, que cobra, recebe e lê os documentos dos clientes do escritório com IA"],
+    [/agente|assistente pessoal|ia pessoal|executa|aprova/i, "Nexor Agente, sua IA pessoal no WhatsApp que consulta e age nos sistemas da empresa com a sua aprovação"],
     [/\brh\b|ponto|funcion[aá]rio|colaborador|folha|f[eé]rias|esocial|holerite|biometria|recursos humanos/i, "Nexor RH, ponto pelo celular com digital ou QR Code, folha e eSocial"],
     [/whats|atend|venda|vender|instagram|cliente/i, "Nexor Atende IA, que atende e vende no WhatsApp 24h"],
     [/loja|e-?commerce|marketplace|mercado livre|shopee/i, "Nexor Commerce, loja virtual integrada aos marketplaces"],

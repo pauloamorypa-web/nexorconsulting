@@ -164,6 +164,33 @@ const Teste = (() => {
     ["recrutamento", "Recrutamento", "Página de vagas com envio de currículo e funil de candidatos de arrastar e soltar."],
   ];
 
+  /* ---------- Telas reais do Nexor Barber (Barbearia Navalha, fictícia) ---------- */
+  const TELAS_BARBER = [
+    ["app-agendar", "App do cliente", "O de sempre em um toque, o que o clube cobre em cada serviço e os horários livres do barbeiro."],
+    ["app-loja", "Produto junto com o corte", "Na confirmação o cliente reserva o produto e paga na comanda. Assinante vê o desconto do clube."],
+    ["app-entrar", "Entrar sem senha", "Google, código pelo WhatsApp ou por SMS. O app sugere o barbeiro de sempre."],
+    ["agenda", "Agenda do dia", "Linha do tempo por barbeiro, com a linha do agora, folgas, encaixes e quem chegou."],
+    ["comanda", "Atendimento", "Chegou, na cadeira, faltou, remarcar ou cancelar em um toque."],
+    ["clientes", "Clientes", "Quem é do clube, quem sumiu do próprio ciclo de corte e os aniversariantes."],
+    ["clube", "Clube de assinatura", "Planos, assinantes, uso do ciclo, receita recorrente e mensalidades em atraso."],
+    ["produtos", "Produtos e estoque", "Preço, margem, estoque mínimo e o que aparece na vitrine do app."],
+    ["caixa", "Caixa do dia", "Vendas por forma de pagamento, serviços, produtos e mensalidades do clube."],
+    ["comissoes", "Comissões", "Calculadas em cada comanda fechada, com o percentual de serviço e de produto de cada barbeiro."],
+    ["relatorios", "Relatórios", "Faturamento, atendimentos, faltas, agendamentos pelo app e mais vendidos."],
+  ];
+
+  /* ---------- Telas reais do Nexor Contábil (Lima Contabilidade e clientes fictícios) ---------- */
+  const TELAS_CONTABIL = [
+    ["leitura", "Leitura com IA", "A IA lê a nota, confere CNPJ, duplicidade e competência e prepara o pré-lançamento para o contador conferir."],
+    ["inicio", "Painel do escritório", "Documentos a conferir, quanto do mês já chegou, obrigações da semana e quem está atrasando."],
+    ["documentos", "Documentos recebidos", "Tudo que chegou pelo portal, pelo WhatsApp ou pela equipe, com alertas da conferência."],
+    ["lancamentos", "Lançamentos", "Nota e extrato viram lançamentos com débito, crédito e histórico, prontos para exportar."],
+    ["cobranca", "Cobrança de documentos", "O que cada cliente ainda deve mandar no mês, com a régua de lembretes rodando sozinha."],
+    ["obrigacoes", "Obrigações e prazos", "Tarefas por cliente e competência, com prazo interno antes do vencimento legal."],
+    ["portal", "Portal do cliente", "O cliente vê o que falta, envia documentos, recebe guias e abre chamados, com a marca do escritório."],
+    ["celular", "Portal no celular", "O cliente resolve tudo pelo celular."],
+  ];
+
   function galeriaAtende(raiz) {
     galeria(raiz, { telas: TELAS_ATENDE, pasta: "atende", titulo: "3. Por dentro do Nexor Atende IA: telas reais do sistema", selo: "Sistema real · API oficial da Meta", dica: "Capturas do painel do Nexor Atende IA com dados de demonstração (Clínica Sorriso é uma empresa fictícia). Na versão contratada, é a sua empresa aqui.", vertical: ["celular"], nome: "Nexor Atende IA" });
   }
@@ -491,6 +518,373 @@ const Teste = (() => {
         campo.value = "";
       });
       raiz.querySelector(".ta-sugs").addEventListener("click", (e) => e.target.matches("button") && enviar(e.target.textContent));
+    },
+
+    /* Nexor Barber: o cliente agenda pelo app (com clube e produto), a barbearia atende e fecha a comanda */
+    barber(raiz) {
+      const SERVICOS = [["Corte", 50, 40], ["Barba", 40, 30], ["Corte + barba", 80, 60], ["Sobrancelha", 15, 15]];
+      const CLUBE = ["Corte", "Barba"];
+      const BARBEIROS = ["Bruno", "Diego", "Rafael"];
+      const st = estado("barber", {
+        clube: true,
+        produtos: [{ n: "Pomada Matte", p: 45, est: 12, res: 1 }, { n: "Óleo de barba", p: 38, est: 4, res: 0 }, { n: "Shampoo de barba", p: 32, est: 9, res: 0 }],
+        agenda: [
+          { id: 1, h: "09:00", cli: "Lucas Almeida", s: "Corte", b: "Bruno", prod: [], status: "concluido", clube: true },
+          { id: 2, h: "09:30", cli: "Pedro Santos", s: "Barba", b: "Diego", prod: [], status: "na cadeira", clube: false },
+          { id: 3, h: "10:00", cli: "João Lima", s: "Corte + barba", b: "Rafael", prod: [[0, 1]], status: "agendado", clube: false },
+        ],
+        caixa: [{ cli: "Lucas Almeida", total: 0, b: "Bruno", com: 0 }],
+        seq: 4,
+      });
+      const preco = (s) => SERVICOS.find((x) => x[0] === s)[1];
+      const cobre = (s) => st.clube && CLUBE.includes(s);
+      const livres = () => {
+        const todos = [];
+        for (let m = 9 * 60; m <= 18 * 60; m += 30) todos.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+        return todos.filter((h) => !st.agenda.some((a) => a.h === h && a.status !== "cancelado"));
+      };
+      const totalDe = (a) => (a.clube && CLUBE.includes(a.s) ? 0 : preco(a.s)) + a.prod.reduce((t, [i, q]) => t + st.produtos[i].p * q * (a.clube ? 0.9 : 1), 0);
+      let rascunho = { s: "Corte", b: "Bruno", h: "", prod: {} };
+
+      const ir = abas(raiz, ["App do cliente", "Agenda da barbearia", "Estoque e caixa"], (aba, p) => {
+        if (aba === 0) {
+          const hs = livres();
+          if (!hs.includes(rascunho.h)) rascunho.h = hs[0] ?? "";
+          p.innerHTML = `<div class="ta-dois">
+            <div class="ta-card ta-form">
+              <h4>O app do seu cliente</h4>
+              <label class="ta-opcao"><input type="checkbox" data-clube ${st.clube ? "checked" : ""}> Sou assinante do Clube (corte ilimitado e 2 barbas)</label>
+              <div class="ta-destaque"><small>⚡ O DE SEMPRE, EM UM TOQUE</small><b>Corte com Bruno · ${esc(hs[0] ?? "sem horário")}</b>
+                <button class="btn btn-sm btn-primary" type="button" data-sempre ${hs.length ? "" : "disabled"}>Agendar o de sempre</button></div>
+              <label>Serviço<select data-c="s">${SERVICOS.map(([n, v]) => `<option ${n === rascunho.s ? "selected" : ""} value="${n}">${n} · ${cobre(n) ? "incluído no clube" : brl(v)}</option>`).join("")}</select></label>
+              <label>Barbeiro<select data-c="b">${BARBEIROS.map((n) => `<option ${n === rascunho.b ? "selected" : ""} value="${n}">${n}${n === "Bruno" ? " · seu barbeiro" : ""}</option>`).join("")}</select></label>
+              <label>Horário de hoje<select data-c="h">${hs.map((h) => `<option ${h === rascunho.h ? "selected" : ""}>${h}</option>`).join("")}</select></label>
+            </div>
+            <div class="ta-card ta-form">
+              <h4>Quer separar algum produto?</h4>
+              <p class="muted ta-dica">Fica reservado e você paga junto com o corte.${st.clube ? " Assinante tem 10% de desconto." : ""}</p>
+              ${st.produtos.map((x, i) => { const disp = x.est - x.res; return `<label class="ta-opcao">${esc(x.n)} · ${brl(x.p * (st.clube ? 0.9 : 1))} <small class="muted">(${disp} disponíveis)</small><input type="number" min="0" max="${disp}" value="${rascunho.prod[i] ?? 0}" data-prod="${i}" style="width:70px"></label>`; }).join("")}
+              <p class="ta-previsao" data-resumo></p>
+              <button class="btn btn-primary" type="button" data-confirmar ${hs.length ? "" : "disabled"}>Confirmar agendamento</button>
+            </div></div>`;
+          const resumo = () => {
+            const a = { s: rascunho.s, clube: st.clube, prod: Object.entries(rascunho.prod).filter(([, q]) => q > 0).map(([i, q]) => [Number(i), q]) };
+            p.querySelector("[data-resumo]").textContent = `${rascunho.s} com ${rascunho.b} às ${rascunho.h || "—"} · ${cobre(rascunho.s) ? "serviço pelo clube" : brl(preco(rascunho.s))}${a.prod.length ? ` · total com produtos ${brl(totalDe(a))}` : ""}`;
+          };
+          resumo();
+          p.oninput = (e) => {
+            if (e.target.dataset.c) rascunho[e.target.dataset.c] = e.target.value;
+            if (e.target.dataset.prod !== undefined) rascunho.prod[e.target.dataset.prod] = Math.max(0, Math.min(Number(e.target.max), Number(e.target.value) || 0));
+            if (e.target.matches("[data-clube]")) {
+              st.clube = e.target.checked;
+              salvar("barber", st);
+              return ir(0);
+            }
+            if (e.target.dataset.c === "s") return ir(0);
+            resumo();
+          };
+        } else if (aba === 1) {
+          const lista = st.agenda.slice().sort((a, b) => a.h.localeCompare(b.h));
+          p.innerHTML = tabela(["Hora", "Cliente", "Serviço", "Barbeiro", "Produtos", "Total", "Ação"], lista.map((a) => {
+            const prod = a.prod.map(([i, q]) => `${q}× ${esc(st.produtos[i].n)}`).join(", ") || "—";
+            const acao = a.status === "concluido" ? chip("Comanda fechada", "ok") : a.status === "cancelado" ? chip("Cancelado", "bad") : a.status === "na cadeira" ? `<button class="btn btn-sm btn-primary" type="button" data-fechar="${a.id}">Fechar comanda</button>` : `<button class="btn btn-sm btn-ghost" type="button" data-chegou="${a.id}">Chegou</button> <button class="btn btn-sm btn-ghost" type="button" data-cancelar="${a.id}">Cancelar</button>`;
+            return [a.h, `${esc(a.cli)}${a.clube ? " " + chip("clube", "ok") : ""}${a.espera ? " " + chip("vaga relâmpago", "info") : ""}`, a.s, a.b, prod, a.clube && CLUBE.includes(a.s) && !a.prod.length ? "pelo clube" : brl(totalDe(a)), acao];
+          })) + `<p class="muted ta-dica">Cancele um horário para ver a vaga relâmpago: o sistema oferece a vaga para até 3 pessoas da lista de espera no WhatsApp e quem confirmar primeiro leva.</p>`;
+        } else {
+          const fat = st.caixa.reduce((t, c) => t + c.total, 0);
+          const com = st.caixa.reduce((t, c) => t + c.com, 0);
+          p.innerHTML = kpis([["Faturado hoje", brl(fat)], ["Comissões", brl(com)], ["Atendimentos", st.caixa.length, "ok"], ["Clube", st.clube ? "1 assinante" : "0 assinantes"]]) +
+            tabela(["Produto", "Preço", "Estoque", "Reservado no app", "Disponível"], st.produtos.map((x) => [esc(x.n), brl(x.p), x.est, x.res, x.est - x.res <= 3 ? chip(`${x.est - x.res} · estoque baixo`, "warn") : x.est - x.res])) +
+            `<p class="muted ta-dica">Comissão de exemplo: 40% no serviço e 10% no produto. Na versão contratada, cada barbeiro tem o próprio percentual e login para ver a agenda e as comissões.</p>`;
+        }
+      });
+
+      const agendar = (s, b, h) => {
+        const prod = Object.entries(rascunho.prod).filter(([, q]) => q > 0).map(([i, q]) => [Number(i), q]);
+        prod.forEach(([i, q]) => (st.produtos[i].res += q));
+        st.agenda.push({ id: st.seq++, h, cli: "Você (cliente do app)", s, b, prod, status: "agendado", clube: st.clube });
+        rascunho = { s: "Corte", b: "Bruno", h: "", prod: {} };
+        salvar("barber", st);
+        aviso(`Agendado: ${s} com ${b} às ${h}. Lembrete no WhatsApp antes do horário.`);
+        ir(1);
+      };
+      raiz.addEventListener("click", (e) => {
+        const t = e.target;
+        if (t.closest("[data-sempre]")) return agendar("Corte", "Bruno", livres()[0]);
+        if (t.closest("[data-confirmar]")) return rascunho.h && agendar(rascunho.s, rascunho.b, rascunho.h);
+        const id = Number(t.closest("[data-chegou],[data-fechar],[data-cancelar]")?.dataset.chegou ?? t.closest("[data-fechar]")?.dataset.fechar ?? t.closest("[data-cancelar]")?.dataset.cancelar);
+        const a = st.agenda.find((x) => x.id === id);
+        if (!a) return;
+        if (t.closest("[data-chegou]")) a.status = "na cadeira";
+        else if (t.closest("[data-fechar]")) {
+          a.status = "concluido";
+          a.prod.forEach(([i, q]) => ((st.produtos[i].est -= q), (st.produtos[i].res -= q)));
+          const serv = a.clube && CLUBE.includes(a.s) ? 0 : preco(a.s);
+          const prodV = totalDe(a) - serv;
+          st.caixa.push({ cli: a.cli, total: totalDe(a), b: a.b, com: serv * 0.4 + prodV * 0.1 });
+          aviso(`Comanda fechada: ${brl(totalDe(a))}. Estoque baixado e comissão de ${a.b} calculada.`);
+        } else {
+          a.status = "cancelado";
+          a.prod.forEach(([i, q]) => (st.produtos[i].res -= q));
+          aviso("Vaga relâmpago enviada no WhatsApp para 3 pessoas da lista de espera…");
+          setTimeout(() => {
+            st.agenda.push({ id: st.seq++, h: a.h, cli: "Carlos Ribeiro", s: "Corte", b: a.b, prod: [], status: "agendado", clube: false, espera: true });
+            salvar("barber", st);
+            aviso(`Carlos Ribeiro confirmou primeiro e ficou com as ${a.h}.`);
+            if (area.querySelector('[data-aba="1"][aria-selected="true"]')) ir(1);
+          }, 2200);
+        }
+        salvar("barber", st);
+        ir(1);
+      });
+      galeria(raiz, { telas: TELAS_BARBER, pasta: "barber", titulo: "Por dentro do Nexor Barber: telas reais do sistema", selo: "Sistema real · painel e app do cliente", dica: "Capturas do painel e do app com dados de demonstração (Barbearia Navalha é uma barbearia fictícia). Na versão contratada, é a sua barbearia aqui, com a sua marca.", nome: "Nexor Barber" });
+    },
+
+    /* Nexor Contábil: documentos chegando pelo WhatsApp, lidos pela IA, conferidos e cobrados */
+    contabil(raiz) {
+      const AMOSTRAS = [
+        { arq: "nf-4510.pdf", cli: "Pão Dourado", tipo: "Nota fiscal de compra", emit: "Distribuidora Boa Massa", valor: 8430, deb: "Despesas a classificar", cred: "Fornecedores a pagar", alerta: "" },
+        { arq: "extrato-outubro.pdf", cli: "Pão Dourado", tipo: "Extrato bancário", emit: "Sicoob · 3 movimentos", valor: 9290.4, deb: "Bancos conta movimento", cred: "Entradas a classificar", alerta: "" },
+        { arq: "nota-de-outra-empresa.pdf", cli: "Mercado Bom Preço", tipo: "Nota fiscal de compra", emit: "Atacadão Exemplo", valor: 310, deb: "Despesas a classificar", cred: "Fornecedores a pagar", alerta: "O CNPJ do destinatário não é deste cliente" },
+        { arq: "nf-4510.pdf", cli: "Pão Dourado", tipo: "Nota fiscal de compra", emit: "Distribuidora Boa Massa", valor: 8430, deb: "Despesas a classificar", cred: "Fornecedores a pagar", alerta: "Documento repetido: já recebido neste mês" },
+      ];
+      const CONTAS = ["Despesas a classificar", "Matéria-prima", "Mercadorias para revenda", "Material de uso e consumo", "Bancos conta movimento", "Entradas a classificar"];
+      const st = estado("contabil", {
+        docs: [],
+        aprendeu: {},
+        pend: [
+          { cli: "Pão Dourado", doc: "Variáveis da folha", prazo: "25/10 · atrasado", ok: false, cob: 1 },
+          { cli: "Pão Dourado", doc: "Comprovantes de despesas", prazo: "05/11", ok: false, cob: 0 },
+          { cli: "Base Forte", doc: "Extrato bancário do mês", prazo: "05/11", ok: false, cob: 0 },
+          { cli: "Clínica Sorriso", doc: "Relatório de faturamento", prazo: "03/11 · atrasado", ok: false, cob: 2 },
+        ],
+        obr: [
+          { o: "ISS municipal", cli: "Clínica Sorriso", interno: "06/11", legal: "10/11", feito: false },
+          { o: "DCTFWeb", cli: "Pão Dourado", interno: "10/11", legal: "13/11", feito: false },
+          { o: "eSocial: fechamento da folha", cli: "Mercado Bom Preço", interno: "10/11", legal: "13/11", feito: false },
+          { o: "EFD-Reinf", cli: "Base Forte", interno: "10/11", legal: "13/11", feito: false },
+          { o: "DARF da folha (INSS e IRRF)", cli: "Pão Dourado", interno: "16/11", legal: "19/11", feito: false },
+        ],
+        n: 0,
+      });
+      const ir = abas(raiz, ["Documentos chegando", "Cobrança de documentos", "Obrigações e prazos"], (aba, p) => {
+        if (aba === 0) {
+          const prox = AMOSTRAS[st.n % AMOSTRAS.length];
+          p.innerHTML = `<div class="ta-card"><h4>Simule o cliente mandando um documento pelo WhatsApp</h4>
+            <p class="muted ta-dica">Próximo: <b>${esc(prox.arq)}</b> de ${esc(prox.cli)}. A IA lê, confere e prepara o pré-lançamento. O contador sempre confere antes de exportar.</p>
+            <button class="btn btn-primary" type="button" data-receber>Receber documento</button></div>` +
+            tabela(["Arquivo", "Cliente", "Leitura da IA", "Pré-lançamento", "Situação"], st.docs.slice().reverse().map((d, k) => {
+              const i = st.docs.length - 1 - k;
+              if (d.lendo) return [esc(d.arq), esc(d.cli), chip("lendo com IA…", "info"), "—", "—"];
+              const leitura = `${esc(d.tipo)} · ${esc(d.emit)} · ${brl(d.valor)}${d.alerta ? `<br>${chip(d.alerta, "warn")}` : ""}${d.aprendido ? `<br>${chip("conta aprendida com você", "ok")}` : ""}`;
+              const lanc = d.status === "rejeitado" ? "—" : `D: <select data-conta="${i}" ${d.status === "conferido" ? "disabled" : ""}>${CONTAS.map((c) => `<option ${c === d.deb ? "selected" : ""}>${c}</option>`).join("")}</select><br><small class="muted">C: ${esc(d.cred)}</small>`;
+              const acao = d.status === "conferido" ? chip("Conferido", "ok") : d.status === "rejeitado" ? chip("Rejeitado", "bad") : `<button class="btn btn-sm btn-primary" type="button" data-conferir="${i}">Conferido</button> <button class="btn btn-sm btn-ghost" type="button" data-rejeitar="${i}">Rejeitar</button>`;
+              return [esc(d.arq), esc(d.cli), leitura, lanc, acao];
+            }), "Nenhum documento recebido ainda. Clique em Receber documento.") +
+            `<p class="muted ta-dica">Troque a conta de débito de uma nota e confira: na próxima nota do mesmo fornecedor, a IA já sugere a conta que você escolheu.</p>`;
+        } else if (aba === 1) {
+          p.innerHTML = tabela(["Cliente", "Documento", "Prazo", "Lembretes enviados", "Ação"], st.pend.map((x, i) => [esc(x.cli), esc(x.doc), x.prazo.includes("atrasado") && !x.ok ? chip(x.prazo, "bad") : x.prazo, x.cob, x.ok ? chip("Recebido", "ok") : `<button class="btn btn-sm btn-primary" type="button" data-cobrar="${i}">Cobrar agora</button> <button class="btn btn-sm btn-ghost" type="button" data-recebido="${i}">Recebido</button>`])) +
+            `<div class="ta-card" data-previa-cobranca hidden><h4>Mensagem enviada no WhatsApp do escritório</h4><div class="ta-chat" style="height:auto"><div class="ta-msgs"><p class="out" data-texto></p></div></div></div>
+            <p class="muted ta-dica">Na versão contratada a régua roda sozinha: lembra antes do prazo e depois a cada poucos dias, por WhatsApp e e-mail, até o documento chegar.</p>`;
+        } else {
+          const abertas = st.obr.filter((o) => !o.feito).length;
+          p.innerHTML = kpis([["Em aberto", abertas, abertas ? "warn" : "ok"], ["Concluídas", st.obr.length - abertas, "ok"], ["Vencem esta semana", st.obr.filter((o) => !o.feito && o.legal <= "13/11").length], ["Atrasadas", 0, "ok"]]) +
+            tabela(["Prazo interno", "Obrigação", "Cliente", "Vencimento legal", "Ação"], st.obr.map((o, i) => [o.interno, esc(o.o), esc(o.cli), o.legal, o.feito ? chip("Concluída", "ok") : `<button class="btn btn-sm btn-primary" type="button" data-concluir="${i}">Concluir</button>`])) +
+            `<p class="muted ta-dica">As tarefas de cada competência são geradas sozinhas pelo regime de cada cliente, com feriados e dias úteis. O escritório confere o catálogo de prazos no início do ano.</p>`;
+        }
+      });
+      raiz.addEventListener("change", (e) => {
+        const s = e.target.closest("[data-conta]");
+        if (!s) return;
+        const d = st.docs[Number(s.dataset.conta)];
+        d.deb = s.value;
+        st.aprendeu[d.emit] = s.value;
+        salvar("contabil", st);
+        aviso(`Anotado: notas de ${d.emit} vão sugerir ${s.value}.`);
+      });
+      raiz.addEventListener("click", (e) => {
+        const t = e.target;
+        if (t.closest("[data-receber]")) {
+          const a = { ...AMOSTRAS[st.n++ % AMOSTRAS.length], status: "a conferir", lendo: true };
+          if (st.aprendeu[a.emit]) (a.deb = st.aprendeu[a.emit]), (a.aprendido = true);
+          st.docs.push(a);
+          salvar("contabil", st);
+          ir(0);
+          setTimeout(() => {
+            a.lendo = false;
+            salvar("contabil", st);
+            if (area.querySelector('[data-aba="0"][aria-selected="true"]')) ir(0);
+          }, 1300);
+          return;
+        }
+        const conf = t.closest("[data-conferir]"), rej = t.closest("[data-rejeitar]");
+        if (conf || rej) {
+          st.docs[Number((conf ?? rej).dataset[conf ? "conferir" : "rejeitar"])].status = conf ? "conferido" : "rejeitado";
+          salvar("contabil", st);
+          aviso(conf ? "Conferido. O lançamento entra na próxima exportação para o sistema contábil." : "Rejeitado. Não gera lançamento.");
+          return ir(0);
+        }
+        const cob = t.closest("[data-cobrar]"), rec = t.closest("[data-recebido]");
+        if (cob || rec) {
+          const x = st.pend[Number((cob ?? rec).dataset[cob ? "cobrar" : "recebido"])];
+          if (cob) x.cob++;
+          else x.ok = true;
+          salvar("contabil", st);
+          ir(1);
+          if (cob) {
+            const box = raiz.querySelector("[data-previa-cobranca]");
+            box.hidden = false;
+            box.querySelector("[data-texto]").textContent = `Olá! Aqui é o escritório Lima Contabilidade. Para fecharmos o mês da ${x.cli}, ainda falta: ${x.doc} (prazo ${x.prazo.replace(" · atrasado", "")}). Pode enviar por aqui mesmo, é só mandar a foto ou o PDF. Obrigado!`;
+          }
+          return;
+        }
+        const c = t.closest("[data-concluir]");
+        if (c) {
+          st.obr[Number(c.dataset.concluir)].feito = true;
+          salvar("contabil", st);
+          aviso("Concluída. Guia entregue no portal do cliente e aviso enviado.");
+          ir(2);
+        }
+      });
+      galeria(raiz, { telas: TELAS_CONTABIL, pasta: "contabil", titulo: "Por dentro do Nexor Contábil: telas reais do sistema", selo: "Sistema real · painel e portal do cliente", dica: "Capturas do sistema com dados de demonstração (Lima Contabilidade e os clientes são fictícios). Na versão contratada, é o seu escritório aqui, com a sua marca.", vertical: ["celular"], nome: "Nexor Contábil" });
+    },
+
+    /* Nexor Agente: converse com a sua IA, peça uma ação e aprove (simulação no navegador) */
+    agente(raiz) {
+      const JEITOS = { direto: "Direto ao ponto", formal: "Formal", leve: "Descontraído" };
+      const st = estado("agente", { nome: "Luna", jeito: "leve", trato: "", memorias: ["O fornecedor de água é a Distribuidora Fonte Clara"], estoque: { "água 500 ml": 312, "refrigerante 2 L": 85, "suco 1 L": 40 }, pedidos: [{ n: 1201, cli: "Padaria Pão Dourado", item: "água 500 ml", q: 20, st: "Em separação" }], msgs: [], audit: [], outro: false, pendente: null, seq: 1202 });
+      raiz.innerHTML = `
+        <div class="ta-dois">
+          <div class="ta-card ta-form" data-perfil>
+            <h4>1. A sua IA, do seu jeito</h4>
+            <label>Nome do agente<input name="nome" value="${esc(st.nome)}" maxlength="20"></label>
+            <label>Jeito de falar<select name="jeito">${Object.entries(JEITOS).map(([k, v]) => `<option value="${k}" ${k === st.jeito ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+            <label class="ta-opcao"><input type="checkbox" name="outro" ${st.outro ? "checked" : ""}> Testar como outro número (não autorizado)</label>
+            <p class="muted ta-dica">Na versão contratada, isso também se ensina pelo próprio WhatsApp: "a partir de agora me chame de chefe".</p>
+            <h4>Memórias</h4><ul class="ta-lista" data-memorias></ul>
+          </div>
+          <div class="ta-card ta-celular">
+            <h4>2. Peça pelo WhatsApp</h4>
+            <div class="ta-chat">
+              <div class="ta-chat-topo"><span class="ta-av" data-av></span><div><b data-nome></b><small>● sua IA pessoal</small></div></div>
+              <div class="ta-msgs" aria-live="polite"></div>
+              <div class="ta-sugs">${["Quantas caixas de água temos?", "Cria um pedido de 40 caixas de água para o Mercado Bom Preço", "Quais pedidos estão em aberto?", "Me chame de chefe", "Lembre: a reunião com o contador é dia 10"].map((s) => `<button type="button">${s}</button>`).join("")}</div>
+              <form class="ta-envio"><input aria-label="Mensagem" placeholder="Peça algo para a sua IA…" maxlength="300"><button class="btn btn-sm btn-primary" type="submit">Enviar</button></form>
+            </div>
+            <p class="muted ta-dica">Simulação no seu navegador, com um estoque e pedidos de exemplo. Na versão contratada, a IA entende qualquer pedido e consulta os sistemas reais da sua empresa.</p>
+          </div>
+        </div>
+        <section class="ta-card"><h4>3. Auditoria: tudo que foi pedido, aprovado e executado</h4><div data-audit></div></section>`;
+      const msgs = raiz.querySelector(".ta-msgs");
+      const perfilForm = raiz.querySelector("[data-perfil]");
+      const pintarPerfil = () => {
+        raiz.querySelector("[data-nome]").textContent = `${st.nome} · Nexor Agente`;
+        raiz.querySelector("[data-av]").textContent = st.nome[0] ?? "L";
+        raiz.querySelector("[data-memorias]").innerHTML = st.memorias.map((m) => `<li>${esc(m)}</li>`).join("") || "<li class=\"muted\">Nenhuma ainda.</li>";
+        raiz.querySelector("[data-audit]").innerHTML = tabela(["Quando", "Quem", "Pedido", "Resultado"], st.audit.slice().reverse().map((a) => [dataCurta(a.t), a.quem, esc(a.pedido), chip(a.res, a.tom)]), "Nada registrado ainda. Peça um pedido e aprove ou recuse.");
+      };
+      const balao = (de, texto, botoes) => {
+        const p = document.createElement("p");
+        p.className = de === "eu" ? "in" : "out";
+        p.textContent = texto;
+        if (botoes) {
+          const b = document.createElement("span");
+          b.className = "ta-aprovar";
+          b.innerHTML = `<button class="btn btn-sm btn-primary" type="button" data-aprovar>Aprovar</button><button class="btn btn-sm btn-ghost" type="button" data-recusar>Recusar</button>`;
+          p.appendChild(b);
+        }
+        msgs.appendChild(p);
+        msgs.scrollTop = msgs.scrollHeight;
+      };
+      const fala = (t) => {
+        const c = st.trato ? `, ${st.trato}` : "";
+        if (st.jeito === "formal") return t.replace(/^Pronto!?/, "Concluído.").replace("{c}", c);
+        if (st.jeito === "direto") return t.replace(/ ?😊|✅|👍/g, "").replace("{c}", c);
+        return t.replace("{c}", c);
+      };
+      const auditar = (pedido, res, tom) => st.audit.push({ t: Date.now(), quem: st.outro ? "(34) 98888-0000" : "Você (dono)", pedido, res, tom });
+      const responder = (texto) => {
+        const q = texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+        if (st.outro) {
+          auditar(texto, "Recusado: número não autorizado", "bad");
+          return "Desculpe, só as pessoas autorizadas pela empresa podem me dar ordens. Nada foi alterado.";
+        }
+        const item = Object.keys(st.estoque).find((k) => q.includes(k.split(" ")[0].normalize("NFD").replace(/[̀-ͯ]/g, ""))) ?? "água 500 ml";
+        let m;
+        if ((m = q.match(/me chame de ([\wáéíóúãõç ]{2,20})/))) {
+          st.trato = texto.slice(texto.toLowerCase().indexOf("me chame de") + 12).trim().replace(/[.!]+$/, "");
+          return fala(`Combinado{c}. A partir de agora vou te chamar assim.`);
+        }
+        if ((m = q.match(/^(lembre|lembra|anote|guarde)[:,]?\s*(.+)/))) {
+          const mem = texto.replace(/^\s*\S+[:,]?\s*/, "");
+          st.memorias.push(mem.charAt(0).toUpperCase() + mem.slice(1));
+          auditar(texto, "Memória guardada", "info");
+          return fala("Anotado nas minhas memórias{c} ✅");
+        }
+        if (/(cria|criar|faz|fazer|lanca|lancar).*(pedido)/.test(q)) {
+          const qtd = Number(q.match(/(\d+)/)?.[1] ?? 10);
+          const cli = (texto.match(/para (o |a )?(.+)$/i)?.[2] ?? "Cliente").replace(/[.!?]+$/, "");
+          st.pendente = { cli, item, q: qtd };
+          auditar(texto, "Aguardando aprovação", "warn");
+          return { texto: fala(`🔐 Confirma{c}? Criar pedido de ${qtd} caixas de ${item} para ${cli} no ERP. Estoque atual: ${st.estoque[item]}. O pedido expira em 30 minutos.`), botoes: true };
+        }
+        if (/(pedido|pedidos).*(aberto|andamento|pendente)|em aberto/.test(q)) {
+          const ab = st.pedidos.filter((p) => p.st !== "Entregue");
+          return fala(ab.length ? `Pedidos em aberto{c}:\n${ab.map((p) => `#${p.n} · ${p.q}× ${p.item} · ${p.cli} · ${p.st}`).join("\n")}` : "Nenhum pedido em aberto{c}.");
+        }
+        if (/(quant|estoque|tem|temos|saldo)/.test(q)) {
+          auditar(texto, "Consulta ao estoque", "info");
+          return fala(`Temos ${st.estoque[item]} caixas de ${item} no estoque central{c}.`);
+        }
+        if (/(fornecedor|contato)/.test(q)) return fala(st.memorias.find((x) => /fornecedor/i.test(x)) ?? "Ainda não sei. Quer que eu anote?");
+        return fala("Na simulação eu entendo estoque, pedidos, memórias e o jeito de falar{c}. Na versão contratada, entendo qualquer pedido e uso os sistemas da sua empresa.");
+      };
+      const enviar = async (texto) => {
+        texto = texto.trim();
+        if (!texto) return;
+        balao("eu", texto);
+        await new Promise((r) => setTimeout(r, 600));
+        const r = responder(texto);
+        typeof r === "string" ? balao("ia", r) : balao("ia", r.texto, r.botoes);
+        st.msgs = [];
+        salvar("agente", st);
+        pintarPerfil();
+      };
+      if (!st.msgs.length) balao("ia", fala(`Oi! Eu sou a ${st.nome}, sua IA pessoal. Posso consultar o estoque, criar pedidos com a sua aprovação e guardar o que você me ensinar.`));
+      pintarPerfil();
+      perfilForm.addEventListener("input", (e) => {
+        if (e.target.name === "nome") st.nome = e.target.value.trim() || "Luna";
+        if (e.target.name === "jeito") st.jeito = e.target.value;
+        if (e.target.name === "outro") st.outro = e.target.checked;
+        salvar("agente", st);
+        pintarPerfil();
+      });
+      raiz.querySelector(".ta-envio").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const campo = e.target.querySelector("input");
+        enviar(campo.value);
+        campo.value = "";
+      });
+      raiz.querySelector(".ta-sugs").addEventListener("click", (e) => e.target.matches("button") && enviar(e.target.textContent));
+      msgs.addEventListener("click", (e) => {
+        const ap = e.target.closest("[data-aprovar]"), rc = e.target.closest("[data-recusar]");
+        if (!ap && !rc) return;
+        e.target.closest(".ta-aprovar").remove();
+        const p = st.pendente;
+        if (!p) return balao("ia", "Esse pedido já expirou ou foi usado.");
+        st.pendente = null;
+        if (ap) {
+          st.estoque[p.item] = Math.max(0, st.estoque[p.item] - p.q);
+          st.pedidos.push({ n: st.seq++, cli: p.cli, item: p.item, q: p.q, st: "Em separação" });
+          auditar(`Pedido de ${p.q}× ${p.item} para ${p.cli}`, `Aprovado e criado: #${st.seq - 1}`, "ok");
+          balao("ia", fala(`Pronto! Pedido #${st.seq - 1} criado no ERP{c}. Estoque de ${p.item}: ${st.estoque[p.item]}.`));
+        } else {
+          auditar(`Pedido de ${p.q}× ${p.item} para ${p.cli}`, "Recusado pelo dono", "bad");
+          balao("ia", fala("Tudo bem{c}, não criei nada."));
+        }
+        salvar("agente", st);
+        pintarPerfil();
+      });
     },
 
     /* Nexor Commerce: loja, carrinho, Pix e marketplaces */
