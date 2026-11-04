@@ -1,5 +1,7 @@
 /* Configuração do Nexor Agente, lida das variáveis de ambiente (ver .env.example). */
 
+import { configNexor } from "./nexor/central.js";
+
 const lista = (v) => String(v ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const numero = (v, padrao) => (Number.isFinite(Number(v)) && v !== "" && v != null ? Number(v) : padrao);
 
@@ -33,6 +35,9 @@ export function lerConfig(env = process.env) {
     conversaMaxMensagens: 120,
     tempoLimiteSistemaMs: 20_000,
     tamanhoMaximoResposta: 20_000,
+
+    // Nexor Central: licença (situação do contrato) e saúde da instalação
+    nexor: configNexor(env),
   };
 }
 

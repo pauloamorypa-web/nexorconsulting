@@ -8,6 +8,7 @@ import { conferirSenha, gerarHashSenha, gerarToken, mascarar, precisaRefazerHash
 import { formatarQuando, horariosLivres, instanteDe, situacaoHorario } from "../servicos/agenda.js";
 import { janelaAberta } from "../servicos/atendimento.js";
 import { tipoWhatsApp } from "../servicos/midia.js";
+import { CATALOGO, chaveValida } from "../nexor/politica.js";
 import { criarRoteador, falha, lerCorpo } from "./roteador.js";
 
 const COOKIE = "nx_sessao";
@@ -75,7 +76,7 @@ const ESQUEMA_CONFIG = z
  * @param {object} d
  * @param {ReturnType<import('../db.js').abrirBanco>} d.repo
  */
-export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eventos, midia, cfg, fetchFn = fetch, agora = () => Date.now() }) {
+export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eventos, midia, cfg, fetchFn = fetch, agora = () => Date.now(), central }) {
   const r = criarRoteador();
   const tentativas = new Map();
 
@@ -177,9 +178,13 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     const canais = repo.canais(empresa.id).map(canalPublico);
     const conhecimentoTotal = repo.conhecimento(empresa.id).length;
     const cfgE = empresa.config;
+    const lic = central.estado();
     return {
       usuario,
       empresa,
+      // Situação do contrato com a Nexor e o que o Suporte Nexor escondeu
+      licenca: { situacao: lic.situacao, mensagem: lic.mensagem, link: lic.link, contato: lic.contato },
+      ocultos: repo.ocultos(empresa.id),
       padrao: CONFIG_PADRAO,
       canais,
       contagem: repo.contagemConversas(empresa.id, usuario.id),
@@ -850,6 +855,41 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     eventos.inscrever(empresa.id, req, res);
     return undefined;
   });
+
+  /* ---------- Suporte Nexor ---------- */
+
+  // Link assinado pela Nexor Central (2 minutos, uso único): abre o painel como "Suporte Nexor"
+  r.get("/api/nexor/entrar", { publico: true }, ({ query, res, ip }) => {
+    limitarLogin(`nexor:${ip}`);
+    const d = central.conferirAcesso(query.get("t"));
+    const pagina = (status, titulo, texto) => {
+      res.writeHead(status, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'" });
+      res.end(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${titulo}</title><body style="font-family:system-ui,sans-serif;max-width:480px;margin:15vh auto;padding:0 16px"><h1 style="font-size:20px">${titulo}</h1><p style="color:#4a5a73;line-height:1.5">${texto}</p><p><a href="/">Ir para o painel</a></p></body></html>`);
+    };
+    if (!d) return pagina(403, "Link de acesso inválido", "O link de suporte venceu, já foi usado ou não é desta instalação. Gere um novo na Nexor Central.");
+    const empresa = repo.empresas().sort((a, b) => a.criada_em - b.criada_em)[0];
+    if (!empresa) return pagina(409, "Empresa ainda não criada", "O cliente ainda não criou a conta neste sistema.");
+    const u = repo.usuarioNexor(empresa.id, `Suporte Nexor · ${String(d.nome ?? "equipe").slice(0, 60)}`);
+    const token = gerarToken();
+    repo.criarSessao(sha256(token), u.id, 8 / 24);
+    repo.auditar(empresa.id, u.id, "acesso_suporte_nexor", { email: d.email ?? null, ip });
+    res.writeHead(302, { Location: "/#/inicio", "Cache-Control": "no-store", "Set-Cookie": [`${COOKIE}=${token}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${8 * 3600}`, ...(cfg.producao ? ["Secure"] : [])].join("; ") });
+    res.end();
+  });
+  r.get("/api/nexor/ajustes", { nexor: true }, ({ empresa }) => {
+    const a = repo.ajustesNexor(empresa.id);
+    return { catalogo: CATALOGO, ocultos: repo.ocultos(empresa.id), atualizado_por: a?.atualizado_por ?? null, atualizado_em: a?.atualizado_em ?? null, licenca: central.estado(), central: central.info() };
+  });
+  r.put("/api/nexor/ajustes", { nexor: true }, async ({ empresa, usuario, corpo }) => {
+    const d = validar(z.object({ ocultos: z.array(z.string().max(60)).max(60) }), await corpo());
+    const invalidos = d.ocultos.filter((k) => !chaveValida(k));
+    if (invalidos.length) falha(400, `Itens desconhecidos: ${invalidos.join(", ")}`);
+    const ocultos = [...new Set(d.ocultos)];
+    repo.gravarOcultos(empresa.id, ocultos, usuario.nome);
+    repo.auditar(empresa.id, usuario.id, "ajustes_nexor", { ocultos });
+    return { ocultos };
+  });
+  r.post("/api/nexor/sincronizar", { nexor: true }, async () => ({ ...(await central.sincronizar()), licenca: central.estado(), central: central.info() }));
 
   return { roteador: r, sessaoDe, mascarar };
 }

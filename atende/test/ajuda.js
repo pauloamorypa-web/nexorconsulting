@@ -37,6 +37,8 @@ export function metaFalsa() {
   let n = 0;
   const fetchFn = async (url, init = {}) => {
     const u = new URL(url);
+    // Nexor Central de verdade (testes de licença): passa direto
+    if (u.pathname === "/api/v1/sincronizar") return fetch(url, init);
     const corpo = init.body && typeof init.body === "string" ? JSON.parse(init.body) : undefined;
     const responder = (status, dados) => ({ ok: status < 400, status, headers: new Headers(), text: async () => JSON.stringify(dados), json: async () => dados, arrayBuffer: async () => new ArrayBuffer(0) });
     if (u.pathname.endsWith("/messages") && corpo?.status === "read") return responder(200, { success: true });

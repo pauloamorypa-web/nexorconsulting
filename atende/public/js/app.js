@@ -6,10 +6,10 @@ import { aviso, avatar, h, icone, limpar } from "./ui.js";
 const ROTAS = {
   inicio: { titulo: "Início", icone: "inicio", carregar: () => import("./views/inicio.js") },
   conversas: { titulo: "Conversas", icone: "conversas", carregar: () => import("./views/conversas.js") },
-  contatos: { titulo: "Contatos e funil", icone: "contatos", carregar: () => import("./views/contatos.js") },
-  ia: { titulo: "Cérebro da IA", icone: "cerebro", carregar: () => import("./views/ia.js") },
-  agenda: { titulo: "Agenda", icone: "agenda", carregar: () => import("./views/agenda.js") },
-  campanhas: { titulo: "Campanhas", icone: "campanhas", carregar: () => import("./views/campanhas.js") },
+  contatos: { titulo: "Contatos e funil", icone: "contatos", carregar: () => import("./views/contatos.js"), modulo: "modulo.contatos" },
+  ia: { titulo: "Cérebro da IA", icone: "cerebro", carregar: () => import("./views/ia.js"), modulo: "modulo.ia" },
+  agenda: { titulo: "Agenda", icone: "agenda", carregar: () => import("./views/agenda.js"), modulo: "modulo.agenda" },
+  campanhas: { titulo: "Campanhas", icone: "campanhas", carregar: () => import("./views/campanhas.js"), modulo: "modulo.campanhas" },
   config: { titulo: "Configurações", icone: "config", carregar: () => import("./views/config.js"), papeis: ["dono", "admin"] },
 };
 
@@ -73,7 +73,47 @@ const ctx = {
   navegar,
   recarregarEu,
   atualizarContagem,
+  /** O Suporte Nexor vê tudo; o cliente não vê o que o Suporte escondeu */
+  oculto: (chave) => !estado.eu.usuario.nexor && (estado.eu.ocultos ?? []).includes(chave),
+  get nexor() {
+    return Boolean(estado.eu?.usuario?.nexor);
+  },
 };
+const disponivel = (r) => (!r.papeis || r.papeis.includes(estado.eu.usuario.papel)) && !(r.modulo && ctx.oculto(r.modulo));
+const suspenso = () => estado.eu?.licenca?.situacao === "bloqueado" && !estado.eu.usuario.nexor;
+
+/** Contrato suspenso pela Nexor: explica, mostra o link de pagamento e o contato */
+function telaSuspensa() {
+  const l = estado.eu.licenca;
+  return h(
+    "div",
+    { class: "pagina" },
+    h(
+      "section",
+      { class: "cartao suspenso" },
+      h("div", { class: "suspenso-icone" }, icone("alerta", 28)),
+      h("h1", {}, "Atendimento suspenso"),
+      h("p", {}, l.mensagem || "O acesso está suspenso. Fale com a Nexor."),
+      h(
+        "div",
+        { class: "suspenso-acoes" },
+        l.link ? h("a", { class: "btn btn-primario", href: l.link, target: "_blank", rel: "noopener" }, "Pagar agora") : null,
+        l.contato?.whatsapp ? h("a", { class: "btn btn-fantasma", href: `https://wa.me/${String(l.contato.whatsapp).replace(/\D/g, "")}`, target: "_blank", rel: "noopener" }, icone("whatsapp", 16), "Falar com a Nexor") : null,
+        h("a", { class: "btn btn-fantasma", href: `mailto:${l.contato?.email || "contato@nexorconsultingit.com.br"}` }, icone("enviar", 16), "Enviar e-mail"),
+      ),
+      h("p", { class: "suave pequeno" }, "A IA está pausada, mas as mensagens dos seus clientes continuam chegando e ficam guardadas. Depois do pagamento confirmado, tudo volta sozinho em até 5 minutos."),
+    ),
+  );
+}
+
+/** Faixa no topo: aviso de fatura, modo somente leitura ou acesso de suporte */
+function faixa() {
+  const { licenca, usuario } = estado.eu;
+  const sit = licenca?.situacao;
+  if (usuario.nexor) return h("div", { class: "faixa faixa-nexor" }, icone("escudo", 16), h("span", {}, "Você está no sistema do cliente como ", h("strong", {}, "Suporte Nexor"), sit && sit !== "ativo" ? ` · contrato: ${sit}` : "", ". Cada ação fica no histórico do cliente."));
+  if (sit === "aviso" || sit === "restrito") return h("div", { class: `faixa faixa-${sit}` }, icone("alerta", 16), h("span", {}, licenca.mensagem), licenca.link ? h("a", { href: licenca.link, target: "_blank", rel: "noopener" }, "Pagar agora") : null);
+  return null;
+}
 
 async function recarregarEu() {
   estado.eu = await get("/eu");
@@ -97,13 +137,14 @@ async function renderizarRota() {
   const [nome, ...resto] = location.hash.replace(/^#\/?/, "").split("?")[0].split("/");
   const rota = ROTAS[nome] ? nome : "inicio";
   const def = ROTAS[rota];
-  if (def.papeis && !def.papeis.includes(estado.eu.usuario.papel)) return navegar("inicio");
+  if (!disponivel(def)) return navegar("inicio");
   document.querySelectorAll(".menu-item").forEach((el) => el.classList.toggle("ativo", el.dataset.rota === rota));
   document.body.classList.remove("menu-aberto");
   const area = document.getElementById("conteudo");
   estado.limpeza?.();
   estado.limpeza = null;
   limpar(area, h("div", { class: "carregando-bloco" }, h("span", { class: "girando" })));
+  if (suspenso()) return limpar(area, telaSuspensa());
   try {
     const mod = await def.carregar();
     estado.viewAtual = mod;
@@ -119,7 +160,7 @@ async function renderizarRota() {
 /* ---------- Layout ---------- */
 function layout() {
   const { usuario, empresa } = estado.eu;
-  const itens = Object.entries(ROTAS).filter(([, r]) => !r.papeis || r.papeis.includes(usuario.papel));
+  const itens = suspenso() ? [] : Object.entries(ROTAS).filter(([, r]) => disponivel(r));
   const conexao = h("span", { class: "conexao", title: "Tempo real conectado" });
   return h(
     "div",
@@ -136,7 +177,7 @@ function layout() {
       h(
         "div",
         { class: "lateral-rodape" },
-        h("div", { class: "empresa-atual" }, avatar(empresa.nome, empresa.id, 32), h("div", {}, h("strong", {}, empresa.nome), h("small", {}, usuario.nome, " · ", { dono: "Dono", admin: "Administrador", atendente: "Atendente" }[usuario.papel]))),
+        h("div", { class: "empresa-atual" }, avatar(empresa.nome, empresa.id, 32), h("div", {}, h("strong", {}, empresa.nome), h("small", {}, usuario.nexor ? usuario.nome : [usuario.nome, " · ", { dono: "Dono", admin: "Administrador", atendente: "Atendente" }[usuario.papel]]))),
         h(
           "div",
           { class: "lateral-acoes" },
@@ -165,6 +206,7 @@ function layout() {
       "div",
       { class: "principal" },
       h("header", { class: "topo-movel" }, h("button", { class: "btn-icone", "aria-label": "Abrir menu", onclick: () => document.body.classList.toggle("menu-aberto") }, icone("menu")), h("img", { src: "/img/logo-mark.webp", alt: "", width: 26, height: 26 }), h("strong", {}, "Nexor Atende IA")),
+      faixa(),
       h("main", { id: "conteudo", class: "conteudo" }),
     ),
     h("div", { class: "veu", onclick: () => document.body.classList.remove("menu-aberto") }),
@@ -233,7 +275,7 @@ async function iniciar() {
   await recarregarEu();
   limpar(app, layout());
   atualizarContagem(estado.eu.contagem);
-  iniciarTempoReal();
+  if (!suspenso()) iniciarTempoReal(); // suspenso: sem tempo real (a API recusa)
   window.addEventListener("hashchange", renderizarRota);
   if (!location.hash) location.hash = estado.eu.checklist.whatsapp ? "#/conversas" : "#/inicio";
   renderizarRota();

@@ -29,7 +29,20 @@ O centro de controle da Nexor. Tudo sobre os clientes num só painel, só para a
 - **Sem internet, o cliente não é bloqueado.** A última licença vale por 15 dias. Depois disso o sistema fica só em **somente leitura**, nunca suspenso, e volta sozinho quando a conexão voltar.
 - **Nenhum dado pessoal sai da instalação.** A Central recebe só números: quantidade de colaboradores, de usuários e de marcações do dia, tamanho do banco e data do último backup.
 
-### O que cada situação faz no sistema do cliente
+### O que cada situação faz em cada sistema
+
+**Atende IA e Nexor Agente**
+
+| Situação | Atende IA | Nexor Agente |
+|---|---|---|
+| **Em dia / Aviso** | normal (no aviso, aparece a faixa com o link de pagamento) | normal |
+| **Somente leitura** | painel só para consulta; **a IA continua atendendo** os clientes no WhatsApp | consulta os sistemas, mas **não executa ações aprovadas** |
+| **Suspenso** | painel suspenso e **a IA pausa**. As mensagens continuam chegando e ficam guardadas | responde ao dono que está pausado, com o link de pagamento |
+
+- **Suporte Nexor:** funciona no Nexor RH e no Atende IA. O Agente não tem painel, então é configurado pelo `.env` e pelo `conectores.json`.
+- **No pacote de implantação:** cada sistema é cadastrado na Central como um "sistema" à parte. O Atende e o Agente usam `ATENDE_NEXOR_*` e `AGENTE_NEXOR_*` no `.env`, e a Central já mostra as linhas com esses nomes.
+
+**Nexor RH**
 
 | Situação | Quando (padrão) | Painel do RH | Ponto (app e quiosque) | Arquivos legais (AFD, AEJ, espelho) |
 |---|---|---|---|---|
@@ -128,3 +141,5 @@ npm install
 npm start          # http://localhost:8800 (fora de produção não pede código de instalação)
 npm test           # 9 testes: 2FA, régua, licença assinada, webhook, Asaas, perfis
 ```
+
+O código que fala com a Central nos sistemas é o mesmo arquivo em `rh/src/nexor/central.js`, `atende/src/nexor/central.js` e `nexor-agente/src/nexor/central.js`. Altere os três juntos. Os testes de ponta a ponta ficam em `rh/test/nexor.test.js`, `atende/test/nexor.test.js` e `nexor-agente/test/fluxo.test.js`.

@@ -1,5 +1,7 @@
 /* Configuração do Nexor Atende IA, lida das variáveis de ambiente (ver .env.example). */
 
+import { configNexor } from "./nexor/central.js";
+
 const lista = (valor, padrao = "") =>
   String(valor ?? padrao)
     .split(",")
@@ -63,6 +65,8 @@ export function lerConfig(env = process.env) {
     },
 
     sessaoDias: numero(env.SESSION_DAYS, 14),
+    // Nexor Central: licença (situação do contrato), saúde e acesso de suporte
+    nexor: configNexor(env),
     fuso: "America/Sao_Paulo",
   };
 }

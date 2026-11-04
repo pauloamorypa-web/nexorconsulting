@@ -53,3 +53,7 @@ No app da Meta, o webhook é `https://SEU-ENDERECO/webhook/whatsapp`, com o `WHA
 - Rotinas agendadas ("todo dia às 8h me mande o resumo de vendas").
 - Aprovação também para ferramentas MCP que alteram dados (cliente MCP próprio no servidor).
 - Computador virtual (uso do computador pela IA) para sistemas antigos sem API, em ambiente isolado.
+
+## Nexor Central
+
+Com as variáveis `NEXOR_CENTRAL_URL`, `NEXOR_INSTANCIA`, `NEXOR_TOKEN` e `NEXOR_CHAVE_PUBLICA` (geradas na Nexor Central), o sistema envia a saúde da instalação e aplica a situação do contrato: aviso, somente leitura ou suspenso. Sem elas, funciona normalmente. Detalhes em [central/README.md](../central/README.md).

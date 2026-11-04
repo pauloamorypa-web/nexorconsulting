@@ -77,6 +77,11 @@ services:
       META_APP_SECRET: ${META_APP_SECRET:-}
       META_CONFIG_ID: ${META_CONFIG_ID:-}
       ALLOW_SIGNUP: "false"
+      # Nexor Central: cada sistema tem a própria instância e token (Central → cliente → Novo sistema → Atende IA)
+      NEXOR_CENTRAL_URL: ${NEXOR_CENTRAL_URL:-}
+      NEXOR_CHAVE_PUBLICA: ${NEXOR_CHAVE_PUBLICA:-}
+      NEXOR_INSTANCIA: ${ATENDE_NEXOR_INSTANCIA:-}
+      NEXOR_TOKEN: ${ATENDE_NEXOR_TOKEN:-}
     volumes: [atende-dados:/dados]
 
   agente:
@@ -97,6 +102,11 @@ services:
       WHATSAPP_APP_SECRET: ${AGENTE_WHATSAPP_APP_SECRET:-}
       # Chave de integração criada no Nexor RH (Configurações → Integrações), usada no conectores.json
       NEXOR_RH_CHAVE: ${NEXOR_RH_CHAVE:-}
+      # Nexor Central (Central → cliente → Novo sistema → Nexor Agente)
+      NEXOR_CENTRAL_URL: ${NEXOR_CENTRAL_URL:-}
+      NEXOR_CHAVE_PUBLICA: ${NEXOR_CHAVE_PUBLICA:-}
+      NEXOR_INSTANCIA: ${AGENTE_NEXOR_INSTANCIA:-}
+      NEXOR_TOKEN: ${AGENTE_NEXOR_TOKEN:-}
     volumes: [agente-dados:/dados, "${CONECTORES_ARQUIVO:-./conectores.json}:/etc/nexor/conectores.json:ro"]
 
   # HTTPS pela Cloudflare sem abrir portas (funciona atrás de qualquer roteador ou internet comum)

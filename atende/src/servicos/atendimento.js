@@ -23,7 +23,7 @@ export const janelaAberta = (contato, agora = Date.now()) => Boolean(contato?.ul
  * @param {ReturnType<import('./eventos.js').criarEventos>} deps.eventos
  * @param {ReturnType<import('./midia.js').criarMidia>} deps.midia
  */
-export function criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia, fetchFn = fetch, agora = () => Date.now(), ia = configGlobal.ia, versaoGraph = configGlobal.meta.versaoGraph, atrasoAgrupamento }) {
+export function criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia, fetchFn = fetch, agora = () => Date.now(), ia = configGlobal.ia, versaoGraph = configGlobal.meta.versaoGraph, atrasoAgrupamento, iaLiberada = () => true }) {
   const apis = new Map();
   const timers = new Map();
   const filas = new Map();
@@ -170,6 +170,8 @@ export function criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia
     if (!empresa || !conversa || conversa.modo !== "ia" || conversa.status === "resolvida") return null;
     const modo = empresa.config.agente.modo;
     if (modo === "desligado") return null;
+    // Contrato suspenso na Nexor Central: a mensagem fica guardada, mas a IA não responde
+    if (!iaLiberada()) return null;
     let contato = repo.contato(empresa_id, conversa.contato_id);
     if (!janelaAberta(contato, agora())) return null;
 

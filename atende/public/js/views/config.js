@@ -17,16 +17,58 @@ let ctxApp;
 
 export async function render(raiz, ctx, [aba = "whatsapp"]) {
   ctxApp = ctx;
+  // Abas escondidas pelo Suporte Nexor somem; o Suporte Nexor ganha a aba de desenvolvedor
+  const itens = [...ABAS.filter(([id]) => !ctx.oculto(`config.${id}`)), ...(ctx.nexor ? [["nexor", "Nexor · desenvolvedor", "escudo"]] : [])];
   const topo = h("div");
   const corpo = h("div", { class: "aba-corpo" });
   const trocar = (id) => {
     history.replaceState(null, "", `#/config/${id}`);
-    limpar(topo, abas(ABAS, id, trocar));
+    limpar(topo, abas(itens, id, trocar));
     limpar(corpo, h("div", { class: "carregando-bloco" }, h("span", { class: "girando" })));
-    ({ whatsapp, horarios, equipe, rapidas, empresa, auditoria })[id](corpo).catch(erro);
+    ({ whatsapp, horarios, equipe, rapidas, empresa, auditoria, nexor })[id](corpo).catch(erro);
   };
   raiz.append(h("div", { class: "pagina" }, h("header", { class: "pagina-topo" }, h("div", {}, h("h1", {}, "Configurações"))), topo, corpo));
-  trocar(ABAS.some((a) => a[0] === aba) ? aba : "whatsapp");
+  trocar(itens.some((a) => a[0] === aba) ? aba : itens[0]?.[0] ?? "empresa");
+}
+
+/* ---------- Área do Suporte Nexor ---------- */
+
+async function nexor(alvo) {
+  const d = await get("/nexor/ajustes");
+  const marcados = new Set(d.ocultos);
+  const grupo = (titulo, itens) =>
+    Object.keys(itens).length
+      ? h("div", { class: "nexor-grupo" }, h("h3", {}, titulo), Object.entries(itens).map(([k, item]) => h("label", { class: "linha-check" }, h("input", { type: "checkbox", checked: marcados.has(k), onchange: (e) => (e.target.checked ? marcados.add(k) : marcados.delete(k)) }), h("span", {}, item.rotulo))))
+      : null;
+  const rot = { ativo: ["Ativo", "ok"], aviso: ["Aviso de fatura", "alerta"], restrito: ["Somente leitura", "perigo"], bloqueado: ["Bloqueado (IA pausada)", "perigo"] }[d.licenca.situacao] ?? [d.licenca.situacao, ""];
+  const c = d.central;
+  limpar(
+    alvo,
+    h(
+      "div",
+      { class: "grade-form" },
+      h(
+        "section",
+        { class: "cartao" },
+        h("h2", {}, "O que o cliente vê"),
+        h("p", { class: "suave pequeno" }, "Marque o que fica escondido da equipe do cliente. Módulos somem do menu e a API recusa; abas somem e não aceitam alterações. Você continua vendo tudo."),
+        grupo("Módulos", d.catalogo.modulos),
+        grupo("Abas de configuração", d.catalogo.abas),
+        d.atualizado_por ? h("p", { class: "suave pequeno" }, `Última alteração: ${d.atualizado_por}, ${dataHora(d.atualizado_em)}`) : null,
+        h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "button", onclick: (e) => acao(e.currentTarget, async () => (await put("/nexor/ajustes", { ocultos: [...marcados] }), aviso("Ajustes salvos. O cliente vê as mudanças ao recarregar a página."), ctxApp.recarregarEu())) }, "Salvar")),
+      ),
+      h(
+        "section",
+        { class: "cartao" },
+        h("h2", {}, "Contrato e Nexor Central"),
+        h("p", {}, "Situação: ", h("span", { class: `chip chip-${rot[1]}` }, rot[0])),
+        d.licenca.mensagem ? h("p", { class: "suave" }, d.licenca.mensagem) : null,
+        h("p", { class: "suave pequeno" }, c.configurada ? `Central: ${c.central} · último contato: ${c.ultimo_contato ? dataHora(c.ultimo_contato) : "nenhum"}` : "Central não configurada nesta instalação (variáveis NEXOR_* vazias): o sistema funciona sem licença."),
+        c.erro ? h("p", { class: "pequeno", style: { color: "var(--vermelho)" } }, `Último erro: ${c.erro}`) : null,
+        c.configurada ? h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-fantasma", type: "button", onclick: (e) => acao(e.currentTarget, async () => { const r = await post("/nexor/sincronizar"); aviso(r.ok ? `Sincronizado: ${r.situacao}.` : `Falhou: ${r.erro}`, r.ok ? "ok" : "erro"); await ctxApp.recarregarEu(); nexor(alvo); }) }, "Sincronizar agora")) : null,
+      ),
+    ),
+  );
 }
 
 /* ---------- WhatsApp ---------- */
