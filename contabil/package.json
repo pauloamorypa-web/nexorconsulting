@@ -1,0 +1,21 @@
+{
+  "name": "nexor-contabil",
+  "version": "1.0.0",
+  "description": "Nexor Contábil: cobrança e leitura de documentos com IA, obrigações e prazos, portal do cliente e WhatsApp para escritórios de contabilidade",
+  "type": "module",
+  "private": true,
+  "main": "src/servidor.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/servidor.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/servidor.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-timeout=60000 test/*.test.js",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.4.0",
+    "zod": "^4.6.7"
+  }
+}
