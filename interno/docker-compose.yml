@@ -1,0 +1,77 @@
+# Servidor interno da Nexor: tudo que é DA NEXOR (não dos clientes) num servidor Linux.
+#   central         → Nexor Central (clientes, cobrança, licenças, suporte)      central.<domínio> → http://central:8800
+#   central-backup  → backup diário do banco e da chave das licenças
+#   assist          → Blue / Nexor Assist (chat do site, leads, agenda, WhatsApp) api.<domínio>     → http://assist:8787
+#   tunel           → HTTPS pela Cloudflare sem abrir portas (um túnel, dois hostnames)
+# Uso: sudo ./instalar.sh   ·   atualizar: sudo ./atualizar.sh   ·   backup na hora: sudo ./backup.sh
+name: nexor-interno
+
+x-padrao: &padrao
+  restart: unless-stopped
+  networks: [interno]
+  logging: { driver: json-file, options: { max-size: "10m", max-file: "5" } }
+
+services:
+  central:
+    <<: *padrao
+    build: ../central
+    image: nexor/central:local
+    environment:
+      NODE_ENV: production
+      PORT: "8800"
+      DATA_DIR: /dados
+      TRUST_PROXY: "1"
+      PUBLIC_URL: ${CENTRAL_PUBLIC_URL:?defina CENTRAL_PUBLIC_URL}
+      MASTER_KEY: ${CENTRAL_MASTER_KEY:?defina CENTRAL_MASTER_KEY}
+      SUPPORT_WHATSAPP: ${SUPPORT_WHATSAPP:-}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-contato@nexorconsultingit.com.br}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_URL: ${ASAAS_URL:-https://api.asaas.com/v3}
+      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
+    volumes: [central-dados:/dados]
+    ports: ["127.0.0.1:8800:8800"]
+
+  central-backup:
+    <<: *padrao
+    image: nexor/central:local
+    depends_on: [central]
+    environment: { DATA_DIR: /dados, BACKUP_DIR: /backups/central, BACKUP_MANTER: "30" }
+    volumes: [central-dados:/dados, "./backups:/backups"]
+    user: "1000:1000"
+    entrypoint: ["sh", "-c", "mkdir -p /backups/central; while true; do node --disable-warning=ExperimentalWarning scripts/backup.js || echo 'BACKUP FALHOU'; sleep 86400; done"]
+    healthcheck: { disable: true }
+
+  assist:
+    <<: *padrao
+    build: ../agent
+    image: nexor/assist:local
+    environment:
+      PORT: "8787"
+      DATA_DIR: /dados
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      NEXOR_MODEL: ${NEXOR_MODEL:-claude-opus-5-5}
+      NEXOR_EFFORT: ${NEXOR_EFFORT:-low}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://nexorconsultingit.com.br,https://www.nexorconsultingit.com.br,https://pauloamorypa-web.github.io}
+      LEAD_WEBHOOK_URL: ${LEAD_WEBHOOK_URL:-}
+      REPORT_TOKEN: ${REPORT_TOKEN:-}
+      META_PIXEL_ID: ${META_PIXEL_ID:-}
+      META_CAPI_TOKEN: ${META_CAPI_TOKEN:-}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+      TEAM_WHATSAPP: ${TEAM_WHATSAPP:-5534997337499}
+    volumes: ["./dados/assist:/dados"]
+    ports: ["127.0.0.1:8787:8787"]
+
+  tunel:
+    <<: *padrao
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment: { TUNNEL_TOKEN: "${TUNNEL_TOKEN:?defina TUNNEL_TOKEN}" }
+    depends_on: [central, assist]
+
+networks:
+  interno: {}
+volumes:
+  central-dados: {}
