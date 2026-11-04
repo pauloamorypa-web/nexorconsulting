@@ -34,8 +34,10 @@ export function carregarConectores({ caminho, conteudo, env = process.env } = {}
   const http = (bruto.http ?? []).map((c) => {
     if (!NOME.test(c.nome ?? "")) throw new Error(`conector com nome inválido: ${c.nome}`);
     const base = new URL(c.base);
-    if (base.protocol !== "https:" && !(env.NODE_ENV !== "production" && base.hostname === "localhost")) {
-      throw new Error(`conector ${c.nome}: a base precisa ser https`);
+    // http só dentro da rede interna do ecossistema (nome de serviço sem ponto, ex.: http://rh:8791) ou localhost em teste
+    const interno = !base.hostname.includes(".") && base.hostname !== "localhost";
+    if (base.protocol !== "https:" && !interno && !(env.NODE_ENV !== "production" && base.hostname === "localhost")) {
+      throw new Error(`conector ${c.nome}: a base precisa ser https (ou um serviço da rede interna Nexor, como http://rh:8791)`);
     }
     return {
       tipo: "http",

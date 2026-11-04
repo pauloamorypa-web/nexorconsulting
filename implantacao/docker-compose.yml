@@ -1,0 +1,124 @@
+# Ecossistema Nexor de UMA empresa: cada cliente tem o próprio conjunto (projeto), com rede,
+# volumes, chaves e domínio separados. Os sistemas conversam entre si pela rede interna "nexor".
+#
+#   Nexor RH (sempre)            → serviço rh
+#   Nexor Atende IA (opcional)   → perfil "atende"
+#   Nexor Agente (opcional)      → perfil "agente"
+#   Acesso pela internet com HTTPS, sem abrir portas no roteador → perfil "tunel" (Cloudflare Tunnel)
+#   Ou HTTPS com portas 80/443 abertas e IP fixo                 → perfil "caddy"
+#
+# Uso: ./instalar.sh   (ou: docker compose --env-file .env --profile tunel up -d --build)
+
+name: nexor-${EMPRESA:?defina EMPRESA no .env}
+
+x-padrao: &padrao
+  restart: unless-stopped
+  networks: [nexor]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+services:
+  rh:
+    <<: *padrao
+    build: ../rh
+    image: nexor/rh:local
+    environment:
+      NODE_ENV: production
+      PORT: "8791"
+      DATA_DIR: /dados
+      PUBLIC_URL: ${RH_PUBLIC_URL:?defina RH_PUBLIC_URL}
+      MASTER_KEY: ${RH_MASTER_KEY:?defina RH_MASTER_KEY}
+      TRUST_PROXY: "1"
+      ALLOW_SIGNUP: "false"
+      DEVELOPER_CNPJ: ${DEVELOPER_CNPJ:-68786355000191}
+      APP_STORE_URL: ${APP_STORE_URL:-}
+      PLAY_STORE_URL: ${PLAY_STORE_URL:-}
+      APK_URL: ${APK_URL:-}
+    volumes: [rh-dados:/dados]
+    # Acesso direto pela rede local da empresa (painel no computador do RH), sem passar pela internet
+    # (padrão: porta aleatória só no próprio servidor, para várias empresas não brigarem pela mesma porta)
+    ports: ["${RH_PORTA_LOCAL:-127.0.0.1:}:8791"]
+
+  # Backup automático todo dia: banco consistente + arquivos criptografados, guarda os últimos 14
+  backup:
+    <<: *padrao
+    build: ../rh
+    image: nexor/rh:local
+    depends_on: [rh]
+    environment:
+      DATA_DIR: /dados
+      BACKUP_DIR: /backups
+      BACKUP_MANTER: ${BACKUP_MANTER:-14}
+    volumes: [rh-dados:/dados, "${BACKUP_PASTA:-./backups}:/backups"]
+    # mesmo usuário do rh (node, uid 1000): não cria arquivos do banco com outro dono
+    user: "1000:1000"
+    entrypoint: ["sh", "-c", "while true; do node --disable-warning=ExperimentalWarning scripts/backup.js || echo 'BACKUP FALHOU'; sleep 86400; done"]
+    healthcheck: { disable: true }
+
+  atende:
+    <<: *padrao
+    profiles: [atende]
+    build: ../atende
+    image: nexor/atende:local
+    environment:
+      NODE_ENV: production
+      PORT: "8790"
+      DATA_DIR: /dados
+      PUBLIC_URL: ${ATENDE_PUBLIC_URL:-}
+      MASTER_KEY: ${ATENDE_MASTER_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      META_APP_ID: ${META_APP_ID:-}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      META_CONFIG_ID: ${META_CONFIG_ID:-}
+      ALLOW_SIGNUP: "false"
+    volumes: [atende-dados:/dados]
+
+  agente:
+    <<: *padrao
+    profiles: [agente]
+    build: ../nexor-agente
+    image: nexor/agente:local
+    environment:
+      NODE_ENV: production
+      PORT: "8792"
+      DATA_DIR: /dados
+      CONECTORES: /etc/nexor/conectores.json
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DONOS: ${AGENTE_DONOS:-}
+      WHATSAPP_TOKEN: ${AGENTE_WHATSAPP_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${AGENTE_WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_VERIFY_TOKEN: ${AGENTE_WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_APP_SECRET: ${AGENTE_WHATSAPP_APP_SECRET:-}
+      # Chave de integração criada no Nexor RH (Configurações → Integrações), usada no conectores.json
+      NEXOR_RH_CHAVE: ${NEXOR_RH_CHAVE:-}
+    volumes: [agente-dados:/dados, "${CONECTORES_ARQUIVO:-./conectores.json}:/etc/nexor/conectores.json:ro"]
+
+  # HTTPS pela Cloudflare sem abrir portas (funciona atrás de qualquer roteador ou internet comum)
+  tunel:
+    <<: *padrao
+    profiles: [tunel]
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+
+  # HTTPS com certificado automático (precisa de IP público e portas 80 e 443 abertas)
+  caddy:
+    <<: *padrao
+    profiles: [caddy]
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    environment:
+      RH_DOMINIO: ${RH_DOMINIO:-}
+      ATENDE_DOMINIO: ${ATENDE_DOMINIO:-}
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy-dados:/data]
+
+networks:
+  nexor: {}
+
+volumes:
+  rh-dados: {}
+  atende-dados: {}
+  agente-dados: {}
+  caddy-dados: {}

@@ -1,0 +1,10 @@
+# Usado só no perfil "caddy" (IP público com portas 80/443 abertas). Certificado HTTPS automático.
+{$RH_DOMINIO} {
+	encode gzip
+	reverse_proxy rh:8791
+}
+
+# Nexor Atende IA: descomente e defina ATENDE_DOMINIO no .env
+# {$ATENDE_DOMINIO} {
+# 	reverse_proxy atende:8790
+# }
