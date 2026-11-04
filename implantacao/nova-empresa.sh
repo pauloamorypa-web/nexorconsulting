@@ -4,7 +4,8 @@
 #
 # Uso:  ./nova-empresa.sh padaria-pao-dourado rh.paodourado.com.br [token-do-tunel]
 #       SISTEMAS="contabil" ./nova-empresa.sh lima-contabilidade contabil.limacontabil.com.br [token]
-#       (com "rh contabil", informe DOMINIO_CONTABIL=... para o segundo endereço)
+#       SISTEMAS="barber" ./nova-empresa.sh barbearia-navalha agenda.navalha.com.br [token]
+#       (com dois sistemas, informe DOMINIO_CONTABIL=... ou DOMINIO_BARBER=... para o segundo endereço)
 # Depois, para administrar essa empresa:
 #   ./empresa.sh padaria-pao-dourado ps | logs rh | up -d --build | down
 set -euo pipefail
@@ -24,7 +25,8 @@ cp conectores.json "$DIR/conectores.json"
 chave() { openssl rand -base64 48 | tr -d '\n/+=' | cut -c1-56; }
 DOM_RH="$DOMINIO"
 DOM_CONTABIL="${DOMINIO_CONTABIL:-$DOMINIO}"
-[ "$SISTEMAS" = "contabil" ] && DOM_RH=""
+DOM_BARBER="${DOMINIO_BARBER:-$DOMINIO}"
+[[ " $SISTEMAS " != *" rh "* ]] && DOM_RH=""
 sed -e "s|^EMPRESA=.*|EMPRESA=${SLUG}|" \
     -e "s|^SISTEMAS=.*|SISTEMAS=${SISTEMAS}|" \
     -e "s|^RH_PUBLIC_URL=.*|RH_PUBLIC_URL=${DOM_RH:+https://${DOM_RH}}|" \
@@ -33,6 +35,9 @@ sed -e "s|^EMPRESA=.*|EMPRESA=${SLUG}|" \
     -e "s|^CONTABIL_PUBLIC_URL=.*|CONTABIL_PUBLIC_URL=https://${DOM_CONTABIL}|" \
     -e "s|^CONTABIL_DOMINIO=.*|CONTABIL_DOMINIO=${DOM_CONTABIL}|" \
     -e "s|^CONTABIL_MASTER_KEY=.*|CONTABIL_MASTER_KEY=$(chave)|" \
+    -e "s|^BARBER_PUBLIC_URL=.*|BARBER_PUBLIC_URL=https://${DOM_BARBER}|" \
+    -e "s|^BARBER_DOMINIO=.*|BARBER_DOMINIO=${DOM_BARBER}|" \
+    -e "s|^BARBER_MASTER_KEY=.*|BARBER_MASTER_KEY=$(chave)|" \
     -e "s|^CLOUDFLARE_TUNNEL_TOKEN=.*|CLOUDFLARE_TUNNEL_TOKEN=${TOKEN}|" \
     -e "s|^BACKUP_PASTA=.*|BACKUP_PASTA=./${DIR}/backups|" \
     -e "s|^CONECTORES_ARQUIVO=.*|CONECTORES_ARQUIVO=./${DIR}/conectores.json|" \
@@ -48,6 +53,6 @@ echo "✔ Empresa ${SLUG} criada."
 echo "  ⚠ Guarde no cofre da Nexor as chaves *_MASTER_KEY de ${DIR}/.env"
 sleep 5
 for s in $LISTA_SISTEMAS; do
-  D="$( [ "$s" = rh ] && echo "$DOM_RH" || echo "$DOM_CONTABIL" )"
+  case "$s" in rh) D="$DOM_RH" ;; contabil) D="$DOM_CONTABIL" ;; barber) D="$DOM_BARBER" ;; esac
   echo "  ${s}: https://${D} · código de instalação: $(docker compose -p "nexor-${SLUG}" --env-file "$DIR/.env" "${ARGS_PERFIS[@]}" exec -T "$s" cat /dados/codigo-instalacao.txt 2>/dev/null || echo "veja com ./empresa.sh ${SLUG} exec ${s} cat /dados/codigo-instalacao.txt")"
 done

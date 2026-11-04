@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Atualiza os sistemas Nexor desta empresa para a versão mais nova do repositório, fazendo um backup antes.
-# Os dados ficam nos volumes e não são apagados. Os sistemas vêm de SISTEMAS no .env (rh, contabil).
+# Os dados ficam nos volumes e não são apagados. Os sistemas vêm de SISTEMAS no .env (rh, contabil, barber).
 # Uso: sudo ./atualizar.sh            (extras: PERFIS="tunel agente" ./atualizar.sh)
 set -euo pipefail
 cd "$(dirname "$0")"

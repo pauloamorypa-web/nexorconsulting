@@ -1,0 +1,10 @@
+{
+  "name": "Agendar na barbearia",
+  "short_name": "Barbearia",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "icons": [{ "src": "/img/favicon.png", "sizes": "64x64", "type": "image/png" }]
+}
