@@ -7,7 +7,9 @@
    - Sem contato com a Central, vale a última licença até a validade; depois disso o sistema fica "restrito"
      (nunca bloqueado por falta de internet) e volta sozinho no próximo contato.
    - A licença fica em DATA_DIR/nexor-licenca.json (sobrevive a reinícios).
-   Sem NEXOR_CENTRAL_URL configurada, o sistema funciona normalmente (instalações antigas e testes). */
+   - Vinculação imediata: com o código do cliente (NX-XXXX-XXXX, em NEXOR_CODIGO ou digitado no painel),
+     o sistema se cadastra sozinho na Central e recebe instância, token e chave pública (guardados no mesmo arquivo).
+   Sem Central configurada nem código, o sistema funciona normalmente (instalações antigas e testes). */
 
 import { createPublicKey, verify } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
@@ -28,17 +30,19 @@ export function conferirAssinado(token, chavePublicaB64) {
 const ATIVO = { situacao: "ativo", mensagem: "", link: null, manter_ponto: true, contato: null };
 
 /** Lê as variáveis NEXOR_* (iguais nos três sistemas) */
+export const CENTRAL_PADRAO = "https://central.nexorconsultingit.com.br";
 export const configNexor = (env = process.env) => ({
-  central: (env.NEXOR_CENTRAL_URL ?? "").replace(/\/$/, ""),
+  // Com só o código do cliente, usa o endereço padrão da Central
+  central: (env.NEXOR_CENTRAL_URL || (env.NEXOR_CODIGO ? CENTRAL_PADRAO : "")).replace(/\/$/, ""),
+  codigo: (env.NEXOR_CODIGO ?? "").trim(),
   instancia: env.NEXOR_INSTANCIA ?? "",
   token: env.NEXOR_TOKEN ?? "",
   chavePublica: (env.NEXOR_CHAVE_PUBLICA ?? "").trim(),
   intervaloMin: Number(env.NEXOR_SYNC_MINUTES) > 0 ? Number(env.NEXOR_SYNC_MINUTES) : 5,
 });
 
-export function criarCentralNexor({ cfg, agora = () => Date.now(), fetchFn = fetch, versao = "1.0.0", produto, saude = () => ({}) }) {
-  const n = cfg.nexor ?? {};
-  const configurada = Boolean(n.central && n.instancia && n.token && n.chavePublica);
+export function criarCentralNexor({ cfg, agora = () => Date.now(), fetchFn = fetch, versao = "1.0.0", produto, saude = () => ({}), urlPublica = cfg.urlPublica ?? "" }) {
+  const env = cfg.nexor ?? {};
   const arquivo = join(cfg.pastaDados, "nexor-licenca.json");
   const usados = new Map(); // links de acesso de suporte já usados (uso único): nonce → validade
   let relogio = null;
@@ -60,6 +64,22 @@ export function criarCentralNexor({ cfg, agora = () => Date.now(), fetchFn = fet
       console.error("[nexor] não foi possível gravar a licença:", e.message);
     }
   };
+  /** Credenciais: as do .env (cadastro manual) ou as recebidas na vinculação pelo código */
+  const credenciais = () => {
+    const l = ler();
+    return {
+      central: env.central || l.central || "",
+      instancia: env.instancia || l.instancia || "",
+      token: env.token || l.token_sistema || "",
+      chavePublica: env.chavePublica || l.chave_publica || "",
+      intervaloMin: env.intervaloMin ?? 5,
+    };
+  };
+  const vinculado = () => {
+    const c = credenciais();
+    return Boolean(c.central && c.instancia && c.token && c.chavePublica);
+  };
+  let n = credenciais();
   const licencaGuardada = () => {
     const d = conferirAssinado(ler().token, n.chavePublica);
     return d && d.tipo === "licenca" && d.inst === n.instancia ? d : null;
@@ -67,7 +87,8 @@ export function criarCentralNexor({ cfg, agora = () => Date.now(), fetchFn = fet
 
   /** Situação valendo agora */
   function estado() {
-    if (!configurada) return { ...ATIVO, origem: "sem_central" };
+    n = credenciais();
+    if (!vinculado()) return { ...ATIVO, origem: "sem_central" };
     const d = licencaGuardada();
     if (!d) return { ...ATIVO, origem: "aguardando" }; // instalação nova: funciona até o primeiro contato
     const base = { link: d.link ?? null, manter_ponto: d.manter_ponto !== false, contato: d.contato ?? null };
@@ -78,8 +99,33 @@ export function criarCentralNexor({ cfg, agora = () => Date.now(), fetchFn = fet
     return { ...base, situacao: d.situacao, mensagem: d.mensagem ?? "", origem: "central" };
   }
 
+  /** Vincula esta instalação ao cliente pelo código NX-XXXX-XXXX (uma vez; depois só sincroniza) */
+  async function vincular(codigo, { central = env.central || CENTRAL_PADRAO, nome } = {}) {
+    if (vinculado()) return { ok: false, erro: "Este sistema já está vinculado à Nexor Central." };
+    const base = String(central).replace(/\/$/, "");
+    if (!/^https?:\/\//.test(base)) return { ok: false, erro: "Endereço da Central inválido." };
+    try {
+      const r = await fetchFn(`${base}/api/v1/vincular`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo, produto, versao, url: urlPublica || null, nome }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d?.erro ?? `Central respondeu ${r.status}`);
+      if (!d.instancia || !/^nxs_/.test(d.token ?? "") || !d.chave_publica) throw new Error("Resposta da Central incompleta");
+      gravar({ central: base, instancia: d.instancia, token_sistema: d.token, chave_publica: d.chave_publica, cliente: d.cliente ?? null, vinculado_em: agora(), erro: null });
+      const s = await sincronizar();
+      return { ok: true, cliente: d.cliente ?? null, situacao: s.situacao ?? null };
+    } catch (e) {
+      gravar({ erro: String(e.message).slice(0, 300) });
+      return { ok: false, erro: e.message };
+    }
+  }
+
   async function sincronizar() {
-    if (!configurada) return { ok: false, erro: "Central não configurada" };
+    n = credenciais();
+    if (!vinculado()) return { ok: false, erro: "Central não configurada" };
     gravar({ tentativa_em: agora() });
     try {
       const r = await fetchFn(`${n.central}/api/v1/sincronizar`, {
@@ -102,7 +148,8 @@ export function criarCentralNexor({ cfg, agora = () => Date.now(), fetchFn = fet
 
   /** Confere o link de acesso de suporte gerado pela Central (2 minutos, uso único, desta instalação) */
   function conferirAcesso(token) {
-    if (!configurada) return null;
+    n = credenciais();
+    if (!vinculado()) return null;
     const d = conferirAssinado(token, n.chavePublica);
     if (!d || d.tipo !== "acesso" || d.inst !== n.instancia || !(d.exp > agora()) || d.exp - agora() > 10 * 60_000 || !d.nonce) return null;
     for (const [k, exp] of usados) if (exp < agora()) usados.delete(k);
@@ -112,19 +159,23 @@ export function criarCentralNexor({ cfg, agora = () => Date.now(), fetchFn = fet
   }
 
   return {
-    configurada,
+    get configurada() {
+      return vinculado();
+    },
     estado,
     sincronizar,
+    vincular,
     conferirAcesso,
     info() {
       const l = ler();
-      return { configurada, central: n.central || null, instancia: n.instancia || null, ultimo_contato: l.recebida_em ?? null, ultima_tentativa: l.tentativa_em ?? null, erro: l.erro ?? null };
+      const c = credenciais();
+      return { configurada: vinculado(), central: c.central || null, instancia: c.instancia || null, cliente: l.cliente ?? null, ultimo_contato: l.recebida_em ?? null, ultima_tentativa: l.tentativa_em ?? null, erro: l.erro ?? null };
     },
     iniciar() {
-      if (!configurada) return;
-      const rodar = () => sincronizar().catch(() => {});
+      // Com NEXOR_CODIGO e ainda sem vínculo, vincula sozinho; depois sincroniza a cada 5 minutos
+      const rodar = () => (vinculado() ? sincronizar() : env.codigo ? vincular(env.codigo) : Promise.resolve()).catch(() => {});
       setTimeout(rodar, 3_000).unref?.();
-      relogio = setInterval(rodar, n.intervaloMin * 60_000);
+      relogio = setInterval(rodar, (env.intervaloMin ?? 5) * 60_000);
       relogio.unref?.();
     },
     parar: () => clearInterval(relogio),

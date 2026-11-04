@@ -47,6 +47,7 @@ async function empresa() {
     semDados ? null : h("form", { class: "cartao", onsubmit: (ev) => (ev.preventDefault(), acao(ev.submitter, async () => (await put("/empresa", f.ler()), aviso("Empresa salva."), ctxAtual.recarregarEu()))) }, h("h2", {}, "Dados da empresa"), f.el, h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "submit" }, "Salvar"))),
     cartaoPonto,
     semDados && !cartaoPonto ? h("p", { class: "suave" }, "Os dados da empresa são mantidos pela Nexor.") : null,
+    cartaoVincular(),
   );
 }
 
@@ -327,5 +328,19 @@ async function nexor() {
       c.erro ? h("p", { class: "pequeno", style: { color: "var(--vermelho)" } }, `Último erro: ${c.erro}`) : null,
       c.configurada ? h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-fantasma", type: "button", onclick: (e) => acao(e.currentTarget, async () => { const r = await post("/nexor/sincronizar"); aviso(r.ok ? `Sincronizado: ${r.situacao}.` : `Falhou: ${r.erro}`, r.ok ? "ok" : "erro"); await ctxAtual.recarregarEu(); desenhar(); }) }, "Sincronizar agora")) : null,
     ),
+  );
+}
+
+/** Ainda sem vínculo com a Nexor Central: o administrador digita o código do cliente (NX-XXXX-XXXX) */
+function cartaoVincular() {
+  if (ctxAtual.eu.licenca?.vinculado || !ctxAtual.pode("admin")) return null;
+  const codigo = h("input", { class: "entrada", placeholder: "NX-XXXX-XXXX", maxlength: 20, autocomplete: "off", style: { textTransform: "uppercase", letterSpacing: ".06em" } });
+  return h(
+    "form",
+    { class: "cartao", onsubmit: (ev) => (ev.preventDefault(), acao(ev.submitter, async () => { const r = await post("/nexor/vincular", { codigo: codigo.value }); aviso(`Sistema vinculado à Nexor (${r.cliente}).`); await ctxAtual.recarregarEu(); desenhar(); })) },
+    h("h2", {}, "Vincular à Nexor"),
+    h("p", { class: "suave pequeno" }, "Digite o código do cliente informado pela Nexor. O sistema passa a receber suporte, atualizações de licença e monitoramento."),
+    h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "Código do cliente"), codigo),
+    h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "submit" }, "Vincular")),
   );
 }

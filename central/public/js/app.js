@@ -190,7 +190,7 @@ async function clientes(id) {
       corpo,
       tabela(
         [
-          { titulo: "Cliente", valor: (c) => h("div", {}, h("strong", {}, nomeCliente(c)), h("small", { class: "suave", style: { display: "block" } }, cnpjBR(c.cnpj), c.cidade ? ` · ${c.cidade}` : "")) },
+          { titulo: "Cliente", valor: (c) => h("div", {}, h("strong", {}, nomeCliente(c)), h("small", { class: "suave", style: { display: "block" } }, cnpjBR(c.cnpj), c.cidade ? ` · ${c.cidade}` : "", c.codigo ? ` · ${c.codigo}` : "")) },
           { titulo: "Situação", valor: (c) => (c.status === "cancelado" ? chip({ x: ["Cancelado", ""] }, "x") : chip(SIT, c.situacao, c.atraso ? ` · ${c.atraso}d` : "")) },
           { titulo: "Sistemas", valor: (c) => (c.sistemas.length ? c.sistemas.map((s) => h("span", { class: "chip", title: s.online ? "No ar" : "Sem contato" }, h("span", { class: `ponto-sit sit-${s.online ? "ativo" : "offline"}` }), s.produto)) : h("span", { class: "suave" }, "—")) },
           { titulo: "Mensalidade", valor: (c) => reais(c.valor_centavos), classe: "num" },
@@ -275,7 +275,14 @@ async function detalheCliente(id) {
         "section",
         { class: "cartao" },
         h("div", { class: "cartao-topo" }, h("h2", {}, "Sistemas instalados"), sup ? botao("Novo sistema", () => novoSistema(c), "btn-primario btn-pequeno", "mais") : null),
-        c.sistemas.length ? h("div", { class: "lista-sistemas" }, c.sistemas.map((s) => cartaoSistema(s, sup))) : h("p", { class: "suave" }, "Nenhum sistema cadastrado. Cadastre o sistema e copie as 4 linhas para o .env da instalação do cliente."),
+        h(
+          "div",
+          { class: "codigo-cliente" },
+          h("div", {}, h("small", { class: "suave" }, "Código do cliente"), h("strong", { class: "codigo" }, c.codigo ?? "—")),
+          h("div", { class: "acoes-linha" }, botao("Copiar", () => copiarTexto(c.codigo), "btn-fantasma btn-pequeno", "copiar"), pode("dono", "financeiro", "suporte") ? botao("Gerar outro", async () => (await confirmar("Gerar um código novo? O atual deixa de vincular sistemas novos (os já vinculados continuam funcionando).", { botao: "Gerar novo" })) && (await post(`/clientes/${c.id}/codigo`), recarregar()), "btn-fantasma btn-pequeno") : null),
+          h("p", { class: "suave pequeno" }, "Na instalação, digite este código no sistema (Configurações → Nexor) ou coloque em NEXOR_CODIGO no .env. O sistema aparece aqui na hora, já com licença e acesso de suporte."),
+        ),
+        c.sistemas.length ? h("div", { class: "lista-sistemas" }, c.sistemas.map((s) => cartaoSistema(s, sup))) : h("p", { class: "suave" }, "Nenhum sistema vinculado ainda. Use o código acima na instalação (ou \"Novo sistema\" para gerar as credenciais manualmente)."),
       ),
       h(
         "section",
@@ -413,7 +420,7 @@ async function equipe() {
 }
 
 /* ---------- Auditoria ---------- */
-const ACOES = { conta_criada: "Conta criada", login: "Entrou na Central", cliente_criado: "Cliente cadastrado", cliente_alterado: "Cliente alterado", bloqueio_manual: "Bloqueou o cliente", desbloqueio: "Liberou o cliente", contrato_cancelado: "Encerrou o contrato", contrato_reativado: "Reativou o contrato", fatura_criada: "Fatura avulsa criada", faturas_geradas: "Gerou mensalidades", fatura_paga: "Registrou pagamento", fatura_reaberta: "Reabriu fatura", fatura_cancelada: "Cancelou fatura", fatura_alterada: "Alterou fatura", sistema_criado: "Cadastrou sistema", sistema_alterado: "Alterou sistema", sistema_token_trocado: "Trocou a credencial do sistema", acesso_suporte: "Entrou no sistema do cliente (suporte)", situacao_aplicada: "Situação aplicada no sistema", usuario_criado: "Usuário criado", usuario_alterado: "Usuário alterado", webhook_paga: "Asaas: pagamento confirmado", webhook_aberta: "Asaas: pagamento estornado", webhook_cancelada: "Asaas: cobrança removida" };
+const ACOES = { conta_criada: "Conta criada", login: "Entrou na Central", cliente_criado: "Cliente cadastrado", cliente_alterado: "Cliente alterado", bloqueio_manual: "Bloqueou o cliente", desbloqueio: "Liberou o cliente", contrato_cancelado: "Encerrou o contrato", contrato_reativado: "Reativou o contrato", fatura_criada: "Fatura avulsa criada", faturas_geradas: "Gerou mensalidades", fatura_paga: "Registrou pagamento", fatura_reaberta: "Reabriu fatura", fatura_cancelada: "Cancelou fatura", fatura_alterada: "Alterou fatura", sistema_criado: "Cadastrou sistema", sistema_alterado: "Alterou sistema", sistema_token_trocado: "Trocou a credencial do sistema", sistema_vinculado: "Sistema vinculado pelo código", vinculacao_recusada: "Tentativa de vinculação com código errado", codigo_trocado: "Gerou novo código do cliente", acesso_suporte: "Entrou no sistema do cliente (suporte)", situacao_aplicada: "Situação aplicada no sistema", usuario_criado: "Usuário criado", usuario_alterado: "Usuário alterado", webhook_paga: "Asaas: pagamento confirmado", webhook_aberta: "Asaas: pagamento estornado", webhook_cancelada: "Asaas: cobrança removida" };
 async function auditoria() {
   const lista = await get("/auditoria");
   const det = (a) => {

@@ -164,7 +164,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, central, agora = (
       usuario: usuarioPublico(usuario),
       empresa: empresaPublica(empresa),
       // Situação do contrato com a Nexor (faixa de aviso, somente leitura ou suspensão)
-      licenca: { situacao: lic.situacao, mensagem: lic.mensagem, link: lic.link, contato: lic.contato },
+      licenca: { situacao: lic.situacao, mensagem: lic.mensagem, link: lic.link, contato: lic.contato, vinculado: central.configurada },
       // O que o Suporte Nexor escondeu (o próprio Suporte Nexor vê tudo, com a marcação)
       ocultos: repo.ocultos(empresa.id),
       contagem: {

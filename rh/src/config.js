@@ -1,5 +1,7 @@
 /* Configuração do Nexor RH, lida das variáveis de ambiente (ver .env.example). */
 
+import { configNexor } from "./nexor/central.js";
+
 const numero = (v, padrao) => {
   const n = Number(v);
   return v !== undefined && v !== "" && Number.isFinite(n) ? n : padrao;
@@ -32,14 +34,8 @@ export function lerConfig(env = process.env) {
       versao: "1.0.0",
       desenvolvedorCnpj: (env.DEVELOPER_CNPJ ?? "").replace(/\D/g, ""),
     },
-    // Nexor Central: licença (situação do contrato), saúde da instalação e acesso de suporte
-    nexor: {
-      central: (env.NEXOR_CENTRAL_URL ?? "").replace(/\/$/, ""),
-      instancia: env.NEXOR_INSTANCIA ?? "",
-      token: env.NEXOR_TOKEN ?? "",
-      chavePublica: (env.NEXOR_CHAVE_PUBLICA ?? "").trim(),
-      intervaloMin: numero(env.NEXOR_SYNC_MINUTES, 5),
-    },
+    // Nexor Central: licença (situação do contrato), saúde da instalação, acesso de suporte e vinculação pelo código
+    nexor: configNexor(env),
     limites: { tamanhoArquivo: 10 * 1024 * 1024, tentativasLogin: 8 },
     // App nativo nas lojas (página /baixar e links que abrem o app a partir do QR Code)
     apps: {

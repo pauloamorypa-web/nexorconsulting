@@ -1,7 +1,9 @@
 # Ecossistema Nexor de UMA empresa: cada cliente tem o próprio conjunto (projeto), com rede,
 # volumes, chaves e domínio separados. Os sistemas conversam entre si pela rede interna "nexor".
 #
-#   Nexor RH (sempre)            → serviço rh
+#   Quais sistemas sobem: SISTEMAS no .env (ex.: "rh", "contabil" ou "rh contabil"); os scripts viram perfis
+#   Nexor RH                     → perfil "rh" (serviços rh e backup)
+#   Nexor Contábil               → perfil "contabil" (serviços contabil e backup-contabil)
 #   Nexor Atende IA (opcional)   → perfil "atende"
 #   Nexor Agente (opcional)      → perfil "agente"
 #   Acesso pela internet com HTTPS, sem abrir portas no roteador → perfil "tunel" (Cloudflare Tunnel)
@@ -21,14 +23,15 @@ x-padrao: &padrao
 services:
   rh:
     <<: *padrao
+    profiles: [rh]
     build: ../rh
     image: nexor/rh:local
     environment:
       NODE_ENV: production
       PORT: "8791"
       DATA_DIR: /dados
-      PUBLIC_URL: ${RH_PUBLIC_URL:?defina RH_PUBLIC_URL}
-      MASTER_KEY: ${RH_MASTER_KEY:?defina RH_MASTER_KEY}
+      PUBLIC_URL: ${RH_PUBLIC_URL:-}
+      MASTER_KEY: ${RH_MASTER_KEY:-}
       TRUST_PROXY: "1"
       ALLOW_SIGNUP: "false"
       DEVELOPER_CNPJ: ${DEVELOPER_CNPJ:-68786355000191}
@@ -36,6 +39,7 @@ services:
       PLAY_STORE_URL: ${PLAY_STORE_URL:-}
       APK_URL: ${APK_URL:-}
       # Nexor Central: licença, cobrança e acesso de suporte (gerados na Central ao cadastrar o sistema)
+      NEXOR_CODIGO: ${NEXOR_CODIGO:-}
       NEXOR_CENTRAL_URL: ${NEXOR_CENTRAL_URL:-}
       NEXOR_INSTANCIA: ${NEXOR_INSTANCIA:-}
       NEXOR_TOKEN: ${NEXOR_TOKEN:-}
@@ -48,6 +52,7 @@ services:
   # Backup automático todo dia: banco consistente + arquivos criptografados, guarda os últimos 14
   backup:
     <<: *padrao
+    profiles: [rh]
     build: ../rh
     image: nexor/rh:local
     depends_on: [rh]
@@ -57,6 +62,43 @@ services:
       BACKUP_MANTER: ${BACKUP_MANTER:-14}
     volumes: [rh-dados:/dados, "${BACKUP_PASTA:-./backups}:/backups"]
     # mesmo usuário do rh (node, uid 1000): não cria arquivos do banco com outro dono
+    user: "1000:1000"
+    entrypoint: ["sh", "-c", "while true; do node --disable-warning=ExperimentalWarning scripts/backup.js || echo 'BACKUP FALHOU'; sleep 86400; done"]
+    healthcheck: { disable: true }
+
+  # Nexor Contábil: escritório de contabilidade (painel, portal do cliente e WhatsApp do escritório)
+  contabil:
+    <<: *padrao
+    profiles: [contabil]
+    build: ../contabil
+    image: nexor/contabil:local
+    environment:
+      NODE_ENV: production
+      PORT: "8793"
+      DATA_DIR: /dados
+      PUBLIC_URL: ${CONTABIL_PUBLIC_URL:-}
+      MASTER_KEY: ${CONTABIL_MASTER_KEY:-}
+      TRUST_PROXY: "1"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      NEXOR_CODIGO: ${NEXOR_CODIGO:-}
+      NEXOR_CENTRAL_URL: ${NEXOR_CENTRAL_URL:-}
+      NEXOR_CHAVE_PUBLICA: ${NEXOR_CHAVE_PUBLICA:-}
+      NEXOR_INSTANCIA: ${CONTABIL_NEXOR_INSTANCIA:-}
+      NEXOR_TOKEN: ${CONTABIL_NEXOR_TOKEN:-}
+    volumes: [contabil-dados:/dados]
+    ports: ["${CONTABIL_PORTA_LOCAL:-127.0.0.1:}:8793"]
+
+  backup-contabil:
+    <<: *padrao
+    profiles: [contabil]
+    build: ../contabil
+    image: nexor/contabil:local
+    depends_on: [contabil]
+    environment:
+      DATA_DIR: /dados
+      BACKUP_DIR: /backups
+      BACKUP_MANTER: ${BACKUP_MANTER:-14}
+    volumes: [contabil-dados:/dados, "${BACKUP_PASTA:-./backups}:/backups"]
     user: "1000:1000"
     entrypoint: ["sh", "-c", "while true; do node --disable-warning=ExperimentalWarning scripts/backup.js || echo 'BACKUP FALHOU'; sleep 86400; done"]
     healthcheck: { disable: true }
@@ -78,6 +120,7 @@ services:
       META_CONFIG_ID: ${META_CONFIG_ID:-}
       ALLOW_SIGNUP: "false"
       # Nexor Central: cada sistema tem a própria instância e token (Central → cliente → Novo sistema → Atende IA)
+      NEXOR_CODIGO: ${NEXOR_CODIGO:-}
       NEXOR_CENTRAL_URL: ${NEXOR_CENTRAL_URL:-}
       NEXOR_CHAVE_PUBLICA: ${NEXOR_CHAVE_PUBLICA:-}
       NEXOR_INSTANCIA: ${ATENDE_NEXOR_INSTANCIA:-}
@@ -103,6 +146,7 @@ services:
       # Chave de integração criada no Nexor RH (Configurações → Integrações), usada no conectores.json
       NEXOR_RH_CHAVE: ${NEXOR_RH_CHAVE:-}
       # Nexor Central (Central → cliente → Novo sistema → Nexor Agente)
+      NEXOR_CODIGO: ${NEXOR_CODIGO:-}
       NEXOR_CENTRAL_URL: ${NEXOR_CENTRAL_URL:-}
       NEXOR_CHAVE_PUBLICA: ${NEXOR_CHAVE_PUBLICA:-}
       NEXOR_INSTANCIA: ${AGENTE_NEXOR_INSTANCIA:-}
@@ -126,6 +170,7 @@ services:
     ports: ["80:80", "443:443"]
     environment:
       RH_DOMINIO: ${RH_DOMINIO:-}
+      CONTABIL_DOMINIO: ${CONTABIL_DOMINIO:-}
       ATENDE_DOMINIO: ${ATENDE_DOMINIO:-}
     volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy-dados:/data]
 
@@ -134,6 +179,7 @@ networks:
 
 volumes:
   rh-dados: {}
+  contabil-dados: {}
   atende-dados: {}
   agente-dados: {}
   caddy-dados: {}

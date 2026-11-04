@@ -64,45 +64,60 @@ Prazos, aviso e ponto podem ser ajustados por cliente. Há ainda duas ações ma
 
 O **Suporte Nexor nunca é bloqueado**.
 
-## Instalar no servidor da Nexor
+## Instalar no seu servidor
 
 1. **Domínio e túnel na Cloudflare.**
    1. Abra Zero Trust → Networks → Tunnels → Create a tunnel.
    2. Em Public Hostname, ligue `central.nexorconsultingit.com.br` a `http://central:8800`.
-   3. Copie o token do túnel.
-2. **No servidor:**
+   3. Copie o token.
+
+   Se o servidor já tem nginx ou Caddy com HTTPS, pule o túnel: use `SEM_TUNEL=1` e aponte o proxy para `127.0.0.1:8800`.
+2. **No servidor**, um comando só:
    ```bash
+   sudo apt update && sudo apt install -y git
+   sudo git clone https://github.com/pauloamorypa-web/nexorconsulting.git /opt/nexor
    cd /opt/nexor/central
-   cp .env.exemplo .env
-   nano .env                      # PUBLIC_URL, MASTER_KEY (openssl rand -base64 48), TUNNEL_TOKEN, SUPPORT_WHATSAPP
-   docker compose up -d --build
-   docker compose exec central cat /dados/codigo-instalacao.txt
+   sudo ./instalar.sh              # ou: sudo SEM_TUNEL=1 ./instalar.sh
    ```
+   O instalador:
+   - instala o Docker;
+   - pergunta o endereço, o token do túnel e o WhatsApp de suporte;
+   - gera a `MASTER_KEY`;
+   - sobe a Central com backup diário;
+   - mostra o **código de instalação**.
 3. **Primeiro acesso.**
-   1. Abra `https://central.nexorconsultingit.com.br`.
-   2. Crie a conta do **Dono** usando o código de instalação.
-   3. Escaneie o QR com o Google Authenticator ou o Microsoft Authenticator.
+   1. Abra o endereço e crie a conta do **Dono** com o código de instalação.
+   2. Escaneie o QR com o Google Authenticator ou o Microsoft Authenticator.
+   3. Na Equipe, crie os usuários Financeiro e Suporte.
 4. **Guarde no cofre:**
-   - a `MASTER_KEY`;
-   - o arquivo da chave que assina as licenças, que está no volume (`/dados/chave-licenca.pem`). O backup diário já copia esse arquivo para `./backups`.
-   - **Se perder a chave, todas as instalações dos clientes precisam receber uma chave pública nova.**
+   - a `MASTER_KEY` do `.env`;
+   - a chave das licenças (`/dados/chave-licenca.pem`, já copiada pelo backup diário em `./backups`).
 
-> **Render:** não é recomendado. A Central precisa de disco persistente (banco e chave), e no Render isso exige plano pago com disco. O servidor da Nexor com Docker e túnel sai mais barato e é mais simples.
+   **Se perder a chave das licenças, todas as instalações dos clientes precisam ser vinculadas de novo.**
+5. **Atualizar depois:** `cd /opt/nexor && sudo git pull && cd central && sudo ./instalar.sh`. Os dados ficam no volume e não são apagados.
 
-## Ligar o sistema de um cliente à Central
+> **Render:** não é recomendado. A Central precisa de disco persistente, e no Render isso exige plano pago com disco.
 
-1. Na Central, vá em **Clientes → Novo cliente** e preencha o contrato e a régua.
-2. No cliente, clique em **Novo sistema** e informe o produto Nexor RH e o endereço (ex.: `https://rh.paodourado.com.br`).
-3. A Central mostra **4 linhas**. Cole as 4 no `.env` da instalação do cliente (em `implantacao/.env` ou `clientes/<empresa>/.env`):
-   ```
-   NEXOR_CENTRAL_URL=https://central.nexorconsultingit.com.br
-   NEXOR_INSTANCIA=…
-   NEXOR_TOKEN=nxs_…
-   NEXOR_CHAVE_PUBLICA=MCow…
-   ```
-4. Aplique a mudança na instalação do cliente com `sudo ./atualizar.sh`, ou `./empresa.sh <empresa> up -d` na Nuvem Nexor. Em até 5 minutos o sistema aparece **no ar** na Central.
+## Ligar os sistemas do cliente: código do cliente (vinculação imediata)
 
-O token só é mostrado uma vez. Não mande por WhatsApp nem por e-mail: cole direto no servidor. Se ele vazar, use **Nova credencial**.
+Cada cliente cadastrado ganha um **código único**, por exemplo `NX-7K4P-2QM9`. Ele aparece em Clientes → cliente.
+
+O **mesmo código vincula todos os produtos** daquele cliente: Nexor RH, Atende IA, Nexor Agente e Nexor Contábil.
+
+Há três jeitos de usar o código, do mais rápido ao manual:
+
+1. **Na instalação:** o `instalar.sh` do pacote de implantação pergunta o código. Também dá para colocar `NEXOR_CODIGO=NX-…` no `.env`. Cada sistema se vincula sozinho ao subir.
+2. **Pelo painel do sistema:** o administrador do cliente, ou o técnico, abre **Configurações → Empresa → Vincular à Nexor** e digita o código. Pode ser em minúsculas e sem hífen.
+3. **Manual:** em **Novo sistema**, a Central mostra as 4 linhas `NEXOR_*` para colar no `.env`.
+
+O que acontece ao vincular:
+- O sistema aparece **na hora** na tela do cliente, já com licença, monitoramento e o botão de suporte.
+- Reinstalar o mesmo produto no mesmo endereço reaproveita o cadastro, então o histórico continua.
+
+Segurança do código:
+- Tentativas com código errado ficam na auditoria, e cada IP só pode tentar 10 vezes a cada 15 minutos.
+- Se o código vazar, use **Gerar outro**. Os sistemas já vinculados continuam funcionando.
+- Clientes com contrato encerrado não vinculam.
 
 ## Cobrança automática (Asaas)
 

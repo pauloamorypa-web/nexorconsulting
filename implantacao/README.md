@@ -2,6 +2,10 @@
 
 > **Passo a passo completo de todos os cenários** (servidor Linux ou Windows, mini PC, nuvem, notebook com configuração contra hibernação, servidor da Nexor) **e dos casos com e sem domínio: [GUIA-INSTALACAO.md](GUIA-INSTALACAO.md).**
 
+> **Nexor Contábil** (escritórios de contabilidade): manual completo em **[contabil/MANUAL-IMPLANTACAO.md](../contabil/MANUAL-IMPLANTACAO.md)**. Instale com `sudo SISTEMAS="contabil" ./instalar.sh`, ou com `SISTEMAS="rh contabil"` para os dois.
+>
+> **Quais sistemas sobem:** a linha `SISTEMAS=` do `.env` (`rh`, `contabil` ou `rh contabil`). Instalações antigas, sem essa linha, continuam como `rh`. Todos os scripts (`atualizar.sh`, `backup-agora.sh`, `empresa.sh`) leem essa linha.
+
 Cada empresa cliente recebe **o próprio ecossistema Nexor**: o Nexor RH, e quando contratados o Atende IA e o Nexor Agente, rodando juntos numa rede interna só dela, com banco, arquivos, chaves, backups e domínio separados. Nenhuma empresa enxerga os dados de outra, mesmo quando várias rodam no mesmo servidor.
 
 ```

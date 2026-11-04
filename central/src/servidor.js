@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import QRCode from "qrcode";
 import { acaoDoEvento, criarAsaas } from "./asaas.js";
 import { config as configPadrao } from "./config.js";
-import { abrirBanco } from "./db.js";
+import { abrirBanco, normalizarCodigo, novoCodigo } from "./db.js";
 import { conferirSenha, conferirTotp, criarAssinador, criarCofre, gerarHashSenha, gerarToken, iguais, novoSegredoTotp, sha256 } from "./seguranca.js";
 import { conteudoLicenca, hojeBR, mensalidadesDevidas, situacaoCliente } from "./regras.js";
 
@@ -26,8 +26,8 @@ export const PRODUTOS = { rh: "Nexor RH e Ponto", atende: "Atende IA", agente: "
 const PAPEIS = ["dono", "financeiro", "suporte"];
 const ONLINE_MS = 15 * 60_000;
 // Produtos com painel em que o Suporte Nexor entra pelo link assinado
-const COM_ACESSO = new Set(["rh", "atende"]);
-const PREFIXO_ENV = { atende: "ATENDE_", agente: "AGENTE_" };
+const COM_ACESSO = new Set(["rh", "atende", "contabil"]);
+const PREFIXO_ENV = { atende: "ATENDE_", agente: "AGENTE_", contabil: "CONTABIL_" };
 
 class ErroHttp extends Error {
   constructor(status, mensagem) {
@@ -220,6 +220,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   const FIN = { papeis: ["dono", "financeiro"] };
   const SUP = { papeis: ["dono", "suporte"] };
   const DONO = { papeis: ["dono"] };
+  const SUP_FIN = { papeis: ["dono", "financeiro", "suporte"] };
   const auditar = (ctx, acao, cliente_id, detalhe) => repo.auditar(ctx.usuario?.nome ?? "sistema", acao, cliente_id, detalhe);
 
   // Login: senha → 2FA (configurar na primeira vez) → sessão completa
@@ -365,7 +366,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("GET", "/api/clientes", TODOS, () => repo.lista("clientes", "ORDER BY razao_social").map((c) => ({ ...clientePublico(c), sistemas: repo.lista("sistemas", "WHERE cliente_id = ? AND ativo = 1", c.id).map(sistemaPublico) })));
   rota("POST", "/api/clientes", FIN, async (ctx) => {
     const d = dadosCliente(await ctx.corpo(), false);
-    const c = repo.inserir("clientes", { ...d, inicio_cobranca: d.inicio_cobranca ?? hoje(), regras: d.regras ?? {} });
+    const c = repo.inserir("clientes", { ...d, inicio_cobranca: d.inicio_cobranca ?? hoje(), regras: d.regras ?? {}, codigo: novoCodigo() });
     auditar(ctx, "cliente_criado", c.id, { razao_social: c.razao_social });
     await rotina();
     return clientePublico(repo.obter("clientes", c.id));
@@ -401,6 +402,12 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     if (ate && ate < hoje()) falha(400, "A data de liberação já passou.");
     auditar(ctx, "desbloqueio", c.id, { ate: ate ?? null, motivo: V.texto(b.motivo, 200) ?? null });
     return clientePublico(repo.atualizar("clientes", c.id, { bloqueio_manual: null, liberado_ate: ate ?? null }));
+  });
+  // Código vazou ou o cliente trocou de responsável: gera outro (os sistemas já vinculados continuam funcionando)
+  rota("POST", "/api/clientes/:id/codigo", SUP_FIN, (ctx) => {
+    const c = exigirCliente(ctx.params.id);
+    auditar(ctx, "codigo_trocado", c.id);
+    return clientePublico(repo.atualizar("clientes", c.id, { codigo: novoCodigo() }));
   });
   rota("POST", "/api/clientes/:id/cancelar", DONO, async (ctx) => {
     const c = exigirCliente(ctx.params.id);
@@ -500,7 +507,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("POST", "/api/sistemas/:id/acesso", SUP, (ctx) => {
     const s = exigirSistema(ctx.params.id);
     if (!s.ativo) falha(409, "Sistema desativado.");
-    if (!COM_ACESSO.has(s.produto)) falha(400, "O acesso direto de suporte está disponível para o Nexor RH e o Atende IA.");
+    if (!COM_ACESSO.has(s.produto)) falha(400, "O acesso direto de suporte está disponível para o Nexor RH, o Atende IA e o Nexor Contábil.");
     if (!s.url) falha(400, "Cadastre o endereço do sistema (ex.: https://rh.cliente.com.br) antes.");
     const token = assinador.assinar({ v: 1, tipo: "acesso", inst: s.id, nome: ctx.usuario.nome, email: ctx.usuario.email, exp: agora() + cfg.acessoSegundos * 1000, nonce: gerarToken(16) });
     auditar(ctx, "acesso_suporte", s.cliente_id, { sistema: s.id });
@@ -509,7 +516,35 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("GET", "/api/chave-publica", TODOS, () => ({ chave: assinador.chavePublica }));
 
   // Sincronização: o sistema do cliente manda a saúde (só contagens, nenhum dado pessoal) e recebe a licença
-  const SAUDE = { colaboradores: "n", usuarios: "n", empresas: "n", marcacoes_hoje: "n", banco_mb: "n", disco_livre_mb: "n", backup_ultimo: "n", uptime_s: "n", node: "s", erros_24h: "n", conversas_hoje: "n", conectores: "n" };
+  const SAUDE = { colaboradores: "n", usuarios: "n", empresas: "n", marcacoes_hoje: "n", banco_mb: "n", disco_livre_mb: "n", backup_ultimo: "n", uptime_s: "n", node: "s", erros_24h: "n", conversas_hoje: "n", conectores: "n", carteira: "n", documentos_mes: "n", pendencias: "n", tarefas_atrasadas: "n" };
+  // Vinculação imediata: o sistema instalado no cliente manda o código do cliente (NX-XXXX-XXXX) e recebe a
+  // instância, o token e a chave pública. Reinstalação do mesmo produto no mesmo endereço reaproveita a instância.
+  rota("POST", "/api/v1/vincular", { publico: true, maquina: true }, async (ctx) => {
+    limitar(`vincular:${ctx.ip}`, 10);
+    const b = await ctx.corpo();
+    const codigo = normalizarCodigo(b.codigo);
+    const c = codigo ? repo.um("SELECT * FROM clientes WHERE codigo = ?", codigo) : null;
+    if (!c) {
+      repo.auditar("sistema", "vinculacao_recusada", null, { ip: ctx.ip, produto: String(b.produto ?? "").slice(0, 20) });
+      falha(404, "Código do cliente não encontrado. Confira na Nexor Central (Clientes → cliente → Código).");
+    }
+    if (c.status !== "ativo") falha(409, "Contrato deste cliente está encerrado na Nexor Central.");
+    if (!PRODUTOS[b.produto]) falha(400, "Produto desconhecido.");
+    let url = null;
+    try {
+      url = b.url ? V.url(b.url) : null;
+    } catch {
+      url = null;
+    }
+    const token = `nxs_${gerarToken(32)}`;
+    const existente = url ? repo.um("SELECT * FROM sistemas WHERE cliente_id = ? AND produto = ? AND url = ?", c.id, b.produto, url) : null;
+    let s;
+    if (existente) s = repo.atualizar("sistemas", existente.id, { token_hash: sha256(token), prefixo: token.slice(0, 10), ativo: true });
+    else s = repo.inserir("sistemas", { cliente_id: c.id, produto: b.produto, nome: V.texto(b.nome, 80) ?? PRODUTOS[b.produto], url, token_hash: sha256(token), prefixo: token.slice(0, 10) });
+    repo.auditar("sistema", "sistema_vinculado", c.id, { sistema: s.id, produto: s.produto, url, ip: ctx.ip, reaproveitado: Boolean(existente) });
+    return { instancia: s.id, token, chave_publica: assinador.chavePublica, cliente: c.nome_fantasia || c.razao_social };
+  });
+
   rota("POST", "/api/v1/sincronizar", { publico: true, maquina: true }, async (ctx) => {
     const token = String(ctx.req.headers.authorization ?? "").match(/^Bearer\s+(nxs_[\w-]{20,80})$/)?.[1];
     limitar(`sync:${ctx.ip}`, 120, 5 * 60_000);

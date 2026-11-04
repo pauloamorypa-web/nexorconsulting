@@ -183,7 +183,7 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
       usuario,
       empresa,
       // Situação do contrato com a Nexor e o que o Suporte Nexor escondeu
-      licenca: { situacao: lic.situacao, mensagem: lic.mensagem, link: lic.link, contato: lic.contato },
+      licenca: { situacao: lic.situacao, mensagem: lic.mensagem, link: lic.link, contato: lic.contato, vinculado: central.configurada },
       ocultos: repo.ocultos(empresa.id),
       padrao: CONFIG_PADRAO,
       canais,
@@ -889,6 +889,17 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     repo.auditar(empresa.id, usuario.id, "ajustes_nexor", { ocultos });
     return { ocultos };
   });
+  // O dono ou administrador vincula o sistema pelo código do cliente na Nexor Central
+  r.post("/api/nexor/vincular", { papeis: ["dono", "admin"] }, async ({ corpo, empresa, usuario, ip }) => {
+    limitarLogin(`vincular:${ip}`);
+    if (central.configurada) falha(409, "Este sistema já está vinculado à Nexor Central.");
+    const d = validar(z.object({ codigo: z.string().trim().min(8).max(20) }), await corpo());
+    const r2 = await central.vincular(d.codigo, { nome: empresa.nome });
+    if (!r2.ok) falha(400, r2.erro);
+    repo.auditar(empresa.id, usuario.id, "vinculado_nexor_central", { cliente: r2.cliente });
+    return r2;
+  });
+
   r.post("/api/nexor/sincronizar", { nexor: true }, async () => ({ ...(await central.sincronizar()), licenca: central.estado(), central: central.info() }));
 
   return { roteador: r, sessaoDe, mascarar };

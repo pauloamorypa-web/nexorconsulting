@@ -56,5 +56,16 @@ export function rotasNexor({ r, repo, cfg, central, agora, limitar }) {
     return { ocultos };
   });
 
+  // O administrador do cliente (ou o técnico na implantação) vincula o sistema pelo código do cliente
+  r.post("/api/nexor/vincular", { papeis: ["admin"] }, async (ctx) => {
+    limitar(`vincular:${ctx.ip}`, 10);
+    if (central.configurada) falha(409, "Este sistema já está vinculado à Nexor Central.");
+    const d = validar(z.object({ codigo: z.string().trim().min(8).max(20) }), await ctx.corpo());
+    const r2 = await central.vincular(d.codigo, { nome: ctx.empresa.nome_fantasia || ctx.empresa.razao_social });
+    if (!r2.ok) falha(400, r2.erro);
+    repo.auditar(ctx.empresa.id, ctx.usuario.nome, "vinculado_nexor_central", { cliente: r2.cliente });
+    return r2;
+  });
+
   r.post("/api/nexor/sincronizar", NEXOR, async () => ({ ...(await central.sincronizar()), licenca: central.estado(), central: central.info() }));
 }

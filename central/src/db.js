@@ -1,7 +1,7 @@
 /* Banco da Nexor Central (SQLite nativo do Node). Guarda só dados comerciais e técnicos dos clientes:
    nenhum dado de colaborador dos sistemas sai da instalação do cliente para cá. */
 
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -41,6 +41,18 @@ CREATE INDEX IF NOT EXISTS faturas_status ON faturas (status, vencimento);
 CREATE TABLE IF NOT EXISTS auditoria (id TEXT PRIMARY KEY, autor TEXT, acao TEXT NOT NULL, cliente_id TEXT, detalhe TEXT, criado_em INTEGER NOT NULL);
 `;
 
+const LETRAS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem 0/O, 1/I: fácil de ditar e digitar
+/** Código do cliente: NX-XXXX-XXXX (32^8 ≈ 1 trilhão de combinações) */
+export const novoCodigo = () => {
+  const c = [...randomBytes(8)].map((b) => LETRAS[b % 32]).join("");
+  return `NX-${c.slice(0, 4)}-${c.slice(4)}`;
+};
+/** Normaliza o que a pessoa digitou: minúsculas, espaços e sem hífen viram NX-XXXX-XXXX */
+export function normalizarCodigo(v) {
+  const s = String(v ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^NX/, "");
+  return /^[A-Z0-9]{8}$/.test(s) ? `NX-${s.slice(0, 4)}-${s.slice(4)}` : null;
+}
+
 const JSON_COLS = { clientes: ["regras"], sistemas: ["saude"], auditoria: ["detalhe"] };
 const BOOL_COLS = new Set(["ativo"]);
 const lerJson = (v, padrao) => {
@@ -56,6 +68,11 @@ export function abrirBanco(caminho, agora = () => Date.now()) {
   const db = new DatabaseSync(caminho);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(ESQUEMA);
+  // Código do cliente (NX-XXXX-XXXX): vincula qualquer sistema Nexor ao cliente na hora
+  if (!db.prepare("PRAGMA table_info(clientes)").all().some((c) => c.name === "codigo")) db.exec("ALTER TABLE clientes ADD COLUMN codigo TEXT");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS clientes_codigo ON clientes (codigo)");
+  for (const { id } of db.prepare("SELECT id FROM clientes WHERE codigo IS NULL").all()) db.prepare("UPDATE clientes SET codigo = ? WHERE id = ?").run(novoCodigo(), id);
+
   const cache = new Map();
   const q = (sql) => {
     let s = cache.get(sql);
