@@ -1353,7 +1353,7 @@ img.nx-blue-av, img.nx-chat-avatar { object-fit: cover; padding: 0; background: 
 .fund-texto h3 { font-size: clamp(1.5rem, 3vw, 2.2rem); line-height: 1.1; margin: 14px 0 18px; }
 .fund-beneficios { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; }
 .fund-beneficios li { display: flex; align-items: baseline; gap: 12px; }
-.fund-beneficios b { min-width: 104px; font: 700 1.7rem var(--font-head); background: linear-gradient(90deg, #3b8dff, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fund-beneficios b { min-width: 138px; font: 700 1.7rem var(--font-head); background: linear-gradient(90deg, #3b8dff, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .fund-produtos { display: grid; gap: 12px; align-content: start; }
 .fund-produto { padding: 16px 18px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--a) 45%, transparent); background: color-mix(in srgb, var(--a) 10%, var(--panel-solid, #0b1230)); display: grid; gap: 6px; }
 .fund-produto h4 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.05rem; }
