@@ -11,6 +11,9 @@
 
 /** Itens que o Suporte Nexor pode esconder do cliente. Módulos somem do menu e a API recusa; abas de
     configuração somem da tela e a API recusa alterações (a leitura continua para as outras telas). */
+/** Teste grátis: o que cada limite da licença conta (chave da saúde) e quais POST criam mais um */
+export const LIMITES_TESTE = { colaboradores: { rotas: ["/api/colaboradores"], rotulo: "colaboradores ativos" } };
+
 export const CATALOGO = {
   modulos: {
     "modulo.folha": { rotulo: "Folha de pagamento", api: ["/api/folhas", "/api/lancamentos", "/api/rescisao", "/api/beneficios"] },

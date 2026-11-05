@@ -15,8 +15,8 @@ import { config as configPadrao } from "./config.js";
 import { abrirBanco } from "./db.js";
 import { criarApi } from "./http/api.js";
 import { ErroHttp, json, lerCookies, lerCorpo } from "./http/roteador.js";
-import { criarCentralNexor } from "./nexor/central.js";
-import { bloqueadoPorAjuste, recusaPorLicenca } from "./nexor/politica.js";
+import { criarCentralNexor, recusaPorTeste } from "./nexor/central.js";
+import { CATALOGO as CATALOGO_NEXOR, LIMITES_TESTE, bloqueadoPorAjuste, recusaPorLicenca } from "./nexor/politica.js";
 import { hojeBR } from "./regras/datas.js";
 import { criarCofre, iguais } from "./seguranca.js";
 import { assinaturaMetaValida } from "./servicos/canais.js";
@@ -151,6 +151,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       const lic = central.estado();
       const recusa = recusaPorLicenca(lic, req.method, url.pathname);
       if (recusa) return json(res, 423, { erro: recusa, codigo: "licenca", situacao: lic.situacao, link: portal ? null : lic.link });
+      const teste = recusaPorTeste(lic, req.method, url.pathname, { catalogo: CATALOGO_NEXOR, rotas: LIMITES_TESTE, contar: () => saudeDaInstalacao(repo, cfg, agora) });
+      if (teste) return json(res, 402, { erro: teste, codigo: "teste", link: portal ? null : lic.link });
       if (usuario) {
         const oculto = bloqueadoPorAjuste(repo.ocultos(usuario.empresa_id), req.method, url.pathname);
         if (oculto) return json(res, 403, { erro: `${oculto} não está disponível no seu plano. Fale com a Nexor.` });

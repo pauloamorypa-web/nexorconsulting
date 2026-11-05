@@ -1,8 +1,9 @@
-/* Teste grátis de 12 horas: pré-cadastro (vira lead para a Nexor) e as demonstrações interativas de cada solução.
+/* Teste grátis de 30 dias: pré-cadastro (vira lead para a Nexor ativar o teste no ambiente do cliente) e as
+   demonstrações interativas de cada solução, que abrem na hora.
    As demonstrações rodam no navegador do visitante e guardam os dados só nele. */
 
 const Teste = (() => {
-  const HORAS = 12;
+  const DIAS = 30;
   const modalCadastro = document.getElementById("teste-modal");
   const area = document.getElementById("teste-area");
   const corpo = area.querySelector(".ta-corpo");
@@ -12,7 +13,7 @@ const Teste = (() => {
   const brl = (n) => Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const solucao = (id) => SOLUCOES.find((s) => s.id === id);
   const perfil = () => NX.ler("nx-teste-perfil", null);
-  const testes = () => NX.ler("nx-testes", {});
+  const testes = () => NX.ler("nx-testes-30d", {}); // chave nova: os testes antigos eram de 12 horas
   const estado = (id, padrao) => NX.ler(`nx-demo-${id}`, padrao);
   const salvar = (id, valor) => NX.guardar(`nx-demo-${id}`, valor);
 
@@ -65,8 +66,8 @@ const Teste = (() => {
     const t = testes();
     const agora = Date.now();
     if (!t[id]) {
-      t[id] = agora + HORAS * 3600_000;
-      NX.guardar("nx-testes", t);
+      t[id] = agora + DIAS * 86400_000;
+      NX.guardar("nx-testes-30d", t);
       NX.enviarLead("teste", perfil(), { solucao: s.nome, formulario: primeiraVez ? "pre-cadastro" : "novo-teste" });
     }
     area.style.setProperty("--a", s.accent);
@@ -84,9 +85,9 @@ const Teste = (() => {
         area.querySelector(".ta-tempo").textContent = "teste encerrado";
         return expirado(s);
       }
-      const h = Math.floor(resta / 3600_000);
-      const m = Math.floor((resta % 3600_000) / 60_000);
-      area.querySelector(".ta-tempo").textContent = `${h}h ${String(m).padStart(2, "0")}min restantes`;
+      const d = Math.floor(resta / 86400_000);
+      const h = Math.floor((resta % 86400_000) / 3600_000);
+      area.querySelector(".ta-tempo").textContent = d >= 1 ? `${d} ${d === 1 ? "dia" : "dias"} restantes` : `${h}h ${String(Math.floor((resta % 3600_000) / 60_000)).padStart(2, "0")}min restantes`;
     };
     if (t[id] <= agora) expirado(s);
     else {
@@ -99,7 +100,7 @@ const Teste = (() => {
   }
 
   function expirado(s) {
-    corpo.innerHTML = `<div class="ta-fim"><h3>Seu teste do ${esc(s.nome)} terminou</h3><p class="muted">Gostou? Nossa equipe monta a versão real para a sua empresa, com seus dados e integrações.</p><div class="ta-fim-acoes"><button class="btn btn-primary" type="button" data-implantar>Quero implantar</button><a class="btn btn-whats" target="_blank" rel="noopener" href="${whatsUrl(`Olá! Meu teste do ${s.nome} terminou e quero conversar sobre a implantação.`)}">Falar no WhatsApp</a></div></div>`;
+    corpo.innerHTML = `<div class="ta-fim"><h3>Seus 30 dias de teste do ${esc(s.nome)} terminaram</h3><p class="muted">Para continuar, escolha um plano: o nosso time implanta com você, com os seus dados e integrações, e acompanha os resultados de perto.</p><div class="ta-fim-acoes"><button class="btn btn-primary" type="button" data-implantar>Quero contratar</button><a class="btn btn-whats" target="_blank" rel="noopener" href="${whatsUrl(`Olá! Meu teste do ${s.nome} terminou e quero conversar sobre a implantação.`)}">Falar no WhatsApp</a></div></div>`;
   }
 
   area.addEventListener("click", (e) => {
@@ -109,8 +110,9 @@ const Teste = (() => {
     }
     if (e.target.closest("[data-implantar]")) {
       const s = solucao(area.dataset.atual);
-      NX.enviarLead("interesse", perfil(), { solucao: s.nome, formulario: "quero-implantar" });
-      aviso("Recebemos! Um especialista vai te chamar no WhatsApp.");
+      const fim = e.target.closest(".ta-fim");
+      NX.enviarLead("interesse", perfil(), { solucao: s.nome, formulario: fim ? "quero-contratar" : "teste-30-dias-com-dados" });
+      aviso(fim ? "Recebemos! Um especialista vai te chamar no WhatsApp para montar o seu plano." : "Recebemos! O time Nexor vai te chamar no WhatsApp para ativar os 30 dias com os dados da sua empresa.");
     }
   });
 

@@ -26,3 +26,8 @@
 .codigo-cliente { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; padding: 12px 14px; border: 1px dashed color-mix(in srgb, var(--azul) 45%, var(--linha)); border-radius: 12px; background: color-mix(in srgb, var(--azul) 5%, var(--superficie)); margin-bottom: 12px; }
 .codigo-cliente p { grid-column: 1 / -1; margin: 0; }
 .codigo-cliente .codigo { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 20px; letter-spacing: .06em; }
+.sit-teste { --c: var(--azul); }
+.previa-plano { margin: 0; padding: 12px 14px; border-radius: 12px; border: 1px dashed color-mix(in srgb, var(--azul) 45%, var(--linha)); background: color-mix(in srgb, var(--azul) 6%, var(--superficie)); font-size: 14px; line-height: 1.5; }
+.entrada-pequena { padding: 4px 8px; font-size: 13px; min-height: 0; }
+.grade-planos { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 18px; align-items: start; }
+@media (max-width: 640px) { .grade-planos { grid-template-columns: 1fr; } }

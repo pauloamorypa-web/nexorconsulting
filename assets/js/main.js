@@ -376,7 +376,7 @@ $$(".solutions[data-grupo]").forEach((grade) => {
         <ul class="checks">${x.recursos.slice(0, 3).map((r) => `<li><svg class="ic"><use href="#i-check"/></svg>${r}</li>`).join("")}</ul>
         <div class="sol-actions">
           <button class="btn btn-sm btn-ghost" type="button" data-solucao="${x.id}">Ver modelos</button>
-          <button class="btn btn-sm btn-primary" type="button" data-testar="${x.id}">Testar grátis 12h</button>
+          <button class="btn btn-sm btn-primary" type="button" data-testar="${x.id}">Testar 30 dias grátis</button>
         </div>
       </div>
     </article>`

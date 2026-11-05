@@ -41,7 +41,7 @@ A pasta `agent/` tem o servidor da Blue, a assistente de IA (Claude) que respond
 No site:
 - `assets/js/config.js`: endereço do servidor (`NEXOR_API_URL`) e WhatsApp.
 - `assets/js/solucoes.js`: as 9 soluções (6 de negócio e 3 de TI) com os modelos de tela de cada uma.
-- `assets/js/teste.js`: pré-cadastro e as demonstrações do teste grátis de 12 horas.
+- `assets/js/teste.js`: pré-cadastro e as demonstrações do teste grátis de 30 dias.
 - `assets/js/calculadora.js`: calculadora de retorno.
 - `assets/js/leads.js`: pontuação de engajamento, formulários abandonados e oferta antes de sair.
 - `assets/js/assistente.js`: a Blue no site.

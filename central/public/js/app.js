@@ -14,6 +14,24 @@ const chip = (mapa, k, extra) => {
   return h("span", { class: `chip ${c ? `chip-${c}` : ""}` }, t, extra ?? "");
 };
 const hoje = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+const TIPOS_PARC = { vendedor: "Vendedor interno", representante: "Representante", indicador: "Parceiro indicador", revenda: "Parceiro revenda", estrategico: "Parceiro estratégico" };
+const COM = { prevista: ["Em carência", "alerta"], a_pagar: ["A pagar", "ok"], paga: ["Paga", ""], estornada: ["Estornada", "perigo"] };
+/** Situação do cliente, com o teste grátis no lugar do "aviso de atraso" */
+const chipCliente = (c) => {
+  if (c.status === "cancelado") return chip({ x: ["Cancelado", ""] }, "x");
+  if (c.fase === "teste") return c.teste_ate && c.teste_ate >= hoje() ? chip({ t: ["Teste grátis", "alerta"] }, "t", ` até ${dataBR(c.teste_ate)}`) : chip({ t: ["Teste encerrado", "perigo"] }, "t");
+  return chip(SIT, c.situacao, c.atraso ? ` · ${c.atraso}d` : "");
+};
+let catalogo = null;
+const pegarCatalogo = async () => (catalogo ??= await get("/catalogo"));
+const planosOpcoes = (cat) => Object.entries(cat.planos).flatMap(([prod, g]) => g.planos.filter((p) => p.mensal || p.por_unidade).map((p) => [p.id, `${cat.produtos[prod]} · ${p.nome} · ${p.por_unidade ? `${reais(p.por_unidade)}/${g.unidade} (mín. ${reais(p.minimo)})` : `${reais(p.mensal)}/mês`}`]));
+const acharPlano = (cat, id) => {
+  for (const [prod, g] of Object.entries(cat.planos)) {
+    const p = g.planos.find((x) => x.id === id);
+    if (p) return { ...p, produto: prod, unidade: g.unidade };
+  }
+  return null;
+};
 const pode = (...p) => p.includes(estado.eu.usuario.papel);
 const nomeCliente = (c) => c.nome_fantasia || c.razao_social;
 
@@ -30,6 +48,8 @@ const ROTAS = {
   clientes: { titulo: "Clientes", icone: "predio", render: clientes },
   faturas: { titulo: "Faturas", icone: "dinheiro", render: faturas },
   sistemas: { titulo: "Sistemas", icone: "caixa", render: sistemas },
+  comercial: { titulo: "Planos e preços", icone: "dinheiro", render: comercial },
+  parceiros: { titulo: "Parceiros e comissões", icone: "pessoa", render: parceiros },
   equipe: { titulo: "Equipe Nexor", icone: "pessoa", render: equipe, papeis: ["dono"] },
   auditoria: { titulo: "Auditoria", icone: "nota", render: auditoria },
 };
@@ -155,9 +175,9 @@ async function inicio() {
     h(
       "div",
       { class: "indicadores" },
-      indicador("predio", "Clientes ativos", String(p.clientes.total), `${s.ativo} em dia · ${s.aviso + s.restrito} em atraso · ${s.bloqueado} ${s.bloqueado === 1 ? "bloqueado" : "bloqueados"}`),
+      indicador("predio", "Clientes ativos", String(p.clientes.total), `${p.clientes.em_teste} em teste grátis · ${p.clientes.fundadores} fundador(es) · ${s.bloqueado} ${s.bloqueado === 1 ? "bloqueado" : "bloqueados"}`),
       indicador("dinheiro", "Receita mensal (MRR)", reais(p.financeiro.mrr), `Recebido este mês: ${reais(p.financeiro.recebido_mes)}`, "var(--verde)"),
-      indicador("alerta", "Vencido em aberto", reais(p.financeiro.vencido), `A vencer: ${reais(p.financeiro.a_vencer)}`, p.financeiro.vencido ? "var(--vermelho)" : undefined),
+      indicador("alerta", "Vencido em aberto", reais(p.financeiro.vencido), `A vencer: ${reais(p.financeiro.a_vencer)} · comissões a pagar: ${reais(p.financeiro.comissoes_a_pagar)}`, p.financeiro.vencido ? "var(--vermelho)" : undefined),
       indicador("caixa", "Sistemas no ar", `${p.sistemas.online}/${p.sistemas.total}`, Object.entries(p.sistemas.porProduto).filter(([, n]) => n).map(([k, n]) => `${n} ${k}`).join(" · ") || "nenhum instalado", p.sistemas.online < p.sistemas.total ? "var(--amarelo)" : "var(--verde)"),
     ),
     h(
@@ -191,19 +211,19 @@ async function clientes(id) {
       tabela(
         [
           { titulo: "Cliente", valor: (c) => h("div", {}, h("strong", {}, nomeCliente(c)), h("small", { class: "suave", style: { display: "block" } }, cnpjBR(c.cnpj), c.cidade ? ` · ${c.cidade}` : "", c.codigo ? ` · ${c.codigo}` : "")) },
-          { titulo: "Situação", valor: (c) => (c.status === "cancelado" ? chip({ x: ["Cancelado", ""] }, "x") : chip(SIT, c.situacao, c.atraso ? ` · ${c.atraso}d` : "")) },
+          { titulo: "Situação", valor: (c) => h("span", {}, chipCliente(c), c.fundador ? h("span", { class: "chip chip-ok" }, "Fundador") : null) },
           { titulo: "Sistemas", valor: (c) => (c.sistemas.length ? c.sistemas.map((s) => h("span", { class: "chip", title: s.online ? "No ar" : "Sem contato" }, h("span", { class: `ponto-sit sit-${s.online ? "ativo" : "offline"}` }), s.produto)) : h("span", { class: "suave" }, "—")) },
           { titulo: "Mensalidade", valor: (c) => reais(c.valor_centavos), classe: "num" },
           { titulo: "Vence dia", valor: (c) => String(c.dia_vencimento), classe: "num" },
         ],
-        lista.filter((c) => filtro === "todos" || (filtro === "atraso" ? ["aviso", "restrito", "bloqueado"].includes(c.situacao) && c.status === "ativo" : c.status === filtro)),
+        lista.filter((c) => filtro === "todos" || (filtro === "teste" ? c.fase === "teste" : filtro === "atraso" ? c.fase !== "teste" && ["aviso", "restrito", "bloqueado"].includes(c.situacao) && c.status === "ativo" : c.status === filtro)),
         { aoClicar: (c) => navegar(`clientes/${c.id}`), vazio: "Nenhum cliente aqui. Cadastre o primeiro." },
       ),
     );
   const filtros = h(
     "div",
     { class: "filtros" },
-    [["todos", "Todos"], ["ativo", "Ativos"], ["atraso", "Em atraso"], ["cancelado", "Cancelados"]].map(([k, t]) =>
+    [["todos", "Todos"], ["ativo", "Ativos"], ["teste", "Em teste"], ["atraso", "Em atraso"], ["cancelado", "Cancelados"]].map(([k, t]) =>
       h("button", { class: `chip clicavel ${k === filtro ? "ativo" : ""}`, onclick: (e) => ((filtro = k), e.currentTarget.parentElement.querySelectorAll(".chip").forEach((x) => x.classList.remove("ativo")), e.currentTarget.classList.add("ativo"), desenhar()) }, t),
     ),
   );
@@ -211,9 +231,15 @@ async function clientes(id) {
   return h("div", { class: "pagina" }, topo("Clientes", `${lista.length} cadastrados`, pode("dono", "financeiro") ? botao("Novo cliente", () => editarCliente(), "btn-primario", "mais") : null), h("section", { class: "cartao" }, filtros, h("div", { style: { marginTop: "12px" } }, corpo)));
 }
 
-function editarCliente(c) {
+async function editarCliente(c) {
+  const [cat, parcs] = await Promise.all([pegarCatalogo(), get("/parceiros")]);
+  const opcoesParc = (tipos) => [["", "—"], ...parcs.filter((p) => p.ativo && tipos.includes(p.tipo)).map((p) => [p.id, `${p.nome} · ${TIPOS_PARC[p.tipo]}`])];
   const f = formulario(
     [
+      ...(c ? [] : [{ titulo: "Teste grátis" }, { nome: "teste_produto", rotulo: `Começar no teste grátis de ${cat.teste.dias} dias (opcional)`, tipo: "select", opcoes: [["", "Não: já contratado (preencha o contrato abaixo)"], ...Object.keys(cat.teste.produtos).filter((k) => k !== "one").map((k) => [k, `${cat.produtos[k]} · ${cat.teste.produtos[k].resumo}`])], largura: 2 }]),
+      { titulo: "Quem vendeu" },
+      { nome: "vendedor_id", rotulo: "Vendedor ou representante", tipo: "select", opcoes: opcoesParc(["vendedor", "representante"]), enviarNulo: true },
+      { nome: "parceiro_id", rotulo: "Parceiro", tipo: "select", opcoes: opcoesParc(["indicador", "revenda", "estrategico"]), enviarNulo: true },
       { titulo: "Empresa" },
       { nome: "razao_social", rotulo: "Razão social", obrigatorio: true, largura: 2 },
       { nome: "nome_fantasia", rotulo: "Nome fantasia" },
@@ -223,8 +249,8 @@ function editarCliente(c) {
       { nome: "email", rotulo: "E-mail financeiro", tipo: "email" },
       { nome: "telefone", rotulo: "WhatsApp", tipo: "tel" },
       { titulo: "Contrato" },
-      { nome: "plano", rotulo: "Plano", placeholder: "Ex.: RH + Ponto até 50 colaboradores" },
-      { nome: "valor_centavos", rotulo: "Mensalidade (R$)", tipo: "reais", obrigatorio: true },
+      { nome: "plano", rotulo: "Plano", placeholder: "Use \"Contratar plano\" no cliente para puxar do catálogo" },
+      { nome: "valor_centavos", rotulo: "Mensalidade cheia (R$)", tipo: "reais", obrigatorio: true },
       { nome: "dia_vencimento", rotulo: "Dia do vencimento", tipo: "numero", min: 1, max: 31, padrao: 10 },
       { nome: "inicio_cobranca", rotulo: "Cobrar a partir de", tipo: "data", padrao: hoje() },
       { titulo: "Régua de cobrança (dias depois do vencimento)" },
@@ -235,7 +261,7 @@ function editarCliente(c) {
       { nome: "regras.manter_ponto", rotulo: "Manter o registro de ponto funcionando mesmo bloqueado (recomendado)", tipo: "check", padrao: true, largura: 2 },
       { nome: "observacoes", rotulo: "Observações", tipo: "area", largura: 2 },
     ],
-    c ? { ...c, cnpj: cnpjBR(c.cnpj) } : { regras: { aviso: 1, restrito: 10, bloqueio: 20, antecedencia: 10, manter_ponto: true } },
+    c ? { ...c, cnpj: cnpjBR(c.cnpj), vendedor_id: c.vendedor_id ?? "", parceiro_id: c.parceiro_id ?? "" } : { regras: { aviso: 1, restrito: 10, bloqueio: 20, antecedencia: 10, manter_ponto: true } },
   );
   janela({
     titulo: c ? `Editar ${nomeCliente(c)}` : "Novo cliente",
@@ -253,6 +279,8 @@ async function detalheCliente(id) {
   const acoesSituacao = [
     fin && !c.bloqueio_manual ? botao("Bloquear agora", () => bloquear(c), "btn-perigo-fantasma btn-pequeno", "x") : null,
     fin && (c.bloqueio_manual || c.situacao !== "ativo") ? botao(c.bloqueio_manual ? "Desbloquear" : "Liberar até…", () => liberar(c), "btn-fantasma btn-pequeno", "check") : null,
+    fin && c.status === "ativo" ? botao(c.fase === "teste" ? "Contratar plano" : "Trocar plano", () => contratar(c), "btn-primario btn-pequeno", "dinheiro") : null,
+    fin && c.status === "ativo" && !c.contratado_em ? botao(c.fase === "teste" ? "Prorrogar teste" : "Iniciar teste grátis", () => testeGratis(c), "btn-fantasma btn-pequeno", "raio") : null,
     fin ? botao("Editar", () => editarCliente(c), "btn-fantasma btn-pequeno", "editar") : null,
     pode("dono") ? botao(c.status === "cancelado" ? "Reativar contrato" : "Encerrar contrato", () => cancelar(c), "btn-fantasma btn-pequeno") : null,
   ];
@@ -264,7 +292,7 @@ async function detalheCliente(id) {
     h(
       "section",
       { class: `cartao sit-${c.situacao}` },
-      h("div", { class: "cartao-topo" }, h("h2", {}, h("span", { class: "ponto-sit" }), "Situação: ", chip(SIT, c.status === "cancelado" ? "bloqueado" : c.situacao)), c.liberado_ate ? h("span", { class: "chip chip-ok" }, `Liberado até ${dataBR(c.liberado_ate)}`) : null),
+      h("div", { class: "cartao-topo" }, h("h2", {}, h("span", { class: "ponto-sit" }), "Situação: ", chipCliente(c)), c.liberado_ate ? h("span", { class: "chip chip-ok" }, `Liberado até ${dataBR(c.liberado_ate)}`) : null),
       h("p", {}, c.mensagem || "Em dia. O sistema do cliente funciona normalmente."),
       h("p", { class: "suave pequeno" }, `Régua: aviso com ${r.aviso} dia(s) de atraso, somente leitura com ${r.restrito}, bloqueio com ${r.bloqueio}. Ponto ${r.manter_ponto ? "continua" : "para"} no bloqueio. A mudança chega aos sistemas em até 5 minutos.`),
     ),
@@ -288,7 +316,7 @@ async function detalheCliente(id) {
         "section",
         { class: "cartao" },
         h("h2", {}, "Contrato"),
-        h("div", { class: "saude", style: { fontSize: "14px", display: "grid", gap: "6px" } }, h("span", {}, "Plano: ", h("strong", {}, c.plano || "—")), h("span", {}, "Mensalidade: ", h("strong", {}, reais(c.valor_centavos)), ` · vence dia ${c.dia_vencimento}`), h("span", {}, "Responsável: ", c.contato_nome || "—", c.telefone ? ` · ${c.telefone}` : "", c.email ? ` · ${c.email}` : ""), h("span", {}, "Cobrança automática (Asaas): ", estado.eu.asaas ? "ativa" : "desligada (cobrança manual)")),
+        h("div", { class: "saude", style: { fontSize: "14px", display: "grid", gap: "6px" } }, h("span", {}, "Plano: ", h("strong", {}, c.fase === "teste" ? `Teste grátis de ${estado.eu.produtos[c.produto] ?? "—"}` : c.plano || "—"), c.fundador ? h("span", { class: "chip chip-ok" }, "Fundador") : null), h("span", {}, "Mensalidade: ", h("strong", {}, reais(c.valor_centavos)), c.desconto_pct > 0 ? ` · ${c.desconto_pct}% de desconto${c.desconto_ate ? ` até ${c.desconto_ate.slice(5)}/${c.desconto_ate.slice(0, 4)}` : ""}` : "", ` · vence dia ${c.dia_vencimento}`), c.regras?.preco_travado_ate ? h("span", {}, `Preço travado (sem reajuste) até ${c.regras.preco_travado_ate.slice(5)}/${c.regras.preco_travado_ate.slice(0, 4)}`) : null, c.contratado_em ? h("span", {}, `Contratado em ${dataBR(c.contratado_em)}`) : null, h("span", {}, "Responsável: ", c.contato_nome || "—", c.telefone ? ` · ${c.telefone}` : "", c.email ? ` · ${c.email}` : ""), h("span", {}, "Cobrança automática (Asaas): ", estado.eu.asaas ? "ativa" : "desligada (cobrança manual)")),
         c.observacoes ? h("p", { class: "suave pequeno", style: { whiteSpace: "pre-wrap" } }, c.observacoes) : null,
       ),
     ),
@@ -348,6 +376,129 @@ async function cancelar(c) {
   if (!(await confirmar(reativar ? "Reativar o contrato? As mensalidades voltam a ser geradas." : "Encerrar o contrato? O sistema do cliente fica bloqueado e as mensalidades param.", { perigo: !reativar, botao: reativar ? "Reativar" : "Encerrar" }))) return;
   await post(`/clientes/${c.id}/cancelar`, { reativar });
   recarregar();
+}
+
+
+/* ---------- Teste grátis e contratação ---------- */
+async function testeGratis(c) {
+  const cat = await pegarCatalogo();
+  const f = formulario([
+    { nome: "produto", rotulo: "Produto", tipo: "select", opcoes: Object.keys(cat.teste.produtos).filter((k) => k !== "one").map((k) => [k, `${cat.produtos[k]} · ${cat.teste.produtos[k].resumo}`]), largura: 2, padrao: c.produto ?? "" },
+    { nome: "dias", rotulo: c.fase === "teste" ? "Prorrogar por (dias)" : "Dias de teste", tipo: "numero", min: 1, max: 30, padrao: c.fase === "teste" ? 7 : cat.teste.dias },
+  ]);
+  janela({
+    titulo: c.fase === "teste" ? "Prorrogar teste grátis" : "Iniciar teste grátis",
+    conteudo: h("div", { class: "pilha" }, h("p", {}, `No teste, o sistema funciona com as limitações do produto e mostra a faixa com os dias que faltam. No fim, fica bloqueado até a contratação, com os dados guardados por ${cat.teste.dados_guardados_dias} dias.`), f.el),
+    acoes: [{ texto: "Salvar", classe: "btn-primario", fn: (e, fechar) => acao(e.currentTarget, async () => (await post(`/clientes/${c.id}/teste`, f.ler()), fechar(), aviso("Teste grátis atualizado. Chega ao sistema em até 5 minutos."), recarregar())) }],
+  });
+}
+
+async function contratar(c) {
+  const [cat, parcs] = await Promise.all([pegarCatalogo(), get("/parceiros")]);
+  const opcoesParc = (tipos) => [["", "—"], ...parcs.filter((p) => p.ativo && tipos.includes(p.tipo)).map((p) => [p.id, `${p.nome} · ${TIPOS_PARC[p.tipo]}`])];
+  const f = formulario([
+    { nome: "plano_id", rotulo: "Plano", tipo: "select", opcoes: planosOpcoes(cat), largura: 2, padrao: c.plano_id ?? "" },
+    { nome: "quantidade", rotulo: "Quantidade (colaboradores, máquinas…)", tipo: "numero", min: 1, max: 100000, padrao: c.quantidade ?? "" },
+    { nome: "dia_vencimento", rotulo: "Dia do vencimento", tipo: "numero", min: 1, max: 31, padrao: c.dia_vencimento ?? 10 },
+    { nome: "fundador", rotulo: `Programa de fundadores (${cat.fundadores.desconto_mensal}% por ${cat.fundadores.meses} meses, ${cat.fundadores.desconto_implantacao}% na implantação, preço travado por ${cat.fundadores.preco_travado_meses} meses)`, tipo: "check", largura: 2, padrao: c.fundador },
+    { nome: "desconto_pct", rotulo: "Desconto negociado (%, sem fundador)", tipo: "numero", min: 0, max: 50, padrao: 0 },
+    { nome: "desconto_meses", rotulo: "Por quantos meses", tipo: "numero", min: 1, max: 24, padrao: 3 },
+    { nome: "cobrar_implantacao", rotulo: "Gerar a fatura de implantação agora", tipo: "check", largura: 2, padrao: true },
+    { nome: "vendedor_id", rotulo: "Vendedor ou representante", tipo: "select", opcoes: opcoesParc(["vendedor", "representante"]), padrao: c.vendedor_id ?? "" },
+    { nome: "parceiro_id", rotulo: "Parceiro", tipo: "select", opcoes: opcoesParc(["indicador", "revenda", "estrategico"]), padrao: c.parceiro_id ?? "" },
+  ]);
+  const previa = h("p", { class: "previa-plano" });
+  const atualizar = () => {
+    const d = f.ler();
+    const p = acharPlano(cat, d.plano_id);
+    if (!p) return limpar(previa, "Escolha o plano.");
+    const mensal = p.por_unidade ? Math.max(p.minimo, Math.round(p.por_unidade * (Number(d.quantidade) || 0))) : p.mensal;
+    const fund = d.fundador && cat.fundadores.produtos.includes(p.produto);
+    const vagas = cat.fundadores.vagas - (cat.fundadores.usadas[p.produto] ?? 0);
+    const desc = fund ? cat.fundadores.desconto_mensal : Number(d.desconto_pct) || 0;
+    const impl = Math.round(p.implantacao * (fund ? 1 - cat.fundadores.desconto_implantacao / 100 : 1));
+    limpar(
+      previa,
+      h("strong", {}, `${reais(Math.round(mensal * (1 - desc / 100)))}/mês`),
+      desc ? ` (cheia ${reais(mensal)}, ${desc}% por ${fund ? cat.fundadores.meses : d.desconto_meses || 1} meses)` : "",
+      ` · implantação ${reais(impl)}`,
+      d.fundador && !cat.fundadores.produtos.includes(p.produto) ? h("small", { style: { display: "block", color: "var(--vermelho)" } }, `Fundadores só para: ${cat.fundadores.produtos.map((x) => cat.produtos[x]).join(", ")}.`) : null,
+      fund ? h("small", { style: { display: "block" } }, `Vagas de fundador do ${cat.produtos[p.produto]}: ${vagas} de ${cat.fundadores.vagas}.`) : null,
+      h("small", { class: "suave", style: { display: "block" } }, p.inclui),
+    );
+  };
+  f.el.addEventListener("input", atualizar);
+  f.el.addEventListener("change", atualizar);
+  atualizar();
+  janela({
+    titulo: `Contratar plano · ${nomeCliente(c)}`,
+    largura: 720,
+    conteudo: h("div", { class: "pilha" }, f.el, previa, h("p", { class: "suave pequeno" }, "Encerra o teste grátis, libera todas as funções do plano no sistema em até 5 minutos e começa a gerar as mensalidades. Consumo de IA, Meta, SMS e nuvem é pago direto pelo cliente.")),
+    acoes: [{ texto: "Contratar", classe: "btn-primario", fn: (e, fechar) => acao(e.currentTarget, async () => { const d = f.ler(); const p = acharPlano(cat, d.plano_id); if (!p?.por_unidade) delete d.quantidade; if (d.fundador) delete d.desconto_pct, delete d.desconto_meses; else if (!Number(d.desconto_pct)) delete d.desconto_pct, delete d.desconto_meses; await post(`/clientes/${c.id}/contratar`, d); catalogo = null; fechar(); aviso("Plano contratado."); recarregar(); }) }],
+  });
+}
+
+/* ---------- Planos e preços ---------- */
+async function comercial() {
+  const cat = await (catalogo = null, pegarCatalogo());
+  const fd = cat.fundadores;
+  const lin = (t, ...v) => h("tr", {}, h("td", {}, t), ...v.map((x) => h("td", { class: "num" }, x)));
+  return h(
+    "div",
+    { class: "pagina" },
+    topo("Planos e preços", "Tabela oficial da Nexor. Para mudar valores, edite central/src/planos.js e comercial/PLANOS-E-PRECOS.md."),
+    h("div", { class: "grade-planos" }, Object.entries(cat.planos).filter(([k]) => k !== "one").map(([prod, g]) =>
+      h("section", { class: "cartao" }, h("h2", {}, cat.produtos[prod]), tabela([{ titulo: "Plano", valor: (p) => h("div", {}, h("strong", {}, p.nome), h("small", { class: "suave", style: { display: "block" } }, p.inclui)) }, { titulo: "Mensalidade", valor: (p) => (p.por_unidade ? `${reais(p.por_unidade)}/${g.unidade} · mín. ${reais(p.minimo)}` : reais(p.mensal)), classe: "num" }, { titulo: "Implantação", valor: (p) => reais(p.implantacao), classe: "num" }], g.planos), h("p", { class: "suave pequeno" }, `Teste grátis: ${cat.teste.produtos[prod]?.resumo ?? "—"}.`)),
+    )),
+    h("div", { class: "grade-2" },
+      h("section", { class: "cartao" }, h("h2", {}, "Programa de fundadores"), h("p", {}, `${fd.desconto_mensal}% na mensalidade por ${fd.meses} meses, ${fd.desconto_implantacao}% na implantação e preço travado por ${fd.preco_travado_meses} meses. ${fd.vagas} vagas por produto.`), tabela([{ titulo: "Produto", valor: (p) => cat.produtos[p] }, { titulo: "Vagas usadas", valor: (p) => `${fd.usadas[p] ?? 0} de ${fd.vagas}`, classe: "num" }], fd.produtos), h("p", { class: "suave pequeno" }, `Contrapartidas: ${fd.contrapartidas.join("; ")}.`)),
+      h("section", { class: "cartao" }, h("h2", {}, "Outros produtos e projetos"), tabela([{ titulo: "Produto", valor: (p) => p.nome }, { titulo: "Mensalidade", valor: (p) => p.preco }, { titulo: "Implantação", valor: (p) => p.implantacao }], cat.projetos)),
+    ),
+    h("div", { class: "grade-2" },
+      h("section", { class: "cartao" }, h("h2", {}, "Desenvolvimento sob demanda"), h("table", { class: "tabela" }, h("tbody", {}, lin("Hora avulsa", reais(cat.sob_demanda.hora_avulsa)), ...cat.sob_demanda.pacotes.map((p) => lin(`Pacote de ${p.horas} horas`, `${reais(p.valor)} (${reais(Math.round(p.valor / p.horas))}/h)`)), lin("Projeto fechado (hora)", reais(cat.sob_demanda.hora_projeto)), lin(`Evolução mensal (${cat.sob_demanda.evolucao_mensal.horas} h)`, reais(cat.sob_demanda.evolucao_mensal.valor)))), h("p", { class: "suave pequeno" }, `Projetos: ${cat.sob_demanda.pagamento_projeto}. Garantia de ${cat.sob_demanda.garantia_dias} dias. Pagamento anual dos planos: paga ${cat.anual.meses_pagos} e usa ${cat.anual.meses_uso} meses.`)),
+      h("section", { class: "cartao" }, h("h2", {}, "Comissões"), tabela([{ titulo: "Tipo", valor: (k) => h("div", {}, h("strong", {}, cat.comissoes[k].nome), cat.comissoes[k].requisito ? h("small", { class: "suave", style: { display: "block" } }, cat.comissoes[k].requisito) : null) }, { titulo: "1ª mensalidade", valor: (k) => `${cat.comissoes[k].primeira}%`, classe: "num" }, { titulo: "Recorrente", valor: (k) => `${cat.comissoes[k].recorrente}% ${cat.comissoes[k].meses ? `por ${cat.comissoes[k].meses} meses` : "enquanto ativo"}`, classe: "num" }, { titulo: "Implantação", valor: (k) => `${cat.comissoes[k].implantacao}%`, classe: "num" }, { titulo: "Sob medida", valor: (k) => `${cat.comissoes[k].sob_medida}%`, classe: "num" }], Object.keys(cat.comissoes)), h("p", { class: "suave pequeno" }, `Sobre o valor recebido. Carência de ${cat.regras_comissao.carencia_dias} dias; cancelamento em até ${cat.regras_comissao.estorno_cancelamento_dias} dias estorna a comissão da 1ª mensalidade e da implantação.`)),
+    ),
+  );
+}
+
+/* ---------- Parceiros e comissões ---------- */
+async function parceiros() {
+  const [lista, cs, inds, cat] = await Promise.all([get("/parceiros"), get("/comissoes"), get("/indicacoes"), pegarCatalogo()]);
+  const fin = pode("dono", "financeiro");
+  const editar = (p) => {
+    const f = formulario([
+      { nome: "nome", rotulo: "Nome", obrigatorio: true, largura: 2 },
+      { nome: "tipo", rotulo: "Tipo", tipo: "select", opcoes: Object.entries(cat.comissoes).map(([k, v]) => [k, `${v.nome} · ${v.primeira ? `${v.primeira}% da 1ª + ` : ""}${v.recorrente}% recorrente`]), largura: 2 },
+      { nome: "empresa", rotulo: "Empresa" },
+      { nome: "documento", rotulo: "CPF ou CNPJ" },
+      { nome: "email", rotulo: "E-mail", tipo: "email" },
+      { nome: "telefone", rotulo: "WhatsApp", tipo: "tel" },
+      { nome: "pix", rotulo: "Chave Pix para as comissões", largura: 2 },
+      { titulo: "Percentuais próprios (vazio = os do tipo)" },
+      { nome: "percentuais.primeira", rotulo: "1ª mensalidade (%)", tipo: "numero", min: 0, max: 100 },
+      { nome: "percentuais.recorrente", rotulo: "Recorrente (%)", tipo: "numero", min: 0, max: 100 },
+      { nome: "percentuais.meses", rotulo: "Meses de recorrência (0 = enquanto ativo)", tipo: "numero", min: 0, max: 120 },
+      { nome: "percentuais.implantacao", rotulo: "Implantação (%)", tipo: "numero", min: 0, max: 100 },
+      ...(p ? [{ nome: "ativo", rotulo: "Ativo", tipo: "check" }] : []),
+      { nome: "observacoes", rotulo: "Observações", tipo: "area", largura: 2 },
+    ], p ? { ...p, percentuais: p.percentuais ?? {} } : { tipo: "indicador" });
+    janela({ titulo: p ? `Editar ${p.nome}` : "Novo vendedor ou parceiro", largura: 700, conteudo: f.el, acoes: [{ texto: "Salvar", classe: "btn-primario", fn: (e, fechar) => acao(e.currentTarget, async () => (p ? await put(`/parceiros/${p.id}`, f.ler()) : await post("/parceiros", f.ler()), fechar(), recarregar())) }] });
+  };
+  const portal = async (p) => {
+    if (p.portal && !(await confirmar("Gerar um link novo? O link atual do parceiro para de funcionar.", { botao: "Gerar novo" }))) return;
+    const { link } = await post(`/parceiros/${p.id}/portal`);
+    janela({ titulo: `Portal de ${p.nome}`, conteudo: h("div", { class: "pilha" }, h("p", {}, "Envie este link só para o parceiro. Com ele, ele acompanha os clientes, as comissões e envia indicações."), h("pre", { class: "env" }, link)), acoes: [{ texto: "Copiar", classe: "btn-primario", fn: () => copiarTexto(link) }] });
+    recarregar();
+  };
+  const IND = { nova: "Nova", em_contato: "Em contato", teste: "Em teste", fechada: "Fechada", perdida: "Perdida" };
+  return h(
+    "div",
+    { class: "pagina" },
+    topo("Parceiros e comissões", `${lista.filter((p) => p.ativo).length} ativos`, fin ? botao("Novo vendedor ou parceiro", () => editar(), "btn-primario", "mais") : null),
+    h("section", { class: "cartao" }, tabela([{ titulo: "Nome", valor: (p) => h("div", {}, h("strong", {}, p.nome), h("small", { class: "suave", style: { display: "block" } }, TIPOS_PARC[p.tipo], p.ativo ? "" : " · desativado")) }, { titulo: "Regra", valor: (p) => `${p.regra.primeira ? `${p.regra.primeira}% 1ª · ` : ""}${p.regra.recorrente}% rec. · ${p.regra.implantacao}% impl.` }, { titulo: "Clientes ativos", valor: (p) => String(p.clientes_ativos), classe: "num" }, { titulo: "A receber", valor: (p) => reais(p.comissao_aberta), classe: "num" }, { titulo: "Já pago", valor: (p) => reais(p.comissao_paga), classe: "num" }, { titulo: "", valor: (p) => (fin ? h("div", { class: "acoes-linha" }, botao("Editar", () => editar(p), "btn-fantasma btn-pequeno", "editar"), botao(p.portal ? "Novo link do portal" : "Link do portal", () => portal(p), "btn-fantasma btn-pequeno", "link")) : null) }], lista, { vazio: "Nenhum vendedor ou parceiro ainda." })),
+    h("section", { class: "cartao" }, h("h2", {}, "Comissões"), tabela([{ titulo: "Quem", valor: (x) => x.parceiro }, { titulo: "Cliente", valor: (x) => h("a", { href: `#/clientes/${x.cliente_id}` }, x.cliente) }, { titulo: "Sobre", valor: (x) => h("div", {}, x.fatura, h("small", { class: "suave", style: { display: "block" } }, `${x.tipo} · ${x.pct}% de ${reais(x.base_centavos)}`)) }, { titulo: "Valor", valor: (x) => reais(x.valor_centavos), classe: "num" }, { titulo: "Situação", valor: (x) => chip(COM, x.status, x.status === "prevista" ? ` até ${dataBR(x.liberar_em)}` : x.status === "paga" && x.pago_em ? ` · ${dataBR(x.pago_em)}` : "") }, { titulo: "", valor: (x) => (fin && x.status === "a_pagar" ? botao("Paguei", async (e) => acao(e.currentTarget, async () => (await post(`/comissoes/${x.id}/pagar`, {}), recarregar())), "btn-fantasma btn-pequeno", "check") : null) }], cs, { vazio: "As comissões aparecem aqui quando as faturas dos clientes de cada parceiro são pagas." })),
+    h("section", { class: "cartao" }, h("h2", {}, "Indicações dos parceiros"), tabela([{ titulo: "Quando", valor: (i) => dataHora(i.criado_em) }, { titulo: "Parceiro", valor: (i) => i.parceiro }, { titulo: "Empresa", valor: (i) => h("div", {}, h("strong", {}, i.empresa), h("small", { class: "suave", style: { display: "block" } }, [i.contato, i.telefone, i.email].filter(Boolean).join(" · "))) }, { titulo: "Produto", valor: (i) => estado.eu.produtos[i.produto] ?? "—" }, { titulo: "Situação", valor: (i) => (fin ? h("select", { class: "entrada entrada-pequena", onchange: (e) => put(`/indicacoes/${i.id}`, { status: e.target.value }).then(() => aviso("Indicação atualizada.")) }, Object.entries(IND).map(([k, t]) => h("option", { value: k, selected: k === i.status }, t))) : IND[i.status]) }], inds, { vazio: "Nenhuma indicação ainda." }), h("p", { class: "suave pequeno" }, "Ao fechar, cadastre o cliente e escolha o parceiro em \"Quem vendeu\": as comissões passam a ser geradas sozinhas.")),
+  );
 }
 
 /* ---------- Faturas ---------- */
@@ -420,7 +571,8 @@ async function equipe() {
 }
 
 /* ---------- Auditoria ---------- */
-const ACOES = { conta_criada: "Conta criada", login: "Entrou na Central", cliente_criado: "Cliente cadastrado", cliente_alterado: "Cliente alterado", bloqueio_manual: "Bloqueou o cliente", desbloqueio: "Liberou o cliente", contrato_cancelado: "Encerrou o contrato", contrato_reativado: "Reativou o contrato", fatura_criada: "Fatura avulsa criada", faturas_geradas: "Gerou mensalidades", fatura_paga: "Registrou pagamento", fatura_reaberta: "Reabriu fatura", fatura_cancelada: "Cancelou fatura", fatura_alterada: "Alterou fatura", sistema_criado: "Cadastrou sistema", sistema_alterado: "Alterou sistema", sistema_token_trocado: "Trocou a credencial do sistema", sistema_vinculado: "Sistema vinculado pelo código", vinculacao_recusada: "Tentativa de vinculação com código errado", codigo_trocado: "Gerou novo código do cliente", acesso_suporte: "Entrou no sistema do cliente (suporte)", situacao_aplicada: "Situação aplicada no sistema", usuario_criado: "Usuário criado", usuario_alterado: "Usuário alterado", webhook_paga: "Asaas: pagamento confirmado", webhook_aberta: "Asaas: pagamento estornado", webhook_cancelada: "Asaas: cobrança removida" };
+const ACOES_COM = { teste_iniciado: "Iniciou o teste grátis", teste_prorrogado: "Prorrogou o teste grátis", plano_contratado: "Contratou plano", parceiro_criado: "Cadastrou vendedor/parceiro", parceiro_alterado: "Alterou vendedor/parceiro", portal_parceiro_link: "Gerou link do portal do parceiro", comissao_paga: "Pagou comissão", indicacao_alterada: "Atualizou indicação", indicacao_recebida: "Indicação recebida no portal" };
+const ACOES = { ...ACOES_COM, conta_criada: "Conta criada", login: "Entrou na Central", cliente_criado: "Cliente cadastrado", cliente_alterado: "Cliente alterado", bloqueio_manual: "Bloqueou o cliente", desbloqueio: "Liberou o cliente", contrato_cancelado: "Encerrou o contrato", contrato_reativado: "Reativou o contrato", fatura_criada: "Fatura avulsa criada", faturas_geradas: "Gerou mensalidades", fatura_paga: "Registrou pagamento", fatura_reaberta: "Reabriu fatura", fatura_cancelada: "Cancelou fatura", fatura_alterada: "Alterou fatura", sistema_criado: "Cadastrou sistema", sistema_alterado: "Alterou sistema", sistema_token_trocado: "Trocou a credencial do sistema", sistema_vinculado: "Sistema vinculado pelo código", vinculacao_recusada: "Tentativa de vinculação com código errado", codigo_trocado: "Gerou novo código do cliente", acesso_suporte: "Entrou no sistema do cliente (suporte)", situacao_aplicada: "Situação aplicada no sistema", usuario_criado: "Usuário criado", usuario_alterado: "Usuário alterado", webhook_paga: "Asaas: pagamento confirmado", webhook_aberta: "Asaas: pagamento estornado", webhook_cancelada: "Asaas: cobrança removida" };
 async function auditoria() {
   const lista = await get("/auditoria");
   const det = (a) => {

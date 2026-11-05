@@ -1,11 +1,16 @@
 # Kit de marketing da Nexor
 
-14 peças prontas para postar, com legenda, hashtags e onde usar cada uma. As imagens estão em [`pecas/`](pecas/). Para mudar um texto ou criar novas versões, edite [`fonte/pecas.html`](fonte/pecas.html) (abre no navegador).
+Peças prontas para postar, com legenda, hashtags e onde usar cada uma. As imagens estão em [`pecas/`](pecas/). Para mudar um texto ou criar novas versões, edite [`fonte/pecas.html`](fonte/pecas.html) (abre no navegador).
 
-Regra de ouro: toda peça leva para o site (teste grátis de 12 horas ou lista de espera) ou para o WhatsApp. Os números de mercado citados vêm das fontes indicadas no site. As telas do Atende IA e do Nexor Contábil são reais, com dados de demonstração. As telas dos produtos “Em breve” são prévias ilustrativas.
+Regra de ouro: toda peça leva para o site (teste grátis de 30 dias, programa de fundadores ou lista de espera) ou para o WhatsApp. Os números de mercado citados vêm das fontes indicadas no site. As telas do Atende IA e do Nexor Contábil são reais, com dados de demonstração. As telas dos produtos “Em breve” são prévias ilustrativas.
 
 | Peça | Formato | Onde usar |
 | --- | --- | --- |
+| `ia-gente-cuida.png` | Post 4:5 · posicionamento “IA que trabalha, gente que cuida” | Instagram, LinkedIn, fixar no perfil |
+| `teste-30-dias.png` | Post 4:5 · teste grátis de 30 dias | Instagram, Facebook, anúncios |
+| `fundadores.png` | Post 4:5 · programa de fundadores | Instagram, LinkedIn, grupos |
+| `story-fundadores.png` | Story · programa de fundadores | Stories, status do WhatsApp |
+| `story-gente-cuida.png` | Story · “Você não vai ficar sozinho com um robô” | Stories, status do WhatsApp |
 | `blue-conheca.png` | Post 4:5 (1080×1350) | Instagram, Facebook, LinkedIn |
 | `blue-story-23h.png` | Story (1080×1920) | Stories, status do WhatsApp |
 | `blue-pergunte.png` | Post 4:5 | Instagram, Facebook |
@@ -32,7 +37,7 @@ Regra de ouro: toda peça leva para o site (teste grátis de 12 horas ou lista d
 ### `blue-conheca.png` — Conheça a Blue
 > Prazer, eu sou a Blue! 💙
 > Sou a assistente de inteligência artificial da Nexor e atendo 24 horas por dia no nosso site.
-> Me conta o que você quer melhorar na sua empresa (atendimento, vendas, controle, TI) que eu te mostro a solução certa e já libero o seu teste grátis de 12 horas.
+> Me conta o que você quer melhorar na sua empresa (atendimento, vendas, controle, TI) que eu te mostro a solução certa e já libero o seu teste grátis de 30 dias.
 > 👉 Clique em “Fale com a Blue” em nexorconsultingit.com.br
 >
 > #inteligenciaartificial #assistentevirtual #atendimento #automacao #nexorconsulting
@@ -46,7 +51,7 @@ Legenda opcional para o status do WhatsApp:
 > Ficou com dúvida sobre como usar IA na sua empresa? Pergunta pra Blue! 💬
 > ✅ Qual solução serve para o meu negócio?
 > ✅ Quanto eu economizo automatizando o WhatsApp?
-> ✅ Como funciona o teste grátis de 12 horas?
+> ✅ Como funciona o teste grátis de 30 dias?
 > Ela responde na hora e, se quiser, já agenda uma conversa com um especialista.
 > 👉 nexorconsultingit.com.br
 >
@@ -64,7 +69,7 @@ Dica: use a figurinha de enquete “Qual você quer primeiro?” com duas opçõ
 > Seu cliente manda mensagem às 23h. Quem responde? 🌙
 > O Nexor Atende IA responde em segundos, agenda horários, envia preços e fotos do catálogo e entende até foto de comprovante. Quando a conversa pede uma pessoa, ele passa para a sua equipe com o resumo pronto.
 > Tudo pela API oficial do WhatsApp, sem risco de bloqueio do número.
-> 🎁 Teste grátis por 12 horas, sem cartão: nexorconsultingit.com.br/#testar-atende
+> 🎁 Teste grátis por 30 dias, sem cartão: nexorconsultingit.com.br/#testar-atende
 >
 > #whatsapp #chatbot #atendimentoaocliente #vendas #inteligenciaartificial
 
@@ -108,6 +113,45 @@ Figurinha de link: **Testar grátis** → `https://www.nexorconsultingit.com.br/
 
 ---
 
+## Novidades: IA que trabalha, gente que cuida (novembro de 2026)
+
+A mensagem central agora é **a IA faz o trabalho pesado e o time Nexor cuida de cada cliente de perto**. Use essas cinco peças primeiro. Toda peça chama para o **teste grátis de 30 dias** ou para o **programa de fundadores**. As regras e os valores estão em [`comercial/PLANOS-E-PRECOS.md`](../comercial/PLANOS-E-PRECOS.md).
+
+### `ia-gente-cuida.png` — IA que trabalha. Gente que cuida.
+> Tem empresa com medo de IA porque acha que vai ficar sozinha com um robô. Na Nexor é o contrário. 💙
+>
+> ⚡ A IA faz o trabalho pesado: responde, agenda, lê documentos, cobra e calcula, 24 horas.
+> 🤝 O nosso time cuida de você: implanta junto, treina a equipe e acompanha os resultados, com nome e WhatsApp.
+>
+> Teste 30 dias grátis: nexorconsultingit.com.br
+>
+> #inteligenciaartificial #atendimento #pequenasempresas #nexorconsulting #uberlandia
+
+### `teste-30-dias.png` — 30 dias grátis
+> 30 dias para testar a IA na sua empresa, com o nosso time do seu lado. 🎁
+>
+> RH e Ponto · Atende IA · Contábil · Barber · Agente. Sem cartão de crédito. Algumas funções ficam limitadas no teste e, depois, você continua com o plano que escolher.
+>
+> Comece pelo link da bio.
+>
+> #testegratis #IA #automacao #whatsappbusiness #nexorconsulting
+
+### `fundadores.png` e `story-fundadores.png` — Programa de fundadores
+> Abrimos as vagas de fundador do Nexor Contábil, do Nexor Barber e do Nexor Agente. 🔥
+>
+> Quem entra primeiro tem 40% de desconto na mensalidade por 12 meses, 50% na implantação e preço travado por 24 meses. Em troca, conta para a gente o que funciona e dá um depoimento.
+>
+> São só 10 vagas por produto. Chama no WhatsApp (34) 99733-7499 ou no link da bio.
+>
+> #fundadores #contabilidade #barbearia #inteligenciaartificial #nexorconsulting
+
+Use o story com a figurinha de link para `nexorconsultingit.com.br/#fundadores` e uma contagem regressiva (“vagas de fundador”).
+
+### `story-gente-cuida.png` — Você não vai ficar sozinho com um robô
+Use com a figurinha de link para o site e uma caixa de perguntas: “O que você tem medo de colocar na mão da IA?”. As respostas viram conteúdo para os próximos posts.
+
+---
+
 ## Para contadores (Nexor Contábil)
 
 Público: escritórios de contabilidade e contadores autônomos. Use também em grupos de contadores, eventos do CRC e na ACIUB. Página de destino: `/solucoes/sistema-para-escritorio-de-contabilidade/`.
@@ -117,7 +161,7 @@ Público: escritórios de contabilidade e contadores autônomos. Use também em 
 >
 > Cliente que esquece, arquivo perdido em grupo, conciliação na mão e retrabalho que ninguém cobra. A gente conhece essa rotina, e o Nexor Contábil acaba com ela: cobra, recebe e lê os documentos com a marca do seu escritório.
 >
-> Teste grátis por 12 horas no link da bio. Ou comenta "EU" que te mando o vídeo.
+> Teste grátis por 30 dias no link da bio. Ou comenta "EU" que te mando o vídeo.
 >
 > #contabilidade #contador #escritoriocontabil #inteligenciaartificial #uberlandia
 
@@ -126,14 +170,14 @@ Público: escritórios de contabilidade e contadores autônomos. Use também em 
 >
 > E mais: exportação para o sistema contábil que você já usa, obrigações com prazo e portal do cliente.
 >
-> Essa é uma tela real do sistema. Teste grátis por 12 horas: link na bio.
+> Essa é uma tela real do sistema. Teste grátis por 30 dias: link na bio.
 >
 > #contabilidade #contador #automacao #ia #escritoriocontabil
 
-### `contabil-teste.png` — Teste no seu escritório por 12 horas
+### `contabil-teste.png` — Teste no seu escritório por 30 dias
 > Quer ver a IA ler e conferir uma nota fiscal na hora? 🚀
 >
-> No teste grátis do Nexor Contábil você recebe documentos de exemplo, confere os lançamentos, cobra um cliente e vê a mensagem que ele recebe. Sem cartão de crédito.
+> São 30 dias grátis, com os documentos do seu próprio escritório e o nosso time do seu lado. Algumas funções ficam limitadas no teste (até 5 empresas da carteira). Sem cartão de crédito.
 >
 > Link na bio ou chama no WhatsApp (34) 99733-7499.
 >
@@ -150,7 +194,7 @@ Use com a figurinha de link para `nexorconsultingit.com.br/solucoes/sistema-para
 > O mesmo cliente. Dois finais diferentes. 👇
 > ❌ Sem IA: a mensagem das 22h fica para amanhã e o cliente desiste.
 > ✅ Com o Nexor Atende IA: resposta em segundos, horário agendado e tudo registrado no CRM.
-> Qual final você quer para a sua empresa? Teste grátis por 12 horas: nexorconsultingit.com.br
+> Qual final você quer para a sua empresa? Teste grátis por 30 dias: nexorconsultingit.com.br
 >
 > #antesedepois #atendimento #whatsappbusiness #automacao #vendas
 
@@ -166,7 +210,7 @@ Mensagem para enviar nos grupos junto com a imagem:
 > Pessoal, uma boa indicação para a Nexor é: a clínica que perde paciente por demorar no WhatsApp, a loja que quer vender nos marketplaces, a empresa que ainda vive de planilha, o escritório afogado em documentos, a empresa com TI no improviso ou a agência que quer revender IA com a própria marca. Conhece alguém assim? Me apresenta! 🙏 (34) 99733-7499
 
 Frase de 30 segundos para a apresentação semanal do BNI:
-> “Eu sou [nome], da Nexor Consulting. Nós colocamos inteligência artificial para atender e vender no WhatsApp 24 horas, e criamos sistemas, lojas virtuais e sites. Esta semana procuro uma clínica ou consultório que demora para responder os pacientes. A frase para me indicar é: ‘conheço uma empresa que coloca IA atendendo no WhatsApp, quer testar grátis por 12 horas?’”
+> “Eu sou [nome], da Nexor Consulting. Nós colocamos inteligência artificial para atender e vender no WhatsApp 24 horas, e criamos sistemas, lojas virtuais e sites. Esta semana procuro uma clínica ou consultório que demora para responder os pacientes. A frase para me indicar é: ‘conheço uma empresa que coloca IA atendendo no WhatsApp, quer testar grátis por 30 dias?’”
 
 ### `linkedin-capa.png` — Capa do LinkedIn
 Use no perfil pessoal. Na página da empresa, use `linkedin-capa-pagina.png`, que tem a proporção certa (1128×191) e deixa o canto do logo livre. O lado esquerdo fica livre para a foto do perfil.

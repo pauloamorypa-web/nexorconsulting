@@ -1,8 +1,10 @@
-/* Ligação do sistema com a Nexor Central. ESTE ARQUIVO É IGUAL nos três sistemas
-   (rh/, atende/ e nexor-agente/, em src/nexor/central.js): altere os três juntos.
+/* Ligação do sistema com a Nexor Central. ESTE ARQUIVO É IGUAL em todos os sistemas
+   (rh/, atende/, contabil/, barber/ e nexor-agente/, em src/nexor/central.js): altere todos juntos.
 
    - A cada 5 minutos envia a saúde da instalação (só contagens, nenhum dado pessoal) e recebe a licença assinada.
    - A licença diz a situação do contrato: ativo, aviso, restrito (somente leitura) ou bloqueado.
+   - No teste grátis (plano "teste"), a licença traz também os limites (contagens da saúde) e os módulos
+     travados; recusaPorTeste() aplica os dois. No fim do teste a Central manda "bloqueado".
    - A assinatura Ed25519 é conferida com a chave pública da Central: ninguém forja uma licença.
    - Sem contato com a Central, vale a última licença até a validade; depois disso o sistema fica "restrito"
      (nunca bloqueado por falta de internet) e volta sozinho no próximo contato.
@@ -27,7 +29,28 @@ export function conferirAssinado(token, chavePublicaB64) {
   }
 }
 
-const ATIVO = { situacao: "ativo", mensagem: "", link: null, manter_ponto: true, contato: null };
+const ATIVO = { situacao: "ativo", mensagem: "", link: null, manter_ponto: true, contato: null, plano: "contratado", teste_ate: null, limites: {}, travados: [] };
+
+/**
+ * Teste grátis: recusa o que o teste não inclui.
+ * - travados: chaves de módulo do catálogo do sistema (politica.js) → bloqueia as rotas do módulo
+ * - limites: { chave: máximo } sobre as contagens da saúde; rotas[chave] diz quais POST criam mais um
+ * Devolve a mensagem para o usuário, ou null.
+ */
+export function recusaPorTeste(lic, metodo, caminho, { catalogo = {}, rotas = {}, contar = () => ({}) } = {}) {
+  if (lic?.plano !== "teste") return null;
+  const sob = (c, ps) => ps.some((p) => c === p || c.startsWith(p + "/"));
+  for (const k of lic.travados ?? []) {
+    const m = catalogo.modulos?.[k];
+    if (m && sob(caminho, m.api)) return `${m.rotulo} não faz parte do teste grátis. Contrate um plano para liberar.`;
+  }
+  if (metodo !== "POST") return null;
+  const aqui = Object.entries(lic.limites ?? {}).filter(([k]) => rotas[k]?.rotas?.includes(caminho));
+  if (!aqui.length) return null;
+  const n = contar() ?? {};
+  for (const [k, max] of aqui) if (Number.isFinite(max) && (n[k] ?? 0) >= max) return `No teste grátis o limite é de ${max} ${rotas[k].rotulo}. Contrate um plano para liberar mais.`;
+  return null;
+}
 
 /** Lê as variáveis NEXOR_* (iguais nos três sistemas) */
 export const CENTRAL_PADRAO = "https://central.nexorconsultingit.com.br";
@@ -91,7 +114,7 @@ export function criarCentralNexor({ cfg, agora = () => Date.now(), fetchFn = fet
     if (!vinculado()) return { ...ATIVO, origem: "sem_central" };
     const d = licencaGuardada();
     if (!d) return { ...ATIVO, origem: "aguardando" }; // instalação nova: funciona até o primeiro contato
-    const base = { link: d.link ?? null, manter_ponto: d.manter_ponto !== false, contato: d.contato ?? null };
+    const base = { link: d.link ?? null, manter_ponto: d.manter_ponto !== false, contato: d.contato ?? null, plano: d.plano ?? "contratado", teste_ate: d.teste_ate ?? null, limites: d.limites ?? {}, travados: d.travados ?? [] };
     if (d.valido_ate < agora()) {
       const dias = Math.floor((agora() - d.emitida) / 86400_000);
       return { ...base, situacao: d.situacao === "bloqueado" ? "bloqueado" : "restrito", mensagem: d.situacao === "bloqueado" ? d.mensagem : `Sem contato com a Nexor há ${dias} dias. O sistema fica em modo somente leitura até a conexão voltar. Confira a internet do servidor.`, origem: "vencida" };

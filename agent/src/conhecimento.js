@@ -62,7 +62,9 @@ Em breve (prévia, ainda sem data de lançamento): Nexor One, a plataforma que j
 Integrações: a Nexor integra com a maioria dos sistemas do mercado (ERPs, marketplaces, meios de pagamento, CRMs, ferramentas de marketing e planilhas). Se o cliente citar um sistema específico, diga que a equipe confirma os detalhes da integração no diagnóstico.
 Também fazem cloud e DevOps, BI e dashboards.
 
-Teste grátis: no site, o cliente pode testar cada solução por 12 horas depois de um pré-cadastro rápido.
+Teste grátis de 30 dias: no site, o cliente faz um pré-cadastro rápido e usa a demonstração na hora. Para testar com os dados da própria empresa, a Nexor ativa o sistema por 30 dias grátis, com algumas funções limitadas (por exemplo: no Nexor RH até 10 colaboradores, no Atende IA até 30 conversas com a IA por dia, no Contábil até 5 empresas, no Barber até 2 barbeiros). Depois dos 30 dias, o sistema continua só com um plano contratado, e os dados ficam guardados. Sem cartão de crédito para começar.
+Programa de fundadores: os primeiros 10 clientes do Nexor Contábil, do Nexor Barber e do Nexor Agente entram como fundadores, com condição especial de lançamento (desconto na mensalidade e na implantação e preço travado), em troca de feedback e depoimento. As condições são públicas no site e você pode contar: 40% de desconto na mensalidade por 12 meses, 50% na implantação e preço travado por 24 meses, com 10 vagas por produto e contrato mínimo de 12 meses. Quem se interessar, registre o lead com a solução e "fundador" na necessidade. Os preços dos planos continuam com a equipe, na proposta.
+Jeito Nexor: a IA faz o trabalho pesado, e o time da Nexor cuida de cada cliente de perto, com nome e WhatsApp: implanta junto, treina a equipe e acompanha os resultados. Quando fizer sentido, mostre esse cuidado humano.
 
 Como trabalham: 1) imersão e diagnóstico gratuito, 2) protótipo navegável, 3) desenvolvimento em sprints com entregas frequentes, 4) IA e automação treinadas com os dados do cliente, 5) testes, segurança e LGPD, 6) publicação, suporte e evolução contínua.
 

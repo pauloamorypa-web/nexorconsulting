@@ -47,9 +47,92 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
 .mini img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; border-radius: 14px; border: 2px solid #24406f; }
 .mini b { font: 600 28px "Space Grotesk"; }
 .chip { display: inline-block; font-size: 38px; font-weight: 600; padding: 16px 28px; border-radius: 999px; background: rgba(255, 255, 255, .08); border: 2px solid rgba(255, 255, 255, .14); color: #dfe8f7; }
+/* Novidades: IA que trabalha, gente que cuida */
+.n-fundo { background: radial-gradient(ellipse at 15% 0%, #1d4fd8 0%, transparent 45%), radial-gradient(ellipse at 100% 60%, #6d28d9 0%, transparent 45%), radial-gradient(ellipse at 30% 110%, #0e7490 0%, transparent 50%), #050a18; }
+.n-mega { font: 700 330px/0.8 "Space Grotesk"; letter-spacing: -0.06em; }
+.n-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.n-lado { border-radius: 32px; padding: 36px; display: grid; gap: 16px; align-content: start; }
+.n-ia { background: linear-gradient(160deg, rgba(59, 141, 255, .28), rgba(14, 26, 48, .9)); border: 2px solid rgba(59, 141, 255, .55); }
+.n-gente { background: linear-gradient(160deg, rgba(244, 114, 182, .26), rgba(14, 26, 48, .9)); border: 2px solid rgba(244, 114, 182, .55); }
+.n-lado h3 { font-size: 44px; line-height: 1.02; }
+.n-lado p { font-size: 29px; line-height: 1.35; color: #dfe8f7; }
+.n-emoji { font-size: 74px; line-height: 1; }
+.n-num { display: grid; grid-template-columns: 260px 1fr; align-items: center; gap: 24px; padding: 24px 0; border-bottom: 2px solid rgba(255, 255, 255, .1); }
+.n-num b { font: 700 96px/1 "Space Grotesk"; letter-spacing: -0.04em; }
+.n-num span { font-size: 36px; line-height: 1.25; color: #dfe8f7; }
+.n-prod { display: flex; gap: 16px; flex-wrap: wrap; }
+.n-prod span { font: 600 32px "Space Grotesk"; padding: 18px 28px; border-radius: 20px; background: rgba(255, 255, 255, .08); border: 2px solid rgba(255, 255, 255, .18); }
+.n-faixa { position: absolute; top: 70px; right: -120px; transform: rotate(35deg); background: linear-gradient(90deg, #f59e0b, #f43f5e); color: #fff; font: 800 30px Inter; letter-spacing: .1em; padding: 16px 160px; box-shadow: 0 20px 40px rgba(0, 0, 0, .4); }
 </style>
 </head>
 <body>
+
+<!-- ===================== NOVIDADES · NOVEMBRO 2026 ===================== -->
+
+<!-- N1: IA que trabalha, gente que cuida -->
+<section class="peca post n-fundo" id="ia-gente-cuida">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo ciano">O jeito Nexor</span></div>
+  <h1 style="font-size:108px;line-height:.95;margin-top:58px">IA que trabalha.<br><span class="grad">Gente que cuida.</span></h1>
+  <div class="n-dupla" style="margin-top:56px">
+    <div class="n-lado n-ia"><span class="n-emoji">⚡</span><h3>A IA faz o trabalho pesado</h3><p>Responde, agenda, lê documentos, cobra e calcula. 24 horas.</p></div>
+    <div class="n-lado n-gente"><span class="n-emoji">💙</span><h3>O time Nexor cuida de você</h3><p>Implanta junto, treina a equipe e acompanha os resultados. Com nome e WhatsApp.</p></div>
+  </div>
+  <p style="font-size:36px;line-height:1.35;margin-top:44px;color:#dbeafe">Você nunca fica sozinho com um robô. <b>Teste 30 dias grátis.</b></p>
+  <div class="rod"><span class="cta">Quero conhecer →</span><span style="text-align:right"><b>nexorconsultingit.com.br</b><br>(34) 99733-7499</span></div>
+</section>
+
+<!-- N2: 30 dias grátis -->
+<section class="peca post n-fundo" id="teste-30-dias">
+  <div class="brilho" style="width:820px;height:820px;background:#0066ff;left:-180px;top:180px;opacity:.45"></div>
+  <div class="topo" style="position:relative"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo verde">Sem cartão</span></div>
+  <div style="position:relative;margin-top:70px;display:flex;align-items:flex-end;gap:28px"><span class="n-mega grad">30</span><span style="font:700 92px/1 'Space Grotesk';padding-bottom:18px">dias<br>grátis</span></div>
+  <h2 style="position:relative;font-size:54px;line-height:1.1;margin-top:46px">Teste a IA na sua empresa, <span class="grad">com o nosso time do seu lado.</span></h2>
+  <div class="n-prod" style="position:relative;margin-top:44px"><span>RH e Ponto</span><span>Atende IA</span><span>Contábil</span><span>Barber</span><span>Agente</span></div>
+  <p style="position:relative;font-size:28px;line-height:1.4;margin-top:34px;color:var(--suave)">Algumas funções ficam limitadas no teste. Gostou? Você continua com o plano que escolher, e os seus dados ficam guardados.</p>
+  <div class="rod" style="position:relative"><span class="cta verde">Começar meu teste →</span><span><b>nexorconsultingit.com.br</b></span></div>
+</section>
+
+<!-- N3: Programa de fundadores -->
+<section class="peca post n-fundo" id="fundadores">
+  <span class="n-faixa">VAGAS LIMITADAS</span>
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""></div>
+  <p class="t" style="font-size:32px;font-weight:700;letter-spacing:.14em;color:#67e8f9;margin-top:60px">PROGRAMA DE FUNDADORES</p>
+  <h1 style="font-size:96px;line-height:.98;margin-top:16px">Os primeiros <span class="grad">pagam menos.</span><br>Por muito tempo.</h1>
+  <div style="margin-top:40px">
+    <div class="n-num"><b class="grad">40%</b><span>de desconto na mensalidade<br>por 12 meses</span></div>
+    <div class="n-num"><b class="grad">50%</b><span>de desconto na implantação</span></div>
+    <div class="n-num" style="border:0"><b class="grad">24m</b><span>de preço travado,<br>sem reajuste</span></div>
+  </div>
+  <div class="n-prod" style="margin-top:26px"><span>Nexor Contábil</span><span>Nexor Barber</span><span>Nexor Agente</span></div>
+  <div class="rod"><span class="cta">Quero minha vaga →</span><span style="text-align:right"><b>10 vagas por produto</b><br>nexorconsultingit.com.br</span></div>
+</section>
+
+<!-- N4: Story fundadores -->
+<section class="peca story n-fundo" id="story-fundadores">
+  <div class="marca-mini"><img src="img/logo-mark.webp" alt="">Nexor Consulting</div>
+  <span class="selo verde" style="align-self:flex-start;margin-top:90px">🔥 10 vagas por produto</span>
+  <h1 style="font-size:118px;line-height:.96;margin-top:40px">Vire <span class="grad">fundador</span> da Nexor.</h1>
+  <div style="margin-top:60px">
+    <div class="n-num"><b class="grad">40%</b><span>off por 12 meses</span></div>
+    <div class="n-num"><b class="grad">50%</b><span>off na implantação</span></div>
+    <div class="n-num" style="border:0"><b class="grad">24m</b><span>sem reajuste</span></div>
+  </div>
+  <div class="tela" style="margin-top:50px;border-radius:30px;overflow:hidden"><img src="img/barber-app.webp" alt="App do Nexor Barber" style="width:100%;display:block"></div>
+  <p style="font-size:34px;color:#dbeafe;margin-top:40px;margin-bottom:40px;text-align:center">Contábil · Barber · Agente</p>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:20px;align-items:center"><span class="cta">Quero minha vaga →</span><p style="font-size:30px;color:var(--suave)">Link na bio · nexorconsultingit.com.br/#fundadores</p></div>
+</section>
+
+<!-- N5: Story IA + cuidado humano -->
+<section class="peca story n-fundo" id="story-gente-cuida">
+  <div class="marca-mini"><img src="img/logo-mark.webp" alt="">Nexor Consulting</div>
+  <h1 style="font-size:124px;line-height:.95;margin-top:120px">Você não vai ficar <span class="grad">sozinho com um robô.</span></h1>
+  <div style="display:flex;flex-direction:column;gap:22px;margin-top:80px">
+    <div class="balao dir" style="font-size:36px">A IA respondeu meus clientes a madrugada toda 😮</div>
+    <div class="balao esq" style="font-size:36px;width:880px">Que bom! Amanhã às 9h eu passo os números com você e ajusto o que for preciso. 💙<small>Seu consultor Nexor</small></div>
+  </div>
+  <p style="font-size:42px;line-height:1.35;margin-top:80px;color:#dbeafe">A IA faz o trabalho pesado. <b>A gente cuida de você.</b></p>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:20px;align-items:center"><span class="cta verde">Teste 30 dias grátis →</span><p style="font-size:30px;color:var(--suave)">nexorconsultingit.com.br</p></div>
+</section>
 
 <!-- ===================== BLUE ===================== -->
 
@@ -80,7 +163,7 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
   </div>
   <h2 style="font-size:76px;line-height:1.08;margin-top:100px">Na sua empresa,<br><span class="grad">quem responderia?</span></h2>
   <p style="font-size:38px;color:var(--suave);margin-top:24px;line-height:1.35">Com o Nexor Atende IA, a resposta sai em segundos, até de madrugada.</p>
-  <div style="margin-top:auto;display:flex;flex-direction:column;gap:22px;align-items:flex-start"><span class="cta">Teste grátis por 12 horas →</span><p style="font-size:30px;color:var(--suave)">nexorconsultingit.com.br · sem cartão de crédito</p></div>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:22px;align-items:flex-start"><span class="cta">Teste 30 dias grátis →</span><p style="font-size:30px;color:var(--suave)">nexorconsultingit.com.br · sem cartão de crédito</p></div>
 </section>
 
 <!-- B3: Pergunte à Blue -->
@@ -93,7 +176,7 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
   <div style="display:flex;flex-direction:column;gap:22px;margin-top:60px">
     <div class="balao dir" style="font-size:34px">Qual solução serve para a minha empresa?</div>
     <div class="balao dir" style="font-size:34px">Quanto eu economizo automatizando o WhatsApp?</div>
-    <div class="balao dir" style="font-size:34px">Como funciona o teste grátis de 12 horas?</div>
+    <div class="balao dir" style="font-size:34px">Como funciona o teste grátis de 30 dias?</div>
     <div class="balao esq" style="font-size:34px;width:860px">Respondo tudo isso e, se quiser, já agendo uma conversa com um especialista. É só clicar em <b>Fale com a Blue</b> no site. 😉</div>
   </div>
   <div class="rod"><span><b>nexorconsultingit.com.br</b></span><span>Atendimento 24h</span></div>
@@ -132,7 +215,7 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
     </div>
     <div class="celular"><img src="img/celular.webp" alt="Tela real do Nexor Atende IA no celular"></div>
   </div>
-  <div class="rod" style="margin-top:auto"><span class="cta" style="font-size:30px;padding:22px 34px">Teste grátis 12h</span><span><b>Nexor Atende IA</b><br>nexorconsultingit.com.br</span></div>
+  <div class="rod" style="margin-top:auto"><span class="cta" style="font-size:30px;padding:22px 34px"> 30 dias grátis</span><span><b>Nexor Atende IA</b><br>nexorconsultingit.com.br</span></div>
 </section>
 
 <!-- P2: Painel temperatura -->
@@ -209,7 +292,7 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
 <section class="peca story" id="atende-story-teste">
   <div class="brilho" style="width:700px;height:700px;background:#25d366;left:-300px;top:600px;opacity:.3"></div>
   <div class="marca-mini"><img src="img/logo-mark.webp" alt="">Nexor Atende IA</div>
-  <span class="selo verde" style="align-self:flex-start;margin-top:70px">Teste grátis · 12 horas</span>
+  <span class="selo verde" style="align-self:flex-start;margin-top:70px">Teste grátis · 30 dias</span>
   <h1 style="font-size:104px;line-height:1;margin-top:36px">Converse com a IA <span class="grad">da sua empresa</span> agora.</h1>
   <p style="font-size:40px;color:var(--suave);margin-top:30px;line-height:1.35">Conte sobre o seu negócio e teste como se fosse o seu cliente. Sem cartão de crédito.</p>
   <div class="celular" style="width:620px;height:860px;align-self:center;margin-top:60px"><img src="img/celular.webp" alt="Tela real do Nexor Atende IA" style="height:100%;object-fit:cover;object-position:top"></div>
@@ -229,7 +312,7 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
     <div><i>4</i>Retrabalho que nunca vira cobrança</div>
   </div>
   <p style="font-size:36px;line-height:1.35;margin-top:48px;color:#ccfbf1">O Nexor Contábil cobra, recebe e lê tudo isso pelo seu escritório. <b>Com a sua marca.</b></p>
-  <div class="rod"><span>Nexor Contábil · teste grátis 12h</span><span><b>nexorconsultingit.com.br</b></span></div>
+  <div class="rod"><span>Nexor Contábil · 30 dias grátis</span><span><b>nexorconsultingit.com.br</b></span></div>
 </section>
 
 <!-- C2: Produto -->
@@ -242,7 +325,7 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
     <p>✅ A IA lê, confere e sugere os lançamentos</p>
     <p>✅ Exporta para o sistema contábil que você já usa</p>
   </div>
-  <div class="rod"><span>Tela real · dados de demonstração</span><span><b>Teste grátis 12h</b></span></div>
+  <div class="rod"><span>Tela real · dados de demonstração</span><span><b>30 dias grátis</b></span></div>
 </section>
 
 <!-- C3: Teste grátis -->
@@ -251,9 +334,9 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
   <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt=""><span class="selo verde">Teste grátis</span></div>
   <div style="margin-top:auto;margin-bottom:auto;position:relative">
     <p style="font-size:34px;font-weight:700;letter-spacing:.12em;color:#5eead4">NEXOR CONTÁBIL</p>
-    <h1 style="font-size:100px;line-height:.98;margin-top:22px">Teste no seu escritório <span class="grad">por 12 horas.</span></h1>
+    <h1 style="font-size:100px;line-height:.98;margin-top:22px">Teste no seu escritório <span class="grad">por 30 dias.</span></h1>
     <div style="display:grid;gap:22px;margin-top:40px;font-size:36px;line-height:1.3;color:#e2e8f0">
-      <p>• Veja a IA ler e conferir uma nota na hora</p>
+      <p>• Use com os documentos do seu escritório</p>
       <p>• Cobre um documento e veja a mensagem que o cliente recebe</p>
       <p>• Sem cartão de crédito</p>
     </div>
@@ -268,7 +351,7 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
   <h1 style="font-size:100px;line-height:1;margin-top:36px">Nunca mais <span class="grad">cobre documento</span> de cliente.</h1>
   <p style="font-size:40px;color:var(--suave);margin-top:30px;line-height:1.35">A régua cobra pelo WhatsApp e e-mail, o cliente envia pelo portal e a IA lê e confere cada documento.</p>
   <div class="tela" style="margin-top:56px;border-radius:24px;overflow:hidden;border:2px solid rgba(255,255,255,.15)"><img src="img/contabil-cobranca.webp" alt="Tela real do Nexor Contábil" style="width:100%;display:block"></div>
-  <div style="margin-top:auto;display:flex;flex-direction:column;gap:20px;align-items:center"><span class="cta verde">Testar grátis por 12h →</span><p style="font-size:30px;color:var(--suave)">Link na bio · nexorconsultingit.com.br</p></div>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:20px;align-items:center"><span class="cta verde">Testar 30 dias grátis →</span><p style="font-size:30px;color:var(--suave)">Link na bio · nexorconsultingit.com.br</p></div>
 </section>
 
 <!-- ===================== SUGESTÕES ===================== -->
@@ -291,7 +374,7 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
       </div>
     </div>
   </div>
-  <div class="rod" style="margin-top:40px"><span>Teste grátis por 12 horas</span><span><b>nexorconsultingit.com.br</b></span></div>
+  <div class="rod" style="margin-top:40px"><span>Teste grátis por 30 dias</span><span><b>nexorconsultingit.com.br</b></span></div>
 </section>
 
 <!-- S2: Diagnóstico gratuito -->
@@ -353,7 +436,7 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
   </div>
   <div style="display:flex;gap:18px;align-items:center;background:rgba(14,26,48,.85);border:2px solid #1f3256;border-radius:18px;padding:18px 22px">
     <img class="blue-av" src="img/blue-avatar.webp" alt="" style="width:84px;height:84px;border-width:3px;box-shadow:0 0 0 3px #3b8dff">
-    <p style="font-size:20px;line-height:1.4;color:#dfe8f7"><b>Fale com a Blue</b>, nossa assistente de IA, no site. Ela indica a solução certa e libera o <b>teste grátis de 12 horas</b>.</p>
+    <p style="font-size:20px;line-height:1.4;color:#dfe8f7"><b>Fale com a Blue</b>, nossa assistente de IA, no site. Ela indica a solução certa e libera o <b>teste grátis de 30 dias</b>.</p>
   </div>
   <div style="margin-top:auto;display:grid;grid-template-columns:1fr auto auto;gap:22px;align-items:center">
     <div style="font-size:20px;line-height:1.6;color:#dfe8f7"><p class="t" style="font-size:28px;font-weight:700;color:#fff">Diagnóstico gratuito</p>(34) 99733-7499<br>contato@nexorconsultingit.com.br<br>nexorconsultingit.com.br · @nexorconsultingit</div>

@@ -9,6 +9,14 @@ O centro de controle da Nexor. Tudo sobre os clientes num só painel, só para a
 - **Suporte Nexor:** um clique abre o sistema do cliente como administrador "Suporte Nexor", sem senha e por link assinado de uso único. Lá dentro existe a aba **Nexor · desenvolvedor**, onde você esconde do cliente os módulos, abas e campos que não devem ser alterados.
 - **Equipe e segurança:** todos entram com senha e **2FA obrigatório**, num aplicativo autenticador. Há três perfis: Dono, Financeiro e Suporte. A auditoria registra tudo.
 
+- **Comercial:**
+  - **Teste grátis de 30 dias** com funções limitadas por produto. No fim do teste, o sistema bloqueia até a contratação.
+  - **Contratação pelo catálogo,** que puxa a mensalidade e a implantação do plano escolhido.
+  - **Programa de fundadores,** com 40% por 12 meses, 50% na implantação e preço travado por 24 meses.
+  - **Vendedores e parceiros** com comissões automáticas: carência de 30 dias e estorno em cancelamento.
+  - **Portal do parceiro** (`/parceiro/`), onde o parceiro vê os clientes, as comissões e envia indicações.
+  - A tabela fica em [`src/planos.js`](src/planos.js). A explicação para a equipe está em [`comercial/PLANOS-E-PRECOS.md`](../comercial/PLANOS-E-PRECOS.md).
+
 ## Como funciona
 
 ```
@@ -28,6 +36,17 @@ O centro de controle da Nexor. Tudo sobre os clientes num só painel, só para a
 - **A licença é assinada.** O sistema confere a assinatura com a chave pública, então ninguém consegue forjar um "ativo".
 - **Sem internet, o cliente não é bloqueado.** A última licença vale por 15 dias. Depois disso o sistema fica só em **somente leitura**, nunca suspenso, e volta sozinho quando a conexão voltar.
 - **Nenhum dado pessoal sai da instalação.** A Central recebe só números: quantidade de colaboradores, de usuários e de marcações do dia, tamanho do banco e data do último backup.
+
+### Teste grátis na licença
+
+**O que a licença carrega.** No teste, a licença assinada leva:
+- `plano: "teste"` e a data de fim;
+- os **limites**: são contagens que o sistema já envia como saúde, como colaboradores, barbeiros e empresas na carteira;
+- os **módulos travados**.
+
+**O que cada sistema faz.** Ele recusa (HTTP 402) criar além do limite e abrir um módulo travado, e explica o que o plano libera. No Atende IA, a IA pausa acima das conversas do dia. No Agente, o limite é de ações aprovadas por dia.
+
+**Faixa e fim do teste.** A faixa de aviso mostra os dias que faltam e um link de contratação pelo WhatsApp da Nexor (`SUPPORT_WHATSAPP`). No dia seguinte ao último dia, a Central manda "bloqueado". No RH, o ponto continua funcionando, pela mesma regra do bloqueio.
 
 ### O que cada situação faz em cada sistema
 

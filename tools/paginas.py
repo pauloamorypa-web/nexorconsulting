@@ -8,7 +8,7 @@ WA = "5534997337499"
 P = [
  dict(slug="chatbot-whatsapp-com-ia", id="atende", nome="Nexor Atende IA", icone="i-whatsapp",
   title="Chatbot para WhatsApp com IA: atendimento 24h | Nexor",
-  desc="Chatbot com inteligência artificial para WhatsApp que responde, vende e agenda 24h, integrado ao seu sistema. Teste grátis por 12 horas, sem cartão.",
+  desc="Chatbot com inteligência artificial para WhatsApp que responde, vende e agenda 24h, integrado ao seu sistema. Teste grátis por 30 dias, sem cartão.",
   h1="Chatbot para WhatsApp com <em>inteligência artificial</em>",
   sub="Seu WhatsApp respondendo clientes na hora, de dia e de noite: tira dúvidas, envia preços, agenda e fecha pedidos. Quando precisa, passa para a sua equipe com o histórico completo.",
   dores=["Cliente que pergunta à noite e compra do concorrente antes de você responder", "Equipe presa respondendo as mesmas perguntas o dia todo", "Contatos esquecidos, sem retorno e sem registro no CRM"],
@@ -66,7 +66,7 @@ P = [
        ("Vocês cuidam de domínio e e-mail?", "Sim. Configuramos domínio, certificado de segurança (HTTPS) e e-mail com o nome da sua empresa.")]),
  dict(slug="loja-virtual", id="commerce", nome="Nexor Commerce", icone="i-store",
   title="Loja virtual integrada a marketplaces | Nexor",
-  desc="Loja virtual com Pix, cartão e boleto, integrada ao Mercado Livre, Shopee e outros marketplaces, com estoque unificado. Teste grátis por 12 horas.",
+  desc="Loja virtual com Pix, cartão e boleto, integrada ao Mercado Livre, Shopee e outros marketplaces, com estoque unificado. Teste grátis por 30 dias.",
   h1="Loja virtual que vende em <em>todos os canais</em>",
   sub="Sua loja própria com Pix, cartão e boleto, conectada aos marketplaces. Vendeu em um canal, o estoque atualiza em todos.",
   dores=["Estoque diferente em cada canal e venda de produto que acabou", "Horas cadastrando o mesmo produto em vários marketplaces", "Carrinhos abandonados que ninguém tenta recuperar"],
@@ -74,7 +74,7 @@ P = [
   publico=["Lojas físicas que querem vender online", "Quem já vende em marketplace", "Moda e acessórios", "Eletrônicos", "Casa e decoração", "Indústrias que vendem direto ao consumidor"],
   faq=[("Posso continuar vendendo nos marketplaces?", "Sim. A ideia é justamente vender na loja própria e nos marketplaces ao mesmo tempo, com estoque e pedidos num lugar só."),
        ("A loja aceita Pix?", "Sim, com Pix, cartão de crédito e boleto."),
-       ("Consigo testar antes?", "Sim. Você pode testar o Nexor Commerce grátis por 12 horas no nosso site.")]),
+       ("Consigo testar antes?", "Sim. Você pode testar o Nexor Commerce grátis por 30 dias: a demonstração abre na hora no nosso site.")]),
  dict(slug="automacao-de-processos-com-ia", id="automacao", nome="Nexor Automação", icone="i-bolt",
   title="Automação de processos com IA para empresas | Nexor",
   desc="Automação de processos com inteligência artificial: leitura de notas, boletos e contratos, relatórios e follow-ups automáticos. Calcule quanto sua empresa economiza.",
@@ -88,7 +88,7 @@ P = [
        ("Como sei se vale a pena?", "Use a calculadora de retorno no nosso site: em 30 segundos você vê a economia estimada por mês e por ano.")]),
  dict(slug="sistema-de-chamados", id="chamados", nome="Nexor Service Desk", icone="i-headset",
   title="Sistema de chamados e service desk para TI | Nexor",
-  desc="Sistema de chamados (service desk / help desk) com SLA, filas por equipe, painel da gerência e LGPD. Teste grátis por 12 horas, sem cartão.",
+  desc="Sistema de chamados (service desk / help desk) com SLA, filas por equipe, painel da gerência e LGPD. Teste grátis por 30 dias, sem cartão.",
   h1="Sistema de <em>chamados</em> com prazo, dono e histórico",
   sub="Service desk para a sua TI e outros setores: abertura guiada, prioridade por impacto, SLA e painel da gerência para ninguém ficar sem resposta.",
   dores=["Pedidos chegando por WhatsApp, e-mail e corredor, sem controle", "Chamado urgente esperando atrás de pedido simples", "Gerência sem saber quanto tempo a equipe leva para resolver"],
@@ -110,7 +110,7 @@ P = [
        ("Ajuda na LGPD?", "Sim. Controle de acesso e trilha de auditoria são parte importante das medidas de segurança que a LGPD pede.")]),
  dict(slug="inventario-de-ti", id="ti", nome="Nexor IT Platform", icone="i-monitor",
   title="Inventário de TI e gestão de computadores | Nexor",
-  desc="Inventário automático de computadores, programas e rede, alertas, instalação remota de programas, acesso remoto e auditoria. Teste grátis por 12 horas.",
+  desc="Inventário automático de computadores, programas e rede, alertas, instalação remota de programas, acesso remoto e auditoria. Teste grátis por 30 dias.",
   h1="Inventário de TI e <em>gestão de computadores</em> num só painel",
   sub="Veja cada máquina da empresa, receba alertas, instale programas de longe e mantenha a auditoria em dia, sem visitar mesa por mesa.",
   dores=["Ninguém sabe ao certo quantas máquinas e licenças a empresa tem", "Técnico indo de mesa em mesa para instalar um programa", "Aparelho desconhecido na rede sem ninguém perceber"],
@@ -201,19 +201,19 @@ def pagina(p):
         final_cta = f'<a class="btn btn-lg btn-primary" href="{wa(msg)}" target="_blank" rel="noopener">Entrar na lista de fundadores</a>'
     else:
         cta_nav = f'<a class="btn btn-sm btn-primary" href="/#testar-{p["id"]}">Testar grátis</a>'
-        cta_hero = f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Testar grátis por 12h <svg class="ic"><use href="#i-arrow"/></svg></a>'
-        nota = "Sem cartão de crédito · Integra com a maioria dos sistemas do mercado"
-        passos = ('<li><b>Teste grátis</b><span>Use a demonstração por 12 horas, com a cara da sua empresa.</span></li>'
+        cta_hero = f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Testar 30 dias grátis <svg class="ic"><use href="#i-arrow"/></svg></a>'
+        nota = "30 dias grátis · sem cartão de crédito · o time Nexor acompanha você de perto"
+        passos = ('<li><b>30 dias grátis</b><span>Use a demonstração na hora e teste com os dados da sua empresa, com algumas funções limitadas.</span></li>'
                   '<li><b>Diagnóstico</b><span>Entendemos seu processo e estimamos o retorno, sem custo.</span></li>'
                   '<li><b>Implantação</b><span>Configuramos com seus dados e integramos aos seus sistemas.</span></li>'
                   '<li><b>Acompanhamento</b><span>Suporte, ajustes e indicadores para você ver o resultado.</span></li>')
-        final_h, final_p = "Veja funcionando na sua empresa", f"Teste o {p['nome']} grátis por 12 horas ou fale com um especialista."
+        final_h, final_p = "Veja funcionando na sua empresa", f"Teste o {p['nome']} grátis por 30 dias ou fale com um especialista."
         final_cta = f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Começar teste grátis</a>'
     previa = ""
     if p.get("video"):
         mp4, poster = p["video"]
         previa += (f'<section class="sp-bloco"><div class="container sp-video"><div><h2>Veja em 1 minuto</h2><p class="sp-sub">A dor, o que muda e como o {esc(p["nome"])} resolve, do jeito que o seu cliente vai usar.</p>'
-                   f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Testar grátis por 12h <svg class="ic"><use href="#i-arrow"/></svg></a></div>'
+                   f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Testar 30 dias grátis <svg class="ic"><use href="#i-arrow"/></svg></a></div>'
                    f'<video controls playsinline preload="none" poster="{poster}" width="720" height="1280" aria-label="Vídeo de apresentação do {esc(p["nome"])}"><source src="{mp4}" type="video/mp4"></video></div></section>')
     if p.get("telas"):
         nota_telas = "Telas ilustrativas de produto em desenvolvimento, com dados fictícios." if breve else "Telas reais do sistema, com dados de demonstração de empresas fictícias."
