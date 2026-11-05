@@ -19,8 +19,8 @@ import { criarAgente } from "./ia/agente.js";
 import { criarCacheConhecimento } from "./ia/conhecimento.js";
 import { criarCopiloto } from "./ia/copiloto.js";
 import { assinaturaValida } from "./meta/webhook.js";
-import { criarCentralNexor } from "./nexor/central.js";
-import { bloqueadoPorAjuste, iaLiberada, recusaPorLicenca } from "./nexor/politica.js";
+import { criarCentralNexor, recusaPorTeste } from "./nexor/central.js";
+import { CATALOGO as CATALOGO_NEXOR, LIMITES_TESTE, bloqueadoPorAjuste, iaLiberada, recusaPorLicenca } from "./nexor/politica.js";
 import { criarCofre, gerarToken, iguais } from "./seguranca.js";
 import { criarAgendador } from "./servicos/agendador.js";
 import { criarAtendimento } from "./servicos/atendimento.js";
@@ -83,7 +83,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
   const agente = criarAgente({ cliente, repo, conhecimento, carregarMidia: (a) => midia.ler(a), agora, ia: cfg.ia });
   const copiloto = criarCopiloto({ cliente, repo, conhecimento, ia: cfg.ia });
   const central = criarCentralNexor({ cfg, agora, fetchFn, produto: "atende", versao: "1.0.0", saude: () => saudeDaInstalacao(repo, cfg, agora) });
-  const atendimento = criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia, fetchFn, agora, ia: cfg.ia, versaoGraph: cfg.meta.versaoGraph, atrasoAgrupamento, iaLiberada: () => iaLiberada(central.estado()) });
+  const atendimento = criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia, fetchFn, agora, ia: cfg.ia, versaoGraph: cfg.meta.versaoGraph, atrasoAgrupamento, iaLiberada: () => iaLiberada(central.estado(), () => saudeDaInstalacao(repo, cfg, agora)) });
   const agendador = criarAgendador({ repo, atendimento, eventos, agora });
   const api = criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eventos, midia, cfg, fetchFn, agora, central });
 
@@ -151,6 +151,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
       const lic = central.estado();
       const recusa = recusaPorLicenca(lic, req.method, url.pathname);
       if (recusa) return json(res, 423, { erro: recusa, codigo: "licenca", situacao: lic.situacao, link: lic.link });
+      const teste = recusaPorTeste(lic, req.method, url.pathname, { catalogo: CATALOGO_NEXOR, rotas: LIMITES_TESTE, contar: () => saudeDaInstalacao(repo, cfg, agora) });
+      if (teste) return json(res, 402, { erro: teste, codigo: "teste", link: lic.link });
       if (usuario) {
         const oculto = bloqueadoPorAjuste(repo.ocultos(usuario.empresa_id), req.method, url.pathname);
         if (oculto) return json(res, 403, { erro: `${oculto} não está disponível no seu plano. Fale com a Nexor.` });

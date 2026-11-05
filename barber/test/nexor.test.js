@@ -83,3 +83,35 @@ test("Suporte Nexor entra, esconde o clube e não aparece na equipe", async () =
   assert.ok((await b.dono.get("/api/usuarios")).dados.every((u) => !u.nexor));
   assert.equal((await sup("PUT", "/api/nexor/ajustes", { ocultos: [] })).status, 200);
 });
+
+test("teste grátis: limites e módulos travados pela licença, bloqueio no fim e tudo liberado ao contratar", async () => {
+  const hoje = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+  const daqui = (d) => new Date(Date.now() - 3 * 3600_000 + d * 86400_000).toISOString().slice(0, 10);
+  central.repo.atualizar("clientes", cliCentral.id, { fase: "teste", produto: "barber", teste_ate: daqui(10) });
+  await s.app.central.sincronizar();
+  const lic = s.app.central.estado();
+  assert.equal(lic.plano, "teste");
+  assert.equal(lic.situacao, "aviso", "faixa com os dias que faltam");
+  assert.match(lic.mensagem, /Teste grátis até/);
+  // 2 barbeiros já cadastrados: o limite do teste é 2
+  const novo = await b.dono.post("/api/barbeiros", { nome: "Carlos" });
+  assert.equal(novo.status, 402);
+  assert.match(novo.dados.erro, /limite é de 2 barbeiros/);
+  const rel = await b.dono.get(`/api/relatorios?de=${hoje}&ate=${hoje}`);
+  assert.equal(rel.status, 402);
+  assert.match(rel.dados.erro, /Relatórios não faz parte do teste grátis/);
+  assert.equal((await b.dono.get("/api/clientes")).status, 200, "o resto funciona");
+  const dias = (await lucas.get(`/api/app/dias?servico=${b.corte.id}`)).dados;
+  assert.ok(dias.some((d) => d.livres > 0), "o app agenda dentro do limite do mês");
+
+  central.repo.atualizar("clientes", cliCentral.id, { teste_ate: daqui(-1) });
+  await s.app.central.sincronizar();
+  assert.equal(s.app.central.estado().situacao, "bloqueado");
+  assert.equal((await b.dono.get("/api/clientes")).status, 423, "terminou o teste: só pago");
+
+  central.repo.atualizar("clientes", cliCentral.id, { fase: "contrato", teste_ate: null, contratado_em: hoje });
+  await s.app.central.sincronizar();
+  assert.equal(s.app.central.estado().plano, "contratado");
+  assert.equal((await b.dono.get(`/api/relatorios?de=${hoje}&ate=${hoje}`)).status, 200);
+  assert.equal((await b.dono.post("/api/barbeiros", { nome: "Carlos" })).status, 200);
+});

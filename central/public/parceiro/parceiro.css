@@ -1,0 +1,14 @@
+.portal { max-width: 1080px; margin: 0 auto; padding: 28px 18px 60px; display: grid; gap: 18px; }
+.portal-topo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.portal-topo img { width: 40px; height: 40px; }
+.portal-topo h1 { margin: 0; font: 700 22px var(--fonte-titulo, "Space Grotesk", sans-serif); }
+.portal-topo small { display: block; color: var(--texto-2); }
+.portal-heroi { border-radius: 18px; padding: 22px; background: linear-gradient(135deg, color-mix(in srgb, var(--azul) 18%, var(--superficie)), var(--superficie)); border: 1px solid var(--linha); }
+.portal-heroi h2 { margin: 0 0 6px; }
+.portal-heroi p { margin: 0; color: var(--texto-2); }
+.portal-indicadores { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.portal-indicadores div { padding: 14px 16px; border-radius: 14px; border: 1px solid var(--linha); background: var(--superficie); }
+.portal-indicadores small { display: block; color: var(--texto-2); font-size: 12.5px; }
+.portal-indicadores b { font: 700 22px var(--fonte-titulo, "Space Grotesk", sans-serif); }
+.portal-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.portal-form .largo { grid-column: 1 / -1; }

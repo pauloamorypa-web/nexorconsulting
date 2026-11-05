@@ -55,6 +55,9 @@ export function montarServidor({ config = configPadrao, conectores, cliente, wha
   central ??= criarCentralNexor({ cfg: config, agora: () => agora().getTime(), fetchFn, produto: "agente", versao: "1.0.0", saude: () => ({ conectores: (conectores?.http?.length ?? 0) + (conectores?.mcp?.length ?? 0), uptime_s: Math.round(process.uptime()), node: process.version }) });
   const vistas = new Set();
   const avisados = new Map(); // quem não é dono: avisa no máximo uma vez por dia
+  // Teste grátis: ações aprovadas por dia (data de Brasília). Conta em memória; reiniciar zera o dia.
+  const acoesDoDia = { dia: "", n: 0 };
+  const diaBR = () => new Date(agora().getTime() - 3 * 3600_000).toISOString().slice(0, 10);
 
   async function decidir(dono, acao, id) {
     const p = aprovacoes.retirar(id, dono);
@@ -63,6 +66,14 @@ export function montarServidor({ config = configPadrao, conectores, cliente, wha
       auditar({ evento: "bloqueado_licenca", id: p.id, dono });
       return whats.texto(dono, `Não executei o pedido ${p.id}: o contrato com a Nexor está em modo somente leitura. ${central.estado().mensagem}`.trim());
     }
+    const lic = central.estado();
+    const maxTeste = lic.plano === "teste" ? lic.limites?.acoes_dia : undefined;
+    if (acoesDoDia.dia !== diaBR()) Object.assign(acoesDoDia, { dia: diaBR(), n: 0 });
+    if (acao === "aprovar" && Number.isFinite(maxTeste) && acoesDoDia.n >= maxTeste) {
+      auditar({ evento: "limite_teste", id: p.id, dono });
+      return whats.texto(dono, `Não executei o pedido ${p.id}: no teste grátis o limite é de ${maxTeste} ações aprovadas por dia. Contrate um plano para liberar.${lic.link ? ` ${lic.link}` : ""}`);
+    }
+    if (acao === "aprovar") acoesDoDia.n++;
     if (acao === "recusar") {
       auditar({ evento: "recusado", id: p.id, dono });
       return whats.texto(dono, await agente.responder({ dono, evento: `O dono RECUSOU o pedido ${p.id} (${p.resumo}). Nada foi feito. Confirme em uma frase e pergunte se quer ajustar algo.` }));

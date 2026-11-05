@@ -39,6 +39,24 @@ CREATE TABLE IF NOT EXISTS faturas (
 CREATE UNIQUE INDEX IF NOT EXISTS faturas_mensal ON faturas (cliente_id, competencia) WHERE competencia IS NOT NULL;
 CREATE INDEX IF NOT EXISTS faturas_status ON faturas (status, vencimento);
 CREATE TABLE IF NOT EXISTS auditoria (id TEXT PRIMARY KEY, autor TEXT, acao TEXT NOT NULL, cliente_id TEXT, detalhe TEXT, criado_em INTEGER NOT NULL);
+-- Vendedores e parceiros (tipo: chave de COMISSOES em planos.js); o portal do parceiro entra por link com token
+CREATE TABLE IF NOT EXISTS parceiros (
+  id TEXT PRIMARY KEY, nome TEXT NOT NULL, tipo TEXT NOT NULL, empresa TEXT, documento TEXT, email TEXT, telefone TEXT, pix TEXT,
+  percentuais TEXT NOT NULL DEFAULT '{}', portal_hash TEXT, ativo INTEGER NOT NULL DEFAULT 1, observacoes TEXT,
+  criado_em INTEGER NOT NULL, atualizado_em INTEGER NOT NULL
+);
+-- Comissões geradas quando a fatura é paga: prevista (carência) → a_pagar → paga, ou estornada
+CREATE TABLE IF NOT EXISTS comissoes (
+  id TEXT PRIMARY KEY, parceiro_id TEXT NOT NULL REFERENCES parceiros(id), fatura_id TEXT NOT NULL REFERENCES faturas(id),
+  cliente_id TEXT NOT NULL, tipo TEXT NOT NULL, base_centavos INTEGER NOT NULL, pct REAL NOT NULL, valor_centavos INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'prevista', liberar_em TEXT NOT NULL, pago_em TEXT, criado_em INTEGER NOT NULL, atualizado_em INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS comissoes_unica ON comissoes (parceiro_id, fatura_id);
+-- Indicações enviadas pelos parceiros no portal
+CREATE TABLE IF NOT EXISTS indicacoes (
+  id TEXT PRIMARY KEY, parceiro_id TEXT NOT NULL REFERENCES parceiros(id), empresa TEXT NOT NULL, contato TEXT, telefone TEXT, email TEXT,
+  produto TEXT, observacao TEXT, status TEXT NOT NULL DEFAULT 'nova', cliente_id TEXT, criado_em INTEGER NOT NULL, atualizado_em INTEGER NOT NULL
+);
 `;
 
 const LETRAS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem 0/O, 1/I: fácil de ditar e digitar
@@ -53,8 +71,8 @@ export function normalizarCodigo(v) {
   return /^[A-Z0-9]{8}$/.test(s) ? `NX-${s.slice(0, 4)}-${s.slice(4)}` : null;
 }
 
-const JSON_COLS = { clientes: ["regras"], sistemas: ["saude"], auditoria: ["detalhe"] };
-const BOOL_COLS = new Set(["ativo"]);
+const JSON_COLS = { clientes: ["regras"], sistemas: ["saude"], auditoria: ["detalhe"], parceiros: ["percentuais"] };
+const BOOL_COLS = new Set(["ativo", "fundador"]);
 const lerJson = (v, padrao) => {
   try {
     return v ? JSON.parse(v) : padrao;
@@ -80,6 +98,18 @@ export function abrirBanco(caminho, agora = () => Date.now()) {
   if (!db.prepare("PRAGMA table_info(clientes)").all().some((c) => c.name === "codigo")) db.exec("ALTER TABLE clientes ADD COLUMN codigo TEXT");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS clientes_codigo ON clientes (codigo)");
   for (const { id } of db.prepare("SELECT id FROM clientes WHERE codigo IS NULL").all()) db.prepare("UPDATE clientes SET codigo = ? WHERE id = ?").run(novoCodigo(), id);
+
+  // Comercial: teste grátis, plano do catálogo, fundador, desconto e quem vendeu (colunas novas, sem CHECK)
+  const NOVAS = {
+    clientes: { fase: "TEXT NOT NULL DEFAULT 'contrato'", teste_ate: "TEXT", produto: "TEXT", plano_id: "TEXT", quantidade: "INTEGER", fundador: "INTEGER NOT NULL DEFAULT 0", desconto_pct: "REAL NOT NULL DEFAULT 0", desconto_ate: "TEXT", parceiro_id: "TEXT", vendedor_id: "TEXT", contratado_em: "TEXT" },
+    faturas: { tipo: "TEXT NOT NULL DEFAULT 'mensalidade'" },
+  };
+  for (const [tabela, cols] of Object.entries(NOVAS)) {
+    const tem = new Set(db.prepare(`PRAGMA table_info(${tabela})`).all().map((c) => c.name));
+    for (const [c, def] of Object.entries(cols)) if (!tem.has(c)) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${c} ${def}`);
+  }
+  // Faturas avulsas antigas sem competência eram lançadas à mão: ficam como "avulsa"
+  db.exec("UPDATE faturas SET tipo = 'avulsa' WHERE competencia IS NULL AND tipo = 'mensalidade' AND descricao NOT LIKE 'Mensalidade%'");
 
   const cache = new Map();
   const q = (sql) => {

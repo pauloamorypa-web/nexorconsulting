@@ -5,6 +5,12 @@
    - bloqueado:     painel e agendamento online suspensos; lembretes e ofertas pausados.
    O usuário Suporte Nexor nunca é bloqueado. */
 
+/** Teste grátis: o que cada limite da licença conta (chave da saúde) e quais POST criam mais um */
+export const LIMITES_TESTE = {
+  barbeiros: { rotas: ["/api/barbeiros"], rotulo: "barbeiros" },
+  agendamentos_mes: { rotas: ["/api/agendamentos", "/api/app/agendar"], rotulo: "agendamentos no mês" },
+};
+
 export const CATALOGO = {
   modulos: {
     "modulo.clube": { rotulo: "Clube de assinatura", api: ["/api/planos", "/api/assinaturas", "/api/app/assinar", "/api/app/assinatura"] },

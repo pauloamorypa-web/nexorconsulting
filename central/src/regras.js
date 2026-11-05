@@ -43,6 +43,13 @@ export function situacaoCliente(cliente, faturasAbertas, hoje, padrao) {
   if (cliente.status === "cancelado") return { ...base, situacao: "bloqueado", motivo: "cancelado", mensagem: "Contrato encerrado. Fale com a Nexor para reativar o sistema." };
   if (cliente.bloqueio_manual) return { ...base, situacao: "bloqueado", motivo: "manual", mensagem: `Sistema suspenso pela Nexor: ${cliente.bloqueio_manual}` };
   if (cliente.liberado_ate && cliente.liberado_ate >= hoje) return { ...base, situacao: "ativo", motivo: "liberado", mensagem: "" };
+  // Teste grátis: tudo com as limitações do teste até o último dia; depois, só com o plano contratado
+  if (cliente.fase === "teste") {
+    const fim = cliente.teste_ate ?? hoje;
+    const resta = diasEntre(fim, hoje);
+    if (resta < 0) return { ...base, situacao: "bloqueado", motivo: "teste_encerrado", teste: true, mensagem: `O teste grátis terminou em ${dataBR(fim)}. Contrate um plano para continuar: os seus dados estão guardados.` };
+    return { ...base, situacao: "aviso", motivo: "teste", teste: true, mensagem: `Teste grátis até ${dataBR(fim)} (${resta === 0 ? "último dia" : resta === 1 ? "falta 1 dia" : `faltam ${resta} dias`}), com funções limitadas. Contrate um plano para liberar tudo.` };
+  }
   if (!maisAntiga || atraso < r.aviso) return { ...base, situacao: "ativo", motivo: null, mensagem: "" };
   const venc = dataBR(maisAntiga.vencimento);
   const diaRestrito = dataBR(somarDias(maisAntiga.vencimento, r.restrito));
@@ -54,7 +61,7 @@ export function situacaoCliente(cliente, faturasAbertas, hoje, padrao) {
 
 /** Mensalidades que já deveriam existir: mês atual e o próximo, a partir da antecedência configurada */
 export function mensalidadesDevidas(cliente, existentes, hoje, padrao) {
-  if (cliente.status !== "ativo" || !(cliente.valor_centavos > 0)) return [];
+  if (cliente.status !== "ativo" || cliente.fase === "teste" || !(cliente.valor_centavos > 0)) return [];
   const r = regrasDe(cliente, padrao);
   const inicio = cliente.inicio_cobranca || hojeBR(cliente.criado_em);
   const ja = new Set(existentes.map((f) => f.competencia));
@@ -63,13 +70,25 @@ export function mensalidadesDevidas(cliente, existentes, hoje, padrao) {
     const venc = vencimentoDe(c, cliente.dia_vencimento);
     if (venc < inicio || ja.has(c)) continue;
     if (diasEntre(venc, hoje) > r.antecedencia) continue;
-    novas.push({ competencia: c, vencimento: venc, valor_centavos: cliente.valor_centavos, descricao: `Mensalidade ${c.slice(5)}/${c.slice(0, 4)}${cliente.plano ? ` · ${cliente.plano}` : ""}` });
+    // Desconto (fundador ou negociado) vale até a competência desconto_ate, inclusive
+    const comDesc = cliente.desconto_pct > 0 && (!cliente.desconto_ate || c <= cliente.desconto_ate);
+    const valor = comDesc ? Math.round(cliente.valor_centavos * (1 - cliente.desconto_pct / 100)) : cliente.valor_centavos;
+    novas.push({ competencia: c, vencimento: venc, valor_centavos: valor, tipo: "mensalidade", descricao: `Mensalidade ${c.slice(5)}/${c.slice(0, 4)}${cliente.plano ? ` · ${cliente.plano}` : ""}${comDesc ? ` · ${cliente.fundador ? "fundador" : "desconto"} ${cliente.desconto_pct}%` : ""}` });
   }
   return novas;
 }
 
-/** Conteúdo da licença de um sistema (assinado pela Central) */
-export function conteudoLicenca(sistema, cliente, st, agora, diasValidade, contato = {}) {
+/** Competência daqui a n meses (AAAA-MM) */
+export function somarMeses(c, n) {
+  let x = c;
+  for (let i = 0; i < n; i++) x = proximaCompetencia(x);
+  return x;
+}
+
+/** Conteúdo da licença de um sistema (assinado pela Central).
+    teste: { limites, travados } do produto quando o cliente está no teste grátis */
+export function conteudoLicenca(sistema, cliente, st, agora, diasValidade, contato = {}, teste = null) {
+  const emTeste = cliente.fase === "teste";
   return {
     v: 1,
     tipo: "licenca",
@@ -82,6 +101,10 @@ export function conteudoLicenca(sistema, cliente, st, agora, diasValidade, conta
     link: st.link,
     manter_ponto: st.regras.manter_ponto !== false,
     contato: { whatsapp: contato.whatsapp || null, email: contato.email || null },
+    plano: emTeste ? "teste" : "contratado",
+    teste_ate: emTeste ? cliente.teste_ate ?? null : null,
+    limites: emTeste ? teste?.limites ?? {} : {},
+    travados: emTeste ? teste?.travados ?? [] : [],
     emitida: agora,
     valido_ate: agora + diasValidade * 86400_000,
   };

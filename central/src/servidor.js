@@ -16,7 +16,9 @@ import { acaoDoEvento, criarAsaas } from "./asaas.js";
 import { config as configPadrao } from "./config.js";
 import { abrirBanco, normalizarCodigo, novoCodigo } from "./db.js";
 import { conferirSenha, conferirTotp, criarAssinador, criarCofre, gerarHashSenha, gerarToken, iguais, novoSegredoTotp, sha256 } from "./seguranca.js";
-import { conteudoLicenca, hojeBR, mensalidadesDevidas, situacaoCliente } from "./regras.js";
+import { registrarComercial } from "./comercial.js";
+import { TESTE } from "./planos.js";
+import { conteudoLicenca, hojeBR, mensalidadesDevidas, situacaoCliente, somarDias } from "./regras.js";
 
 const PUBLICO = resolve(fileURLToPath(new URL("../public", import.meta.url)));
 const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".ico": "image/x-icon", ".json": "application/json" };
@@ -163,9 +165,11 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     return { ...resto, online: online(s), produto_nome: PRODUTOS[s.produto] ?? s.produto, acesso: COM_ACESSO.has(s.produto) };
   };
 
-  /** Gera as mensalidades devidas e manda para o Asaas as que ainda não têm cobrança */
+  let comercial = null;
+  /** Gera as mensalidades devidas, libera as comissões vencida a carência e manda para o Asaas as faturas sem cobrança */
   async function rotina() {
     const criadas = [];
+    comercial?.liberarComissoes();
     for (const c of repo.lista("clientes", "WHERE status = 'ativo'")) {
       const existentes = repo.lista("faturas", "WHERE cliente_id = ? AND competencia IS NOT NULL", c.id);
       for (const n of mensalidadesDevidas(c, existentes, hoje(), cfg.regrasPadrao)) {
@@ -306,19 +310,28 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     const porSituacao = { ativo: 0, aviso: 0, restrito: 0, bloqueado: 0 };
     for (const c of ativos) porSituacao[c.situacao]++;
     const alertas = [];
-    for (const c of clientes) if (c.status === "ativo" && c.situacao !== "ativo") alertas.push({ tipo: c.situacao, cliente_id: c.id, texto: `${c.nome_fantasia || c.razao_social}: ${c.situacao === "aviso" ? "fatura em atraso" : c.situacao === "restrito" ? "em modo somente leitura" : "sistema bloqueado"}${c.atraso ? ` (${c.atraso} dias)` : ""}` });
+    for (const c of clientes) {
+      if (c.status !== "ativo") continue;
+      if (c.fase === "teste") {
+        const resta = c.teste_ate ? Math.round((Date.parse(c.teste_ate) - Date.parse(h)) / 86400_000) : 0;
+        if (resta <= 7) alertas.push({ tipo: "teste", cliente_id: c.id, texto: `${c.nome_fantasia || c.razao_social}: ${resta < 0 ? "teste grátis encerrado, aguardando contratação" : `teste grátis termina em ${resta} dia(s)`}` });
+        continue;
+      }
+      if (c.situacao !== "ativo") alertas.push({ tipo: c.situacao, cliente_id: c.id, texto: `${c.nome_fantasia || c.razao_social}: ${c.situacao === "aviso" ? "fatura em atraso" : c.situacao === "restrito" ? "em modo somente leitura" : "sistema bloqueado"}${c.atraso ? ` (${c.atraso} dias)` : ""}` });
+    }
     for (const s of sistemas) {
       const c = clientes.find((x) => x.id === s.cliente_id);
       if (!s.online) alertas.push({ tipo: "offline", cliente_id: s.cliente_id, sistema_id: s.id, texto: `${c?.nome_fantasia || c?.razao_social}: ${s.produto_nome} ${s.ultimo_contato ? "sem contato" : "ainda não conectou"}` });
       const bk = s.saude?.backup_ultimo;
       if (s.online && s.produto === "rh" && (!bk || agora() - bk > 36 * 3600_000)) alertas.push({ tipo: "backup", cliente_id: s.cliente_id, sistema_id: s.id, texto: `${c?.nome_fantasia || c?.razao_social}: backup ${bk ? "atrasado" : "não encontrado"}` });
     }
-    const ordem = { bloqueado: 0, restrito: 1, offline: 2, backup: 3, aviso: 4 };
+    const ordem = { bloqueado: 0, restrito: 1, offline: 2, backup: 3, aviso: 4, teste: 5 };
     alertas.sort((a, b) => ordem[a.tipo] - ordem[b.tipo]);
     return {
-      clientes: { total: ativos.length, cancelados: clientes.length - ativos.length, porSituacao },
+      clientes: { total: ativos.length, cancelados: clientes.length - ativos.length, porSituacao, em_teste: ativos.filter((c) => c.fase === "teste").length, fundadores: ativos.filter((c) => c.fundador).length },
       financeiro: {
-        mrr: ativos.reduce((s, c) => s + c.valor_centavos, 0),
+        mrr: ativos.filter((c) => c.fase !== "teste").reduce((s, c) => s + Math.round(c.valor_centavos * (c.desconto_pct > 0 && (!c.desconto_ate || c.desconto_ate >= mes) ? 1 - c.desconto_pct / 100 : 1)), 0),
+        comissoes_a_pagar: soma("SELECT SUM(valor_centavos) s FROM comissoes WHERE status = 'a_pagar'"),
         vencido: soma("SELECT SUM(valor_centavos) s FROM faturas WHERE status = 'aberta' AND vencimento < ?", h),
         a_vencer: soma("SELECT SUM(valor_centavos) s FROM faturas WHERE status = 'aberta' AND vencimento >= ?", h),
         recebido_mes: soma("SELECT SUM(valor_centavos) s FROM faturas WHERE status = 'paga' AND substr(pago_em, 1, 7) = ?", mes),
@@ -358,6 +371,8 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
       dia_vencimento: V.inteiro(b.dia_vencimento, 1, 31, "dia do vencimento"),
       inicio_cobranca: V.data(b.inicio_cobranca, "início da cobrança"),
       observacoes: V.texto(b.observacoes, 2000),
+      vendedor_id: b.vendedor_id === undefined ? undefined : b.vendedor_id ? (repo.obter("parceiros", b.vendedor_id) ?? falha(400, "Vendedor não encontrado.")).id : null,
+      parceiro_id: b.parceiro_id === undefined ? undefined : b.parceiro_id ? (repo.obter("parceiros", b.parceiro_id) ?? falha(400, "Parceiro não encontrado.")).id : null,
       regras,
     };
   }
@@ -365,9 +380,12 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
 
   rota("GET", "/api/clientes", TODOS, () => repo.lista("clientes", "ORDER BY razao_social").map((c) => ({ ...clientePublico(c), sistemas: repo.lista("sistemas", "WHERE cliente_id = ? AND ativo = 1", c.id).map(sistemaPublico) })));
   rota("POST", "/api/clientes", FIN, async (ctx) => {
-    const d = dadosCliente(await ctx.corpo(), false);
-    const c = repo.inserir("clientes", { ...d, inicio_cobranca: d.inicio_cobranca ?? hoje(), regras: d.regras ?? {}, codigo: novoCodigo() });
-    auditar(ctx, "cliente_criado", c.id, { razao_social: c.razao_social });
+    const b = await ctx.corpo();
+    const d = dadosCliente(b, false);
+    // Cliente novo pode já começar no teste grátis de um produto (30 dias, com as limitações do teste)
+    const teste = b.teste_produto ? (TESTE.produtos[b.teste_produto] ? { fase: "teste", produto: b.teste_produto, teste_ate: somarDias(hoje(), TESTE.dias - 1) } : falha(400, "Produto do teste inválido.")) : {};
+    const c = repo.inserir("clientes", { ...d, ...teste, inicio_cobranca: d.inicio_cobranca ?? hoje(), regras: d.regras ?? {}, codigo: novoCodigo() });
+    auditar(ctx, "cliente_criado", c.id, { razao_social: c.razao_social, teste: teste.produto ?? null });
     await rotina();
     return clientePublico(repo.obter("clientes", c.id));
   });
@@ -414,6 +432,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     const b = await ctx.corpo();
     const reativar = Boolean(b.reativar);
     auditar(ctx, reativar ? "contrato_reativado" : "contrato_cancelado", c.id, { motivo: V.texto(b.motivo, 200) ?? null });
+    if (!reativar) comercial.estornarCancelamento(c);
     return clientePublico(repo.atualizar("clientes", c.id, { status: reativar ? "ativo" : "cancelado" }));
   });
 
@@ -432,7 +451,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("POST", "/api/faturas", FIN, async (ctx) => {
     const b = await ctx.corpo();
     const c = exigirCliente(b.cliente_id);
-    const f = repo.inserir("faturas", { cliente_id: c.id, descricao: V.texto(b.descricao, 200, { obrig: true, rotulo: "descrição" }), valor_centavos: V.inteiro(b.valor_centavos, 1, 100_000_000, "valor") ?? falha(400, "Informe o valor."), vencimento: V.data(b.vencimento, "vencimento", true), link: V.url(b.link) ?? null });
+    const f = repo.inserir("faturas", { cliente_id: c.id, tipo: b.tipo === "implantacao" ? "implantacao" : "avulsa", descricao: V.texto(b.descricao, 200, { obrig: true, rotulo: "descrição" }), valor_centavos: V.inteiro(b.valor_centavos, 1, 100_000_000, "valor") ?? falha(400, "Informe o valor."), vencimento: V.data(b.vencimento, "vencimento", true), link: V.url(b.link) ?? null });
     auditar(ctx, "fatura_criada", c.id, { fatura: f.id, valor: f.valor_centavos });
     await rotina();
     return repo.obter("faturas", f.id);
@@ -448,11 +467,14 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     const b = await ctx.corpo();
     const data = V.data(b.data, "data do pagamento") ?? hoje();
     auditar(ctx, "fatura_paga", f.cliente_id, { fatura: f.id, forma: b.forma ?? "manual" });
-    return repo.atualizar("faturas", f.id, { status: "paga", pago_em: data, forma: V.texto(b.forma, 40) ?? "manual" });
+    const paga = repo.atualizar("faturas", f.id, { status: "paga", pago_em: data, forma: V.texto(b.forma, 40) ?? "manual" });
+    comercial.comissionar(paga);
+    return paga;
   });
   rota("POST", "/api/faturas/:id/reabrir", FIN, (ctx) => {
     const f = exigirFatura(ctx.params.id);
     auditar(ctx, "fatura_reaberta", f.cliente_id, { fatura: f.id });
+    comercial.estornarFatura(f.id);
     return repo.atualizar("faturas", f.id, { status: "aberta", pago_em: null, forma: null });
   });
   rota("POST", "/api/faturas/:id/cancelar", FIN, async (ctx) => {
@@ -460,6 +482,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     if (f.status === "paga") falha(409, "Fatura paga não pode ser cancelada. Reabra antes, se for o caso.");
     await asaas.cancelar(f.externo_id).catch(() => {});
     auditar(ctx, "fatura_cancelada", f.cliente_id, { fatura: f.id });
+    comercial.estornarFatura(f.id);
     return repo.atualizar("faturas", f.id, { status: "cancelada" });
   });
   rota("PUT", "/api/faturas/:id", FIN, async (ctx) => {
@@ -562,7 +585,9 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     const st = sis.ativo ? situacaoDe(c) : { situacao: "bloqueado", mensagem: "Instalação desativada pela Nexor.", link: null, regras: { ...cfg.regrasPadrao, ...c.regras } };
     if (st.situacao !== sis.situacao) repo.auditar("sistema", "situacao_aplicada", c.id, { sistema: sis.id, de: sis.situacao, para: st.situacao });
     repo.atualizar("sistemas", sis.id, { ultimo_contato: agora(), versao: V.texto(b.versao, 30) ?? sis.versao, saude, ip: ctx.ip, situacao: st.situacao });
-    return { licenca: assinador.assinar(conteudoLicenca(sis, c, st, agora(), cfg.licencaDias, cfg.contato)), hora: agora() };
+    // No teste grátis, o link da faixa leva para a contratação; a licença leva os limites do teste do produto
+    const stLic = st.teste ? { ...st, link: comercial.linkContratar(c, sis.produto) } : st;
+    return { licenca: assinador.assinar(conteudoLicenca(sis, c, stLic, agora(), cfg.licencaDias, cfg.contato, TESTE.produtos[sis.produto])), hora: agora() };
   });
 
   // Webhook do Asaas: confere o token configurado no painel do Asaas (Integrações → Webhooks)
@@ -575,8 +600,8 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     const f = (p.id && repo.um("SELECT id FROM faturas WHERE externo_id = ?", String(p.id))) || (p.externalReference && repo.um("SELECT id FROM faturas WHERE id = ?", String(p.externalReference)));
     if (!f) return { ok: true, ignorado: true };
     const fat = repo.obter("faturas", f.id);
-    if (acao === "paga") repo.atualizar("faturas", fat.id, { status: "paga", pago_em: /^\d{4}-\d{2}-\d{2}$/.test(p.paymentDate ?? "") ? p.paymentDate : hoje(), forma: String(p.billingType ?? "asaas").toLowerCase().slice(0, 40), externo_id: fat.externo_id ?? String(p.id ?? "") });
-    else if (acao === "aberta") repo.atualizar("faturas", fat.id, { status: "aberta", pago_em: null, forma: null });
+    if (acao === "paga") comercial.comissionar(repo.atualizar("faturas", fat.id, { status: "paga", pago_em: /^\d{4}-\d{2}-\d{2}$/.test(p.paymentDate ?? "") ? p.paymentDate : hoje(), forma: String(p.billingType ?? "asaas").toLowerCase().slice(0, 40), externo_id: fat.externo_id ?? String(p.id ?? "") }));
+    else if (acao === "aberta") repo.atualizar("faturas", fat.id, { status: "aberta", pago_em: null, forma: null }), comercial.estornarFatura(fat.id);
     else if (fat.status !== "paga") repo.atualizar("faturas", fat.id, { status: "cancelada" });
     repo.auditar("Asaas", `webhook_${acao}`, fat.cliente_id, { fatura: fat.id, evento: b.event });
     return { ok: true };
@@ -614,6 +639,9 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     return { ok: true };
   });
   rota("GET", "/api/auditoria", TODOS, ({ query }) => repo.todos("SELECT a.*, COALESCE(c.nome_fantasia, c.razao_social) cliente FROM auditoria a LEFT JOIN clientes c ON c.id = a.cliente_id ORDER BY a.criado_em DESC LIMIT ?", Math.min(500, Number(query.get("limite")) || 200)).map((r) => repo.ler("auditoria", r)));
+
+  /* ---------- Comercial: catálogo, teste, contratação, parceiros, comissões, portal do parceiro ---------- */
+  comercial = registrarComercial({ rota, repo, cfg, V, falha, hoje, auditar, rotina, limitar, PRODUTOS, papeis: { FIN, TODOS, DONO } });
 
   /* ---------- HTTP ---------- */
   async function tratarApi(req, res, url) {
@@ -669,6 +697,10 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     let alvo = normalize(join(PUBLICO, rel));
     if (alvo !== PUBLICO && !alvo.startsWith(PUBLICO + sep)) return false;
     let info = await stat(alvo).catch(() => null);
+    if (info?.isDirectory()) {
+      alvo = join(alvo, "index.html");
+      info = await stat(alvo).catch(() => null);
+    }
     if (!info && !extname(alvo)) {
       alvo = join(PUBLICO, "index.html");
       info = await stat(alvo).catch(() => null);

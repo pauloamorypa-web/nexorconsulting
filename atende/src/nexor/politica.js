@@ -6,6 +6,9 @@
                     recebidas e guardadas (nada se perde) e voltam a ser atendidas quando o contrato normalizar.
    O usuário Suporte Nexor nunca é bloqueado. */
 
+/** Teste grátis: as conversas com a IA são limitadas por dia em iaLiberada(); aqui só os módulos travados */
+export const LIMITES_TESTE = {};
+
 export const CATALOGO = {
   modulos: {
     "modulo.campanhas": { rotulo: "Campanhas", api: ["/api/campanhas", "/api/modelos"] },
@@ -48,4 +51,10 @@ export function recusaPorLicenca(lic, metodo, caminho) {
 }
 
 /** A IA pode responder os clientes no WhatsApp? */
-export const iaLiberada = (lic) => lic?.situacao !== "bloqueado";
+/** A IA responde, salvo com o sistema suspenso ou, no teste grátis, acima das conversas do dia
+    (contar() devolve a saúde: conversas_hoje inclui a conversa que acabou de chegar) */
+export function iaLiberada(lic, contar = () => ({})) {
+  if (lic?.situacao === "bloqueado") return false;
+  const max = lic?.plano === "teste" ? lic.limites?.conversas_hoje : undefined;
+  return !(Number.isFinite(max) && (contar()?.conversas_hoje ?? 0) > max);
+}

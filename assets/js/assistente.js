@@ -158,7 +158,7 @@
         const resumo = `Olá! Conversei com a Blue no site. Sou ${d.nome}, da ${d.empresa}. Preciso de: ${d.mensagem}`;
         return [
           `Prontinho, ${d.nome.split(" ")[0]}! Já contei tudo pro time, e logo alguém te chama no WhatsApp.`,
-          "Enquanto isso, se der vontade, dá pra testar nossas soluções grátis por 12 horas aqui no site 😉",
+          "Enquanto isso, se der vontade, dá pra testar nossas soluções grátis por 30 dias, começando aqui pelo site 😉",
           { texto: "Ou, se preferir, já chama a gente agora:", link: whatsUrl(resumo) },
         ];
       }

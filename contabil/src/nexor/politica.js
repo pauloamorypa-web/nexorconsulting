@@ -7,6 +7,12 @@
                     O que chega pelo WhatsApp continua guardado e é tratado quando o contrato normalizar.
    O usuário Suporte Nexor nunca é bloqueado. */
 
+/** Teste grátis: o que cada limite da licença conta (chave da saúde) e quais POST criam mais um */
+export const LIMITES_TESTE = {
+  carteira: { rotas: ["/api/clientes"], rotulo: "empresas na carteira" },
+  documentos_mes: { rotas: ["/api/documentos", "/api/portal/documentos"], rotulo: "documentos no mês" },
+};
+
 export const CATALOGO = {
   modulos: {
     "modulo.leitura": { rotulo: "Leitura de documentos e lançamentos", api: ["/api/lancamentos"] },
