@@ -69,7 +69,7 @@ const limparLinha = (linha) => Object.fromEntries(Object.entries(linha).filter((
  * @param {Array<object>} d.regras regras do expurgo automático
  * @param {Record<string, {rotulo: string, meses: number, acao: string, base_legal?: string}>} d.prazos
  * @param {{ ler: (id: string, empresa_id: string) => Promise<{nome: string, mime?: string, dados: Buffer}|null>, remover: (id: string) => Promise<void> }} [d.arquivos]
- * @param {(empresa_id: string, autor: string, acao: string, detalhe: object) => void} d.auditar
+ * @param {(empresa_id: string, autor: string, acao: string, detalhe: object, autor_id?: string) => void} d.auditar
  */
 export function criarLgpd({ repo, tabelaEmpresas, titulares, regras = [], prazos, arquivos, auditar, agora = () => Date.now() }) {
   const db = repo.db;
@@ -104,7 +104,7 @@ export function criarLgpd({ repo, tabelaEmpresas, titulares, regras = [], prazos
   };
 
   /* ---------- Exportação (art. 18, II e V) ---------- */
-  async function exportar(tipo, empresa_id, id, { autor, ip } = {}) {
+  async function exportar(tipo, empresa_id, id, { autor, autor_id, ip } = {}) {
     const t = definicao(tipo);
     const reg = buscar(tipo, empresa_id, id);
     if (!reg) return null;
@@ -123,7 +123,7 @@ export function criarLgpd({ repo, tabelaEmpresas, titulares, regras = [], prazos
     const nome = t.nome(reg);
     const resumo = { partes: Object.fromEntries(Object.entries(dados).map(([k, v]) => [k, v.length])), arquivos: anexos.length };
     registrarPedido({ empresa_id, tipo: "exportacao", titular_tipo: tipo, titular_id: id, referencia: mascarar(nome), autor, ip, resumo });
-    auditar(empresa_id, autor ?? "sistema", "lgpd_exportacao", { titular_tipo: tipo, titular_id: id, referencia: mascarar(nome), ...resumo });
+    auditar(empresa_id, autor ?? "sistema", "lgpd_exportacao", { titular_tipo: tipo, titular_id: id, referencia: mascarar(nome), ...resumo }, autor_id);
     return {
       formato: "nexor-lgpd-exportacao/1",
       gerado_em: new Date(agora()).toISOString(),
@@ -135,7 +135,7 @@ export function criarLgpd({ repo, tabelaEmpresas, titulares, regras = [], prazos
   }
 
   /* ---------- Exclusão (art. 18, VI) com bloqueio do que a lei manda guardar (art. 16, I) ---------- */
-  async function excluir(tipo, empresa_id, id, { autor, ip, origem = "pedido" } = {}) {
+  async function excluir(tipo, empresa_id, id, { autor, autor_id, ip, origem = "pedido" } = {}) {
     const t = definicao(tipo);
     const reg = buscar(tipo, empresa_id, id);
     if (!reg) return null;
@@ -175,7 +175,7 @@ export function criarLgpd({ repo, tabelaEmpresas, titulares, regras = [], prazos
       return pid;
     });
     for (const a of remover) await arquivos?.remover(a).catch(() => {});
-    if (origem !== "rotina") auditar(empresa_id, autor ?? "sistema", "lgpd_exclusao", { titular_tipo: tipo, titular_id: id, referencia: mascarar(nome), pedido: pedido_id, ...resumo });
+    if (origem !== "rotina") auditar(empresa_id, autor ?? "sistema", "lgpd_exclusao", { titular_tipo: tipo, titular_id: id, referencia: mascarar(nome), pedido: pedido_id, ...resumo }, autor_id);
     return { ok: true, pedido: pedido_id, ...resumo };
   }
 

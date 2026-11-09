@@ -1,7 +1,7 @@
 /* LGPD no painel: caixa de aceite do cadastro, tela de aceite de nova versão dos termos e os botões
    "Exportar dados" e "Excluir dados" da ficha de uma pessoa (só administrador). */
 
-import { cabecalhosApi, post, urlApi } from "./api.js";
+import { post } from "./api.js";
 import { acao, aviso, confirmar, h, icone, janela } from "./ui.js";
 
 export const URL_TERMOS = "/privacidade.html";
@@ -37,7 +37,7 @@ export function telaTermos(termos, aoAceitar) {
           },
         },
         h("img", { src: "/img/logo-mark.webp", alt: "", width: 48, height: 48, class: "login-logo" }),
-        h("h1", {}, termos.aceito_em === null ? "Termos de Uso e Privacidade" : "Os termos mudaram"),
+        h("h1", {}, termos.versao_anterior ? "Os termos mudaram" : "Termos de Uso e Privacidade"),
         h("p", { class: "suave" }, `Para continuar, leia e aceite a versão ${termos.versao} dos Termos de Uso e da Política de Privacidade. Registramos a data, a hora e o endereço IP do aceite.`),
         h("p", {}, h("a", { href: termos.url || URL_TERMOS, target: "_blank", rel: "noopener" }, icone("enviar", 14), " Abrir os termos")),
         aceite.el,
@@ -49,7 +49,7 @@ export function telaTermos(termos, aoAceitar) {
 }
 
 async function baixar(tipo, id) {
-  const r = await fetch(urlApi(`/lgpd/titulares/${tipo}/${id}/exportar`), { method: "POST", credentials: "same-origin", headers: cabecalhosApi() });
+  const r = await fetch(`/api/lgpd/titulares/${tipo}/${id}/exportar`, { method: "POST", credentials: "same-origin", headers: { "x-nexor": "1" } });
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).erro ?? "Não foi possível exportar.");
   const nome = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `dados-${tipo}.json`;
   const a = h("a", { href: URL.createObjectURL(await r.blob()), download: nome });

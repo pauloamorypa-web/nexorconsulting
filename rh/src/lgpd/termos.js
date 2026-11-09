@@ -46,7 +46,9 @@ export function criarTermos({ repo, termos, tenant = "empresa_id", agora = () =>
 
   const situacao = (u) => {
     const a = u ? aceite(u.id) : null;
-    return { versao: versao(), url: termos.url, pendente: pendente(u), aceito_em: a?.aceito_em ?? null };
+    // Última versão que a pessoa aceitou (para a tela dizer "os termos mudaram" em vez de "primeiro aceite")
+    const anterior = u ? db.prepare("SELECT versao FROM termos_aceites WHERE usuario_id = ? ORDER BY aceito_em DESC LIMIT 1").get(u.id) : null;
+    return { versao: versao(), url: termos.url, pendente: pendente(u), aceito_em: a?.aceito_em ?? null, versao_anterior: anterior?.versao ?? null };
   };
 
   const historico = (empresa_id, limite = 300) =>

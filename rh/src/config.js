@@ -39,7 +39,7 @@ export function lerConfig(env = process.env) {
     // Nexor Central: licença (situação do contrato), saúde da instalação, acesso de suporte e vinculação pelo código
     nexor: configNexor(env),
     // Termos de Uso e Política de Privacidade: mudou a versão, todo usuário do painel aceita de novo
-    termos: { versao: env.TERMOS_VERSAO ?? "2026-11-09", url: env.TERMOS_URL ?? "/privacidade.html" },
+    termos: { versao: env.TERMOS_VERSAO || "2026-11-09", url: env.TERMOS_URL || "/privacidade.html" },
     // LGPD: prazos de guarda por tipo de dado (meses) e rotina diária de expurgo
     lgpd: { prazos: lerPrazos(PRAZOS_PADRAO, env.LGPD_PRAZOS), rotina: env.LGPD_ROTINA !== "false" },
     limites: { tamanhoArquivo: 10 * 1024 * 1024, tentativasLogin: 8 },

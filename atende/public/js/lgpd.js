@@ -37,7 +37,7 @@ export function telaTermos(termos, aoAceitar) {
           },
         },
         h("img", { src: "/img/logo-mark.webp", alt: "", width: 48, height: 48, class: "login-logo" }),
-        h("h1", {}, termos.aceito_em === null ? "Termos de Uso e Privacidade" : "Os termos mudaram"),
+        h("h1", {}, termos.versao_anterior ? "Os termos mudaram" : "Termos de Uso e Privacidade"),
         h("p", { class: "suave" }, `Para continuar, leia e aceite a versão ${termos.versao} dos Termos de Uso e da Política de Privacidade. Registramos a data, a hora e o endereço IP do aceite.`),
         h("p", {}, h("a", { href: termos.url || URL_TERMOS, target: "_blank", rel: "noopener" }, icone("enviar", 14), " Abrir os termos")),
         aceite.el,
