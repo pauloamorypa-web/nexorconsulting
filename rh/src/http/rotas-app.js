@@ -17,7 +17,7 @@ import { COOKIE_APP } from "./validacao.js";
 
 const APP = { app: true };
 
-export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, tokenApp, auditar, aviso, base }) {
+export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, limites, iniciarSessao, tokenApp, auditar, aviso, base }) {
   const desafios = criarDesafios();
   const rp = (req) => {
     const u = new URL(base(req));
@@ -38,13 +38,17 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, iniciarSessao, 
 
   r.post("/api/app/ativar", { publico: true }, async ({ corpo, res, ip, req }) => {
     const d = validar(z.object({ cpf, codigo: z.string().regex(/^\d{6}$/, "O código tem 6 números.") }), await corpo());
-    limitar(`ativar:${ip}`, 20);
-    limitar(`ativar:${d.cpf}`, 6);
+    const tentativa = limites.tentativa("ativar", { ip, conta: d.cpf }, cfg.limites.login);
     // Teto diário por CPF: o código tem 6 números e vale 7 dias, então as tentativas precisam ser poucas no total
     limitar(`ativar-dia:${d.cpf}`, 15, 86400_000);
     const candidatos = repo.todos("SELECT * FROM colaboradores WHERE cpf = ? AND status != 'desligado'", d.cpf);
     const c = candidatos.find((x) => repo.um("SELECT 1 FROM convites_app WHERE codigo_hash = ? AND expira_em > ?", sha256(`${x.id}:${d.codigo}`), agora()));
-    if (!c) falha(401, "CPF ou código incorretos (ou o código venceu). Peça um novo código ao RH.");
+    if (!c) {
+      // Cinco códigos errados para o CPF invalidam o código: o RH precisa gerar outro
+      if (tentativa.falhou() >= cfg.limites.login.porConta) for (const x of candidatos) repo.rodar("DELETE FROM convites_app WHERE colaborador_id = ?", x.id);
+      falha(401, "CPF ou código incorretos (ou o código venceu). Peça um novo código ao RH.");
+    }
+    tentativa.acertou();
     repo.rodar("DELETE FROM convites_app WHERE colaborador_id = ?", c.id);
     const nativo = req.headers["x-app-nativo"] === "1";
     const token = iniciarSessao(res, { colaborador_id: c.id }, { nativo });

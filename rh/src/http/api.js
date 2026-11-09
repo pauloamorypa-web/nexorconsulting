@@ -17,6 +17,7 @@ import { rotasFolha } from "./rotas-folha.js";
 import { rotasPessoas } from "./rotas-pessoas.js";
 import { rotasPonto } from "./rotas-ponto.js";
 import { rotasRecrutamento } from "./rotas-recrutamento.js";
+import { criarLimites } from "./limite.js";
 import { criarRoteador, falha } from "./roteador.js";
 
 export * from "./validacao.js";
@@ -29,20 +30,9 @@ import { COOKIE_APP, COOKIE_PAINEL } from "./validacao.js";
  */
 export function criarApi({ repo, nucleo, cofre, cfg, eventos, central, agora = () => Date.now(), fetchSoap, fetchFn = fetch }) {
   const r = criarRoteador();
-  const tentativas = new Map();
-
-  function limitar(chave, maximo = cfg.limites.tentativasLogin, janelaMs = 15 * 60_000) {
-    const t0 = agora();
-    const lista = (tentativas.get(chave) ?? []).filter((x) => t0 - x < janelaMs);
-    if (lista.length >= maximo) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
-    lista.push(t0);
-    tentativas.set(chave, lista);
-    if (tentativas.size > 20_000) {
-      // Primeiro descarta as chaves vencidas; só se ainda estiver cheio apaga a mais antiga
-      for (const [k, l] of tentativas) if (!l.some((x) => t0 - x < janelaMs)) tentativas.delete(k);
-      if (tentativas.size > 20_000) tentativas.delete(tentativas.keys().next().value);
-    }
-  }
+  // Limite de tentativas em memória (processo único): 429 com Retry-After quando estoura
+  const limites = criarLimites({ agora });
+  const limitar = (chave, maximo = cfg.limites.tentativasLogin, janelaMs = 15 * 60_000) => limites.contar(chave, maximo, janelaMs);
   // Hash de referência: o login confere a senha mesmo quando o e-mail não existe (mesmo tempo de resposta)
   const HASH_FALSO = gerarHashSenha(gerarToken());
 
@@ -139,11 +129,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, central, agora = (
 
   r.post("/api/entrar", { publico: true }, async ({ corpo, res, ip }) => {
     const d = validar(z.object({ email, senha: z.string().min(1).max(200) }), await corpo());
-    limitar(`login:${ip}`);
-    limitar(`login:${d.email}`);
+    const tentativa = limites.tentativa("login", { ip, conta: d.email }, cfg.limites.login);
     const u = repo.usuarioPorEmail(d.email);
     const senhaOk = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
-    if (!u || !senhaOk) falha(401, "E-mail ou senha incorretos.");
+    if (!u || !senhaOk) {
+      tentativa.falhou();
+      falha(401, "E-mail ou senha incorretos.");
+    }
+    tentativa.acertou();
     // Senha guardada com a proteção antiga: refaz o hash com a força atual
     if (precisaRefazerHash(u.senha_hash)) repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", gerarHashSenha(d.senha), u.id);
     iniciarSessao(res, { usuario_id: u.id });
@@ -185,7 +178,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, central, agora = (
     return usuarioPublico(repo.atualizar("usuarios", null, usuario.id, { nome: d.nome || undefined, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined }));
   });
 
-  const deps = { r, repo, nucleo, cofre, cfg, central, agora, limitar, iniciarSessao, sessaoApp, tokenApp, filtroEquipe, exigirColaborador, auditar, aviso, base, fetchSoap, fetchFn, configCompleta };
+  const deps = { r, repo, nucleo, cofre, cfg, central, agora, limitar, limites, iniciarSessao, sessaoApp, tokenApp, filtroEquipe, exigirColaborador, auditar, aviso, base, fetchSoap, fetchFn, configCompleta };
   rotasCadastros(deps);
   rotasPonto(deps);
   rotasFolha(deps);

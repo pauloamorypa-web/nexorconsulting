@@ -36,7 +36,12 @@ export function lerConfig(env = process.env) {
     },
     // Nexor Central: licença (situação do contrato), saúde da instalação, acesso de suporte e vinculação pelo código
     nexor: configNexor(env),
-    limites: { tamanhoArquivo: 10 * 1024 * 1024, tentativasLogin: 8 },
+    limites: {
+      tamanhoArquivo: 10 * 1024 * 1024,
+      tentativasLogin: 8, // demais rotas públicas por IP (cadastro, suporte, vincular) a cada 15 min
+      // Login com senha, PIN e código do app (src/http/limite.js): por IP conta toda tentativa, por conta só as falhas
+      login: { porIp: numero(env.LIMITE_LOGIN_IP, 20), porConta: numero(env.LIMITE_LOGIN_CONTA, 5), janelaMs: 15 * 60_000 },
+    },
     // App nativo nas lojas (página /baixar e links que abrem o app a partir do QR Code)
     apps: {
       id: env.APP_ID ?? "br.com.nexorconsultingit.ponto",

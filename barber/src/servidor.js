@@ -256,7 +256,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     } catch (err) {
       const status = err instanceof ErroRegra || err instanceof ErroHttp ? err.status : (err.status ?? 500);
       if (status >= 500 && status !== 502) console.error("[servidor]", err);
-      json(res, status, { erro: status < 500 || status === 502 ? err.message : "Erro interno." });
+      // err.cabecalhos: o limite de tentativas manda o Retry-After junto com o 429
+      json(res, status, { erro: status < 500 || status === 502 ? err.message : "Erro interno." }, err.cabecalhos);
     }
   });
 

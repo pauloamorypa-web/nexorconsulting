@@ -8,6 +8,7 @@ import { gerarPendencias, gerarTarefas, prazoInterno, prazoLegal, semearEscritor
 import { TIPOS_DOCUMENTO } from "../ia/leitura.js";
 import { conferirSenha, gerarHashSenha, gerarToken, iguais, precisaRefazerHash, sha256 } from "../seguranca.js";
 import { CATALOGO, chaveValida } from "../nexor/politica.js";
+import { criarLimites } from "./limite.js";
 import { criarRoteador, falha, lerCorpo } from "./roteador.js";
 import { COOKIE_PAINEL, centavos, competencia, data, documentoFiscal, email, enviarArquivo, escritorioPublico, fone, nomeArquivo, op, portalPublico, senha, t, usuarioPublico, validar } from "./validacao.js";
 import { rotasPortal } from "./portal.js";
@@ -36,18 +37,12 @@ const ESQ_CLIENTE = z.object({
 
 export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date.now() }) {
   const r = criarRoteador();
-  const tentativas = new Map();
+  // Limite de tentativas em memória (processo único): 429 com Retry-After quando estoura
+  const limites = criarLimites({ agora });
   const HASH_FALSO = gerarHashSenha(gerarToken());
   const hoje = () => hojeBR(agora());
 
-  function limitar(chave, maximo = cfg.limites.tentativasLogin, janela = 15 * 60_000) {
-    const t0 = agora();
-    const l = (tentativas.get(chave) ?? []).filter((x) => t0 - x < janela);
-    if (l.length >= maximo) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
-    l.push(t0);
-    tentativas.set(chave, l);
-    if (tentativas.size > 20_000) tentativas.delete(tentativas.keys().next().value);
-  }
+  const limitar = (chave, maximo = cfg.limites.tentativasLogin, janela = 15 * 60_000) => limites.contar(chave, maximo, janela);
   function cookie(res, nome, token, dias) {
     const a = [`${nome}=${token}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${Math.round(dias * 86400)}`];
     if (cfg.producao) a.push("Secure");
@@ -90,11 +85,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.post("/api/entrar", { publico: true }, async ({ corpo, res, ip }) => {
     const d = validar(z.object({ email, senha: z.string().min(1).max(200) }), await corpo());
-    limitar(`login:${ip}`);
-    limitar(`login:${d.email}`);
+    const tentativa = limites.tentativa("login", { ip, conta: d.email }, cfg.limites.login);
     const u = repo.usuarioPorEmail(d.email);
     const ok = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
-    if (!u || !ok) falha(401, "E-mail ou senha incorretos.");
+    if (!u || !ok) {
+      tentativa.falhou();
+      falha(401, "E-mail ou senha incorretos.");
+    }
+    tentativa.acertou();
     if (precisaRefazerHash(u.senha_hash)) repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", gerarHashSenha(d.senha), u.id);
     iniciarSessao(res, u.id);
     repo.auditar(u.empresa_id, u.nome, "login");
@@ -662,6 +660,6 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     return res;
   });
 
-  const portal = rotasPortal({ r, repo, nucleo, cfg, agora, limitar, cookie });
+  const portal = rotasPortal({ r, repo, nucleo, cfg, agora, limitar, limites, cookie });
   return { roteador: r, sessaoPainel, sessaoPortal: portal.sessaoPortal };
 }

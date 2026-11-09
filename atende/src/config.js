@@ -57,7 +57,9 @@ export function lerConfig(env = process.env) {
       tamanhoMensagem: 4000,
       mensagensPorJanela: 25,
       janelaMinutos: 10,
-      tentativasLogin: 8,
+      tentativasLogin: 8, // demais rotas públicas por IP (cadastro, suporte, vincular) a cada 15 min
+      // Login com senha (src/http/limite.js): por IP conta toda tentativa, por conta só as falhas
+      login: { porIp: numero(env.LIMITE_LOGIN_IP, 20), porConta: numero(env.LIMITE_LOGIN_CONTA, 5), janelaMs: 15 * 60_000 },
       iaPorUsuario: numero(env.LIMITE_IA_USUARIO, 40), // pedidos à IA do painel a cada 10 min, por usuário
       iaPorEmpresaHora: numero(env.LIMITE_IA_EMPRESA_HORA, 400), // pedidos à IA do painel por hora, somando a empresa
       arquivosPorUsuario: numero(env.LIMITE_ARQUIVOS_USUARIO, 60), // arquivos enviados a cada 10 min, por usuário

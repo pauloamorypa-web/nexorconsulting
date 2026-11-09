@@ -9,6 +9,7 @@ import { formatarQuando, horariosLivres, instanteDe, situacaoHorario } from "../
 import { janelaAberta } from "../servicos/atendimento.js";
 import { tipoWhatsApp } from "../servicos/midia.js";
 import { CATALOGO, chaveValida } from "../nexor/politica.js";
+import { criarLimites } from "./limite.js";
 import { criarRoteador, falha, lerCorpo } from "./roteador.js";
 
 const COOKIE = "nx_sessao";
@@ -78,7 +79,8 @@ const ESQUEMA_CONFIG = z
  */
 export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eventos, midia, cfg, fetchFn = fetch, agora = () => Date.now(), central }) {
   const r = criarRoteador();
-  const tentativas = new Map();
+  // Limite de tentativas em memória (processo único): 429 com Retry-After quando estoura
+  const limites = criarLimites({ agora });
 
   /* ---------- Sessão ---------- */
 
@@ -110,18 +112,7 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     limitarUso(`up:e:${empresa.id}`, cfg.limites.arquivosPorEmpresaHora, 60 * 60_000, "A empresa atingiu o limite de arquivos enviados nesta hora.");
   };
 
-  function limitarLogin(chave) {
-    const t0 = agora();
-    const lista = (tentativas.get(chave) ?? []).filter((x) => t0 - x < 15 * 60_000);
-    if (lista.length >= cfg.limites.tentativasLogin) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
-    lista.push(t0);
-    tentativas.set(chave, lista);
-    if (tentativas.size > 50_000) {
-      // Primeiro descarta o que já expirou: assim, inundar o mapa com chaves novas não "zera" o limite de um e-mail atacado
-      for (const [k, v] of tentativas) if (t0 - v.at(-1) >= 15 * 60_000) tentativas.delete(k);
-      if (tentativas.size > 50_000) tentativas.delete(tentativas.keys().next().value);
-    }
-  }
+  const limitarLogin = (chave) => limites.contar(chave, cfg.limites.tentativasLogin, 15 * 60_000);
 
   // Hash de mentira: quem não existe também paga o custo do scrypt, então o tempo da resposta não revela quais e-mails têm conta
   const HASH_FALSO = gerarHashSenha(gerarToken());
@@ -152,12 +143,14 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
 
   r.post("/api/entrar", { publico: true }, async ({ corpo, res, ip }) => {
     const d = validar(z.object({ email, senha: z.string().min(1).max(200) }), await corpo());
-    limitarLogin(`login:${ip}`);
-    limitarLogin(`login:${d.email}`);
+    const tentativa = limites.tentativa("login", { ip, conta: d.email }, cfg.limites.login);
     const u = repo.usuarioComSenha(d.email);
     const confere = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
-    if (!u || !confere) falha(401, "E-mail ou senha incorretos.");
-    tentativas.delete(`login:${d.email}`);
+    if (!u || !confere) {
+      tentativa.falhou();
+      falha(401, "E-mail ou senha incorretos.");
+    }
+    tentativa.acertou();
     // Senha guardada com a proteção antiga: refaz o hash com a força atual
     if (precisaRefazerHash(u.senha_hash)) repo.db.prepare("UPDATE usuarios SET senha_hash = ? WHERE id = ?").run(gerarHashSenha(d.senha), u.id);
     iniciarSessao(res, u);

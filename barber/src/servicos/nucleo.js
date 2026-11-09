@@ -6,6 +6,7 @@ import { OCUPA, REGRAS_PADRAO, cabe, faz, horariosLivres } from "../regras/agend
 import { assinaturaValida, cicloDe, cicloDeRetorno, cobertura } from "../regras/clube.js";
 import { diasEntre, hojeBR, horaBR, paraMs, quando, somarDias } from "../regras/datas.js";
 import { gerarToken, sha256 } from "../seguranca.js";
+import { ErroLimite } from "../http/limite.js";
 import { acaoAsaas, criarAsaas, criarSms, criarWhatsApp, normalizarFone } from "./canais.js";
 
 export class ErroRegra extends Error {
@@ -89,8 +90,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     const b = exigirBarbearia();
     const fone = normalizarFone(foneBruto);
     if (!fone) recusar(400, "Digite o celular com DDD.");
-    const recentes = repo.um("SELECT COUNT(*) n FROM codigos WHERE destino = ? AND criado_em > ?", fone, agora() - 3600_000).n;
-    if (recentes >= cfg.limites.codigosPorHora) recusar(429, "Muitos códigos pedidos para este número. Tente de novo em uma hora.");
+    const recentes = repo.um("SELECT COUNT(*) n, MIN(criado_em) primeiro FROM codigos WHERE destino = ? AND criado_em > ?", fone, agora() - 3600_000);
+    if (recentes.n >= cfg.limites.codigosPorHora) throw new ErroLimite(Math.max(1, Math.ceil((recentes.primeiro + 3600_000 - agora()) / 1000)), "Muitos códigos pedidos para este número. Tente de novo em uma hora.");
     const c = canais(b);
     const codigo = String(randomInt(0, 1_000_000)).padStart(6, "0");
     const texto = `${codigo} é o seu código para entrar na ${b.nome}. Ele vale por 10 minutos.`;
@@ -108,13 +109,17 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     return { fone, canal };
   }
 
-  /** Confere o código; certo, ele é apagado (uso único). Cinco erros invalidam o código. */
+  /** Confere o código; certo, ele é apagado (uso único). No 5º erro o código é cancelado (e os anteriores do mesmo
+      celular também, para não sobrar outro código para adivinhar). */
   function conferirCodigo(foneBruto, codigo) {
     const fone = normalizarFone(foneBruto);
     const c = fone ? repo.um("SELECT * FROM codigos WHERE destino = ? AND expira_em > ? ORDER BY criado_em DESC LIMIT 1", fone, agora()) : null;
     if (!c) recusar(400, "Código vencido. Peça um novo.");
-    if (c.tentativas >= 5) recusar(429, "Código bloqueado depois de muitas tentativas. Peça um novo.");
     if (c.hash !== hashCodigo(fone, String(codigo ?? "").replace(/\D/g, ""))) {
+      if (c.tentativas + 1 >= 5) {
+        repo.rodar("DELETE FROM codigos WHERE destino = ?", fone);
+        recusar(400, "Código incorreto. Depois de 5 erros ele foi cancelado: peça um novo.");
+      }
       repo.rodar("UPDATE codigos SET tentativas = tentativas + 1 WHERE id = ?", c.id);
       recusar(400, "Código incorreto.");
     }

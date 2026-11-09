@@ -17,7 +17,7 @@ const RH = { papeis: ["admin", "rh"] };
 const TODOS = {};
 
 export function rotasPonto(deps) {
-  const { r, repo, nucleo, cfg, agora, filtroEquipe, exigirColaborador, auditar, aviso, base, limitar } = deps;
+  const { r, repo, nucleo, cfg, agora, filtroEquipe, exigirColaborador, auditar, aviso, base, limites } = deps;
   const fimDaCompetencia = (comp) => somarDias(somarDias(`${comp}-28`, 4).slice(0, 7) + "-01", -1);
   const fechada = (empresa_id, dia) => Boolean(repo.um("SELECT 1 FROM fechamentos WHERE empresa_id = ? AND competencia = ?", empresa_id, dia.slice(0, 7)));
 
@@ -246,10 +246,14 @@ export function rotasPonto(deps) {
     const emp = nucleo.empresa(e.empresa_id);
     if (!emp.config.ponto.permitir_quiosque_pin) falha(403, "Ponto por PIN desativado. Use o aplicativo.");
     const d = validar(z.object({ cpf, pin: z.string().regex(/^\d{4,6}$/) }), await corpo());
-    limitar(`pin:${d.cpf}`, 5);
-    limitar(`pin-ip:${ip}`, 60);
+    // O quiosque fica num IP só e todo mundo bate ponto nele: por IP o teto é maior; por CPF, 5 PINs errados
+    const tentativa = limites.tentativa("pin", { ip, conta: d.cpf }, { ...cfg.limites.login, porIp: 60 });
     const c = repo.ler("colaboradores", repo.um("SELECT * FROM colaboradores WHERE empresa_id = ? AND cpf = ? AND status != 'desligado'", emp.id, d.cpf));
-    if (!c?.pin_hash || !conferirSenha(d.pin, c.pin_hash)) falha(401, "CPF ou PIN incorretos.");
+    if (!c?.pin_hash || !conferirSenha(d.pin, c.pin_hash)) {
+      tentativa.falhou();
+      falha(401, "CPF ou PIN incorretos.");
+    }
+    tentativa.acertou();
     const m = registrarMarcacao(repo, { empresa_id: emp.id, colaborador: c, origem: "quiosque", coletor: "02", estabelecimento_id: e.id, ip, aparelho: "Quiosque " + e.nome, agora: agora() });
     aviso(emp.id, "marcacao", { colaborador_id: c.id });
     return { nome: c.nome.split(" ")[0], hora: horaLocal(m.momento), comprovante: comprovante({ empresa: emp, estabelecimento: e, colaborador: c, marcacao: m, registroInpi: emp.config.registro_inpi }) };
