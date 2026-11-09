@@ -187,3 +187,12 @@ Todos exigem HTTPS, schema estrito, autenticação onde aplicável, limites, cor
 ## Pré-requisitos para ativação
 
 Credenciais e produtos aprovados no LinkedIn/Meta/Google; URL pública HTTPS; número e templates do WhatsApp; escolha entre link de agenda, Google Calendar ou Microsoft 365; catálogo comercial revisado; definição do responsável por aprovações; política de retenção e texto de opt-in. Até então, sistema opera em dry-run e preparação de tarefas.
+
+## Configuração ativa do Google Calendar
+
+Projeto Google Cloud: `Nexor Sales Agent` (`thermal-cathode-514215-j6`). A Calendar API está habilitada e o consentimento OAuth está em modo externo de teste, com `nexorconsultingit@gmail.com` como único usuário de teste. Cliente desktop: `Nexor Sales Agent Local OAuth`.
+
+O utilitário `scripts/google-oauth-setup.js` gera um refresh token sem salvá-lo em arquivo. Para usar, coloque `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` somente no `agent/.env` local (ignorado pelo Git), execute `node --env-file=.env scripts/google-oauth-setup.js`, abra o link no navegador conectado à conta Nexor e copie o token exibido no terminal diretamente para o segredo `GOOGLE_REFRESH_TOKEN` do Render. Não cole credenciais em chat ou repositório. Copie o ID da agenda principal do Google Calendar para `GOOGLE_CALENDAR_ID`.
+
+O app ainda está em Testing; tokens gerados nesse estado para os escopos Calendar expiram em 7 dias. Não use o token de teste em produção. Antes da operação estável, publique o app e conclua a verificação Google aplicável; depois gere um novo refresh token para o Render.
+
