@@ -2,7 +2,7 @@
    então tudo que chega é baixado e guardado aqui. */
 
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join, normalize } from "node:path";
 
 const EXTENSOES = {
@@ -44,6 +44,11 @@ export function criarMidia(pasta) {
     ler(arquivo) {
       if (!ARQUIVO_VALIDO.test(arquivo)) return Promise.reject(new Error("arquivo inválido"));
       return readFile(join(raiz, normalize(arquivo)));
+    },
+    /** Apaga o arquivo (pedido de exclusão LGPD ou expurgo por prazo) */
+    remover(arquivo) {
+      if (!ARQUIVO_VALIDO.test(arquivo)) return Promise.reject(new Error("arquivo inválido"));
+      return unlink(join(raiz, normalize(arquivo)));
     },
     tipoDe: (arquivo) => TIPOS[arquivo.split(".").pop()] ?? "application/octet-stream",
   };

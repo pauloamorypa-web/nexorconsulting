@@ -10,6 +10,7 @@ import { janelaAberta } from "../servicos/atendimento.js";
 import { tipoWhatsApp } from "../servicos/midia.js";
 import { CATALOGO, chaveValida } from "../nexor/politica.js";
 import { criarRoteador, falha, lerCorpo } from "./roteador.js";
+import { rotasLgpd } from "./rotas-lgpd.js";
 
 const COOKIE = "nx_sessao";
 const t = (max, min = 1) => z.string().trim().min(min).max(max);
@@ -526,8 +527,8 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
   r.get("/api/contatos/exportar", ({ empresa, res }) => {
     const { itens } = repo.contatos(empresa.id, { limite: 100_000 });
     const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const linhas = [["nome", "whatsapp", "email", "etapa", "etiquetas", "pontuacao", "valor_estimado", "nao_receber"].join(",")];
-    for (const c of itens) linhas.push([c.nome || c.nome_perfil, c.wa_id, c.email, c.etapa, c.tags.join("|"), c.pontuacao, c.valor_estimado ? c.valor_estimado / 100 : "", c.opt_out ? "sim" : ""].map(esc).join(","));
+    const linhas = [["nome", "whatsapp", "email", "etapa", "etiquetas", "pontuacao", "valor_estimado", "nao_receber", "optin_marketing", "optin_em", "optin_origem"].join(",")];
+    for (const c of itens) linhas.push([c.nome || c.nome_perfil, c.wa_id, c.email, c.etapa, c.tags.join("|"), c.pontuacao, c.valor_estimado ? c.valor_estimado / 100 : "", c.opt_out ? "sim" : "", c.marketing_optin ? "sim" : "nao", c.marketing_optin_em ? new Date(c.marketing_optin_em).toISOString() : "", c.marketing_optin_origem ?? ""].map(esc).join(","));
     res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="contatos.csv"' });
     res.end("﻿" + linhas.join("\n"));
     return undefined;
@@ -543,6 +544,11 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     const iTel = col(["whats", "telefone", "celular", "fone", "phone", "numero"]);
     const iNome = col(["nome", "name"]);
     const iEmail = col(["email", "e-mail"]);
+    // Opt-in de marketing: sem coluna, ninguém entra com opt-in. Com coluna (optin, opt-in, consentimento, aceita_marketing),
+    // "sim/s/1/true/x/yes" dá o opt-in e "não/n/0/false/no" retira; vazio não muda.
+    const iOptin = col(["optin", "opt-in", "opt_in", "consentimento", "aceita", "marketing"]);
+    const lerOptin = (v) => (/^(sim|s|1|true|x|yes|y)$/i.test(String(v ?? "").trim()) ? true : /^(n[aã]o|n|0|false|no)$/i.test(String(v ?? "").trim()) ? false : undefined);
+    let comOptin = 0;
     if (iTel < 0) falha(400, "Não encontrei a coluna de telefone/WhatsApp no CSV.");
     let importados = 0;
     let ignorados = 0;
@@ -560,12 +566,14 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
           nome: contato.nome || (iNome >= 0 ? v[iNome] || null : null),
           email: contato.email || (iEmail >= 0 && /@/.test(v[iEmail] ?? "") ? v[iEmail] : null),
           tags: d.etiqueta ? [...contato.tags, d.etiqueta] : contato.tags,
+          ...(iOptin >= 0 && lerOptin(v[iOptin]) !== undefined ? { marketing_optin: lerOptin(v[iOptin]), marketing_optin_origem: `importação CSV por ${usuario.nome}` } : {}),
         });
+        if (repo.contato(empresa.id, contato.id).marketing_optin) comOptin++;
         importados++;
       }
     });
-    repo.auditar(empresa.id, usuario.id, "contatos_importados", { importados });
-    return { importados, ignorados };
+    repo.auditar(empresa.id, usuario.id, "contatos_importados", { importados, com_optin: comOptin });
+    return { importados, ignorados, com_optin: comOptin };
   });
 
   const meuContato = (empresa, id) => repo.contato(empresa.id, id) ?? falha(404, "Contato não encontrado.");
@@ -575,7 +583,7 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
     return { contato: c, conversas: repo.conversasDoContato(empresa.id, c.id), agendamentos: repo.agendamentosDoContato(empresa.id, c.id).map((a) => ({ ...a, quando: formatarQuando(a.inicio) })) };
   });
 
-  r.put("/api/contatos/:id", async ({ params, empresa, corpo }) => {
+  r.put("/api/contatos/:id", async ({ params, empresa, usuario, corpo }) => {
     meuContato(empresa, params.id);
     const d = validar(
       z.object({
@@ -586,10 +594,12 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
         valor_estimado: z.number().min(0).nullable().optional(),
         campos: z.record(z.string().max(40), z.string().max(500)).optional(),
         opt_out: z.boolean().optional(),
+        // Opt-in de marketing marcado no painel: grava data e quem marcou
+        marketing_optin: z.boolean().optional(),
       }),
       await corpo(),
     );
-    const c = repo.atualizarContato(empresa.id, params.id, { ...d, valor_estimado: d.valor_estimado === undefined ? undefined : d.valor_estimado === null ? null : Math.round(d.valor_estimado * 100) });
+    const c = repo.atualizarContato(empresa.id, params.id, { ...d, marketing_optin_origem: `painel: ${usuario.nome}`, valor_estimado: d.valor_estimado === undefined ? undefined : d.valor_estimado === null ? null : Math.round(d.valor_estimado * 100) });
     eventos.emitir(empresa.id, "contato", c);
     return c;
   });
@@ -901,6 +911,9 @@ export function criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eve
   });
 
   r.post("/api/nexor/sincronizar", { nexor: true }, async () => ({ ...(await central.sincronizar()), licenca: central.estado(), central: central.info() }));
+
+  // LGPD: aceite dos termos, exportação e exclusão de contatos, prazos e expurgo
+  rotasLgpd({ r, repo, midia, cfg, agora, validar });
 
   return { roteador: r, sessaoDe, mascarar };
 }

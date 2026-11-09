@@ -116,7 +116,7 @@ export const statusRecebido = (wamid, status, numero = "123456789") => ({
 /** Cria conta, conecta o número e devolve o contexto pronto */
 export async function contaPronta(opcoes) {
   const t = await iniciarApp(opcoes);
-  const c = await t.chamar("POST", "/api/cadastro", { empresa: "Loja Teste", segmento: "moda", nome: "Paula Dona", email: "paula@teste.com", senha: "senha-forte-123" });
+  const c = await t.chamar("POST", "/api/cadastro", { aceite_termos: true, empresa: "Loja Teste", segmento: "moda", nome: "Paula Dona", email: "paula@teste.com", senha: "senha-forte-123" });
   if (c.status !== 200) throw new Error(JSON.stringify(c));
   const canal = await t.chamar("POST", "/api/canais", { phone_number_id: "123456789", waba_id: "987654321", token: "EAAtokenfalso1234567890" });
   if (canal.status !== 200) throw new Error(JSON.stringify(canal));

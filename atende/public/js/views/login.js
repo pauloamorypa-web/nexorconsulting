@@ -2,6 +2,7 @@
 
 import { post } from "../api.js";
 import { acao, campo, entrada, h, icone, limpar } from "../ui.js";
+import { caixaAceite } from "../lgpd.js";
 
 const DESTAQUES = [
   ["raio", "Responde em segundos, 24 horas por dia", "IA que entende texto, fotos e PDFs, consulta seu catálogo e agenda horários."],
@@ -19,6 +20,8 @@ export function renderLogin(raiz, estado, aoEntrar) {
     const segmento = entrada({ placeholder: "Ex.: clínica odontológica, loja de roupas" });
     const email = entrada({ type: "email", autocomplete: "email", required: true, placeholder: "voce@empresa.com.br" });
     const senha = entrada({ type: "password", autocomplete: modo === "entrar" ? "current-password" : "new-password", required: true, minlength: modo === "entrar" ? 1 : 8, placeholder: modo === "entrar" ? "Sua senha" : "Mínimo de 8 caracteres" });
+    // Cadastro: aceite dos termos, desmarcado por padrão (gravado com versão, data e IP)
+    const aceite = modo === "cadastro" ? caixaAceite() : null;
     const botao = h("button", { class: "btn btn-primario btn-grande", type: "submit" }, modo === "entrar" ? "Entrar" : "Criar minha conta");
 
     const form = h(
@@ -29,7 +32,7 @@ export function renderLogin(raiz, estado, aoEntrar) {
           e.preventDefault();
           acao(botao, async () => {
             if (modo === "entrar") await post("/entrar", { email: email.value, senha: senha.value });
-            else await post("/cadastro", { empresa: empresa.value, segmento: segmento.value || undefined, nome: nome.value, email: email.value, senha: senha.value });
+            else await post("/cadastro", { empresa: empresa.value, segmento: segmento.value || undefined, nome: nome.value, email: email.value, senha: senha.value, aceite_termos: aceite.marcado() });
             aoEntrar();
           });
         },
@@ -40,6 +43,7 @@ export function renderLogin(raiz, estado, aoEntrar) {
       modo === "cadastro" ? [campo("Empresa", empresa), campo("Ramo de atuação", segmento, "Ajuda a IA a entender o seu negócio."), campo("Seu nome", nome)] : null,
       campo("E-mail", email),
       campo("Senha", senha),
+      aceite?.el,
       botao,
       !estado.primeiroAcesso && estado.cadastroAberto
         ? h(

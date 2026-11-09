@@ -1,6 +1,7 @@
 /* Contatos (CRM) e funil de vendas em quadro (kanban), com importação e exportação. */
 
 import { get, post, put } from "../api.js";
+import { botoesTitular } from "../lgpd.js";
 import { abas, acao, area, aviso, avatar, campo, debounce, entrada, erro, ETAPA_ROTULO, h, icone, janela, limpar, numero, quandoRelativo, reais, seletor, telefone, vazio } from "../ui.js";
 
 let ctxApp;
@@ -159,6 +160,10 @@ async function detalhes(id, depois) {
   const valor = entrada({ type: "number", min: 0, step: "0.01", value: c.valor_estimado ? c.valor_estimado / 100 : "" });
   const tags = entrada({ value: c.tags.join(", "), placeholder: "separadas por vírgula" });
   const optOut = h("input", { type: "checkbox", checked: c.opt_out });
+  // Opt-in de marketing (LGPD art. 8º): desmarcado por padrão; o servidor grava data e origem quando muda
+  const optIn = h("input", { type: "checkbox", checked: c.marketing_optin });
+  const origemOptin = c.marketing_optin_em ? `${c.marketing_optin ? "Opt-in" : "Opt-in retirado"} em ${new Date(c.marketing_optin_em).toLocaleString("pt-BR")} · ${c.marketing_optin_origem ?? ""}` : "Sem consentimento registrado: não recebe campanhas.";
+  const admin = ["dono", "admin"].includes(ctxApp.eu.usuario.papel);
   janela({
     titulo: c.nome || c.nome_perfil || telefone(c.wa_id),
     largura: 640,
@@ -170,8 +175,12 @@ async function detalhes(id, depois) {
       h("div", { class: "grade-2" }, campo("Etapa", etapa), campo("Valor estimado (R$)", valor)),
       campo("Etiquetas", tags),
       Object.keys(c.campos).length ? h("dl", { class: "campos-crm" }, Object.entries(c.campos).map(([k, v]) => [h("dt", {}, k.replace(/_/g, " ")), h("dd", {}, v)])) : null,
-      h("label", { class: "linha-check" }, optOut, "Não enviar campanhas"),
+      h("label", { class: "linha-check" }, optIn, "Aceita receber campanhas e promoções (opt-in)"),
+      h("small", { class: "suave" }, origemOptin),
+      h("label", { class: "linha-check" }, optOut, "Não enviar campanhas (pediu para sair)"),
       agendamentos.length ? [h("h3", { class: "sub" }, "Agendamentos"), agendamentos.map((a) => h("div", { class: "mini-item" }, h("strong", {}, a.servico), h("small", {}, a.quando)))] : null,
+      // LGPD (arts. 18 e 19): só dono e administrador exportam ou excluem os dados do contato
+      admin ? [h("h3", { class: "sub" }, "Dados pessoais (LGPD)"), botoesTitular("contato", c.id, c.nome || c.nome_perfil || telefone(c.wa_id), { aoExcluir: () => (document.querySelector(".modal-fundo")?.remove(), depois?.()) })] : null,
       conversas.length ? [h("h3", { class: "sub" }, "Atendimentos"), conversas.map((x) => h("a", { class: "mini-item", href: `#/conversas/${x.id}` }, h("small", {}, new Date(x.criada_em).toLocaleDateString("pt-BR"), " · ", x.status), h("span", {}, x.resumo ?? "Abrir conversa")))] : null,
     ),
     acoes: [
@@ -187,6 +196,7 @@ async function detalhes(id, depois) {
               valor_estimado: valor.value ? Number(valor.value) : null,
               tags: tags.value.split(",").map((t) => t.trim()).filter(Boolean),
               opt_out: optOut.checked,
+              marketing_optin: optIn.checked && !optOut.checked,
             });
             fechar();
             depois?.();
@@ -197,7 +207,7 @@ async function detalhes(id, depois) {
 }
 
 function importar(depois) {
-  const texto = area({ rows: 8, placeholder: "nome,whatsapp,email\nMaria Silva,34999990000,maria@email.com" });
+  const texto = area({ rows: 8, placeholder: "nome,whatsapp,email,optin\nMaria Silva,34999990000,maria@email.com,sim" });
   const arquivo = h("input", { type: "file", accept: ".csv,text/csv", onchange: async (e) => (texto.value = await e.target.files[0].text()) });
   const etiqueta = entrada({ placeholder: "Ex.: importados-novembro" });
   janela({
@@ -206,7 +216,7 @@ function importar(depois) {
     conteudo: h(
       "div",
       { class: "pilha" },
-      h("p", { class: "suave" }, "Use uma planilha CSV com uma coluna de telefone/WhatsApp (nome e e-mail são opcionais). Números sem DDI recebem o 55 do Brasil."),
+      h("p", { class: "suave" }, "Use uma planilha CSV com uma coluna de telefone/WhatsApp (nome e e-mail são opcionais). Números sem DDI recebem o 55 do Brasil. Os contatos entram sem opt-in de marketing; para importar quem já autorizou, inclua uma coluna optin com sim/não."),
       h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "Arquivo CSV"), arquivo),
       texto,
       campo("Etiqueta para todos (opcional)", etiqueta, "Útil para mandar uma campanha só para este grupo."),

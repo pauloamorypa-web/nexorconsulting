@@ -1,5 +1,7 @@
 /* Configuração do Nexor Atende IA, lida das variáveis de ambiente (ver .env.example). */
 
+import { lerPrazos } from "./lgpd/motor.js";
+import { PRAZOS_PADRAO } from "./lgpd/mapa.js";
 import { configNexor } from "./nexor/central.js";
 
 const lista = (valor, padrao = "") =>
@@ -65,6 +67,10 @@ export function lerConfig(env = process.env) {
     },
 
     sessaoDias: numero(env.SESSION_DAYS, 14),
+    // Termos de Uso e Política de Privacidade: mudou a versão, todo usuário do painel aceita de novo
+    termos: { versao: env.TERMOS_VERSAO ?? "2026-11-09", url: env.TERMOS_URL ?? "https://nexorconsultingit.com.br/privacidade.html" },
+    // LGPD: prazos de guarda por tipo de dado (meses); o expurgo roda uma vez por dia junto com o agendador
+    lgpd: { prazos: lerPrazos(PRAZOS_PADRAO, env.LGPD_PRAZOS) },
     // Nexor Central: licença (situação do contrato), saúde e acesso de suporte
     nexor: configNexor(env),
     fuso: "America/Sao_Paulo",

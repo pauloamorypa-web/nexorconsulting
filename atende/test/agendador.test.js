@@ -11,17 +11,21 @@ describe("tarefas automáticas", async () => {
     const empresa = repo.empresas()[0];
     for (const [wa, nome] of [["5534900000001", "Maria Clara"], ["5534900000002", "João"]]) {
       const { contato } = repo.obterOuCriarContato(empresa.id, wa);
-      repo.atualizarContato(empresa.id, contato.id, { nome, tags: ["vip"] });
+      repo.atualizarContato(empresa.id, contato.id, { nome, tags: ["vip"], marketing_optin: true, marketing_optin_origem: "teste" });
     }
     const { contato: fora } = repo.obterOuCriarContato(empresa.id, "5534900000003");
-    repo.atualizarContato(empresa.id, fora.id, { tags: ["vip"], opt_out: true });
+    repo.atualizarContato(empresa.id, fora.id, { tags: ["vip"], marketing_optin: true });
+    repo.atualizarContato(empresa.id, fora.id, { opt_out: true });
+    // Sem opt-in de marketing também não recebe
+    const { contato: semOptin } = repo.obterOuCriarContato(empresa.id, "5534900000004");
+    repo.atualizarContato(empresa.id, semOptin.id, { tags: ["vip"] });
 
     const r = await t.chamar("POST", "/api/campanhas", { nome: "VIP", modelo_nome: "boas_vindas", idioma: "pt_BR", variaveis: ["{primeiro_nome}"], filtro: { tags: ["vip"] }, enviar_agora: true });
     assert.equal(r.status, 200);
     const antes = t.meta.enviados.length;
     await agendador.ciclo();
     const enviados = t.meta.enviados.slice(antes);
-    assert.equal(enviados.length, 2); // quem pediu para sair não recebe
+    assert.equal(enviados.length, 2); // quem pediu para sair e quem não deu opt-in não recebem
     assert.deepEqual(enviados.map((e) => e.template.components[0].parameters[0].text).sort(), ["João", "Maria"]);
 
     let c = (await t.chamar("GET", "/api/campanhas")).dados[0];

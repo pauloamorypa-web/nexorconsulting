@@ -12,10 +12,10 @@ describe("isolamento entre empresas no webhook", async () => {
   after(() => t.fechar());
 
   // Empresa A cadastra o próprio segredo de app; a empresa B usa o app global
-  await t.chamar("POST", "/api/cadastro", { empresa: "Empresa A", nome: "Ana", email: "a@teste.com", senha: "senha-forte-aaa" });
+  await t.chamar("POST", "/api/cadastro", { aceite_termos: true, empresa: "Empresa A", nome: "Ana", email: "a@teste.com", senha: "senha-forte-aaa" });
   await t.chamar("POST", "/api/canais", { phone_number_id: "111111", waba_id: "900001", token: "EAAtokenfalsoAAAAAAAAAAAA", segredo_app: "segredo-da-a" });
   t.sair();
-  await t.chamar("POST", "/api/cadastro", { empresa: "Empresa B", nome: "Beto", email: "b@teste.com", senha: "senha-forte-bbb" });
+  await t.chamar("POST", "/api/cadastro", { aceite_termos: true, empresa: "Empresa B", nome: "Beto", email: "b@teste.com", senha: "senha-forte-bbb" });
   await t.chamar("POST", "/api/canais", { phone_number_id: "222222", waba_id: "900002", token: "EAAtokenfalsoBBBBBBBBBBBB" });
 
   const enviar = async (payload, segredo) => {
@@ -44,13 +44,14 @@ describe("isolamento entre empresas no webhook", async () => {
 describe("contas e sessões", async () => {
   const t = await iniciarApp();
   after(() => t.fechar());
-  await t.chamar("POST", "/api/cadastro", { empresa: "Loja", nome: "Dona", email: "dona@teste.com", senha: "senha-da-dona-1" });
+  await t.chamar("POST", "/api/cadastro", { aceite_termos: true, empresa: "Loja", nome: "Dona", email: "dona@teste.com", senha: "senha-da-dona-1" });
   const dono = (await t.chamar("GET", "/api/eu")).dados.usuario;
   await t.chamar("POST", "/api/usuarios", { nome: "Admin", email: "admin@teste.com", senha: "senha-do-admin-1", papel: "admin" });
 
   test("um admin não troca a senha do dono", async () => {
     t.sair();
     assert.equal((await t.chamar("POST", "/api/entrar", { email: "admin@teste.com", senha: "senha-do-admin-1" })).status, 200);
+    await t.chamar("POST", "/api/termos/aceite", { aceito: true });
     const r = await t.chamar("PUT", `/api/usuarios/${dono.id}`, { senha: "senha-tomada-123" });
     assert.equal(r.status, 403);
     t.sair();
@@ -79,7 +80,7 @@ describe("contas e sessões", async () => {
 describe("arquivos", async () => {
   const t = await iniciarApp();
   after(() => t.fechar());
-  await t.chamar("POST", "/api/cadastro", { empresa: "Loja", nome: "Dona", email: "dona@teste.com", senha: "senha-da-dona-1" });
+  await t.chamar("POST", "/api/cadastro", { aceite_termos: true, empresa: "Loja", nome: "Dona", email: "dona@teste.com", senha: "senha-da-dona-1" });
 
   test("arquivos que não são mídia baixam com CSP isolada", async () => {
     const up = await t.chamar("POST", "/api/midia", "<script>alert(1)</script>", { "Content-Type": "text/plain" });

@@ -1,7 +1,8 @@
 /* Tarefas automáticas que rodam em segundo plano:
    - campanhas: dispara modelos aprovados para o público escolhido, respeitando quem pediu para sair
    - follow-up: retoma conversas em que o cliente parou de responder (dentro da janela de 24 h)
-   - lembretes: avisa o cliente antes do horário agendado */
+   - lembretes: avisa o cliente antes do horário agendado
+   - LGPD: expurgo por prazo de guarda, uma vez por dia por empresa (conferido de hora em hora) */
 
 import { configCompleta } from "../db.js";
 import { formatarQuando } from "./agenda.js";
@@ -24,6 +25,7 @@ export function preencherVariavel(modelo, contato) {
 
 export function criarAgendador({ repo, atendimento, eventos, agora = () => Date.now(), intervaloMs = 15_000 }) {
   let rodando = false;
+  let ultimoExpurgo = 0;
   let timer;
 
   async function prepararCampanhas() {
@@ -41,8 +43,8 @@ export function criarAgendador({ repo, atendimento, eventos, agora = () => Date.
       const lote = repo.proximosEnvios(c.id, LOTE_CAMPANHA);
       for (const envio of lote) {
         const contato = repo.contato(c.empresa_id, envio.contato_id);
-        if (!contato || contato.opt_out) {
-          repo.marcarEnvio(envio.id, "falhou", { erro: "contato pediu para não receber" });
+        if (!contato || contato.opt_out || !contato.marketing_optin) {
+          repo.marcarEnvio(envio.id, "falhou", { erro: contato?.opt_out ? "contato pediu para não receber" : "contato sem opt-in de marketing" });
           continue;
         }
         let conversa = repo.conversaAtiva(c.empresa_id, contato.id);
@@ -134,6 +136,11 @@ export function criarAgendador({ repo, atendimento, eventos, agora = () => Date.
       await enviarCampanhas();
       await followups();
       await lembretes();
+      // Expurgo LGPD: a API registra repo.expurgoLgpd; cada empresa roda uma vez por dia
+      if (repo.expurgoLgpd && agora() - ultimoExpurgo >= 3600_000) {
+        ultimoExpurgo = agora();
+        await repo.expurgoLgpd();
+      }
     } catch (err) {
       console.error("[agendador]", err);
     } finally {
