@@ -214,6 +214,11 @@ async function iniciar() {
     return renderLogin(app, st, () => location.reload());
   }
   await recarregarEu();
+  // LGPD: versão nova dos termos (ou usuário convidado no primeiro acesso) → aceite antes do painel
+  if (estado.eu.termos?.pendente) {
+    const { telaTermos } = await import("./lgpd.js");
+    return limpar(app, telaTermos(estado.eu.termos, () => location.reload()));
+  }
   limpar(app, layout());
   atualizarSelos();
   tempoReal();

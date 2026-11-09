@@ -28,7 +28,7 @@ before(async () => {
   await central.rotina();
   rh = await subir({ agora, cfg: { nexor: { central: urlCentral, instancia: sistema.id, token: TOKEN, chavePublica: central.assinador.chavePublica, intervaloMin: 5 } } });
   adm = rh.cliente();
-  assert.equal((await adm.post("/api/cadastro", { razao_social: "Padaria Pão Dourado Ltda", cnpj: "11.222.333/0001-81", nome: "Dona Rosa", email: "rosa@pao.com", senha: "senha-forte-1" })).status, 200);
+  assert.equal((await adm.post("/api/cadastro", { aceite_termos: true, razao_social: "Padaria Pão Dourado Ltda", cnpj: "11.222.333/0001-81", nome: "Dona Rosa", email: "rosa@pao.com", senha: "senha-forte-1" })).status, 200);
   colab = (await adm.post("/api/colaboradores", { nome: "Carlos Lima", cpf: CPF, admissao: "2026-01-02", salario_centavos: 200000 })).dados;
 });
 after(() => {

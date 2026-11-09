@@ -12,8 +12,8 @@ before(async () => {
   s = await subir({ cfg: { permitirCadastro: true } });
   rhA = s.cliente();
   rhB = s.cliente();
-  assert.equal((await rhA.post("/api/cadastro", { razao_social: "Empresa A Ltda", cnpj: "11.222.333/0001-81", nome: "Ana A", email: "ana@a.com", senha: "senha-forte-1" })).status, 200);
-  assert.equal((await rhB.post("/api/cadastro", { razao_social: "Empresa B Ltda", cnpj: "45.723.174/0001-10", nome: "Beto B", email: "beto@b.com", senha: "senha-forte-1" })).status, 200);
+  assert.equal((await rhA.post("/api/cadastro", { aceite_termos: true, razao_social: "Empresa A Ltda", cnpj: "11.222.333/0001-81", nome: "Ana A", email: "ana@a.com", senha: "senha-forte-1" })).status, 200);
+  assert.equal((await rhB.post("/api/cadastro", { aceite_termos: true, razao_social: "Empresa B Ltda", cnpj: "45.723.174/0001-10", nome: "Beto B", email: "beto@b.com", senha: "senha-forte-1" })).status, 200);
   colabA = (await rhA.post("/api/colaboradores", { nome: "Alice Alves", cpf: CPF, admissao: "2026-01-02", salario_centavos: 200000 })).dados;
   colabB = (await rhB.post("/api/colaboradores", { nome: "Bia Borges", cpf: CPF2, admissao: "2026-01-02", salario_centavos: 200000 })).dados;
 });
@@ -76,6 +76,7 @@ test("candidatura pública: link do LinkedIn só http(s); currículo sem colabor
   await rhA.post("/api/usuarios", { nome: "Gil Gestor", email: "gil@a.com", senha: "senha-gestor", papel: "gestor", departamento_id: deps[0].id });
   const g = s.cliente();
   assert.equal((await g.post("/api/entrar", { email: "gil@a.com", senha: "senha-gestor" })).status, 200);
+  await g.post("/api/termos/aceite", { aceito: true });
   assert.equal((await g.get(`/api/arquivos/${cand.curriculo}`)).status, 404, "gestor não abre currículos");
 });
 
@@ -124,10 +125,10 @@ test("instalação nova: primeira conta só com o código de instalação", asyn
   try {
     const c = s.cliente();
     assert.equal((await c.get("/api/estado")).dados.exigeCodigo, true);
-    const dados = { razao_social: "Empresa X Ltda", cnpj: "11222333000181", nome: "Ana", email: "ana@x.com.br", senha: "SenhaForte!2026" };
+    const dados = { aceite_termos: true, razao_social: "Empresa X Ltda", cnpj: "11222333000181", nome: "Ana", email: "ana@x.com.br", senha: "SenhaForte!2026" };
     assert.equal((await c.post("/api/cadastro", dados)).status, 403, "sem código");
-    assert.equal((await c.post("/api/cadastro", { ...dados, codigo_instalacao: "errado00" })).status, 403, "código errado");
-    assert.equal((await c.post("/api/cadastro", { ...dados, codigo_instalacao: "ABCD2345" })).status, 200);
+    assert.equal((await c.post("/api/cadastro", { aceite_termos: true, ...dados, codigo_instalacao: "errado00" })).status, 403, "código errado");
+    assert.equal((await c.post("/api/cadastro", { aceite_termos: true, ...dados, codigo_instalacao: "ABCD2345" })).status, 200);
     assert.equal((await c.get("/api/estado")).dados.exigeCodigo, false, "depois do primeiro administrador o código não vale mais");
   } finally {
     s.fechar();
@@ -138,7 +139,7 @@ test("ecossistema: chave de integração só de leitura, sem dados sensíveis e 
   const s = await subir();
   try {
     const rh = s.cliente();
-    await rh.post("/api/cadastro", { razao_social: "Empresa Y Ltda", cnpj: "11222333000181", nome: "Bia", email: "bia@y.com.br", senha: "SenhaForte!2026" });
+    await rh.post("/api/cadastro", { aceite_termos: true, razao_social: "Empresa Y Ltda", cnpj: "11222333000181", nome: "Bia", email: "bia@y.com.br", senha: "SenhaForte!2026" });
     await rh.post("/api/colaboradores", { nome: "Caio Lima", cpf: "52998224725", admissao: "2026-01-02", salario_centavos: 300000 });
     const k = (await rh.post("/api/integracoes", { nome: "Nexor Agente" })).dados;
     assert.match(k.token, /^nxr_/);

@@ -3,6 +3,7 @@
 import { del, get, post, put } from "../api.js";
 import { abas, acao, aviso, avatar, confirmar, copiarTexto, dataHora, h, icone, janela, limpar } from "../ui.js";
 import { botao, dataBR, formulario, situacao, tabela, topo } from "../comum.js";
+import { botoesTitular } from "../lgpd.js";
 
 const ETAPAS = [["triagem", "Triagem"], ["entrevista", "Entrevista"], ["teste", "Teste / dinâmica"], ["proposta", "Proposta"], ["contratado", "Contratado"], ["reprovado", "Não seguiu"]];
 let raizAtual;
@@ -132,6 +133,8 @@ function abrirCandidato(c) {
       h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "Etapa"), etapa),
       h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "Avaliação"), nota),
       h("label", { class: "campo" }, h("span", { class: "campo-rotulo" }, "Anotações da entrevista"), obs),
+      // LGPD (arts. 18 e 19): só o administrador exporta ou exclui os dados do candidato
+      ctxAtual?.pode("admin") ? botoesTitular("candidato", c.id, c.nome, { aoExcluir: () => (document.querySelector(".modal-fundo")?.remove(), desenhar()) }) : null,
     ),
     acoes: [
       { texto: "Excluir (LGPD)", classe: "btn-perigo-fantasma", fn: (e, fechar) => acao(e.currentTarget, async () => (await confirmar("Excluir o candidato e o currículo?", { perigo: true })) && (await del(`/candidatos/${c.id}`), fechar(), desenhar())) },

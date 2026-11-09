@@ -3,6 +3,7 @@
 
 import { del, get, post, put } from "../api.js";
 import { abas, acao, aviso, avatar, confirmar, copiarTexto, dataHora, debounce, h, icone, janela, limpar, reais } from "../ui.js";
+import { botoesTitular } from "../lgpd.js";
 import { botao, cpfBR, dataBR, enviar, formulario, hhmm, hojeISO, situacao, tabela, topo } from "../comum.js";
 
 let cad = {};
@@ -262,6 +263,8 @@ async function ficha(raiz, ctx, id, abaInicial = "resumo") {
         rh && c.status !== "desligado"
           ? h("div", { class: "acoes-topo" }, h("a", { class: "btn btn-fantasma", href: `#/colaboradores/${c.id}/editar` }, icone("editar", 16), "Editar"), h("a", { class: "btn btn-fantasma", href: `#/ferias/programar/${c.id}` }, icone("mala", 16), "Férias"), h("a", { class: "btn btn-fantasma", href: `#/ferias/afastar/${c.id}` }, icone("saude", 16), "Afastamento"), h("a", { class: "btn btn-perigo-fantasma", href: `#/folha/rescisao/${c.id}` }, "Desligar"))
           : null,
+        // LGPD (arts. 18 e 19): exportar ou excluir os dados do colaborador, só administrador
+        ctx.pode("admin") ? botoesTitular("colaborador", c.id, c.nome, { aoExcluir: () => ficha(raiz, ctx, id), aviso: c.status !== "desligado" ? `${c.nome} ainda tem contrato ativo: a exclusão só é possível depois do desligamento. Continuar mesmo assim?` : undefined }) : null,
       ),
       corpo,
     ),

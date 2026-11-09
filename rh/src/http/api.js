@@ -12,6 +12,7 @@ import { rotasApp } from "./rotas-app.js";
 import { rotasCadastros } from "./rotas-cadastros.js";
 import { rotasEsocial } from "./rotas-esocial.js";
 import { rotasIntegracao } from "./rotas-integracao.js";
+import { rotasLgpd } from "./rotas-lgpd.js";
 import { rotasNexor } from "./rotas-nexor.js";
 import { rotasFolha } from "./rotas-folha.js";
 import { rotasPessoas } from "./rotas-pessoas.js";
@@ -195,6 +196,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, eventos, central, agora = (
   rotasIntegracao(deps);
   rotasNexor(deps);
   const recrutamento = rotasRecrutamento(deps);
+  rotasLgpd(deps);
 
   return { roteador: r, sessaoPainel, sessaoApp, tokenApp, paginasVagas: recrutamento.paginas };
 }

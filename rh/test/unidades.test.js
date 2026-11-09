@@ -142,7 +142,7 @@ after(() => s.fechar());
 
 test("biometria: cadastro WebAuthn e ponto confirmado pela digital", async () => {
   const rh = s.cliente();
-  await rh.post("/api/cadastro", { razao_social: "Bio Ltda", cnpj: "11222333000181", nome: "Ana", email: "ana@bio.com", senha: "senha-forte-1" });
+  await rh.post("/api/cadastro", { aceite_termos: true, razao_social: "Bio Ltda", cnpj: "11222333000181", nome: "Ana", email: "ana@bio.com", senha: "senha-forte-1" });
   await rh.put("/api/empresa", { config: { ponto: { exige_biometria: true } } });
   const c = (await rh.post("/api/colaboradores", { nome: "Caio Bio", cpf: CPF, admissao: "2026-01-02", salario_centavos: 200000 })).dados;
   const { codigo } = (await rh.post(`/api/colaboradores/${c.id}/convite`)).dados;
