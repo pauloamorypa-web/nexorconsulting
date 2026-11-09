@@ -1,3 +1,14 @@
+/* Fontes hospedadas no próprio site (SIL Open Font License, ver assets/fonts/LICENSE-*.txt).
+   Só o subconjunto latino e os pesos usados. Nada é carregado do Google Fonts. */
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/inter-latin-400-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/inter-latin-500-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/inter-latin-600-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/space-grotesk-latin-600-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 700; font-display: swap; src: url("../fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
 /* ==========================================================
    Nexor Consulting — Software sob medida & IA
    ========================================================== */
@@ -1219,11 +1230,19 @@ input[type="range"] { min-height: 0; }
 }
 
 /* Aviso de cookies (só aparece quando há rastreio de campanha configurado) */
-.nx-consent { position: fixed; left: 16px; bottom: 16px; z-index: 60; max-width: 420px; display: grid; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: #070f20f2; backdrop-filter: blur(12px); box-shadow: 0 20px 50px #0008; font-size: var(--fs-sm); }
+.nx-consent { position: fixed; left: 16px; bottom: 16px; z-index: 110; max-width: 420px; display: grid; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: #070f20f2; backdrop-filter: blur(12px); box-shadow: 0 20px 50px #0008; font-size: var(--fs-sm); }
 .nx-consent p { margin: 0; color: var(--muted); }
 .nx-consent a { color: var(--accent, #3b8dff); }
-.nx-consent div { display: flex; gap: 8px; justify-content: flex-end; }
-@media (max-width: 640px) { .nx-consent { left: 12px; right: 12px; bottom: 12px; max-width: none; } .nx-consent .btn { flex: 1; } }
+.nx-consent-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Aceitar e Recusar com o mesmo tamanho e o mesmo destaque (Guia de cookies da ANPD) */
+.nx-consent-btn { justify-content: center; width: 100%; background: #12224a; color: #fff; border: 1px solid #3b8dff; }
+.nx-consent-btn:hover, .nx-consent-btn:focus-visible { background: #1b3270; }
+.nx-consent-pref { display: grid; gap: 10px; }
+.nx-consent-pref[hidden], .nx-consent-link[hidden] { display: none; }
+.nx-consent-op { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); line-height: 1.45; }
+.nx-consent-op input { margin-top: 3px; accent-color: #3b8dff; }
+.nx-consent-link { justify-self: start; color: var(--accent, #3b8dff); text-decoration: underline; font-size: var(--fs-sm); }
+@media (max-width: 640px) { .nx-consent { left: 12px; right: 12px; bottom: 12px; max-width: none; } }
 
 /* Rosto da Blue no chat */
 img.nx-blue-av, img.nx-chat-avatar { object-fit: cover; padding: 0; background: #0b2a5c; box-shadow: 0 0 0 2px rgba(59, 141, 255, .7); }
@@ -1363,3 +1382,14 @@ img.nx-blue-av, img.nx-chat-avatar { object-fit: cover; padding: 0; background: 
 .fund-teste span { flex: 1; min-width: 220px; color: var(--muted); }
 .fund-teste b { color: var(--text, #fff); }
 @media (max-width: 900px) { .cuidado-grade { grid-template-columns: 1fr; } .fund-cartao { grid-template-columns: 1fr; padding: 24px; } }
+
+/* Identificação da empresa no rodapé (Decreto 7.962/2013) */
+.footer-legal { display: grid; gap: 4px; padding-block: 16px; border-top: 1px solid var(--line); font-size: var(--fs-xs, .8rem); color: var(--muted); }
+.footer-legal p { margin: 0; }
+.footer-legal a { color: inherit; text-decoration: underline; }
+/* Dado que a Nexor ainda precisa preencher: aparece destacado de propósito */
+.preencher { background: #facc15; color: #111; padding: 0 4px; border-radius: 3px; font-weight: 600; }
+.calc-form .mini-check { margin-top: 10px; font-size: .8rem; color: var(--muted); }
+.calc-form .mini-check input, .mini-check.novidades input { flex: 0 0 auto; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--blue); }
+.demo-aviso { display: inline-block; margin-top: 6px; font-size: .75rem; color: var(--muted); }
+.hero-ilustracao { position: absolute; right: 0; bottom: 4px; }

@@ -508,8 +508,8 @@ const runProcess = async (i) => {
   currentProc = i;
   $$("button", procsEl).forEach((b, k) => b.setAttribute("aria-selected", k === i));
   pipeEl.innerHTML = p.steps.map((s, k) => `<div class="pipe-step"><span>${k + 1}</span><b>${s}</b></div>`).join("");
-  metricsEl.innerHTML = p.metrics.map(([l, v]) => `<div><small>${l}</small><b>${v}</b></div>`).join("");
-  termEl.innerHTML = `<span class="t-dim">$ nexor-agent run "${p.name.toLowerCase()}"</span>\n`;
+  metricsEl.innerHTML = p.metrics.map(([l, v]) => `<div><small>${l}</small><b>${v}</b></div>`).join("") + `<small class="demo-aviso">Exemplo: resultados ilustrativos, não são de um cliente real.</small>`;
+  termEl.innerHTML = `<span class="t-dim"># EXEMPLO ILUSTRATIVO · dados e registros fictícios</span>\n<span class="t-dim">$ nexor-agent run "${p.name.toLowerCase()}"</span>\n`;
   const steps = $$(".pipe-step", pipeEl);
   for (let k = 0; k < p.logs.length; k++) {
     if (token !== runToken) return;
@@ -523,7 +523,7 @@ const runProcess = async (i) => {
     steps[k].classList.add("done");
     await wait(250);
   }
-  if (token === runToken) termEl.innerHTML += `<span class="lvl-ok">✓ processo concluído sem intervenção humana</span>\n`;
+  if (token === runToken) termEl.innerHTML += `<span class="lvl-ok">✓ processo concluído (simulação)</span>\n`;
 };
 
 procsEl.addEventListener("click", (e) => {

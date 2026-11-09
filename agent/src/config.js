@@ -56,9 +56,28 @@ export const config = {
     duracaoMinutos: Number(process.env.AGENDA_DURACAO_MIN ?? 30),
   },
 
+  // IP real do visitante: os cabeçalhos CF-Connecting-IP, True-Client-IP e X-Forwarded-For só valem
+  // quando a conexão chega de um proxy confiável. Sem isso, qualquer um forjaria o IP e furaria os limites.
+  proxy: {
+    // IPs ou faixas IPv4 (CIDR) dos proxies na frente do servidor. Ex.: "10.0.0.0/8,127.0.0.1"
+    confiaveis: lista(process.env.TRUSTED_PROXIES, ""),
+    // "1" quando o servidor só é alcançável por um túnel (cloudflared): toda conexão vem do túnel
+    tunel: process.env.TRUST_PROXY_TUNNEL === "1",
+  },
+
+  // Teto diário de gasto com IA (chat do site, teste do Atende IA e WhatsApp somados).
+  // Zera à meia-noite de Brasília. Ao estourar, a Blue responde com o contato humano.
+  orcamentoDiario: {
+    chamadas: Number(process.env.IA_LIMITE_DIA_CHAMADAS ?? 1500),
+    tokens: Number(process.env.IA_LIMITE_DIA_TOKENS ?? 3_000_000),
+  },
+
   // Proteções
   limiteMensagens: { quantidade: 20, janelaMinutos: 10 },
   tamanhoMaximoMensagem: 2000,
+  // Teto por conversa em 24 h (não zera quando o histórico recomeça)
+  conversaMaxCaracteres: Number(process.env.CONVERSA_MAX_CARACTERES ?? 12_000),
+  conversaMaxMensagensDia: Number(process.env.CONVERSA_MAX_MENSAGENS_DIA ?? 60),
   conversaExpiraHoras: 24,
   conversaMaxMensagens: 80,
   pausaAposTransferenciaHoras: 12,

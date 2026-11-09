@@ -53,7 +53,7 @@ test("eventos da Meta usam hash e mandam LeadQuente para leads quentes", () => {
 test("envio para a Meta só acontece quando configurado e não manda leads parciais", async () => {
   const chamadas = [];
   const fetchFn = async (url, init) => (chamadas.push({ url, corpo: JSON.parse(init.body) }), { ok: true });
-  const lead = { id: "id-123456", sessao: "s1234567", tipo: "teste", temperatura: "morno", telefone: "34999990000", registrado_em: new Date().toISOString() };
+  const lead = { id: "id-123456", sessao: "s1234567", tipo: "teste", temperatura: "morno", telefone: "34999990000", consentimento: { medicao: true }, registrado_em: new Date().toISOString() };
   assert.equal(await enviarParaMeta(lead, {}, { fetchFn }), false);
   Object.assign(config.meta, { pixel: "999", token: "tok" });
   try {
@@ -75,4 +75,26 @@ test("relatório pede a análise ao Claude só quando há leads", async () => {
   assert.match(pedido.messages[0].content, /R\$ 100/);
   const vazio = await gerarRelatorio({ armazenamento: { listarLeads: async () => [] }, analise: true, cliente: null });
   assert.equal(vazio.analise, undefined);
+});
+
+test("meta.js recusa enviar à Meta sem consentimento de marketing, mesmo configurada", async () => {
+  const { registroConsentimento, temConsentimentoMarketing } = await import("../src/meta.js");
+  const chamadas = [];
+  const fetchFn = async (url) => (chamadas.push(url), { ok: true });
+  const base = { id: "id-999999", sessao: "s9999999", tipo: "teste", temperatura: "quente", telefone: "34999990000", registrado_em: new Date().toISOString() };
+  Object.assign(config.meta, { pixel: "999", token: "tok" });
+  try {
+    assert.equal(await enviarParaMeta(base, {}, { fetchFn }), false, "sem registro de consentimento");
+    assert.equal(await enviarParaMeta({ ...base, consentimento: { medicao: false } }, {}, { fetchFn }), false, "recusou no aviso");
+    assert.equal(await enviarParaMeta({ ...base, consentimento_medicao: true }, {}, { fetchFn }), false, "campo solto não basta");
+    assert.equal(chamadas.length, 0);
+    assert.equal(await enviarParaMeta({ ...base, consentimento: registroConsentimento({ medicao: true, versao: 2 }) }, {}, { fetchFn }), true);
+    assert.equal(chamadas.length, 1);
+  } finally {
+    Object.assign(config.meta, { pixel: "", token: "" });
+  }
+  assert.equal(temConsentimentoMarketing({ consentimento: { medicao: "true" } }), false);
+  const r = registroConsentimento({ medicao: true, versao: 2, em: "data ruim" }, new Date("2026-11-09T12:00:00Z"));
+  assert.deepEqual(r, { medicao: true, versao: 2, escolhido_em: null, recebido_em: "2026-11-09T12:00:00.000Z", origem: "aviso-de-cookies" });
+  assert.equal(registroConsentimento(true).medicao, true, "formato antigo do site (true/false) continua aceito");
 });

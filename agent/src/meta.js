@@ -8,6 +8,25 @@ const hash = (v) => createHash("sha256").update(v).digest("hex");
 
 export const metaConfigurada = () => Boolean(config.meta.pixel && config.meta.token);
 
+/**
+ * Registro do consentimento dado no aviso de cookies do site, para guardar junto com o lead.
+ * Aceita o formato atual { medicao, versao, em } e o antigo (true/false).
+ */
+export function registroConsentimento(recebido, agora = new Date()) {
+  const r = recebido && typeof recebido === "object" ? recebido : { medicao: recebido === true, versao: 1 };
+  const em = typeof r.em === "string" && !Number.isNaN(Date.parse(r.em)) ? new Date(r.em).toISOString() : null;
+  return {
+    medicao: r.medicao === true,
+    versao: Number.isInteger(r.versao) && r.versao > 0 && r.versao < 1000 ? r.versao : null,
+    escolhido_em: em, // quando a pessoa clicou no aviso (informado pelo navegador)
+    recebido_em: agora.toISOString(), // quando o servidor recebeu o lead
+    origem: "aviso-de-cookies",
+  };
+}
+
+/** true só se o lead traz o consentimento de medição de anúncios dado no aviso de cookies. */
+export const temConsentimentoMarketing = (lead) => lead?.consentimento?.medicao === true;
+
 const VALOR = { quente: 300, morno: 80, frio: 15 };
 
 /** Monta os eventos da API de Conversões para um lead. */
@@ -38,8 +57,9 @@ export function eventosMeta(lead, { ip, navegador } = {}) {
   return eventos;
 }
 
-/** Envia o lead para a Meta. Nunca lança erro: só registra no log. */
+/** Envia o lead para a Meta, só com consentimento de medição. Nunca lança erro: só registra no log. */
 export async function enviarParaMeta(lead, contexto, { fetchFn = fetch } = {}) {
+  if (!temConsentimentoMarketing(lead)) return false; // LGPD: sem o Aceitar no aviso de cookies, nada sai
   if (!metaConfigurada() || lead.tipo === "parcial") return false;
   try {
     const corpo = { data: eventosMeta(lead, contexto) };

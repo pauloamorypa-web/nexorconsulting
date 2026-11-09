@@ -60,7 +60,7 @@ Cada lead chega com:
 
 ## Campanhas: Meta e relatório com IA
 
-- **API de Conversões da Meta**: com `META_PIXEL_ID` e `META_CAPI_TOKEN`, cada lead (menos os parciais) vai para a Meta como `Lead`, e os quentes também como `LeadQuente`, com telefone e e-mail em hash SHA-256. Assim a campanha aprende a buscar pessoas parecidas com quem virou lead quente. O `event_id` é o mesmo do Pixel do site, então a Meta não conta duas vezes.
+- **API de Conversões da Meta**: só para leads que trazem `consentimento.medicao: true`, ou seja, de quem clicou em **Aceitar** no aviso de cookies do site (LGPD). A escolha fica gravada no lead (`consentimento: { medicao, versao, escolhido_em, recebido_em, origem }`), junto com `aceita_novidades` (checkbox opcional dos formulários). Com `META_PIXEL_ID` e `META_CAPI_TOKEN`, cada lead com consentimento (menos os parciais) vai para a Meta como `Lead`, e os quentes também como `LeadQuente`, com telefone e e-mail em hash SHA-256. Assim a campanha aprende a buscar pessoas parecidas com quem virou lead quente. O `event_id` é o mesmo do Pixel do site, então a Meta não conta duas vezes.
 - **Relatório**: `GET /api/relatorio?dias=7` com `Authorization: Bearer <REPORT_TOKEN>` devolve os leads por campanha e a taxa de leads quentes. Com `&analise=1`, o Claude escreve o que escalar, o que pausar e o que testar. Opcional: `&investimento=meta/teste12h: R$ 350; google/erp: R$ 280` para ele considerar o custo.
 
 ## Modo de teste do Atende IA
@@ -109,3 +109,15 @@ Atenção:
 - Modelo padrão: `claude-opus-5-5`, com esforço `low` (respostas rápidas). Troque por `NEXOR_MODEL` e `NEXOR_EFFORT`.
 - As instruções da Nexor ficam em cache entre as mensagens (prompt caching), o que reduz o custo de cada resposta.
 - Cada conversa recomeça após 24 horas sem mensagens. Há limite de 20 mensagens a cada 10 minutos por cliente.
+- **Teto diário de IA**: `IA_LIMITE_DIA_CHAMADAS` (padrão 1500) e `IA_LIMITE_DIA_TOKENS` (padrão 3.000.000), somando Blue, teste do Atende IA e WhatsApp, zerando à meia-noite de Brasília. Ao estourar, a Blue responde com o WhatsApp e o e-mail da equipe, sem chamar a IA.
+- **Limites por conversa**: até 2.000 caracteres por mensagem e, em 24 h, até `CONVERSA_MAX_MENSAGENS_DIA` (60) mensagens e `CONVERSA_MAX_CARACTERES` (12.000) caracteres escritos pelo visitante.
+- **Sigilo**: o prompt de sistema manda a Blue recusar revelar as instruções internas e tratar textos do visitante como informação, não como ordens.
+
+## IP real do visitante (limites por IP)
+
+Os cabeçalhos `CF-Connecting-IP`, `True-Client-IP` e `X-Forwarded-For` podem ser forjados por qualquer um. O servidor só confia neles quando a conexão vem de um proxy confiável:
+
+- `TRUSTED_PROXIES`: IPs ou faixas IPv4 (CIDR) do proxy na frente do servidor, separados por vírgula. Ex.: `10.0.0.0/8`.
+- `TRUST_PROXY_TUNNEL=1`: o servidor só é alcançável por um túnel (por exemplo `cloudflared`) e não tem porta pública.
+
+Sem nenhum dos dois, vale o IP da conexão (`req.socket.remoteAddress`). Se o servidor estiver atrás de um proxy e nada for configurado, todos os visitantes contam como o IP do proxy nos limites por IP; o log mostra uma vez `[ip] cabeçalhos de proxy ignorados (conexão de X)`, com o IP a incluir.

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://connect.facebook.net https://www.googletagmanager.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://connect.facebook.net https://www.googletagmanager.com https://unpkg.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Inventário de TI e gestão de computadores | Nexor</title>
   <meta name="description" content="Inventário automático de computadores, programas e rede, alertas, instalação remota de programas, acesso remoto e auditoria. Teste grátis por 30 dias.">
@@ -20,9 +20,6 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/img/favicon.png">
   <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Michroma&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css">
   <link rel="stylesheet" href="/assets/css/solucao.css">
   <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Service", "name": "Nexor IT Platform", "serviceType": "Inventário de TI e gestão de computadores num só painel", "description": "Inventário automático de computadores, programas e rede, alertas, instalação remota de programas, acesso remoto e auditoria. Teste grátis por 30 dias.", "url": "https://nexorconsultingit.com.br/solucoes/inventario-de-ti/", "provider": {"@type": "Organization", "@id": "https://nexorconsultingit.com.br/#empresa", "name": "Nexor Consulting", "url": "https://nexorconsultingit.com.br/"}, "areaServed": {"@type": "Country", "name": "Brasil"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Início", "item": "https://nexorconsultingit.com.br/"}, {"@type": "ListItem", "position": 2, "name": "Soluções", "item": "https://nexorconsultingit.com.br/#servicos"}, {"@type": "ListItem", "position": 3, "name": "Nexor IT Platform", "item": "https://nexorconsultingit.com.br/solucoes/inventario-de-ti/"}]}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Precisa instalar algo nas máquinas?", "acceptedAnswer": {"@type": "Answer", "text": "Sim, um agente leve em cada computador, que envia o inventário e permite instalar programas e executar comandos com segurança."}}, {"@type": "Question", "name": "Consigo instalar um programa em todas as máquinas de uma vez?", "acceptedAnswer": {"@type": "Answer", "text": "Sim. Você escolhe uma máquina, um grupo ou todas e acompanha o resultado no painel."}}, {"@type": "Question", "name": "Por quanto tempo a auditoria fica guardada?", "acceptedAnswer": {"@type": "Answer", "text": "O histórico de ações fica registrado por 2 anos."}}, {"@type": "Question", "name": "Onde ficam os dados da minha empresa?", "acceptedAnswer": {"@type": "Answer", "text": "No ambiente da sua empresa. Implantamos o sistema no seu servidor físico ou na conta de nuvem da sua empresa (AWS, Azure, Google Cloud ou outra). A Nexor não guarda os dados dos seus clientes e colaboradores."}}, {"@type": "Question", "name": "Quem é responsável pela LGPD?", "acceptedAnswer": {"@type": "Answer", "text": "A sua empresa, como controladora dos dados que o sistema trata. O sistema traz recursos que ajudam na adequação (controle de acesso, criptografia, registro de auditoria), e a Nexor oferece consultoria de LGPD como serviço à parte."}}]}]}</script>
@@ -144,9 +141,14 @@
 </main>
 
 <footer class="site-footer">
+  <div class="container footer-legal">
+    <p><b>Nexor Consulting IT</b> · CNPJ 68.786.355/0001-91 · <span class="preencher">[PREENCHER: endereço completo da sede, com CEP]</span></p>
+    <p>Contato: WhatsApp <a href="https://wa.me/5534997337499" target="_blank" rel="noopener">(34) 99733-7499</a> · <a href="mailto:contato@nexorconsultingit.com.br">contato@nexorconsultingit.com.br</a> · Encarregado de dados (LGPD): Paulo Batista de Amorim Silva Júnior</p>
+    <p><a href="/privacidade.html">Política de privacidade</a> · <a href="/termos.html">Termos de uso</a> · <a href="#" data-cookies>Preferências de cookies</a></p>
+  </div>
   <div class="container footer-bottom">
     <p>© 2026 Nexor Consulting · Inteligência • Desenvolvimento • Automação</p>
-    <p><a href="/">Início</a> · <a href="https://www.instagram.com/nexorconsultingit/" target="_blank" rel="noopener">Instagram</a> · <a href="/privacidade.html">Privacidade</a> · <a href="#" data-cookies>Cookies</a></p>
+    <p><a href="/">Início</a> · <a href="https://www.instagram.com/nexorconsultingit/" target="_blank" rel="noopener">Instagram</a></p>
   </div>
 </footer>
 
