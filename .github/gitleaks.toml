@@ -1,0 +1,13 @@
+# Configuração do gitleaks (workflow Segurança). Usa as regras padrão e ignora só:
+#  - pastas test/ (fixtures com tokens falsos, como "EAAtokenfalso..." e "tok-webhook-asaas")
+#  - arquivos .env.exemplo / .env.example (valores de exemplo, sem segredo)
+# Segredo de verdade em qualquer outro lugar, inclusive no histórico, faz o job falhar.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fixtures de teste e exemplos de configuração"
+paths = [
+  '''(^|/)test/''',
+  '''(^|/)\.env\.ex(emplo|ample)$''',
+]
