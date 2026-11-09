@@ -40,8 +40,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: ${{ matrix.produto }}/package-lock.json
+          cache-dependency-path: |
+            ${{ matrix.produto }}/package-lock.json
+            central/package-lock.json
       - name: Instalar dependências
+        run: npm ci --no-audit --no-fund
+      # Os testes de licença (test/nexor.test.js, rh/test/vinculo.test.js) sobem a Nexor Central de verdade
+      - name: Instalar dependências da Central (usada nos testes de licença)
+        if: matrix.produto != 'central'
+        working-directory: central
         run: npm ci --no-audit --no-fund
       - name: npm audit (alta ou crítica)
         run: npm audit --audit-level=high

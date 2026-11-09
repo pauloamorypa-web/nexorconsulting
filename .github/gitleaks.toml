@@ -11,3 +11,9 @@ paths = [
   '''(^|/)test/''',
   '''(^|/)\.env\.ex(emplo|ample)$''',
 ]
+# Falsos positivos conferidos um a um (o valor inteiro do "segredo" tem de bater):
+#  - "perfillinkedin": apelido de coluna na importação de currículos (rh/src/recrutamento/importacao.js),
+#    que a regra linkedin-client-id lê como um client id de 14 caracteres
+regexes = [
+  '''^perfillinkedin$''',
+]
