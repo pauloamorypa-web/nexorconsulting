@@ -119,7 +119,7 @@ CREATE INDEX IF NOT EXISTS auditoria_barbearia ON auditoria (barbearia_id, criad
 `;
 
 const JSON_COLS = { barbearias: ["config"], barbeiros: ["horario", "servicos"], clientes: ["preferencias"], planos: ["itens", "dias_semana"], vendas: ["itens"], espera: ["oferta"], auditoria: ["detalhe"] };
-const BOOL_COLS = new Set(["ativo", "nexor", "aceita_mensagens", "vitrine"]);
+const BOOL_COLS = new Set(["ativo", "nexor", "aceita_mensagens", "vitrine", "marketing_optin"]);
 const LISTAS = new Set(["servicos", "itens", "dias_semana"]);
 const lerJson = (v, padrao) => {
   if (v === null || v === undefined || v === "") return padrao;
@@ -141,6 +141,10 @@ export function abrirBanco(caminho, agora = () => Date.now()) {
     if (!s) cache.set(sql, (s = db.prepare(sql)));
     return s;
   };
+  // Opt-in de marketing (LGPD art. 8º): consentimento para mensagens promocionais (retorno), com data e origem.
+  // Desmarcado por padrão, inclusive para clientes que já existiam. Lembrete de horário marcado não é marketing.
+  const colsCliente = new Set(db.prepare("PRAGMA table_info(clientes)").all().map((c) => c.name));
+  for (const [c, def] of [["marketing_optin", "INTEGER NOT NULL DEFAULT 0"], ["marketing_optin_em", "INTEGER"], ["marketing_optin_origem", "TEXT"]]) if (!colsCliente.has(c)) db.exec(`ALTER TABLE clientes ADD COLUMN ${c} ${def}`);
   const colunas = {};
   for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()) colunas[name] = new Set(db.prepare(`PRAGMA table_info(${name})`).all().map((c) => c.name));
 

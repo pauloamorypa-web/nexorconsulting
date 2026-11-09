@@ -12,8 +12,10 @@ test("papéis: barbeiro só mexe no que é dele, recepção não vê relatórios
     assert.equal((await dono.post("/api/usuarios", { nome: "Carla", email: "carla@navalha.test", senha: "senha-carla-1", papel: "recepcao" })).status, 200);
     const br = s.cliente();
     await br.post("/api/entrar", { email: "bruno@navalha.test", senha: "senha-bruno-1" });
+    await br.post("/api/termos/aceite", { aceito: true });
     const rec = s.cliente();
     await rec.post("/api/entrar", { email: "carla@navalha.test", senha: "senha-carla-1" });
+    await rec.post("/api/termos/aceite", { aceito: true });
 
     const lucas = await clienteApp(s);
     const doRafael = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-11", hora: "09:00" })).dados;
@@ -108,9 +110,9 @@ test("primeiro acesso: só uma barbearia e código de instalação em produção
   try {
     const c = s.cliente();
     assert.equal((await c.get("/api/estado")).dados.exigeCodigo, true);
-    assert.equal((await c.post("/api/cadastro", { barbearia: "X", nome: "Y", email: "y@y.test", senha: "senha-forte-1" })).status, 403);
-    assert.equal((await c.post("/api/cadastro", { barbearia: "X", nome: "Y", email: "y@y.test", senha: "senha-forte-1", codigo_instalacao: "ABCD1234" })).status, 200);
-    assert.equal((await s.cliente().post("/api/cadastro", { barbearia: "Z", nome: "Z", email: "z@z.test", senha: "senha-forte-1", codigo_instalacao: "ABCD1234" })).status, 403);
+    assert.equal((await c.post("/api/cadastro", { aceite_termos: true, barbearia: "X", nome: "Y", email: "y@y.test", senha: "senha-forte-1" })).status, 403);
+    assert.equal((await c.post("/api/cadastro", { aceite_termos: true, barbearia: "X", nome: "Y", email: "y@y.test", senha: "senha-forte-1", codigo_instalacao: "ABCD1234" })).status, 200);
+    assert.equal((await s.cliente().post("/api/cadastro", { aceite_termos: true, barbearia: "Z", nome: "Z", email: "z@z.test", senha: "senha-forte-1", codigo_instalacao: "ABCD1234" })).status, 403);
     assert.equal((await s.cliente().post("/api/entrar", { email: "y@y.test", senha: "errada-123" })).status, 401);
   } finally {
     s.fechar();

@@ -287,6 +287,10 @@ test("rotina: lembrete antes do horário e retorno no tempo certo", async () => 
     }
     const cli = (await dono.get("/api/clientes")).dados.find((c) => c.nome === "Lucas Cliente");
     assert.equal(cli.ciclo_dias, 21);
+    // Retorno é mensagem promocional: sem opt-in de marketing não vai (o lembrete do horário vai)
+    s.agora.ir("2027-01-14T11:00:00-03:00");
+    assert.equal((await s.app.rotina()).retornos, 0, "sem opt-in não manda");
+    await lucas.put("/api/app/eu", { marketing_optin: true });
     s.agora.ir("2027-01-14T09:00:00-03:00");
     assert.equal((await s.app.rotina()).retornos, 0, "antes das 10h não manda");
     s.agora.ir("2027-01-14T11:00:00-03:00");

@@ -4,6 +4,7 @@ import { get, post, put } from "../api.js";
 import { acao, aviso, debounce, entrada, h, icone, janela, limpar, reais } from "../ui.js";
 import { formulario, tabela, topo } from "../comum.js";
 import { dataBR, fone, novoAgendamento, sit } from "../base.js";
+import { botoesTitular } from "../lgpd.js";
 
 export async function render(area, ctx) {
   let filtro = "";
@@ -38,7 +39,9 @@ export async function render(area, ctx) {
         { nome: "fone", rotulo: "Celular (WhatsApp)", tipo: "tel", placeholder: "34 99999-0000" },
         { nome: "email", rotulo: "E-mail", tipo: "email" },
         { nome: "nascimento", rotulo: "Nascimento", tipo: "data" },
-        { nome: "aceita_mensagens", rotulo: "Recebe lembretes e avisos", tipo: "check", padrao: true },
+        { nome: "aceita_mensagens", rotulo: "Recebe lembretes do horário marcado", tipo: "check", padrao: true },
+        // Opt-in de marketing (LGPD art. 8º): desmarcado por padrão; o servidor grava data e quem marcou
+        { nome: "marketing_optin", rotulo: "Aceita mensagens promocionais (convite de retorno)", tipo: "check", padrao: false },
         { nome: "observacoes", rotulo: "Observações (só a equipe vê)", tipo: "area", largura: 2 },
       ],
       c ? { ...c, fone: c.fone ? c.fone.slice(2) : "" } : {},
@@ -70,6 +73,9 @@ export async function render(area, ctx) {
         ),
         d.assinatura ? h("div", { class: "aviso-cartao" }, icone("coroa", 16), h("span", {}, `Clube ${d.assinatura.plano.nome} · `, sit(d.assinatura.status), d.assinatura.ciclo_fim ? ` · ciclo até ${dataBR(d.assinatura.ciclo_fim)}` : "")) : null,
         k.observacoes ? h("p", { class: "citacao" }, k.observacoes) : null,
+        h("p", { class: "suave pequeno" }, k.marketing_optin_em ? `${k.marketing_optin ? "Aceita mensagens promocionais" : "Opt-in retirado"} desde ${new Date(k.marketing_optin_em).toLocaleString("pt-BR")} · ${k.marketing_optin_origem ?? ""}` : "Sem consentimento para mensagens promocionais."),
+        // LGPD (arts. 18 e 19): só dono e administrador exportam ou excluem os dados do cliente
+        ctx.pode("dono", "admin") ? botoesTitular("cliente", k.id, k.nome, { aoExcluir: () => (document.querySelector(".modal-fundo")?.remove(), carregar()) }) : null,
         h("h3", {}, "Histórico"),
         tabela(
           [
