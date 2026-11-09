@@ -52,14 +52,16 @@ test("eventos da Meta usam hash e mandam LeadQuente para leads quentes", () => {
 
 test("envio para a Meta só acontece quando configurado e não manda leads parciais", async () => {
   const chamadas = [];
-  const fetchFn = async (url, init) => (chamadas.push({ url, corpo: JSON.parse(init.body) }), { ok: true });
+  const fetchFn = async (url, init) => (chamadas.push({ url, init, corpo: JSON.parse(init.body) }), { ok: true });
   const lead = { id: "id-123456", sessao: "s1234567", tipo: "teste", temperatura: "morno", telefone: "34999990000", registrado_em: new Date().toISOString() };
   assert.equal(await enviarParaMeta(lead, {}, { fetchFn }), false);
   Object.assign(config.meta, { pixel: "999", token: "tok" });
   try {
     assert.equal(await enviarParaMeta({ ...lead, tipo: "parcial" }, {}, { fetchFn }), false);
     assert.equal(await enviarParaMeta(lead, {}, { fetchFn }), true);
-    assert.match(chamadas[0].url, /graph\.facebook\.com\/v\d+\.\d+\/999\/events\?access_token=tok/);
+    assert.match(chamadas[0].url, /graph\.facebook\.com\/v\d+\.\d+\/999\/events$/);
+    assert.equal(new URL(chamadas[0].url).search, "", "token nunca aparece na URL");
+    assert.equal(chamadas[0].init.headers.Authorization, "Bearer tok");
     assert.equal(chamadas[0].corpo.data[0].event_name, "Lead");
   } finally {
     Object.assign(config.meta, { pixel: "", token: "" });

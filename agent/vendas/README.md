@@ -2,6 +2,14 @@
 
 Projeto de extensão do Nexor Assist para operação comercial B2B da Nexor. A Blue permanece como canal de atendimento; o Sales Agent organiza prospecção autorizada, pesquisa de contas, qualificação, recomendação de solução, reuniões e follow-up consentido.
 
+## Estado da implementação neste PR
+
+Implementado: intake autenticado e qualificação determinística, recomendação inicial, rascunho com Claude após permissão documentada, consulta de disponibilidade e criação/cancelamento de eventos do Google Calendar, templates WhatsApp de lembrete 24 h/30 min, opt-out, dedupe durável de webhooks, timeouts e redação de logs. Os envios de lembrete são at-most-once para evitar duplicidade em caso de timeout.
+
+Ainda depende de credenciais e de validação operacional: OAuth próprio do Google, templates de utilidade aprovados na Meta e `SALES_API_TOKEN`. A conexão do Google Calendar dentro do ChatGPT não fornece credenciais ao serviço hospedado. LinkedIn Lead Gen Forms e pesquisa de mercado com provedor licenciado ainda não têm adaptadores conectados; nesta fase, os leads entram por integração interna autenticada ou registro manual autorizado. LinkedIn outbound continua apenas em rascunho/revisão.
+
+Não ligar `SALES_ENABLED` antes de cadastrar o `SALES_API_TOKEN`. `GOOGLE_CALENDAR_REQUIRED=true` é intencional no Render: até configurar OAuth, o agente se recusa a confirmar horário sem gravar na agenda correta. Os lembretes só enviam com templates Meta aprovados, credenciais WhatsApp e consentimento da pessoa.
+
 ## Resultado esperado
 
 - Centralizar leads do site, LinkedIn Lead Gen Forms, indicações e importações autorizadas.

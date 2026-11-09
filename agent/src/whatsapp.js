@@ -70,11 +70,35 @@ export async function enviarTexto(para, texto) {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ messaging_product: "whatsapp", to: para, type: "text", text: { body: parte, preview_url: true } }),
+      signal: AbortSignal.timeout(8000),
     });
     if (!resposta.ok) {
-      throw new Error(`WhatsApp ${resposta.status}: ${await resposta.text()}`);
+      throw new Error(`WhatsApp ${resposta.status}`);
     }
   }
+}
+
+/** Envia template aprovado (necessário para mensagens iniciadas pela empresa fora da janela). */
+export async function enviarTemplate(para, nome, parametros, { fetchFn = fetch } = {}) {
+  const { token, idNumero, versaoGraph, idiomaTemplate } = config.whatsapp;
+  const destinatario = String(para ?? "").replace(/\D/g, "");
+  if (!whatsappConfigurado() || !/^\d{8,15}$/.test(destinatario) || !/^[a-z0-9_]{1,512}$/.test(String(nome ?? ""))) {
+    throw new Error("WhatsApp template configuration invalid");
+  }
+  const variaveis = parametros.map((valor) => ({ type: "text", text: String(valor ?? "").replace(/[\r\n\u0000-\u001f]/g, " ").slice(0, 500) }));
+  const resposta = await fetchFn(`https://graph.facebook.com/${versaoGraph}/${idNumero}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: destinatario,
+      type: "template",
+      template: { name: nome, language: { code: idiomaTemplate }, components: [{ type: "body", parameters: variaveis }] },
+    }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!resposta.ok) throw new Error(`WhatsApp template ${resposta.status}`);
+  return resposta.json();
 }
 
 /** Marca a mensagem como lida (os dois tiques azuis). Falhas aqui não interrompem o atendimento. */
@@ -86,6 +110,7 @@ export async function marcarComoLida(idMensagem) {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       // typing_indicator mostra "digitando..." para o cliente enquanto a Blue prepara a resposta
       body: JSON.stringify({ messaging_product: "whatsapp", status: "read", message_id: idMensagem, typing_indicator: { type: "text" } }),
+      signal: AbortSignal.timeout(4000),
     });
   } catch {
     /* ignorado */

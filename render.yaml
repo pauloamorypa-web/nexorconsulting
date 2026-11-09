@@ -18,6 +18,28 @@ services:
         value: https://nexorconsultingit.com.br,https://www.nexorconsultingit.com.br,https://pauloamorypa-web.github.io
       - key: REPORT_TOKEN
         generateValue: true
+      - key: SALES_ENABLED
+        value: "false"
+      - key: SALES_API_TOKEN
+        sync: false
+      - key: TRUSTED_PROXY_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_CALENDAR_ID
+        sync: false
+      - key: GOOGLE_CALENDAR_REQUIRED
+        value: "true"
+      - key: WHATSAPP_REMINDER_24H_TEMPLATE
+        sync: false
+      - key: WHATSAPP_REMINDER_30M_TEMPLATE
+        sync: false
+      - key: WHATSAPP_TEMPLATE_LANGUAGE
+        value: pt_BR
       - key: META_PIXEL_ID
         sync: false
       - key: META_CAPI_TOKEN
