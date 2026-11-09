@@ -338,14 +338,16 @@ export function criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia
 
     // Descadastro de campanhas sem depender da IA
     if (ev.tipo === "text" && SAIR.test(ev.texto)) {
-      repo.atualizarContato(empresa.id, contato.id, { opt_out: true });
+      // SAIR / PARAR: retira o opt-in de marketing na hora (registrado com data e origem)
+      repo.atualizarContato(empresa.id, contato.id, { opt_out: true, marketing_optin: false, marketing_optin_origem: `WhatsApp: respondeu "${String(ev.texto).trim().slice(0, 40)}"` });
       nota(empresa.id, conversa.id, "🔕 O cliente pediu para não receber campanhas.");
       await enviar({ empresa_id: empresa.id, conversa, contato, autor: "sistema", tipo: "texto", dados: { texto: "Pronto, você não vai mais receber nossas mensagens promocionais. Se quiser voltar a receber, é só escrever *voltar a receber*. Para qualquer dúvida, estamos por aqui." } }).catch(() => {});
       emitirConversa(empresa.id, conversa.id);
       return;
     }
-    if (ev.tipo === "text" && VOLTAR.test(ev.texto) && contato.opt_out) {
-      repo.atualizarContato(empresa.id, contato.id, { opt_out: false });
+    if (ev.tipo === "text" && VOLTAR.test(ev.texto) && (contato.opt_out || !contato.marketing_optin)) {
+      // Pedido explícito do próprio contato: vale como opt-in
+      repo.atualizarContato(empresa.id, contato.id, { opt_out: false, marketing_optin: true, marketing_optin_origem: `WhatsApp: respondeu "${String(ev.texto).trim().slice(0, 40)}"` });
       nota(empresa.id, conversa.id, "🔔 O cliente voltou a aceitar campanhas.");
     }
 

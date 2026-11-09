@@ -409,6 +409,8 @@ export function criarNucleo({ repo, cofre, cfg, clienteIA, fetchFn = fetch, agor
       repo.atualizar("empresas", null, e.id, { config: { ...e.config, ultima_rotina: h } });
       resultado.push({ empresa: e.id, pendencias: pend, tarefas, cobrados });
     }
+    // Expurgo LGPD por prazo de guarda (a API registra repo.expurgoLgpd; cada escritório roda uma vez por dia)
+    if (repo.expurgoLgpd && !bloqueado()) await repo.expurgoLgpd().catch((e) => console.error("[lgpd]", e.message));
     return resultado;
   }
 

@@ -6,7 +6,7 @@ import { OCUPA, REGRAS_PADRAO, cabe, faz, horariosLivres } from "../regras/agend
 import { assinaturaValida, cicloDe, cicloDeRetorno, cobertura } from "../regras/clube.js";
 import { diasEntre, hojeBR, horaBR, paraMs, quando, somarDias } from "../regras/datas.js";
 import { gerarToken, sha256 } from "../seguranca.js";
-import { acaoAsaas, criarAsaas, criarSms, criarWhatsApp, normalizarFone } from "./canais.js";
+import { PEDIDO_DE_SAIDA, acaoAsaas, criarAsaas, criarSms, criarWhatsApp, mesmoFone, normalizarFone } from "./canais.js";
 
 export class ErroRegra extends Error {
   constructor(status, mensagem) {
@@ -581,6 +581,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     const r = b.config.regras;
     const t = agora();
     const res = { lembretes: 0, retornos: 0, ofertas_vencidas: 0, assinaturas_atrasadas: 0 };
+    // Expurgo LGPD por prazo de guarda (a API registra repo.expurgoLgpd; roda uma vez por dia)
+    if (repo.expurgoLgpd) res.lgpd = ((await repo.expurgoLgpd().catch((e) => (console.error("[lgpd]", e.message), []))) ?? []).reduce((s, x) => s + x.total, 0);
 
     // Lembrete X horas antes
     const prox = repo.lista("agendamentos", "WHERE status = 'agendado' AND lembrete_em IS NULL AND inicio > ? AND inicio <= ?", t, t + r.lembrete_horas * 3600_000);
@@ -611,7 +613,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     const hora = horaBR(t);
     if (b.config.retorno?.ativo !== false && hora >= "10:00" && hora <= "19:00") {
       const margem = Number(b.config.retorno?.margem_dias ?? 2);
-      const candidatos = repo.lista("clientes", "WHERE ativo = 1 AND aceita_mensagens = 1 AND fone IS NOT NULL AND ciclo_dias IS NOT NULL AND ultima_visita IS NOT NULL AND retorno_avisado_em IS NULL");
+      // Mensagem de retorno é promocional: só para quem deu opt-in de marketing (LGPD art. 8º)
+      const candidatos = repo.lista("clientes", "WHERE ativo = 1 AND aceita_mensagens = 1 AND marketing_optin = 1 AND fone IS NOT NULL AND ciclo_dias IS NOT NULL AND ultima_visita IS NOT NULL AND retorno_avisado_em IS NULL");
       for (const c of candidatos.slice(0, 40)) {
         const passaram = diasEntre(c.ultima_visita, hojeBR(t));
         if (passaram < c.ciclo_dias + margem) continue;
@@ -622,6 +625,19 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
       }
     }
     return res;
+  }
+
+  /** Resposta no WhatsApp: "SAIR", "PARAR" (e variações) retira o opt-in de marketing do cliente daquele número.
+      Devolve true quando era um pedido de saída. Chamada pelo webhook do WhatsApp. */
+  function mensagemRecebida(fone, texto) {
+    if (!PEDIDO_DE_SAIDA.test(String(texto ?? ""))) return false;
+    const b = barbearia();
+    const n = normalizarFone(fone);
+    const c = b && repo.lista("clientes", "WHERE barbearia_id = ? AND fone IS NOT NULL", b.id).find((x) => mesmoFone(x.fone, n));
+    if (!c) return true;
+    if (c.marketing_optin) repo.atualizar("clientes", c.id, { marketing_optin: false, marketing_optin_em: agora(), marketing_optin_origem: `WhatsApp: respondeu "${String(texto).trim().slice(0, 40)}"` });
+    repo.auditar(b.id, "WhatsApp", "optin_retirado", { cliente: c.id });
+    return true;
   }
 
   /** Evento para a agenda do celular (.ics) */
@@ -669,6 +685,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     vagaPorToken,
     aceitarVaga,
     rotina,
+    mensagemRecebida,
     ics,
     linkApp,
   };

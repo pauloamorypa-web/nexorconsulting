@@ -3,6 +3,7 @@
 import { definirAoDeslogar, get, post } from "./api.js";
 import { acao, aviso, avatar, h, icone, limpar } from "./ui.js";
 import { formulario } from "./comum.js";
+import { caixaAceite, telaTermos } from "./lgpd.js";
 
 const TODOS = ["dono", "admin", "recepcao", "barbeiro"];
 const EQUIPE = ["dono", "admin", "recepcao"];
@@ -173,14 +174,17 @@ function login(st) {
         { nome: "email", rotulo: "E-mail", tipo: "email", obrigatorio: true, largura: 2 },
         { nome: "senha", rotulo: "Senha", tipo: "senha", obrigatorio: true, largura: 2 },
       ]);
+  // Cadastro: aceite dos termos, desmarcado por padrão (gravado com versão, data e IP)
+  const aceite = cadastro ? caixaAceite() : null;
   const b = h("button", { class: "btn btn-primario btn-grande", type: "submit" }, cadastro ? "Criar a barbearia" : "Entrar");
   const form = h(
     "form",
-    { class: "login-form", onsubmit: (e) => (e.preventDefault(), acao(b, async () => (await post(cadastro ? "/cadastro" : "/entrar", f.ler()), location.reload()))) },
+    { class: "login-form", onsubmit: (e) => (e.preventDefault(), acao(b, async () => (await post(cadastro ? "/cadastro" : "/entrar", cadastro ? { ...f.ler(), aceite_termos: aceite.marcado() } : f.ler()), location.reload()))) },
     h("img", { src: "/img/logo-mark.webp", alt: "", width: 48, height: 48, class: "login-logo" }),
     h("h1", {}, cadastro ? "Vamos abrir a sua barbearia" : "Entrar no Nexor Barber"),
     h("p", { class: "suave" }, cadastro ? "Já criamos 4 serviços de exemplo e o expediente padrão. Você muda tudo depois." : "Acesso do dono, da recepção e dos barbeiros."),
     f.el,
+    aceite?.el,
     b,
     h("p", { class: "suave pequeno centro" }, "É cliente da barbearia? ", h("a", { href: "/app/" }, "Agende pelo app")),
   );
@@ -217,6 +221,8 @@ async function iniciar() {
   const st = await get("/estado").catch(() => ({ logado: false }));
   if (!st.logado) return login(st);
   await recarregarEu();
+  // LGPD: versão nova dos termos (ou usuário convidado no primeiro acesso) → aceite antes do painel
+  if (estado.eu.termos?.pendente) return limpar(app, telaTermos(estado.eu.termos, () => location.reload()));
   limpar(app, layout());
   await recarregarEu();
   window.addEventListener("hashchange", renderizarRota);

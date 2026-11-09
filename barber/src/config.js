@@ -1,6 +1,8 @@
 /* Configuração do Nexor Barber, lida das variáveis de ambiente (ver .env.exemplo).
    O que a barbearia muda sozinha (horários, serviços, planos, WhatsApp, SMS, Google, Asaas) fica no painel. */
 
+import { lerPrazos } from "./lgpd/motor.js";
+import { PRAZOS_PADRAO } from "./lgpd/mapa.js";
 import { configNexor } from "./nexor/central.js";
 
 const numero = (v, padrao) => {
@@ -25,6 +27,10 @@ export function lerConfig(env = process.env) {
     asaas: { producao: "https://api.asaas.com/v3", sandbox: "https://api-sandbox.asaas.com/v3" },
     google: { certificados: env.GOOGLE_CERTS_URL ?? "https://www.googleapis.com/oauth2/v3/certs" },
     limites: { tentativasLogin: 8, codigosPorHora: 5 },
+    // Termos de Uso e Política de Privacidade: mudou a versão, todo usuário do painel aceita de novo
+    termos: { versao: env.TERMOS_VERSAO || "2026-11-09", url: env.TERMOS_URL || "https://nexorconsultingit.com.br/privacidade.html" },
+    // LGPD: prazos de guarda por tipo de dado (meses); o expurgo roda uma vez por dia dentro da rotina
+    lgpd: { prazos: lerPrazos(PRAZOS_PADRAO, env.LGPD_PRAZOS) },
     // De quanto em quanto tempo a rotina roda (lembretes, lista de espera, retorno, assinaturas)
     rotinaMin: numero(env.ROTINA_MINUTOS, 5),
     nexor: configNexor(env),

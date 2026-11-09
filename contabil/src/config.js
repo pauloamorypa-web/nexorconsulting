@@ -1,5 +1,7 @@
 /* Configuração do Nexor Contábil, lida das variáveis de ambiente (ver .env.exemplo). */
 
+import { lerPrazos } from "./lgpd/motor.js";
+import { PRAZOS_PADRAO } from "./lgpd/mapa.js";
 import { configNexor } from "./nexor/central.js";
 
 const numero = (v, padrao) => {
@@ -32,6 +34,10 @@ export function lerConfig(env = process.env) {
       tamanhoArquivo: numero(env.MAX_UPLOAD_MB, 20) * 1024 * 1024,
       tentativasLogin: 8,
     },
+    // Termos de Uso e Política de Privacidade: mudou a versão, todo usuário do painel aceita de novo
+    termos: { versao: env.TERMOS_VERSAO || "2026-11-09", url: env.TERMOS_URL || "https://nexorconsultingit.com.br/privacidade.html" },
+    // LGPD: prazos de guarda por tipo de dado (meses); o expurgo roda uma vez por dia dentro da rotina
+    lgpd: { prazos: lerPrazos(PRAZOS_PADRAO, env.LGPD_PRAZOS) },
     // Hora (Brasília) em que a rotina diária cobra documentos e gera tarefas
     horaRotina: numero(env.ROTINA_HORA, 9),
     nexor: configNexor(env),

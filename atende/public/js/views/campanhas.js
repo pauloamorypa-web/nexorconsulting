@@ -168,7 +168,7 @@ async function novaCampanha(depois) {
         campo("Modelo aprovado", modelo),
         varsArea,
         campo("Imagem do cabeçalho", cabecalho),
-        h("div", {}, h("span", { class: "campo-rotulo" }, "Público"), h("p", { class: "suave pequeno" }, "Sem filtros = todos os contatos que aceitam campanhas."), tags.length ? h("div", { class: "nuvem" }, etiquetas.map(([t, c]) => h("label", { class: "chip clicavel" }, c, t))) : null, h("div", { class: "nuvem" }, etapas.map(([e, c]) => h("label", { class: "chip clicavel" }, c, ETAPA_ROTULO[e]))), h("p", {}, "Vai para: ", publico)),
+        h("div", {}, h("span", { class: "campo-rotulo" }, "Público"), h("p", { class: "suave pequeno" }, "Só recebe quem deu opt-in de marketing (marcado na ficha do contato, importado com a coluna optin ou pedido pelo próprio cliente) e não respondeu SAIR ou PARAR. Sem filtros = todos esses."), tags.length ? h("div", { class: "nuvem" }, etiquetas.map(([t, c]) => h("label", { class: "chip clicavel" }, c, t))) : null, h("div", { class: "nuvem" }, etapas.map(([e, c]) => h("label", { class: "chip clicavel" }, c, ETAPA_ROTULO[e]))), h("p", {}, "Vai para: ", publico)),
         campo("Quando", quando),
         dataHoraEntrada,
       ),

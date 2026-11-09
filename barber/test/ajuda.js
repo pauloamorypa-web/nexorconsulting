@@ -112,7 +112,7 @@ export function criarCliente(url) {
 /** Barbearia pronta: dono logado, WhatsApp e SMS configurados, um segundo barbeiro */
 export async function barbeariaPronta(s) {
   const dono = s.cliente();
-  const c = await dono.post("/api/cadastro", { barbearia: "Barbearia Navalha", nome: "Rafael Dono", email: "dono@navalha.test", senha: "senha-forte-1", tambem_corta: true });
+  const c = await dono.post("/api/cadastro", { aceite_termos: true, barbearia: "Barbearia Navalha", nome: "Rafael Dono", email: "dono@navalha.test", senha: "senha-forte-1", tambem_corta: true });
   if (c.status !== 200) throw new Error(JSON.stringify(c.dados));
   await dono.put("/api/canais", { whatsapp: { id_numero: "999", token: "tk-meta", segredo: "seg-meta" }, sms: { sid: "AC1", token: "tk-sms", de: "+15550001" }, google: { client_id: GOOGLE_CLIENT } });
   const servicos = (await dono.get("/api/servicos")).dados;

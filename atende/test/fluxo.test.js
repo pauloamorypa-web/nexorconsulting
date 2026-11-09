@@ -8,7 +8,7 @@ describe("conta e segurança", async () => {
 
   test("primeiro acesso cria a empresa e o dono", async () => {
     assert.equal((await t.chamar("GET", "/api/estado")).dados.primeiroAcesso, true);
-    const r = await t.chamar("POST", "/api/cadastro", { empresa: "Clínica Sorriso", nome: "Rita", email: "rita@x.com", senha: "12345678x" });
+    const r = await t.chamar("POST", "/api/cadastro", { aceite_termos: true, empresa: "Clínica Sorriso", nome: "Rita", email: "rita@x.com", senha: "12345678x" });
     assert.equal(r.status, 200);
     const eu = await t.chamar("GET", "/api/eu");
     assert.equal(eu.dados.usuario.papel, "dono");
@@ -18,7 +18,7 @@ describe("conta e segurança", async () => {
 
   test("depois do primeiro acesso o cadastro fecha", async () => {
     t.sair();
-    const r = await t.chamar("POST", "/api/cadastro", { empresa: "Outra", nome: "X", email: "x@x.com", senha: "12345678x" });
+    const r = await t.chamar("POST", "/api/cadastro", { aceite_termos: true, empresa: "Outra", nome: "X", email: "x@x.com", senha: "12345678x" });
     assert.equal(r.status, 403);
   });
 

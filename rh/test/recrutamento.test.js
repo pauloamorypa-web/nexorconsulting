@@ -21,7 +21,7 @@ let s, rh, empresaId, vaga;
 before(async () => {
   s = await subir({ fetchFn });
   rh = s.cliente();
-  await rh.post("/api/cadastro", { razao_social: "Recruta Ltda", nome_fantasia: "Recruta", cnpj: "11222333000181", nome: "Ana", email: "ana@r.com", senha: "senha-forte-1" });
+  await rh.post("/api/cadastro", { aceite_termos: true, razao_social: "Recruta Ltda", nome_fantasia: "Recruta", cnpj: "11222333000181", nome: "Ana", email: "ana@r.com", senha: "senha-forte-1" });
   vaga = (await rh.post("/api/vagas", { titulo: "Atendente", descricao: "Atender clientes", requisitos: "Ensino médio", salario: "R$ 2.100 a R$ 2.400", local: "Uberlândia", estado: "MG", tipo_contrato: "clt" })).dados;
   empresaId = (await rh.get("/api/eu")).dados.empresa.id;
 });

@@ -231,7 +231,8 @@ const ACOES = {
       ...(d.valor_estimado !== undefined ? { valor_estimado: Math.round(d.valor_estimado * 100) } : {}),
       ...(d.etiquetas ? { tags: [...(ctx.contato.tags ?? []), ...d.etiquetas] } : {}),
       ...(Object.keys(campos).length ? { campos } : {}),
-      ...(d.nao_receber_campanhas !== undefined ? { opt_out: d.nao_receber_campanhas } : {}),
+      // A IA só registra o pedido de NÃO receber; o opt-in vem do painel, do CSV ou do próprio contato ("quero receber")
+      ...(d.nao_receber_campanhas !== undefined ? { opt_out: d.nao_receber_campanhas, ...(d.nao_receber_campanhas ? { marketing_optin_origem: "IA: cliente pediu para não receber" } : {}) } : {}),
     };
     if (simulacao) {
       ctx.contato = { ...ctx.contato, ...novo, campos: { ...ctx.contato.campos, ...campos } };

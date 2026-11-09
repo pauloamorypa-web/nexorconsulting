@@ -17,6 +17,9 @@ export function mesmoFone(a, b) {
   return Boolean(x && y && x.slice(2, 4) === y.slice(2, 4) && x.slice(-8) === y.slice(-8));
 }
 
+/** Resposta que pede para parar de receber mensagens promocionais (SAIR, PARAR, STOP, descadastrar...) */
+export const PEDIDO_DE_SAIDA = /^\s*(parar|pare|sair|stop|cancelar inscri[cç][aã]o|n[aã]o quero (mais )?receber( mensagens)?|descadastrar)\s*[.!]*\s*$/i;
+
 export function assinaturaMetaValida(corpo, assinatura, segredo) {
   if (!segredo || !assinatura?.startsWith("sha256=")) return false;
   const esperado = Buffer.from(createHmac("sha256", segredo).update(corpo).digest("hex"));

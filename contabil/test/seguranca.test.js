@@ -11,7 +11,7 @@ let s, eq, cliA, cliB, portalA, entregaB, docB;
 before(async () => {
   s = await subir();
   eq = s.cliente();
-  await eq.post("/api/cadastro", { razao_social: "Contábil Exemplo Ltda", cnpj: CNPJ_ESCRITORIO, nome: "Marta", email: "marta@contabil.com", senha: "senha-forte-1" });
+  await eq.post("/api/cadastro", { aceite_termos: true, razao_social: "Contábil Exemplo Ltda", cnpj: CNPJ_ESCRITORIO, nome: "Marta", email: "marta@contabil.com", senha: "senha-forte-1" });
   cliA = (await eq.post("/api/clientes", { razao_social: "Padaria A", cnpj: CNPJ_PADARIA, regime: "simples" })).dados;
   cliB = (await eq.post("/api/clientes", { razao_social: "Mercado B", cnpj: CNPJ_MERCADO, regime: "presumido" })).dados;
   const conv = await eq.post(`/api/clientes/${cliA.id}/portal`, { nome: "Ana", email: "ana@a.com" });
@@ -53,6 +53,7 @@ test("perfil equipe não mexe nas configurações nem na equipe", async () => {
   await eq.post("/api/usuarios", { nome: "João", email: "joao@contabil.com", senha: "senha-forte-2", papel: "equipe", departamento: "fiscal" });
   const joao = s.cliente();
   assert.equal((await joao.post("/api/entrar", { email: "joao@contabil.com", senha: "senha-forte-2" })).status, 200);
+  await joao.post("/api/termos/aceite", { aceito: true });
   assert.equal((await joao.get("/api/clientes")).status, 200);
   assert.equal((await joao.put("/api/canais", { email: { chave: "x" } })).status, 403);
   assert.equal((await joao.post("/api/usuarios", { nome: "X", email: "x@x.com", senha: "senha-forte-3", papel: "admin", departamento: "geral" })).status, 403);
@@ -90,9 +91,9 @@ test("instalação em produção exige o código de instalação para criar o pr
   const p = await subir({ cfg: { producao: true, urlPublica: "https://contabil.teste", codigoInstalacao: "ABCD2345" } });
   try {
     const c = p.cliente();
-    const dados = { razao_social: "X Ltda", cnpj: CNPJ_ESCRITORIO, nome: "X", email: "x@x.com", senha: "senha-forte-1" };
+    const dados = { aceite_termos: true, razao_social: "X Ltda", cnpj: CNPJ_ESCRITORIO, nome: "X", email: "x@x.com", senha: "senha-forte-1" };
     assert.equal((await c.post("/api/cadastro", dados)).status, 403);
-    assert.equal((await c.post("/api/cadastro", { ...dados, codigo_instalacao: "ABCD2345" })).status, 200);
+    assert.equal((await c.post("/api/cadastro", { aceite_termos: true, ...dados, codigo_instalacao: "ABCD2345" })).status, 200);
     assert.equal((await s.cliente().post("/api/cadastro", dados)).status, 403, "e só o primeiro");
   } finally {
     p.fechar();

@@ -30,6 +30,8 @@ export async function api(caminho, { metodo = "GET", corpo, bruto, tipo, cabecal
   const ehJson = (r.headers.get("content-type") ?? "").includes("json");
   const dados = ehJson ? await r.json() : await r.text();
   if (r.status === 401 && !caminho.startsWith("/entrar") && !caminho.startsWith("/estado")) aoDeslogar();
+  // Termos de uso mudaram durante o uso: recarrega para mostrar a tela de aceite
+  if (r.status === 428) location.reload();
   if (!r.ok) throw new ErroApi(r.status, dados);
   return dados;
 }

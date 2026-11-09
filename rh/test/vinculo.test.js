@@ -26,7 +26,7 @@ test("código digitado no painel vincula na hora, sem copiar token", async () =>
   const rh = await subir({ cfg: { urlPublica: "https://rh.exemplo.com.br", nexor: { central: urlCentral, codigo: "" } } });
   try {
     const adm = rh.cliente();
-    await adm.post("/api/cadastro", { razao_social: "Exemplo Ltda", cnpj: "11.222.333/0001-81", nome: "Ana", email: "ana@ex.com", senha: "senha-forte-1" });
+    await adm.post("/api/cadastro", { aceite_termos: true, razao_social: "Exemplo Ltda", cnpj: "11.222.333/0001-81", nome: "Ana", email: "ana@ex.com", senha: "senha-forte-1" });
     assert.equal((await adm.get("/api/eu")).dados.licenca.vinculado, false);
     assert.equal((await adm.post("/api/nexor/vincular", { codigo: "NX-ERRA-DO00" })).status, 400);
     // a pessoa digita em minúsculas e sem hífen: funciona

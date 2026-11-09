@@ -12,6 +12,7 @@ import { normalizarFone } from "../servicos/canais.js";
 import { criarRoteador, falha } from "./roteador.js";
 import { COOKIE_PAINEL, centavos, clientePublico, configPublica, cor, dia, email, hora, id, op, pct, senha, t, tabelaHorario, usuarioPublico, validar } from "./validacao.js";
 import { rotasApp } from "./app.js";
+import { rotasLgpd } from "./rotas-lgpd.js";
 
 const ADM = { papeis: ["dono", "admin"] };
 const EQUIPE = { papeis: ["dono", "admin", "recepcao"] };
@@ -260,12 +261,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     if (filtro === "aniversario") lista = lista.filter((c) => c.nascimento?.slice(5, 7) === h.slice(5, 7));
     return lista.slice(0, 300).map((c) => ({ ...clientePublico(c), assinante: assinantes.has(c.id), sumido: comRisco(c), dias_desde: c.ultima_visita ? diasEntre(c.ultima_visita, h) : null }));
   });
-  const ESQ_CLIENTE = z.object({ nome: t(120), fone: foneOpc, email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: dia.optional().nullable().or(z.literal("").transform(() => null)), observacoes: op(1000), aceita_mensagens: z.boolean().optional() });
+  const ESQ_CLIENTE = z.object({ nome: t(120), fone: foneOpc, email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: dia.optional().nullable().or(z.literal("").transform(() => null)), observacoes: op(1000), aceita_mensagens: z.boolean().optional(), marketing_optin: z.boolean().optional() });
+  /** Opt-in de marketing marcado no painel: grava quando e quem marcou (só quando muda) */
+  const comOptin = (ctx, d, atual) => (d.marketing_optin === undefined || d.marketing_optin === Boolean(atual?.marketing_optin) ? d : { ...d, marketing_optin_em: agora(), marketing_optin_origem: `painel: ${ctx.usuario.nome}` });
   r.post("/api/clientes", EQUIPE, async (ctx) => {
     const d = validar(ESQ_CLIENTE, await ctx.corpo());
     if (d.fone && repo.um("SELECT 1 FROM clientes WHERE fone = ?", d.fone)) falha(409, "Já existe um cliente com este celular.");
     auditar(ctx, "cliente_criado", { nome: d.nome });
-    return clientePublico(repo.inserir("clientes", { ...d, barbearia_id: ctx.barbearia.id }));
+    return clientePublico(repo.inserir("clientes", { ...comOptin(ctx, d, null), barbearia_id: ctx.barbearia.id }));
   });
   r.get("/api/clientes/:id", (ctx) => {
     const c = exigir("clientes", ctx.params.id, "Cliente");
@@ -278,8 +281,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const c = exigir("clientes", ctx.params.id, "Cliente");
     const d = validar(ESQ_CLIENTE.partial().extend({ ativo: z.boolean().optional() }), await ctx.corpo());
     if (d.fone && repo.um("SELECT 1 FROM clientes WHERE fone = ? AND id <> ?", d.fone, c.id)) falha(409, "Já existe um cliente com este celular.");
-    auditar(ctx, "cliente_alterado", { cliente: c.id });
-    return clientePublico(repo.atualizar("clientes", c.id, d));
+    auditar(ctx, "cliente_alterado", { cliente: c.id, ...(d.marketing_optin !== undefined && d.marketing_optin !== c.marketing_optin ? { marketing_optin: d.marketing_optin } : {}) });
+    return clientePublico(repo.atualizar("clientes", c.id, comOptin(ctx, d, c)));
   });
 
   /* ---------- Serviços e barbeiros ---------- */
@@ -619,5 +622,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
 
   const app = rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google });
+  // LGPD: aceite dos termos, exportação e exclusão de clientes, prazos e expurgo
+  rotasLgpd({ r, repo, cfg, agora });
   return { roteador: r, sessaoPainel, sessaoCliente: app.sessaoCliente };
 }

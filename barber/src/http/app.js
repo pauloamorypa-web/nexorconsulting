@@ -146,8 +146,10 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
   });
 
   r.put("/api/app/eu", APP, async (ctx) => {
-    const d = validar(z.object({ nome: t(120).refine((v) => v.toLowerCase() !== "cliente", "digite o seu nome").optional(), email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: dia.optional().nullable().or(z.literal("").transform(() => null)), aceita_mensagens: z.boolean().optional(), preferencias: op(300) }), await ctx.corpo());
-    return clientePublico(repo.atualizar("clientes", ctx.cliente.id, d));
+    const d = validar(z.object({ nome: t(120).refine((v) => v.toLowerCase() !== "cliente", "digite o seu nome").optional(), email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: dia.optional().nullable().or(z.literal("").transform(() => null)), aceita_mensagens: z.boolean().optional(), marketing_optin: z.boolean().optional(), preferencias: op(300) }), await ctx.corpo());
+    // Opt-in de marketing marcado pelo próprio cliente no app: grava data e origem
+    const optin = d.marketing_optin !== undefined && d.marketing_optin !== ctx.cliente.marketing_optin ? { marketing_optin_em: agora(), marketing_optin_origem: "app do cliente" } : {};
+    return clientePublico(repo.atualizar("clientes", ctx.cliente.id, { ...d, ...optin }));
   });
 
   /** Quem entrou com Google confirma o celular com um código (para lembretes e para não duplicar cadastro) */

@@ -248,7 +248,7 @@ const json = (v, padrao) => {
 /* Converte linhas do banco em objetos com os campos JSON já lidos */
 const ler = {
   empresa: (r) => r && { ...r, config: json(r.config, {}) },
-  contato: (r) => r && { ...r, tags: json(r.tags, []), campos: json(r.campos, {}), opt_out: Boolean(r.opt_out) },
+  contato: (r) => r && { ...r, tags: json(r.tags, []), campos: json(r.campos, {}), opt_out: Boolean(r.opt_out), marketing_optin: Boolean(r.marketing_optin) },
   conversa: (r) => r && { ...r, analise: json(r.analise, null) },
   mensagem: (r) => r && { ...r, conteudo: json(r.conteudo, {}) },
   modelo: (r) => r && { ...r, componentes: json(r.componentes, []) },
@@ -316,6 +316,10 @@ export function abrirBanco(caminho) {
   db.exec(ESQUEMA);
   // Usuário "Suporte Nexor" (entra só pelo link da Nexor Central) e itens escondidos pelo Suporte
   if (!db.prepare("PRAGMA table_info(usuarios)").all().some((c) => c.name === "nexor")) db.exec("ALTER TABLE usuarios ADD COLUMN nexor INTEGER NOT NULL DEFAULT 0");
+  // Opt-in de marketing (LGPD art. 8º): consentimento por contato, com data e origem. Desmarcado por padrão,
+  // inclusive nos contatos que já existiam: campanha só vai para quem tem o consentimento registrado.
+  const colsContato = new Set(db.prepare("PRAGMA table_info(contatos)").all().map((c) => c.name));
+  for (const [c, def] of [["marketing_optin", "INTEGER NOT NULL DEFAULT 0"], ["marketing_optin_em", "INTEGER"], ["marketing_optin_origem", "TEXT"]]) if (!colsContato.has(c)) db.exec(`ALTER TABLE contatos ADD COLUMN ${c} ${def}`);
   db.exec("CREATE TABLE IF NOT EXISTS nexor_ajustes (empresa_id TEXT PRIMARY KEY, ocultos TEXT NOT NULL DEFAULT '[]', atualizado_por TEXT, atualizado_em INTEGER)");
 
   const cache = new Map();
@@ -518,8 +522,11 @@ export function abrirBanco(caminho) {
       const c = repo.contato(empresa_id, id);
       if (!c) return null;
       const tags = campos.tags ?? c.tags;
+      // Pedir para sair das campanhas também retira o opt-in
+      const optin = campos.opt_out === true ? false : campos.marketing_optin !== undefined ? Boolean(campos.marketing_optin) : c.marketing_optin;
+      const mudouOptin = optin !== c.marketing_optin;
       rodar(
-        `UPDATE contatos SET nome = ?, email = ?, tags = ?, campos = ?, etapa = ?, valor_estimado = ?, pontuacao = ?, opt_out = ?, atualizado_em = ? WHERE id = ?`,
+        `UPDATE contatos SET nome = ?, email = ?, tags = ?, campos = ?, etapa = ?, valor_estimado = ?, pontuacao = ?, opt_out = ?, marketing_optin = ?, marketing_optin_em = ?, marketing_optin_origem = ?, atualizado_em = ? WHERE id = ?`,
         campos.nome !== undefined ? campos.nome : c.nome,
         campos.email !== undefined ? campos.email : c.email,
         JSON.stringify([...new Set(tags.map((t) => String(t).trim().toLowerCase()).filter(Boolean))].slice(0, 30)),
@@ -528,6 +535,10 @@ export function abrirBanco(caminho) {
         campos.valor_estimado !== undefined ? campos.valor_estimado : c.valor_estimado,
         campos.pontuacao !== undefined ? Math.max(0, Math.min(100, Math.round(campos.pontuacao))) : c.pontuacao,
         campos.opt_out !== undefined ? (campos.opt_out ? 1 : 0) : c.opt_out ? 1 : 0,
+        // Opt-in muda só quando vem com valor diferente do atual; aí grava quando e de onde veio
+        optin ? 1 : 0,
+        mudouOptin ? agora() : c.marketing_optin_em,
+        mudouOptin ? String(campos.marketing_optin_origem ?? "painel").slice(0, 120) : c.marketing_optin_origem,
         agora(),
         id,
       );
@@ -556,9 +567,10 @@ export function abrirBanco(caminho) {
       const itens = todos(`SELECT * FROM contatos WHERE ${where} ORDER BY atualizado_em DESC LIMIT ? OFFSET ?`, ...p, limite, deslocamento).map(ler.contato);
       return { total, itens };
     },
-    /** Contatos para campanhas: respeita quem pediu para não receber */
+    /** Contatos para campanhas: só com opt-in de marketing, e respeita quem pediu para não receber */
     contatosParaCampanha(empresa_id, { tags = [], etapas = [] } = {}) {
-      const cond = ["empresa_id = ?", "opt_out = 0"];
+      // Só quem deu opt-in de marketing e não pediu para sair
+      const cond = ["empresa_id = ?", "opt_out = 0", "marketing_optin = 1"];
       const p = [empresa_id];
       if (tags.length) {
         cond.push(`EXISTS (SELECT 1 FROM json_each(contatos.tags) WHERE value IN (${tags.map(() => "?").join(",")}))`);

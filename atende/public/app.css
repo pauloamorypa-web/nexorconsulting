@@ -613,3 +613,8 @@ audio { max-width: 280px; height: 40px; }
 .suspenso-acoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .nexor-grupo { display: grid; gap: 8px; }
 .nexor-grupo h3 { margin: 6px 0 2px; font-size: 14px; }
+
+/* LGPD: botões da ficha da pessoa e caixa de aceite dos termos */
+.acoes-lgpd { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.aceite-termos { align-items: flex-start; gap: 8px; margin: 4px 0 12px; font-size: 14px; line-height: 1.4; }
+.aceite-termos input { margin-top: 3px; }

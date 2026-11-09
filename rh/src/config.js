@@ -1,5 +1,7 @@
 /* Configuração do Nexor RH, lida das variáveis de ambiente (ver .env.example). */
 
+import { lerPrazos } from "./lgpd/motor.js";
+import { PRAZOS_PADRAO } from "./lgpd/mapa.js";
 import { configNexor } from "./nexor/central.js";
 
 const numero = (v, padrao) => {
@@ -36,6 +38,10 @@ export function lerConfig(env = process.env) {
     },
     // Nexor Central: licença (situação do contrato), saúde da instalação, acesso de suporte e vinculação pelo código
     nexor: configNexor(env),
+    // Termos de Uso e Política de Privacidade: mudou a versão, todo usuário do painel aceita de novo
+    termos: { versao: env.TERMOS_VERSAO || "2026-11-09", url: env.TERMOS_URL || "/privacidade.html" },
+    // LGPD: prazos de guarda por tipo de dado (meses) e rotina diária de expurgo
+    lgpd: { prazos: lerPrazos(PRAZOS_PADRAO, env.LGPD_PRAZOS), rotina: env.LGPD_ROTINA !== "false" },
     limites: { tamanhoArquivo: 10 * 1024 * 1024, tentativasLogin: 8 },
     // App nativo nas lojas (página /baixar e links que abrem o app a partir do QR Code)
     apps: {

@@ -26,7 +26,7 @@ before(async () => {
 after(() => s.fechar());
 
 test("cadastro da empresa e configuração inicial", async () => {
-  let r = await rh.post("/api/cadastro", { razao_social: "Empresa Teste Ltda", nome_fantasia: "Loja Teste", cnpj: "11.222.333/0001-81", nome: "Ana RH", email: "ana@teste.com", senha: "senha-forte-1" });
+  let r = await rh.post("/api/cadastro", { aceite_termos: true, razao_social: "Empresa Teste Ltda", nome_fantasia: "Loja Teste", cnpj: "11.222.333/0001-81", nome: "Ana RH", email: "ana@teste.com", senha: "senha-forte-1" });
   assert.equal(r.status, 200, JSON.stringify(r.dados));
   r = await rh.get("/api/eu");
   assert.equal(r.dados.usuario.papel, "admin");
@@ -37,7 +37,7 @@ test("cadastro da empresa e configuração inicial", async () => {
   assert.ok(estab && !("qr_segredo" in estab));
   r = await rh.put(`/api/estabelecimentos/${estab.id}`, { lat: -23.5505, lng: -46.6333, raio_m: 150, exige_gps: true });
   assert.equal(r.status, 200);
-  r = await rh.post("/api/cadastro", { razao_social: "X", cnpj: "11222333000181", nome: "X", email: "x@x.com", senha: "12345678" });
+  r = await rh.post("/api/cadastro", { aceite_termos: true, razao_social: "X", cnpj: "11222333000181", nome: "X", email: "x@x.com", senha: "12345678" });
   assert.equal(r.status, 403, "segundo cadastro fechado por padrão");
 });
 
@@ -310,6 +310,7 @@ test("perfil gestor só vê a própria equipe", async () => {
   await rh.post("/api/colaboradores", { nome: "Eva Costa", cpf: "39053344705", admissao: "2026-01-05", salario_centavos: 250000, departamento_id: deps[1].id });
   const g = s.cliente();
   assert.equal((await g.post("/api/entrar", { email: "gil@teste.com", senha: "senha-gestor" })).status, 200);
+  await g.post("/api/termos/aceite", { aceito: true });
   const lista = (await g.get("/api/colaboradores")).dados;
   assert.deepEqual(lista.map((c) => c.nome), ["Dora Silva"]);
   assert.equal((await g.post("/api/folhas/calcular", { competencia: "2026-10" })).status, 403);

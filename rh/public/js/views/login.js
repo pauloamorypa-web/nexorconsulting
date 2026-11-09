@@ -3,6 +3,7 @@
 import { post } from "../api.js";
 import { acao, h, icone, limpar } from "../ui.js";
 import { formulario } from "../comum.js";
+import { caixaAceite } from "../lgpd.js";
 
 const DESTAQUES = [
   ["digital", "Ponto com biometria do celular ou QR Code", "O colaborador registra em 2 toques. Digital ou rosto conferidos pelo próprio aparelho, com cerca de GPS."],
@@ -29,6 +30,8 @@ export function renderLogin(raiz, estado, aoEntrar) {
             { nome: "senha", rotulo: "Senha", tipo: "senha", obrigatorio: true, largura: 2, ajuda: "Mínimo de 8 caracteres." },
             ...(estado.exigeCodigo ? [{ nome: "codigo_instalacao", rotulo: "Código de instalação", obrigatorio: true, largura: 2, ajuda: "Fornecido pela Nexor na implantação (arquivo codigo-instalacao.txt do servidor)." }] : []),
           ]);
+    // Cadastro: aceite dos termos, desmarcado por padrão (gravado com versão, data e IP)
+    const aceite = modo === "cadastro" ? caixaAceite() : null;
     const botao = h("button", { class: "btn btn-primario btn-grande", type: "submit" }, modo === "entrar" ? "Entrar" : "Criar conta da empresa");
     const form = h(
       "form",
@@ -37,7 +40,7 @@ export function renderLogin(raiz, estado, aoEntrar) {
         onsubmit: (e) => {
           e.preventDefault();
           acao(botao, async () => {
-            await post(modo === "entrar" ? "/entrar" : "/cadastro", f.ler());
+            await post(modo === "entrar" ? "/entrar" : "/cadastro", modo === "entrar" ? f.ler() : { ...f.ler(), aceite_termos: aceite.marcado() });
             aoEntrar();
           });
         },
@@ -46,6 +49,7 @@ export function renderLogin(raiz, estado, aoEntrar) {
       h("h1", {}, modo === "entrar" ? "Entrar no Nexor RH" : "Vamos cadastrar sua empresa"),
       h("p", { class: "suave" }, modo === "entrar" ? "Acesso do RH, administradores e gestores." : "Depois você convida o RH e os gestores."),
       f.el,
+      aceite?.el,
       botao,
       !estado.primeiroAcesso && estado.cadastroAberto ? h("button", { type: "button", class: "btn-link", onclick: () => ((modo = modo === "entrar" ? "cadastro" : "entrar"), desenhar()) }, modo === "entrar" ? "Cadastrar nova empresa" : "Já tenho conta") : null,
       h("p", { class: "suave pequeno centro" }, "É colaborador? ", h("a", { href: "/app/" }, "Abra o app de ponto")),
