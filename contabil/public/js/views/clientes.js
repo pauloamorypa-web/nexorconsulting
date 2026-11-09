@@ -4,6 +4,7 @@ import { del, get, post, put } from "../api.js";
 import { abas, acao, aviso, confirmar, copiarTexto, dataHora, h, janela, limpar, reais } from "../ui.js";
 import { botao, cnpjBR, competenciaAnterior, dataBR, formulario, mesBR, tabela, topo } from "../comum.js";
 import { TIPOS_ESPERADO, nomeCliente, prazo, sit } from "../base.js";
+import { botoesTitular } from "../lgpd.js";
 
 let ctxAtual;
 export async function render(raiz, ctx, [id, aba]) {
@@ -88,9 +89,11 @@ async function detalhe(raiz, id, aba) {
   limpar(corpo, await (telas[aba] ?? dados)(c, () => ir(aba)));
 }
 
-function dados(c) {
+function dados(c, recarregar) {
   const linha = (r, v) => [h("dt", {}, r), h("dd", {}, v || "—")];
-  return h("section", { class: "cartao" }, h("dl", { class: "dados-lidos" }, linha("Contato", c.contato_nome), linha("WhatsApp", c.whatsapp), linha("E-mail", c.email), linha("Município", [c.municipio, c.uf].filter(Boolean).join("/")), linha("Funcionários", c.tem_funcionarios ? "Sim" : "Não"), linha("ICMS", c.contribuinte_icms ? "Contribuinte" : "Não"), linha("Serviços (ISS)", c.presta_servico ? "Sim" : "Não"), linha("Honorário", c.honorario_centavos ? reais(c.honorario_centavos) : ""), linha("Régua de cobrança", c.cobrar ? "Ligada" : "Desligada"), linha("Observações", c.observacoes)));
+  // LGPD (arts. 18 e 19): só dono e administrador exportam ou excluem os dados do cliente
+  const lgpd = ctxAtual.pode("dono", "admin") ? h("div", { class: "pilha" }, h("h3", {}, "Dados pessoais (LGPD)"), h("p", { class: "suave pequeno" }, "A exclusão apaga portal, WhatsApp e chamados e anonimiza o contato. Documentos fiscais, guias, obrigações e lançamentos ficam bloqueados até o fim do prazo legal."), botoesTitular("cliente", c.id, c.contato_nome || nomeCliente(c), { aoExcluir: recarregar, aviso: c.ativo ? `${nomeCliente(c)} ainda está ativo: desative o cliente (Editar) antes de pedir a exclusão. Continuar mesmo assim?` : undefined })) : null;
+  return h("section", { class: "cartao" }, lgpd, h("dl", { class: "dados-lidos" }, linha("Contato", c.contato_nome), linha("WhatsApp", c.whatsapp), linha("E-mail", c.email), linha("Município", [c.municipio, c.uf].filter(Boolean).join("/")), linha("Funcionários", c.tem_funcionarios ? "Sim" : "Não"), linha("ICMS", c.contribuinte_icms ? "Contribuinte" : "Não"), linha("Serviços (ISS)", c.presta_servico ? "Sim" : "Não"), linha("Honorário", c.honorario_centavos ? reais(c.honorario_centavos) : ""), linha("Régua de cobrança", c.cobrar ? "Ligada" : "Desligada"), linha("Observações", c.observacoes)));
 }
 
 function esperados(c, recarregar) {
@@ -148,7 +151,7 @@ function portal(c, recarregar) {
         { titulo: "WhatsApp", valor: (p) => p.whatsapp ?? "—" },
         { titulo: "Situação", valor: (p) => (!p.ativo ? sit("dispensado", "Bloqueado") : p.convite_pendente ? sit("pendente", "Convite enviado") : sit("recebido", "Ativo")) },
         { titulo: "Último acesso", valor: (p) => (p.ultimo_acesso ? dataHora(p.ultimo_acesso) : "—") },
-        { titulo: "", valor: (p) => h("div", { class: "acoes-linha" }, botao("Novo convite", (e) => acao(e.currentTarget, async () => mostrarLink(await post(`/portal-usuarios/${p.id}/convite`))), "btn-fantasma btn-pequeno"), botao(p.ativo ? "Bloquear" : "Liberar", (e) => acao(e.currentTarget, async () => (await put(`/portal-usuarios/${p.id}`, { ativo: !p.ativo }), recarregar())), "btn-fantasma btn-pequeno")) },
+        { titulo: "", valor: (p) => h("div", { class: "acoes-linha" }, botao("Novo convite", (e) => acao(e.currentTarget, async () => mostrarLink(await post(`/portal-usuarios/${p.id}/convite`))), "btn-fantasma btn-pequeno"), botao(p.ativo ? "Bloquear" : "Liberar", (e) => acao(e.currentTarget, async () => (await put(`/portal-usuarios/${p.id}`, { ativo: !p.ativo }), recarregar())), "btn-fantasma btn-pequeno"), ctxAtual.pode("dono", "admin") ? botoesTitular("contato", p.id, p.nome, { aoExcluir: recarregar }) : null) },
       ],
       c.portal,
       { vazio: "Ninguém desta empresa tem acesso ainda." },

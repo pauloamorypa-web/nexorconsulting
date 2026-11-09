@@ -11,6 +11,7 @@ import { CATALOGO, chaveValida } from "../nexor/politica.js";
 import { criarRoteador, falha, lerCorpo } from "./roteador.js";
 import { COOKIE_PAINEL, centavos, competencia, data, documentoFiscal, email, enviarArquivo, escritorioPublico, fone, nomeArquivo, op, portalPublico, senha, t, usuarioPublico, validar } from "./validacao.js";
 import { rotasPortal } from "./portal.js";
+import { rotasLgpd } from "./rotas-lgpd.js";
 
 const ADM = { papeis: ["dono", "admin"] };
 const DEP = z.enum(Object.keys(DEPARTAMENTOS));
@@ -663,5 +664,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
 
   const portal = rotasPortal({ r, repo, nucleo, cfg, agora, limitar, cookie });
+  // LGPD: aceite dos termos, exportação e exclusão de clientes e contatos, prazos e expurgo
+  rotasLgpd({ r, repo, nucleo, cfg, agora });
   return { roteador: r, sessaoPainel, sessaoPortal: portal.sessaoPortal };
 }

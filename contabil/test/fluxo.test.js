@@ -11,7 +11,7 @@ let s, eq, cli, portal;
 before(async () => {
   s = await subir({ agora, ia: iaFalsa() });
   eq = s.cliente();
-  assert.equal((await eq.post("/api/cadastro", { razao_social: "Contábil Exemplo Ltda", nome_fantasia: "Contábil Exemplo", cnpj: CNPJ_ESCRITORIO, nome: "Marta Lima", email: "marta@contabil.com", senha: "senha-forte-1" })).status, 200);
+  assert.equal((await eq.post("/api/cadastro", { aceite_termos: true, razao_social: "Contábil Exemplo Ltda", nome_fantasia: "Contábil Exemplo", cnpj: CNPJ_ESCRITORIO, nome: "Marta Lima", email: "marta@contabil.com", senha: "senha-forte-1" })).status, 200);
   const canais = await eq.put("/api/canais", { whatsapp: { token: "EAAtokenfalso", id_numero: "1234567890", segredo_app: "segredo-meta", verificacao: "verifica-123" }, email: { chave: "re_chave", remetente: "Contábil Exemplo <nao-responda@contabil.com>" } });
   assert.equal(canais.status, 200, JSON.stringify(canais.dados));
   assert.equal(canais.dados.config.whatsapp.token, true, "o token não volta para o navegador");

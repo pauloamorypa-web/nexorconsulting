@@ -18,7 +18,7 @@ before(async () => {
   cliCentral = central.repo.inserir("clientes", { razao_social: "Contábil Exemplo Ltda", cnpj: CNPJ_ESCRITORIO, regras: {}, codigo: novoCodigo() });
   s = await subir({ cfg: { nexor: { central: `http://localhost:${central.servidor.address().port}`, codigo: "" } } });
   eq = s.cliente();
-  await eq.post("/api/cadastro", { razao_social: "Contábil Exemplo Ltda", cnpj: CNPJ_ESCRITORIO, nome: "Marta", email: "marta@contabil.com", senha: "senha-forte-1" });
+  await eq.post("/api/cadastro", { aceite_termos: true, razao_social: "Contábil Exemplo Ltda", cnpj: CNPJ_ESCRITORIO, nome: "Marta", email: "marta@contabil.com", senha: "senha-forte-1" });
   await eq.put("/api/canais", { whatsapp: { token: "EAAx", id_numero: "1234567890", segredo_app: "segredo-meta" } });
   cli = (await eq.post("/api/clientes", { razao_social: "Padaria", cnpj: CNPJ_PADARIA, regime: "simples", whatsapp: "34999990001" })).dados;
   const conv = await eq.post(`/api/clientes/${cli.id}/portal`, { nome: "Rosa", email: "rosa@p.com" });
