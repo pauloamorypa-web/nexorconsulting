@@ -1,7 +1,46 @@
 # Guia de instalação dos sistemas Nexor
 
-Para técnicos da Nexor. Cobre todos os cenários de cliente e os dois casos de endereço (com e sem domínio).
-Tempo médio: **40 a 90 minutos** por empresa.
+Para técnicos da Nexor. Cobre os cinco sistemas (Nexor RH e Ponto, Nexor Contábil, Nexor Barber, Nexor Atende IA e Nexor Agente), todos os cenários de cliente e os dois casos de endereço (com e sem domínio).
+Tempo médio: **40 a 90 minutos** por empresa, mais a configuração do produto com o cliente.
+
+**Atualizado em novembro de 2026:**
+- teste grátis de 30 dias pela Nexor Central;
+- vinculação pelo código do cliente (`NX-XXXX-XXXX`);
+- Contábil, Barber, Atende e Agente no mesmo instalador;
+- checklist de entrega com segurança e LGPD.
+
+---
+
+## Fluxo padrão de um cliente novo
+
+**1. Na Nexor Central.** Cadastre o cliente em **Clientes → Novo cliente**.
+- **Para começar pelo teste grátis,** escolha "Começar no teste grátis de 30 dias" e o produto.
+- **Se ele já fechou,** use **Contratar plano** (fundador, se for o caso).
+- Copie o **código do cliente** (`NX-XXXX-XXXX`).
+
+**2. No servidor do cliente.** Instale com `instalar.sh` (seção 3) e informe o código quando ele pedir. O sistema aparece na Central na hora, já com licença e acesso de suporte.
+
+**3. Com o cliente.** Configure o produto (seção 4) e faça o teste de aceite.
+
+**4. Durante o teste.** O sistema mostra a faixa com os dias que faltam e funciona com as limitações do produto. A Central avisa em "Precisa de atenção" quando faltam 7 dias.
+
+**5. Contratação.** Na Central, use **Contratar plano**. Isso faz quatro coisas sozinho:
+- libera tudo em até 5 minutos;
+- gera a fatura de implantação;
+- começa as mensalidades;
+- registra o vendedor e o parceiro, que passam a receber comissão.
+
+**6. Sem contratação.** No dia seguinte ao último dia, o sistema bloqueia. Os dados ficam guardados por 60 dias. No RH, o ponto e os arquivos legais continuam funcionando.
+
+| Limitações do teste grátis | |
+|---|---|
+| Nexor RH e Ponto | até 10 colaboradores, sem eSocial e recrutamento |
+| Nexor Atende IA | até 30 conversas com a IA por dia, sem campanhas |
+| Nexor Contábil | até 5 empresas na carteira e 100 documentos no mês |
+| Nexor Barber | até 2 barbeiros e 150 agendamentos no mês, sem relatórios |
+| Nexor Agente | até 10 ações aprovadas por dia |
+
+A tabela de preços, o teste e as comissões estão em [`comercial/PLANOS-E-PRECOS.md`](../comercial/PLANOS-E-PRECOS.md).
 
 ---
 
@@ -12,13 +51,25 @@ Tempo médio: **40 a 90 minutos** por empresa.
 | **Onde roda** | A. servidor Linux · B. servidor Windows · C. mini PC novo · D. nuvem (VPS) · E. notebook · F. servidor da Nexor | Veja a seção 1 |
 | **Endereço (domínio)** | `rh.empresadocliente.com.br` **ou** `empresa.nexorconsultingit.com.br` | **A biometria fica presa ao endereço.** Trocar depois obriga todos os colaboradores a cadastrar a digital de novo. Decida antes. |
 | **Identificador da empresa** | ex.: `padaria-pao-dourado` | Letras minúsculas, números e hífen |
+| **Sistemas** | `rh`, `contabil`, `barber` (variável `SISTEMAS`) e `atende`, `agente` (variável `PERFIS`) | Pode ter mais de um na mesma empresa, cada um com o seu endereço |
 
-**Leve ou tenha em mãos:**
+**Leve ou tenha em mãos (todos os sistemas):**
 - acesso de administrador ao servidor;
 - conta na Cloudflare (a da Nexor ou a do cliente);
-- o cofre de senhas da Nexor, para guardar a chave mestra;
-- o número do registro do REP-P no INPI;
-- o certificado A1 do cliente (para o eSocial).
+- o cofre de senhas da Nexor, para guardar as chaves mestras;
+- o **código do cliente na Nexor Central** (`NX-XXXX-XXXX`).
+
+**Por sistema:**
+
+| Sistema | O que providenciar antes |
+|---|---|
+| **RH e Ponto** | Número do registro do REP-P no INPI. Certificado A1 do cliente para o eSocial (só depois da contratação: no teste, o eSocial fica travado) |
+| **Contábil** | Chave da Anthropic **no nome do escritório**. Número de WhatsApp para a API oficial da Meta. Layout de importação do sistema contábil do escritório. Veja [`contabil/MANUAL-IMPLANTACAO.md`](../contabil/MANUAL-IMPLANTACAO.md) |
+| **Barber** | Número de WhatsApp para a API oficial. Opcionais: conta Twilio para SMS, projeto Google para "Entrar com Google" e conta Asaas para o clube. Veja [`barber/MANUAL-IMPLANTACAO.md`](../barber/MANUAL-IMPLANTACAO.md) |
+| **Atende IA** | Número de WhatsApp para a API oficial e a chave da Anthropic no nome do cliente. Informações da empresa: produtos, preços, horários e regras |
+| **Agente** | Chave da Anthropic, números dos donos autorizados, WhatsApp da API oficial e acesso de API aos sistemas que serão conectados |
+
+**Chaves e tokens:** nunca peça para o cliente mandar por WhatsApp ou e-mail. Ele digita direto no servidor ou no painel, ou você copia do cofre da Nexor.
 
 ---
 
@@ -35,7 +86,15 @@ Tempo médio: **40 a 90 minutos** por empresa.
 
 **Recomendação:** D ou A primeiro. **E só como solução temporária**, com o cliente avisado por escrito dos riscos: notebook desligado significa ponto parado, e notebook perdido ou roubado leva o banco junto se não houver cópia externa. **F muda a LGPD:** a Nexor passa a guardar os dados (veja a seção 6).
 
-**Requisitos mínimos (só Nexor RH):** 2 núcleos, 4 GB de RAM (2 GB livres para a Nexor), 20 GB livres em SSD, internet estável. Com Atende IA e Agente: 8 GB de RAM.
+**Requisitos mínimos:**
+
+| Instalação | Processador | Memória | Disco (SSD) |
+|---|---|---|---|
+| Um sistema (RH, Contábil ou Barber) | 2 núcleos | 4 GB (2 GB livres para a Nexor) | 20 GB livres |
+| Dois ou três sistemas | 2 a 4 núcleos | 8 GB | 40 GB livres |
+| Com Atende IA e Agente | 4 núcleos | 8 GB | 40 GB livres |
+
+O **Contábil** guarda os documentos dos clientes do escritório: conte de 5 a 20 GB a mais por ano, conforme a carteira. Em todos os casos é preciso internet estável.
 
 ---
 
@@ -79,7 +138,17 @@ O app do colaborador e a biometria **exigem HTTPS**. O jeito padrão da Nexor é
 4. **Public Hostname** → **Add**:
    - **Subdomain:** `rh` (ou `paodourado`, se for no domínio da Nexor)
    - **Domain:** o domínio
-   - **Service:** **HTTP** · `rh:8791`
+   - **Service:** **HTTP** e o serviço do sistema:
+
+     | Sistema | Service no túnel | Exemplo de endereço |
+     |---|---|---|
+     | RH e Ponto | `rh:8791` | `rh.paodourado.com.br` |
+     | Contábil | `contabil:8793` | `contabil.limacontabilidade.com.br` |
+     | Barber | `barber:8795` | `agenda.barbearianavalha.com.br` |
+     | Atende IA | `atende:8790` | `atendimento.empresa.com.br` |
+     | Agente | `agente:8792` | `agente.empresa.com.br` (só o webhook do WhatsApp) |
+
+   Com mais de um sistema, adicione um **Public Hostname por sistema** no mesmo túnel.
 5. **Save**. O token vai ser pedido pelo `instalar.sh`.
 
 **Segurança:** guarde o token no cofre da Nexor. Quem tem o token consegue publicar no lugar do servidor. Se ele vazar, recrie o túnel.
@@ -95,7 +164,24 @@ sudo git clone https://github.com/pauloamorypa-web/nexorconsulting.git /opt/nexo
 cd /opt/nexor/implantacao
 sudo ./instalar.sh
 ```
-O script instala o Docker, pergunta o identificador da empresa, o endereço e o token do túnel, gera a chave mestra e sobe o Nexor RH e o backup diário. **Guarde a `RH_MASTER_KEY` quando ele pedir.**
+O script instala o Docker e pergunta:
+- o identificador da empresa;
+- os **sistemas** (`rh`, `contabil`, `barber`);
+- o endereço de cada um;
+- o token do túnel;
+- o **código do cliente na Nexor Central**.
+
+Depois, gera as chaves mestras e sobe os sistemas, cada um com o backup diário. **Guarde as chaves mestras (`*_MASTER_KEY`) no cofre quando ele pedir.**
+
+Atalhos:
+```bash
+sudo SISTEMAS="rh" ./instalar.sh                    # só o Nexor RH e Ponto
+sudo SISTEMAS="contabil" ./instalar.sh              # só o Nexor Contábil
+sudo SISTEMAS="barber" ./instalar.sh                # só o Nexor Barber
+sudo SISTEMAS="rh barber" ./instalar.sh             # dois sistemas na mesma empresa
+sudo PERFIS="tunel atende agente" ./instalar.sh     # com Atende IA e Agente
+sudo PERFIS="caddy" ./instalar.sh                   # HTTPS com IP fixo e portas 80/443, sem túnel
+```
 
 Repositório privado: crie um *token de leitura* no GitHub (Settings → Developer settings → Fine-grained tokens, só leitura deste repositório) e clone com `https://TOKEN@github.com/pauloamorypa-web/nexorconsulting.git`.
 
@@ -194,9 +280,19 @@ Cada empresa roda isolada: projeto Docker, rede, volumes, backups e túnel próp
 
 ---
 
-## 4. Depois de instalar (todos os cenários)
+## 4. Depois de instalar
 
-1. **Primeiro administrador:** abra `https://ENDEREÇO` e preencha a empresa, o seu nome e o **código de instalação**. O código aparece no fim do `instalar.sh`. Se perdeu, veja com `docker compose exec rh cat /dados/codigo-instalacao.txt`.
+### 4.0 Para todos os sistemas
+1. **Primeiro administrador:** abra `https://ENDEREÇO` e preencha a empresa, o seu nome e o **código de instalação**. O código aparece no fim do `instalar.sh`. Se perdeu, veja com `docker compose exec SISTEMA cat /dados/codigo-instalacao.txt`, trocando `SISTEMA` por `rh`, `contabil` ou `barber`.
+2. **Vínculo com a Nexor Central:**
+   - **Se informou o código na instalação,** o sistema aparece em Central → Clientes → cliente → Sistemas instalados, com a situação "Teste grátis" ou "Em dia".
+   - **Se não informou,** digite o código em **Configurações → Nexor** dentro do sistema.
+   - **Confira o endereço:** na Central, ele precisa estar cadastrado no sistema para o botão "Entrar como Suporte Nexor" funcionar.
+3. **Backup externo (obrigatório):** veja o item 6 da seção 4.1. Ele vale para todos os sistemas, ajustando a pasta.
+4. **Contrato e termos de uso:** confira se o cliente assinou o contrato com a cláusula de tratamento de dados antes de liberar o uso com dados reais. Guarde a cópia na pasta do cliente.
+
+### 4.1 Nexor RH e Ponto
+1. Faça o primeiro acesso como na seção 4.0.
 2. **Configure o sistema:**
    - **Configurações → Empresa:** dados da empresa e **número do registro do REP-P no INPI**.
    - **Locais e quiosque:** marque cada local no mapa (GPS) e defina o raio. Gere o link do quiosque, se for usar.
@@ -213,6 +309,71 @@ Cada empresa roda isolada: projeto Docker, rede, volumes, backups e túnel próp
    No notebook (cenário E), use um HD externo ou um NAS em `DESTINO_EXTERNO`, ou a pasta do OneDrive ou Google Drive do cliente montada no Windows, acessível em `/mnt/c/...`.
 7. **Integrações (se houver Nexor Agente ou Atende IA):** no RH, vá em **Configurações → Integrações → Nova chave** → coloque em `NEXOR_RH_CHAVE` no `.env` → `sudo PERFIS="tunel agente" ./instalar.sh`.
 
+### 4.2 Nexor Contábil
+Siga o [manual do Contábil](../contabil/MANUAL-IMPLANTACAO.md) a partir da seção 4:
+1. **Dados do escritório e marca:** nome, logo e cores, que aparecem no portal e nas mensagens.
+2. **WhatsApp do escritório e e-mail de envio.**
+3. **Régua de cobrança** e catálogo de documentos por regime.
+4. **Catálogo de obrigações:** confira os prazos estaduais e municipais.
+5. **Layout de exportação e plano de contas** do sistema contábil do escritório.
+6. **Carteira:** importe ou cadastre as empresas. No teste grátis, o limite é de 5 empresas.
+7. **Portal:** convide um cliente piloto.
+
+Teste de aceite:
+- receber uma nota pelo portal;
+- conferir a leitura da IA;
+- exportar um lançamento;
+- cobrar um documento e ver a mensagem chegar.
+
+### 4.3 Nexor Barber
+Siga o [manual do Barber](../barber/MANUAL-IMPLANTACAO.md) a partir da seção 3:
+1. **Barbearia:** endereço, expediente, feriados, serviços e preços.
+2. **Barbeiros:** cada um com login próprio e percentual de comissão. No teste grátis, o limite é de 2 barbeiros.
+3. **Canais:**
+   - WhatsApp (obrigatório para lembretes e vaga relâmpago);
+   - SMS, Google e Asaas, se o cliente quiser.
+4. **Clube e produtos:** planos, estoque e estoque mínimo.
+
+Teste de aceite: um cliente de teste entra pelo app, agenda "o de sempre", reserva um produto, e a comanda é fechada no balcão. Por fim, divulgue o link do app com o QR Code no balcão.
+
+### 4.4 Nexor Atende IA
+1. Primeiro acesso no endereço do Atende.
+2. **Conhecimento da IA:** produtos, preços, horários, regras e perguntas frequentes. Teste no **Simulador** antes de ligar o WhatsApp.
+3. **WhatsApp (API oficial da Meta):**
+   - token, ID do número e segredo do app;
+   - webhook `https://ENDEREÇO/webhook/whatsapp`, com o campo **messages** assinado.
+4. **Equipe e transferência:** quem recebe as conversas que a IA passa adiante.
+5. **Agenda e funil,** se forem usados.
+
+Teste de aceite: mande 10 perguntas reais pelo WhatsApp e confira as respostas, a transferência e o registro no funil. No teste grátis, a IA atende até 30 conversas por dia.
+
+### 4.5 Nexor Agente
+1. No `.env`, preencha:
+   - `AGENTE_DONOS`: os números autorizados, com DDI e DDD;
+   - `AGENTE_WHATSAPP_*`;
+   - a chave da Anthropic.
+2. **Conectores:** edite `conectores.json` com os sistemas do cliente. As credenciais ficam em variáveis do `.env` (`${NOME}`), nunca no JSON. Comece com a escrita no modo `aprovar`.
+3. **Webhook do WhatsApp:** `https://ENDEREÇO/webhook/whatsapp`.
+4. Rode `sudo PERFIS="tunel agente" ./instalar.sh` para aplicar.
+
+Teste de aceite:
+- o dono faz uma consulta;
+- pede uma ação e recebe Aprovar e Recusar;
+- aprova e confere no sistema conectado;
+- um número não autorizado recebe a recusa.
+
+### 4.6 Checklist de entrega (todos os sistemas)
+- [ ] Sistema vinculado na Nexor Central, na situação certa (teste grátis ou contratado).
+- [ ] Chaves mestras e token do túnel no cofre da Nexor. Nenhuma chave enviada por WhatsApp ou e-mail.
+- [ ] Backup diário rodando e **um backup restaurado em teste**.
+- [ ] Backup externo configurado (HD, NAS ou nuvem do cliente).
+- [ ] `https://ENDEREÇO/health` respondendo pela rede 4G.
+- [ ] Primeiro administrador com senha forte. Nenhum usuário genérico, como "admin" ou "teste", ficou ativo.
+- [ ] Contrato e termos de uso assinados, com cópia guardada.
+- [ ] Contato do responsável pela LGPD do cliente anotado na Central (observações).
+- [ ] Cliente sabe como pedir suporte e em quanto tempo a Nexor responde.
+- [ ] No cenário E, termo de ciência dos riscos do notebook assinado.
+
 ---
 
 ## 5. Problemas comuns
@@ -227,11 +388,16 @@ Cada empresa roda isolada: projeto Docker, rede, volumes, backups e túnel próp
 | WSL não sobe sozinho após reiniciar | Tarefa sem senha ou a senha do Windows mudou | Rode `preparar-notebook.ps1` de novo |
 | `BACKUP FALHOU` no log do backup | Disco cheio ou permissão | `df -h`; `sudo chown 1000:1000 backups` |
 | Esqueci a chave mestra | — | **Não há recuperação.** Por isso ela vai para o cofre na instalação |
+| Sistema não aparece na Central | Código errado ou sem internet de saída | Confira em Configurações → Nexor. O servidor precisa acessar `central.nexorconsultingit.com.br` (porta 443) |
+| Faixa "Teste grátis" não some depois de contratar | A licença atualiza a cada 5 minutos | Espere 5 minutos ou, no RH, use Configurações → Nexor → "Sincronizar agora" |
+| "Não faz parte do teste grátis" ou "limite do teste" | Cliente ainda em teste | Contrate o plano na Central ou prorrogue o teste |
+| Contábil não lê documentos | Chave da Anthropic ausente ou sem crédito | Confira `ANTHROPIC_API_KEY` no `.env` e rode `sudo ./atualizar.sh` |
+| Barber não envia lembretes | WhatsApp não configurado ou modelo de mensagem não aprovado pela Meta | Configurações → Canais. Confira os modelos aprovados no Gerenciador do WhatsApp |
 
 Comandos úteis (na pasta `implantacao/`):
 ```bash
 docker compose ps                 # situação
-docker compose logs -f rh         # log do RH
+docker compose logs -f rh         # log do RH (ou contabil, barber, atende, agente)
 sudo ./backup-agora.sh            # backup na hora
 sudo ./atualizar.sh               # atualizar (faz backup antes)
 ```
