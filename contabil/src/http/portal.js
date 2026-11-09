@@ -6,7 +6,7 @@ import { conferirSenha, gerarHashSenha, gerarToken, sha256 } from "../seguranca.
 import { falha, lerCorpo } from "./roteador.js";
 import { COOKIE_PORTAL, competencia, email, enviarArquivo, nomeArquivo, senha, t, validar } from "./validacao.js";
 
-export function rotasPortal({ r, repo, nucleo, cfg, agora, limitar, cookie }) {
+export function rotasPortal({ r, repo, nucleo, cfg, agora, limitar, limites, cookie }) {
   const P = { portal: true };
   const HASH_FALSO = gerarHashSenha(gerarToken());
 
@@ -54,11 +54,14 @@ export function rotasPortal({ r, repo, nucleo, cfg, agora, limitar, cookie }) {
   });
   r.post("/api/portal/entrar", { publico: true }, async ({ corpo, res, ip }) => {
     const d = validar(z.object({ email, senha: z.string().min(1).max(200) }), await corpo());
-    limitar(`portal:${ip}`);
-    limitar(`portal:${d.email}`);
+    const tentativa = limites.tentativa("portal", { ip, conta: d.email }, cfg.limites.login);
     const p = repo.um("SELECT * FROM portal_usuarios WHERE email = ? AND ativo = 1", d.email);
     const ok = conferirSenha(d.senha, p?.senha_hash ?? HASH_FALSO);
-    if (!p || !ok) falha(401, "E-mail ou senha incorretos.");
+    if (!p || !ok) {
+      tentativa.falhou();
+      falha(401, "E-mail ou senha incorretos.");
+    }
+    tentativa.acertou();
     abrir(res, p);
     return { ok: true };
   });

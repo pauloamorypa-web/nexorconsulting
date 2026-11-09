@@ -5,12 +5,13 @@ import { z } from "zod";
 import { deSempre, proximosDias } from "../regras/clube.js";
 import { diasEntre, hojeBR, paraMs, somarDias } from "../regras/datas.js";
 import { gerarToken, sha256 } from "../seguranca.js";
+import { normalizarFone } from "../servicos/canais.js";
 import { falha } from "./roteador.js";
 import { COOKIE_CLIENTE, barbeiroPublico, clientePublico, cpf, dia, email, hora, id, op, t, validar } from "./validacao.js";
 
 const APP = { cliente: true };
 
-export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google }) {
+export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, limites, cookie, google }) {
   const hoje = () => hojeBR(agora());
 
   function sessaoCliente(cookies) {
@@ -51,6 +52,9 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
   r.post("/api/app/codigo", { publico: true }, async ({ corpo, ip }) => {
     const d = validar(z.object({ fone: z.string().max(30), canal: z.enum(["whatsapp", "sms"]) }), await corpo());
     limitar(`codigo:${ip}`, 10, 3600_000);
+    // Por celular: no máximo 5 códigos por hora (o banco confere de novo, caso o servidor tenha reiniciado)
+    const fone = normalizarFone(d.fone);
+    if (fone) limitar(`codigo:fone:${fone}`, cfg.limites.codigosPorHora, 3600_000);
     try {
       const r2 = await nucleo.enviarCodigo(d.fone, d.canal);
       return { ok: true, fone: `•••• ${r2.fone.slice(-4)}`, canal: r2.canal };
@@ -62,8 +66,16 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
 
   r.post("/api/app/verificar", { publico: true }, async ({ corpo, res, ip }) => {
     const d = validar(z.object({ fone: z.string().max(30), codigo: z.string().max(10) }), await corpo());
-    limitar(`verificar:${ip}`, 20);
-    const fone = nucleo.conferirCodigo(d.fone, d.codigo);
+    // Por IP conta toda verificação; por celular, 5 erros travam por 15 minutos (e o próprio código é cancelado no 5º erro)
+    const tentativa = limites.tentativa("verificar", { ip, conta: normalizarFone(d.fone) || d.fone }, cfg.limites.login);
+    let fone;
+    try {
+      fone = nucleo.conferirCodigo(d.fone, d.codigo);
+    } catch (e) {
+      if (e.status === 400) tentativa.falhou();
+      throw e;
+    }
+    tentativa.acertou();
     const b = nucleo.exigirBarbearia();
     let c = repo.lista("clientes", "WHERE fone = ?", fone)[0];
     const novo = !c;

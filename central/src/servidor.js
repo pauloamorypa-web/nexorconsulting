@@ -17,6 +17,7 @@ import { config as configPadrao } from "./config.js";
 import { abrirBanco, normalizarCodigo, novoCodigo } from "./db.js";
 import { conferirSenha, conferirTotp, criarAssinador, criarCofre, gerarHashSenha, gerarToken, iguais, novoSegredoTotp, sha256 } from "./seguranca.js";
 import { registrarComercial } from "./comercial.js";
+import { criarLimites } from "./http/limite.js";
 import { TESTE } from "./planos.js";
 import { conteudoLicenca, hojeBR, mensalidadesDevidas, situacaoCliente, somarDias } from "./regras.js";
 
@@ -137,17 +138,10 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   const repo = abrirBanco(caminhoBanco ?? join(cfg.pastaDados, "central.db"), agora);
   if (cfg.producao && !cfg.codigoInstalacao && repo.contarUsuarios() === 0) cfg = { ...cfg, codigoInstalacao: codigoDeInstalacao(cfg.pastaDados) };
   const asaas = criarAsaas({ cfg, fetchFn });
-  const tentativas = new Map();
   const HASH_FALSO = gerarHashSenha(gerarToken());
-
-  function limitar(chave, maximo = cfg.limites.tentativasLogin, janela = 15 * 60_000) {
-    const t0 = agora();
-    const l = (tentativas.get(chave) ?? []).filter((x) => t0 - x < janela);
-    if (l.length >= maximo) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
-    l.push(t0);
-    tentativas.set(chave, l);
-    if (tentativas.size > 10_000) tentativas.delete(tentativas.keys().next().value);
-  }
+  // Limite de tentativas em memória (processo único): 429 com Retry-After quando estoura
+  const limites = criarLimites({ agora });
+  const limitar = (chave, maximo = cfg.limites.tentativasLogin, janela = 15 * 60_000) => limites.contar(chave, maximo, janela);
 
   /* ---------- Regras aplicadas ---------- */
   const hoje = () => hojeBR(agora());
@@ -254,11 +248,14 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("POST", "/api/entrar", { publico: true }, async (ctx) => {
     const b = await ctx.corpo();
     const email = V.email(b.email, true);
-    limitar(`login:${ctx.ip}`);
-    limitar(`login:${email}`);
+    const tentativa = limites.tentativa("login", { ip: ctx.ip, conta: email }, cfg.limites.login);
     const u = repo.usuarioPorEmail(email);
     const ok = conferirSenha(String(b.senha ?? ""), u?.senha_hash ?? HASH_FALSO);
-    if (!u || !ok) falha(401, "E-mail ou senha incorretos.");
+    if (!u || !ok) {
+      tentativa.falhou();
+      falha(401, "E-mail ou senha incorretos.");
+    }
+    tentativa.acertou();
     return etapaTotp(ctx.res, u);
   });
 
@@ -278,11 +275,16 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("POST", "/api/totp", { publico: true }, async (ctx) => {
     const u = sessao(ctx.cookies);
     if (!u || u.sessao.fase !== "senha") falha(401, "Entre com e-mail e senha primeiro.");
-    limitar(`totp:${u.id}`, 6);
+    const tentativa = limites.tentativa("totp", { ip: ctx.ip, conta: u.id }, cfg.limites.login);
     const { codigo } = await ctx.corpo();
     const novo = !u.totp;
     const segredo = novo ? (u.sessao.totp_novo ? cofre.decifrar(u.sessao.totp_novo) : null) : cofre.decifrar(u.totp);
-    if (!conferirTotp(segredo, codigo, agora())) falha(401, "Código incorreto. Confira o horário do celular e tente o código novo.");
+    if (!conferirTotp(segredo, codigo, agora())) {
+      // 5 códigos errados: a etapa da senha acaba (volta para o login) e o 2FA da conta fica travado por 15 minutos
+      if (tentativa.falhou() >= cfg.limites.login.porConta) repo.rodar("DELETE FROM sessoes WHERE token_hash = ?", u.sessao.token_hash);
+      falha(401, "Código incorreto. Confira o horário do celular e tente o código novo.");
+    }
+    tentativa.acertou();
     if (novo) repo.atualizar("usuarios", u.id, { totp: cofre.cifrar(segredo) });
     repo.rodar("DELETE FROM sessoes WHERE token_hash = ?", u.sessao.token_hash);
     abrirSessao(ctx.res, u.id, "ok");
@@ -726,7 +728,8 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     } catch (err) {
       const status = err.status ?? 500;
       if (status >= 500) console.error("[central]", err);
-      json(res, status, { erro: status < 500 ? err.message : "Erro interno." });
+      // err.cabecalhos: o limite de tentativas manda o Retry-After junto com o 429
+      json(res, status, { erro: status < 500 ? err.message : "Erro interno." }, err.cabecalhos);
     }
   });
 

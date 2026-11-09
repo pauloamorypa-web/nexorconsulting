@@ -167,7 +167,9 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
       cookies,
       usuario,
       empresa,
-      // Cloudflare (na frente do Render) grava o IP real nesses cabeçalhos; X-Forwarded-For pode vir do visitante
+      // Cloudflare (na frente do Render) grava o IP real nesses cabeçalhos; X-Forwarded-For pode vir do visitante.
+      // É a chave por IP do limite de tentativas. Este produto não tem TRUST_PROXY: a leitura vale para o Render com
+      // Cloudflare. Instalado sem Cloudflare na frente, esses cabeçalhos podem ser forjados (o limite por conta continua).
       ip: String(req.headers["true-client-ip"] ?? req.headers["cf-connecting-ip"] ?? "").trim() || String(req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "").split(",")[0].trim(),
       corpo: async () => {
         if (lido === undefined) {
@@ -217,7 +219,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
       const status = ehIA ? 502 : (err.status ?? 500);
       if (status >= 500) console.error("[servidor]", err);
       const mensagem = ehIA ? "A IA está indisponível no momento. Tente de novo em instantes." : err instanceof ErroHttp || (err.status && err.status < 500) ? err.message : "Erro interno.";
-      json(res, status, { erro: mensagem, ...(err.codigo ? { codigo: err.codigo } : {}) });
+      // err.cabecalhos: o limite de tentativas manda o Retry-After junto com o 429
+      json(res, status, { erro: mensagem, ...(err.codigo ? { codigo: err.codigo } : {}) }, err.cabecalhos);
     }
   });
 

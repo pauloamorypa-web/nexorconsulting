@@ -37,7 +37,11 @@ export function lerConfig(env = process.env) {
       manter_ponto: true,
     },
     contato: { whatsapp: env.SUPPORT_WHATSAPP ?? "", email: env.SUPPORT_EMAIL ?? "contato@nexorconsultingit.com.br" },
-    limites: { tentativasLogin: 8 },
+    limites: {
+      tentativasLogin: 8, // demais rotas públicas por IP (cadastro, vincular) a cada 15 min
+      // Login com senha e 2FA (src/http/limite.js): por IP conta toda tentativa, por conta só as falhas
+      login: { porIp: numero(env.LIMITE_LOGIN_IP, 20), porConta: numero(env.LIMITE_LOGIN_CONTA, 5), janelaMs: 15 * 60_000 },
+    },
   };
 }
 

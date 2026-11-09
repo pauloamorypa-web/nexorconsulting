@@ -30,7 +30,9 @@ export function lerConfig(env = process.env) {
     email: { url: (env.EMAIL_API_URL ?? "https://api.resend.com/emails").replace(/\/$/, "") },
     limites: {
       tamanhoArquivo: numero(env.MAX_UPLOAD_MB, 20) * 1024 * 1024,
-      tentativasLogin: 8,
+      tentativasLogin: 8, // demais rotas públicas por IP (cadastro, convite, suporte, vincular) a cada 15 min
+      // Login do painel e do portal (src/http/limite.js): por IP conta toda tentativa, por conta só as falhas
+      login: { porIp: numero(env.LIMITE_LOGIN_IP, 20), porConta: numero(env.LIMITE_LOGIN_CONTA, 5), janelaMs: 15 * 60_000 },
     },
     // Hora (Brasília) em que a rotina diária cobra documentos e gera tarefas
     horaRotina: numero(env.ROTINA_HORA, 9),

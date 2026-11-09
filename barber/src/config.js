@@ -24,7 +24,12 @@ export function lerConfig(env = process.env) {
     sms: { url: (env.SMS_API_URL ?? "https://api.twilio.com").replace(/\/$/, "") },
     asaas: { producao: "https://api.asaas.com/v3", sandbox: "https://api-sandbox.asaas.com/v3" },
     google: { certificados: env.GOOGLE_CERTS_URL ?? "https://www.googleapis.com/oauth2/v3/certs" },
-    limites: { tentativasLogin: 8, codigosPorHora: 5 },
+    limites: {
+      tentativasLogin: 8, // demais rotas públicas por IP (cadastro, suporte, vincular) a cada 15 min
+      codigosPorHora: 5, // códigos de acesso enviados por celular
+      // Login com senha e verificação do código do app (src/http/limite.js): por IP conta toda tentativa, por conta só as falhas
+      login: { porIp: numero(env.LIMITE_LOGIN_IP, 20), porConta: numero(env.LIMITE_LOGIN_CONTA, 5), janelaMs: 15 * 60_000 },
+    },
     // De quanto em quanto tempo a rotina roda (lembretes, lista de espera, retorno, assinaturas)
     rotinaMin: numero(env.ROTINA_MINUTOS, 5),
     nexor: configNexor(env),
