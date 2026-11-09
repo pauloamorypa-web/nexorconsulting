@@ -1,8 +1,12 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
+import { readFile, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
 const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+const envPath = join(dirname(fileURLToPath(import.meta.url)), "..", ".env");
 if (!clientId) {
   console.error("Defina GOOGLE_CLIENT_ID no ambiente local (não no chat). ");
   process.exit(1);
@@ -71,9 +75,11 @@ server.on("request", async (req, res) => {
       if (typeof tokens.refresh_token !== "string" || !tokens.refresh_token) {
         throw new Error("O Google não retornou refresh token. Revogue o acesso de teste e repita com consentimento solicitado.");
       }
-      console.log("\nCopie o token abaixo diretamente para o segredo GOOGLE_REFRESH_TOKEN no Render. Não o envie por chat nem o salve no repositório.\n");
-      console.log(tokens.refresh_token);
-      console.log("\nO token foi mantido apenas na saída local do terminal; este script não grava arquivos.");
+      const envText = await readFile(envPath, "utf8");
+      const lines = envText.split(/\r?\n/).filter((line) => !/^GOOGLE_REFRESH_TOKEN\s*=/.test(line));
+      lines.push(`GOOGLE_REFRESH_TOKEN=${tokens.refresh_token}`);
+      await writeFile(envPath, `${lines.filter(Boolean).join("\n")}\n`, { encoding: "utf8", mode: 0o600 });
+      console.log("Refresh token gravado em agent/.env (arquivo ignorado pelo Git). Não copie para o chat.");
     } catch (error) {
       console.error(error instanceof Error ? error.message : "Falha ao concluir OAuth.");
       process.exitCode = 1;
