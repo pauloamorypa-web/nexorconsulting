@@ -63,6 +63,9 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
 .n-prod { display: flex; gap: 16px; flex-wrap: wrap; }
 .n-prod span { font: 600 32px "Space Grotesk"; padding: 18px 28px; border-radius: 20px; background: rgba(255, 255, 255, .08); border: 2px solid rgba(255, 255, 255, .18); }
 .n-faixa { position: absolute; top: 70px; right: -120px; transform: rotate(35deg); background: linear-gradient(90deg, #f59e0b, #f43f5e); color: #fff; font: 800 30px Inter; letter-spacing: .1em; padding: 16px 160px; box-shadow: 0 20px 40px rgba(0, 0, 0, .4); }
+.q { width: 1080px; height: 1080px; padding: 70px; display: flex; flex-direction: column; }
+.q .tela { margin-top: 36px; border-radius: 24px; overflow: hidden; border: 2px solid rgba(255, 255, 255, .16); flex: 1; }
+.q .tela img { width: 100%; height: 100%; object-fit: cover; object-position: top left; display: block; }
 </style>
 </head>
 <body>
@@ -132,6 +135,60 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
   </div>
   <p style="font-size:42px;line-height:1.35;margin-top:80px;color:#dbeafe">A IA faz o trabalho pesado. <b>A gente cuida de você.</b></p>
   <div style="margin-top:auto;display:flex;flex-direction:column;gap:20px;align-items:center"><span class="cta verde">Teste 30 dias grátis →</span><p style="font-size:30px;color:var(--suave)">nexorconsultingit.com.br</p></div>
+</section>
+
+
+<!-- ===================== CATÁLOGO (WhatsApp, Google, LinkedIn) 1080×1080 ===================== -->
+<section class="peca q n-fundo" id="cat-rh">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt="" style="height:52px"><span class="selo verde">30 dias grátis</span></div>
+  <p class="t" style="font-size:28px;font-weight:700;letter-spacing:.12em;color:#67e8f9;margin-top:40px">NEXOR RH E PONTO</p>
+  <h1 style="font-size:64px;line-height:1.02;margin-top:12px">Ponto pelo celular com <span class="grad">digital, rosto e QR Code.</span></h1>
+  <p style="font-size:30px;color:#dbeafe;margin-top:16px">Espelho, folha e eSocial no mesmo sistema</p>
+  <div class="tela"><img src="img/cat-rh.webp" alt="Tela real do Nexor RH e Ponto"></div>
+</section>
+<section class="peca q n-fundo" id="cat-atende">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt="" style="height:52px"><span class="selo verde">30 dias grátis</span></div>
+  <p class="t" style="font-size:28px;font-weight:700;letter-spacing:.12em;color:#67e8f9;margin-top:40px">NEXOR ATENDE IA</p>
+  <h1 style="font-size:64px;line-height:1.02;margin-top:12px">Seu WhatsApp <span class="grad">atendendo e vendendo 24h.</span></h1>
+  <p style="font-size:30px;color:#dbeafe;margin-top:16px">A IA responde, agenda e passa para a sua equipe</p>
+  <div class="tela"><img src="img/cat-atende.webp" alt="Tela real do Nexor Atende IA"></div>
+</section>
+<section class="peca q n-fundo" id="cat-contabil">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt="" style="height:52px"><span class="selo verde">30 dias grátis</span></div>
+  <p class="t" style="font-size:28px;font-weight:700;letter-spacing:.12em;color:#67e8f9;margin-top:40px">NEXOR CONTÁBIL</p>
+  <h1 style="font-size:64px;line-height:1.02;margin-top:12px">O escritório <span class="grad">no piloto automático.</span></h1>
+  <p style="font-size:30px;color:#dbeafe;margin-top:16px">Cobra, recebe e lê os documentos dos clientes</p>
+  <div class="tela"><img src="img/cat-contabil.webp" alt="Tela real do Nexor Contábil"></div>
+</section>
+<section class="peca q n-fundo" id="cat-barber">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt="" style="height:52px"><span class="selo verde">30 dias grátis</span></div>
+  <p class="t" style="font-size:28px;font-weight:700;letter-spacing:.12em;color:#67e8f9;margin-top:40px">NEXOR BARBER</p>
+  <h1 style="font-size:64px;line-height:1.02;margin-top:12px">A cadeira cheia <span class="grad">sem atender o telefone.</span></h1>
+  <p style="font-size:30px;color:#dbeafe;margin-top:16px">App do cliente, clube de assinatura e produtos</p>
+  <div class="tela"><img src="img/cat-barber.webp" alt="Tela real do Nexor Barber"></div>
+</section>
+<section class="peca q n-fundo" id="cat-agente">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt="" style="height:52px"><span class="selo verde">30 dias grátis</span></div>
+  <p class="t" style="font-size:28px;font-weight:700;letter-spacing:.12em;color:#67e8f9;margin-top:40px">NEXOR AGENTE</p>
+  <h1 style="font-size:64px;line-height:1.02;margin-top:12px">Sua IA no WhatsApp. <span class="grad">Você aprova.</span></h1>
+  <p style="font-size:30px;color:#dbeafe;margin-top:16px">Consulta e age no ERP, CRM e financeiro</p>
+  <div style="display:flex;flex-direction:column;gap:18px;margin-top:40px">
+    <div class="balao dir" style="font-size:32px">Cria um pedido de 40 caixas para o Mercado Bom Preço</div>
+    <div class="balao esq" style="font-size:32px;width:820px">🔐 Confirma? Criar pedido de <b>40 caixas</b> no ERP.<small>Aprovar · Recusar</small></div>
+  </div>
+  <div class="rod"><span class="cta verde">Testar 30 dias grátis →</span><span><b>nexorconsultingit.com.br</b></span></div>
+</section>
+<section class="peca q n-fundo" id="cat-sob-medida">
+  <div class="topo"><img class="logo" src="img/logo-lockup.webp" alt="" style="height:52px"><span class="selo ciano">Sob medida</span></div>
+  <p class="t" style="font-size:28px;font-weight:700;letter-spacing:.12em;color:#67e8f9;margin-top:40px">SISTEMAS, SITES E AUTOMAÇÃO</p>
+  <h1 style="font-size:70px;line-height:1.02;margin-top:12px">Do jeito que a sua empresa <span class="grad">já trabalha.</span></h1>
+  <div class="lista" style="margin-top:44px;font-size:34px">
+    <div><i>✓</i>ERP e CRM, loja virtual e sites</div>
+    <div><i>✓</i>Automação com IA nos processos</div>
+    <div><i>✓</i>Service Desk, Cofre de senhas e IT Platform</div>
+    <div><i>✓</i>O código e os dados ficam com você</div>
+  </div>
+  <div class="rod"><span class="cta">Diagnóstico gratuito →</span><span><b>nexorconsultingit.com.br</b></span></div>
 </section>
 
 <!-- ===================== BLUE ===================== -->
@@ -407,8 +464,8 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
 <!-- S4: LinkedIn banner -->
 <section class="peca" id="linkedin-capa" style="width:1584px;height:396px;padding:0 90px 0 520px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(110deg, #060b16 0%, #0a1630 45%, #12306b 100%)">
   <div style="display:flex;flex-direction:column;gap:16px">
-    <h1 style="font-size:58px;line-height:1.05">Tecnologia que <span class="grad">vende, atende</span><br>e organiza a sua empresa.</h1>
-    <p style="font-size:26px;color:var(--suave)">IA no WhatsApp · Sistemas · Lojas virtuais · Sites · TI</p>
+    <h1 style="font-size:60px;line-height:1.05">IA que trabalha.<br><span class="grad">Gente que cuida.</span></h1>
+    <p style="font-size:25px;color:var(--suave)">RH e Ponto · Contábil · Barber · Atende IA · Agente · Sistemas sob medida</p>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:14px"><img src="img/logo-lockup.webp" alt="" style="height:84px"><p style="font-size:24px;color:#dfe8f7">nexorconsultingit.com.br</p></div>
 </section>
@@ -416,8 +473,8 @@ h1, h2, h3, .t { font-family: "Space Grotesk", Inter, sans-serif; letter-spacing
 <!-- S4b: Capa da página da empresa no LinkedIn (1128x191; o logo cobre o canto inferior esquerdo) -->
 <section class="peca" id="linkedin-capa-pagina" style="width:1128px;height:191px;padding:0 56px 0 300px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(110deg, #060b16 0%, #0a1630 45%, #12306b 100%)">
   <div style="display:flex;flex-direction:column;gap:8px">
-    <h1 style="font-size:34px;line-height:1.08">Tecnologia que <span class="grad">vende, atende</span><br>e organiza a sua empresa.</h1>
-    <p style="font-size:15px;color:var(--suave)">IA no WhatsApp · Sistemas · Lojas virtuais · Sites · TI</p>
+    <h1 style="font-size:36px;line-height:1.06">IA que trabalha. <span class="grad">Gente que cuida.</span></h1>
+    <p style="font-size:15px;color:var(--suave)">RH e Ponto · Contábil · Barber · Atende IA · Agente · Teste 30 dias grátis</p>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px"><img src="img/logo-lockup.webp" alt="" style="height:46px"><p style="font-size:14px;color:#dfe8f7">nexorconsultingit.com.br</p></div>
 </section>

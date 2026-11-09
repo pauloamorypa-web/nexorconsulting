@@ -1,11 +1,12 @@
 # Kit de marketing da Nexor
 
-Peças prontas para postar, com legenda, hashtags e onde usar cada uma. As imagens estão em [`pecas/`](pecas/). Para mudar um texto ou criar novas versões, edite [`fonte/pecas.html`](fonte/pecas.html) (abre no navegador).
+Peças prontas para postar, com legenda, hashtags e onde usar cada uma. Os textos do Google, do LinkedIn, do WhatsApp Business e das bios estão em [`CANAIS.md`](CANAIS.md). As imagens estão em [`pecas/`](pecas/). Para mudar um texto ou criar novas versões, edite [`fonte/pecas.html`](fonte/pecas.html) (abre no navegador).
 
 Regra de ouro: toda peça leva para o site (teste grátis de 30 dias, programa de fundadores ou lista de espera) ou para o WhatsApp. Os números de mercado citados vêm das fontes indicadas no site. As telas do Atende IA e do Nexor Contábil são reais, com dados de demonstração. As telas dos produtos “Em breve” são prévias ilustrativas.
 
 | Peça | Formato | Onde usar |
 | --- | --- | --- |
+| `cat-rh.png`, `cat-atende.png`, `cat-contabil.png`, `cat-barber.png`, `cat-agente.png`, `cat-sob-medida.png` | Quadrado 1080×1080 · um por produto | Catálogo do WhatsApp, produtos do Google, LinkedIn |
 | `ia-gente-cuida.png` | Post 4:5 · posicionamento “IA que trabalha, gente que cuida” | Instagram, LinkedIn, fixar no perfil |
 | `teste-30-dias.png` | Post 4:5 · teste grátis de 30 dias | Instagram, Facebook, anúncios |
 | `fundadores.png` | Post 4:5 · programa de fundadores | Instagram, LinkedIn, grupos |
