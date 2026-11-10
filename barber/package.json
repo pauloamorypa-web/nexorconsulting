@@ -9,6 +9,7 @@
     "start": "node --disable-warning=ExperimentalWarning src/servidor.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch src/servidor.js",
     "test": "node --disable-warning=ExperimentalWarning --test --test-timeout=60000 test/*.test.js",
+    "demo": "DEMO=1 DEMO_RESET=1 node --disable-warning=ExperimentalWarning src/servidor.js",
     "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
   },
   "engines": {

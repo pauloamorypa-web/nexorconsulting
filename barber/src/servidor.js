@@ -23,6 +23,8 @@ import { hojeBR, paraMs } from "./regras/datas.js";
 import { criarCofre, iguais } from "./seguranca.js";
 import { assinaturaMetaValida, criarGoogle } from "./servicos/canais.js";
 import { ErroRegra, criarNucleo } from "./servicos/nucleo.js";
+import { criarRotasDemo } from "./demo/index.js";
+import { criarSimulador, travarRede } from "./demo/simulador.js";
 
 const PUBLICO = resolve(fileURLToPath(new URL("../public", import.meta.url)));
 const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".ico": "image/x-icon", ".json": "application/json", ".webmanifest": "application/manifest+json" };
@@ -91,8 +93,11 @@ function saudeDaInstalacao(repo, cfg, agora) {
 }
 
 /** Monta todas as peças. Os testes trocam o relógio e o fetch (Meta, SMS, Google, Asaas, Central). */
-export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () => Date.now(), fetchFn = fetch } = {}) {
+export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () => Date.now(), fetchFn } = {}) {
   conferirEnderecoPublico(cfg);
+  // Modo Demonstração: os provedores (WhatsApp, SMS, Asaas, Google) respondem por um simulador local
+  const sim = cfg.demo ? criarSimulador({ agora }) : null;
+  fetchFn = fetchFn ?? sim?.fetchFn ?? fetch;
   const cofre = criarCofre(cfg);
   const repo = abrirBanco(caminhoBanco ?? join(cfg.pastaDados, "barber.db"), agora);
   if (cfg.producao && !cfg.codigoInstalacao && repo.contarUsuarios() === 0) cfg = { ...cfg, codigoInstalacao: codigoDeInstalacao(cfg.pastaDados) };
@@ -242,6 +247,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     return json(res, 200, nucleo.eventoAsaas(evento));
   }
   let fila = Promise.resolve();
+  const rotasDemo = sim ? criarRotasDemo({ cfg, repo, nucleo, sim, porta: () => servidor.address()?.port }) : null;
 
   const servidor = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -252,6 +258,9 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     if (cfg.producao) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     try {
       if (url.pathname === "/health") return json(res, 200, { ok: true });
+      if (rotasDemo && (await rotasDemo(req, res, url))) return;
+      // Fora da demonstração, os endereços dela não existem (nem caem na página do painel)
+      if (!rotasDemo && (url.pathname === "/demo" || url.pathname.startsWith("/demo/"))) return json(res, 404, { erro: "não encontrado" });
       if (url.pathname === "/webhook/whatsapp") return await webhookWhatsapp(req, res, url);
       if (url.pathname === "/webhook/asaas") return await webhookAsaas(req, res);
       if (url.pathname.startsWith("/api/")) return await tratarApi(req, res, url);
@@ -275,6 +284,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     servidor,
     repo,
     nucleo,
+    sim,
     central,
     cfg,
     rotina: rodarRotina,
@@ -295,7 +305,33 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+/** Sobe a demonstração: trava a rede, semeia (na primeira vez ou com DEMO_RESET=1) e escuta só nesta máquina */
+export async function subirDemo(cfg = configPadrao, { log = console.log } = {}) {
+  travarRede();
+  const { semear } = await import("./demo/semear.js");
+  const { ORIGINAL } = await import("./demo/index.js");
+  if (cfg.demoReiniciar || !existsSync(join(cfg.pastaDados, ORIGINAL))) {
+    log("Montando a demonstração (Barbearia Navalha)...");
+    const { banco } = await semear({ cfg: { ...cfg, demo: false }, montarAplicacao, log });
+    const { DatabaseSync } = await import("node:sqlite");
+    const db = new DatabaseSync(banco);
+    db.prepare("VACUUM INTO ?").run(join(cfg.pastaDados, ORIGINAL));
+    db.close();
+  }
+  const app = montarAplicacao({ cfg });
+  app.iniciar();
+  const host = cfg.demoPublico ? "0.0.0.0" : "127.0.0.1";
+  await new Promise((ok) => app.servidor.listen(cfg.porta, host, ok));
+  log(`Nexor Barber · DEMONSTRAÇÃO em http://localhost:${cfg.porta}/demo   (dados fictícios; nada sai desta máquina)`);
+  return app;
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href && configPadrao.demo) {
+  const app = await subirDemo();
+  const desligar = () => (app.fechar(), process.exit(0));
+  process.on("SIGINT", desligar);
+  process.on("SIGTERM", desligar);
+} else if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const app = montarAplicacao();
   app.iniciar();
   app.servidor.listen(app.cfg.porta, () => {
