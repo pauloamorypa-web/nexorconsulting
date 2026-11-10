@@ -25,6 +25,8 @@ export function criarAprovacoes({ expiraMinutos = 30, agora = () => Date.now() }
       pendentes.delete(p.id);
       return p;
     },
+    /** Esvazia a fila (usado ao reiniciar a demonstração). */
+    limpar: () => pendentes.clear(),
     pendentesDe: (dono) => [...pendentes.values()].filter((p) => p.dono === dono && agora() <= p.expiraEm),
   };
 }

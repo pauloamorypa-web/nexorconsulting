@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node src/servidor.js",
     "chat": "node src/chat-cli.js",
+    "demo": "DEMO=1 DEMO_RESET=1 node src/servidor.js",
     "test": "node --test"
   },
   "dependencies": {

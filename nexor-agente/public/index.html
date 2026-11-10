@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Nexor Agente</title>
+  <link rel="stylesheet" href="/painel.css">
+  <script src="/demo-faixa.js" defer></script>
+  <script src="/painel.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">
+      <span class="avatar" id="avatar" aria-hidden="true">N</span>
+      <div>
+        <strong id="nome-agente">Nexor Agente</strong>
+        <small id="empresa">Painel do dono</small>
+      </div>
+    </div>
+    <div class="usuario">
+      <span id="usuario"></span>
+      <button type="button" class="link" id="sair" hidden>Sair</button>
+    </div>
+  </header>
+
+  <section id="entrada" class="entrada" hidden>
+    <div class="cartao">
+      <h1>Entrar no painel</h1>
+      <form id="form-entrar" hidden>
+        <label for="senha">Senha do painel</label>
+        <input id="senha" type="password" autocomplete="current-password" required>
+        <button type="submit" class="primario">Entrar</button>
+        <p class="erro" id="erro-entrar" role="alert"></p>
+      </form>
+      <div id="papeis" class="papeis" hidden></div>
+    </div>
+  </section>
+
+  <main id="painel" class="grade" hidden>
+    <section class="chat" aria-label="Conversa com o agente">
+      <div class="chat-cabeca">
+        <h2>Conversa</h2>
+        <small>Mesma conversa do WhatsApp do dono</small>
+      </div>
+      <ol id="mensagens" class="mensagens" aria-live="polite"></ol>
+      <div id="sugestoes" class="sugestoes">
+        <button type="button">Quanto vendemos ontem?</button>
+        <button type="button">Manda a cobrança para os clientes atrasados</button>
+        <button type="button">Como estamos na meta do mês?</button>
+        <button type="button">Quais produtos estão com estoque baixo?</button>
+        <button type="button">Tem e-mail importante?</button>
+        <button type="button">Cria um pedido de 30 fardos de refrigerante cola para o Mercado Bom Preço</button>
+      </div>
+      <form id="form-chat" class="escrever">
+        <label for="texto" class="oculto">Mensagem</label>
+        <input id="texto" autocomplete="off" placeholder="Peça algo ao agente…" maxlength="4000">
+        <button type="submit" class="primario" id="enviar">Enviar</button>
+      </form>
+    </section>
+
+    <aside class="lateral">
+      <section class="cartao" aria-labelledby="t-pend">
+        <h2 id="t-pend">Aprovações pendentes <span class="contador" id="n-pend">0</span></h2>
+        <ul id="pendentes" class="lista"></ul>
+      </section>
+
+      <section class="cartao" id="bloco-whats" hidden aria-labelledby="t-whats">
+        <h2 id="t-whats">WhatsApp simulado</h2>
+        <form id="form-receber" class="receber">
+          <label for="texto-whats">Mensagem do dono chegando pelo WhatsApp</label>
+          <div class="linha">
+            <input id="texto-whats" autocomplete="off" placeholder="ex.: quanto vendemos ontem?">
+            <button type="submit">Receber</button>
+          </div>
+        </form>
+        <h3>Mensagens enviadas</h3>
+        <ul id="enviadas" class="lista enviadas"></ul>
+      </section>
+
+      <section class="cartao" aria-labelledby="t-hist">
+        <h2 id="t-hist">Tarefas executadas</h2>
+        <ul id="historico" class="lista historico"></ul>
+      </section>
+    </aside>
+  </main>
+</body>
+</html>

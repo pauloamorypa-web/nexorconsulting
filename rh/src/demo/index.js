@@ -166,6 +166,8 @@ export function criarDemo({ repo, nucleo, cfg, agora = () => Date.now(), simulad
   const info = () => ({
     demo: true,
     sistema: "Nexor RH",
+    nome: "Nexor RH + Ponto",
+    empresa: "Padaria Pão Dourado",
     papeis: PAPEIS.map((p) => ({ ...p, url: `/demo/entrar?papel=${p.papel}`, destino: p.url })),
     ia: cfg.demoIaReal ? "real" : "simulada",
     logins: { painel: Object.fromEntries(Object.entries(USUARIOS_DEMO).map(([k, u]) => [k, u.email])), senha: SENHA_DEMO, app_novato: { colaborador: "Henrique Alves", codigo: CODIGO_APP_DEMO } },

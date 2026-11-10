@@ -41,6 +41,12 @@ npm test
 npm run chat                    # conversa pelo terminal, com aprovação por s/n
 ```
 
+## Painel web
+Além do WhatsApp, o dono pode conversar com o agente e aprovar ou recusar pedidos pelo navegador, na raiz do servidor (`/`). O painel só liga com `PAINEL_SENHA` definida: a sessão fica com o primeiro número de `DONOS`, em cookie HttpOnly. Sem a variável, nada muda.
+
+## Modo demonstração
+`npm run demo` abre o agente com uma empresa fictícia, conectores e WhatsApp simulados, sem internet, em `http://127.0.0.1:8792/demo/entrar?papel=dono`. Detalhes e roteiro de apresentação: [DEMO.md](DEMO.md).
+
 ## Publicar (Render)
 O serviço tem um Blueprint próprio, `nexor-agente/render.yaml` (plano Starter, com disco para `dados/`). No Render: New → Blueprint → Blueprint Path `nexor-agente/render.yaml`. Ele fica separado do `render.yaml` da raiz para não ser criado sem você querer. Variáveis: `ANTHROPIC_API_KEY`, `DONOS`, `WHATSAPP_*` e as credenciais usadas no `conectores.json`. O arquivo `conectores.json` vai no **Secret File** do Render (Environment → Secret Files → `conectores.json`), apontado por `CONECTORES=/etc/secrets/conectores.json`.
 
