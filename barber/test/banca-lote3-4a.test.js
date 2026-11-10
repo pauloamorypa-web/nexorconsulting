@@ -114,6 +114,9 @@ test("V-25: o painel remove a chave do Asaas, do WhatsApp e do SMS", async () =>
     assert.equal(c.whatsapp.segredo, false);
     assert.equal(c.sms.token, true, "o SMS continua");
     assert.equal(s.app.nucleo.canais().asaas.ativo, false, "volta para pagar no balcão");
+    assert.ok(!s.app.nucleo.tokenWebhookAsaas(), "o token antigo do webhook também é apagado");
+    await dono.put("/api/canais", { asaas: { chave: "chave-asaas-2" } });
+    assert.ok(s.app.nucleo.tokenWebhookAsaas().length >= 24, "ao religar, um token novo é gerado");
     assert.equal((await dono.put("/api/canais", { remover: ["fax"] })).status, 400);
   } finally {
     s.fechar();

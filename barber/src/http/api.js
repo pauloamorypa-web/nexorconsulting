@@ -587,7 +587,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const remover = new Set(d.remover ?? []);
     if (remover.has("whatsapp")) (delete w.token_cripto, delete w.segredo_cripto);
     if (remover.has("sms")) delete s.token_cripto;
-    if (remover.has("asaas")) delete a.chave_cripto;
+    // Sem Asaas, o token do webhook também sai: o token antigo não autentica mais nada (um novo é gerado ao religar)
+    if (remover.has("asaas")) (delete a.chave_cripto, delete a.token_webhook_cripto);
     const config = { ...c, whatsapp: w, sms: s, google: { ...c.google, ...(d.google ?? {}) }, asaas: a };
     auditar(ctx, "canais_alterados", { canais: Object.keys(d), ...(remover.size ? { removidos: [...remover] } : {}) });
     const b = repo.atualizar("barbearias", ctx.barbearia.id, { config });
