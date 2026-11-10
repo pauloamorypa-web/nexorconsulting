@@ -132,3 +132,17 @@ Testes novos ficam em `barber/test/correcoes.test.js` (um teste por item, com o 
 - **V-09** · corrigido · `recalcularCobertura()` é chamada em remarcar, na volta de "faltou" e em concluir. Há uma tabela `TRANSICOES` (`nucleo.mudarStatus`), o remarcar confere conflito com outros horários do cliente e a volta de "faltou" confere se a vaga do barbeiro continua livre · `src/servicos/nucleo.js`, `src/http/api.js` · teste: os dois "V-09: …" (falhavam antes) · suíte: 39 de 39.
 - **V-13** · corrigido · `paraCentavos` devolve `null` para entrada inválida, e o formulário e o desconto da comanda mostram "valor inválido" (função nova `descontoCentavos`). No servidor, produto na vitrine exige preço > 0 (POST e PUT), a vitrine do app esconde produtos antigos com preço 0 e a reserva recusa esses produtos · `public/js/comum.js`, `public/js/base.js`, `public/js/views/produtos.js`, `src/http/api.js`, `src/http/app.js`, `src/servicos/nucleo.js` · teste: "V-13: …" (falhava antes).
 - **V-14** · corrigido · o PUT de usuário exige o barbeiro vinculado, como o POST. Em `tratarApi`, um barbeiro sem vínculo recebe 403 em tudo, menos `/api/eu` e `/api/eu/senha`. Isso também cobre dados antigos que já estão errados no banco · `src/http/api.js`, `src/servidor.js` · teste: "V-14: …" (falhava antes) · suíte (grupo V-13 e V-14): 41 de 41.
+- **V-10** · corrigido · `hashSenha` e `senhaConfere` usam `crypto.scrypt` assíncrono, com fila de 2 cálculos simultâneos e até 64 esperando (acima disso, 503 com mensagem). Todos os pontos de login, cadastro, acessos e troca de senha da API passaram a usá-los. O custo N = 2^17 ficou mantido (decisão: a fila já limita o uso de memória a ~256 MB) · `src/seguranca.js`, `src/http/api.js`, `src/servidor.js` · teste: "V-10: …" (o laço de eventos roda durante o cálculo e o `/health` responde durante 6 logins; falhava antes).
+- **V-11** · corrigido · o retorno filtra no SQL (`julianday` + margem, sem horário futuro) e aplica `ORDER BY ultima_visita LIMIT 40` depois do filtro · `src/servicos/nucleo.js` · teste: "V-11: …" (45 clientes ainda não vencidos + 1 vencido; falhava antes) · suíte (grupo V-10 e V-11): 43 de 43.
+- **V-12** · corrigido · módulo novo `public/app/confirmar.js` (`decidirToque` e `confirmarNoBotao`): ignora o 2º toque nos primeiros 800 ms depois de armar, e a confirmação vence em 8 s. Usado em "Cancelar" (horário) e em "Cancelar assinatura" · `public/app/confirmar.js`, `public/app/app.js` · teste: "V-12: …" (falhava antes) · suíte: 44 de 44.
+
+## Fechamento da rodada (lotes 1 e 2)
+- Feitos: V-07, V-03, V-01, V-02, V-04, V-05, V-06, V-08, V-18, V-19, V-09, V-13, V-14, V-10, V-11, V-12 (16 itens). Nenhum ficou parcial.
+- Suíte: de 25 de 25 para 44 de 44 (19 testes novos em `test/correcoes.test.js`).
+- Dois testes antigos foram ajustados de propósito:
+  - `seguranca.test.js`: a verificação do WhatsApp agora vem de `/api/canais`.
+  - `fluxo.test.js`: o OVERDUE agora só depois do período pago.
+- Pontos fortes mantidos: `BEGIN IMMEDIATE` na disputa por horário, `lembrete_em` marcado antes do envio, CSRF, CSP e cabeçalhos, e dinheiro em centavos. `central.js` não foi tocado.
+- Recomendações para o responsável:
+  - Gerar um token novo do webhook do Asaas depois de atualizar (V-03).
+  - Olhar a Auditoria por `migracao_pendente` (V-01 e V-05) e por `pagamento_assinatura_cancelada` (V-06).

@@ -258,8 +258,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       json(res, 404, { erro: "não encontrado" });
     } catch (err) {
       const status = err instanceof ErroRegra || err instanceof ErroHttp ? err.status : (err.status ?? 500);
-      if (status >= 500 && status !== 502) console.error("[servidor]", err);
-      json(res, status, { erro: status < 500 || status === 502 ? err.message : "Erro interno." });
+      if (status >= 500 && status !== 502 && status !== 503) console.error("[servidor]", err);
+      json(res, status, { erro: status < 500 || status === 502 || status === 503 ? err.message : "Erro interno." });
     }
   });
 

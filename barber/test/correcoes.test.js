@@ -605,3 +605,22 @@ test("V-11: retorno no tempo certo funciona com mais de 40 clientes com ciclo", 
     s.fechar();
   }
 });
+
+test("V-12: toque duplo em Cancelar não confirma sozinho", async () => {
+  const { decidirToque, confirmarNoBotao } = await import("../public/app/confirmar.js");
+  assert.equal(decidirToque(0, 1000), "armar");
+  assert.equal(decidirToque(1000, 1150), "ignorar", "2º toque do mesmo gesto");
+  assert.equal(decidirToque(1000, 2000), "confirmar");
+  assert.equal(decidirToque(1000, 20_000), "armar", "confirmação vencida arma de novo");
+  // No botão (sem DOM: um objeto com o mesmo formato)
+  const botao = { dataset: {}, lastChild: { textContent: "Cancelar" } };
+  assert.equal(confirmarNoBotao(botao, "Toque de novo para cancelar", 5000), false);
+  assert.equal(botao.lastChild.textContent, "Toque de novo para cancelar");
+  assert.equal(confirmarNoBotao(botao, "Toque de novo para cancelar", 5100), false, "toque duplo ignorado");
+  assert.equal(confirmarNoBotao(botao, "Toque de novo para cancelar", 6500), true);
+  // O app usa a confirmação nos dois botões de cancelar
+  const { readFileSync } = await import("node:fs");
+  const app = readFileSync(new URL("../public/app/app.js", import.meta.url), "utf8");
+  assert.equal((app.match(/confirmarNoBotao\(/g) ?? []).length, 2);
+  assert.ok(!app.includes('dataset.certeza'));
+});

@@ -2,6 +2,8 @@
    Entrar com Google, WhatsApp ou SMS · "o de sempre" em um toque · agendar em 4 passos · lista de espera ·
    clube de assinatura · loja com reserva · "estou chegando" · vaga relâmpago (#vaga-…). */
 
+import { confirmarNoBotao } from "./confirmar.js";
+
 /* ---------- Utilidades ---------- */
 function h(tag, at = {}, ...filhos) {
   const el = document.createElement(tag);
@@ -249,11 +251,7 @@ function ticket(a) {
         ? botao(
             "Cancelar",
             async (b) => {
-              if (b.dataset.certeza !== "1") {
-                b.dataset.certeza = "1";
-                b.lastChild.textContent = "Toque de novo para cancelar";
-                return;
-              }
+              if (!confirmarNoBotao(b, "Toque de novo para cancelar")) return;
               await post(`/agendamentos/${a.id}/cancelar`);
               aviso("Horário cancelado.");
               await recarregarEu();
@@ -521,7 +519,7 @@ function clube(area) {
       ? botao(
           "Cancelar assinatura",
           async (b) => {
-            if (b.dataset.certeza !== "1") return ((b.dataset.certeza = "1"), (b.lastChild.textContent = "Toque de novo para confirmar"));
+            if (!confirmarNoBotao(b, "Toque de novo para confirmar")) return;
             await post("/assinatura/cancelar");
             aviso("Assinatura cancelada.");
             await recarregarEu();
