@@ -85,7 +85,7 @@ async function inicio() {
   };
   return [
     boas ? h("section", { class: "cartao" }, h("p", { style: { margin: 0 } }, boas)) : null,
-    h("section", { class: "cartao" }, h("h2", {}, pend.length ? `Faltam ${pend.length} documento(s)` : "Tudo enviado ✅"), pend.length ? pend.map((p) => h("div", { class: "p-item" }, h("div", {}, h("strong", {}, p.nome), h("small", {}, mesBR(p.competencia), " · até ", prazo(p.prazo))), enviarPara(p))) : h("p", { class: "suave" }, "Nada pendente por enquanto. Quando o escritório precisar de algo, aparece aqui.")),
+    h("section", { class: "cartao" }, h("h2", {}, pend.length ? (pend.length === 1 ? "Falta 1 documento" : `Faltam ${pend.length} documentos`) : "Tudo enviado ✅"), pend.length ? pend.map((p) => h("div", { class: "p-item" }, h("div", {}, h("strong", {}, p.nome), h("small", {}, mesBR(p.competencia), " · até ", prazo(p.prazo))), enviarPara(p))) : h("p", { class: "suave" }, "Nada pendente por enquanto. Quando o escritório precisar de algo, aparece aqui.")),
     guias.length ? h("section", { class: "cartao" }, h("h2", {}, "Guias para pagar"), guias.map(itemGuia)) : null,
     estado.eu.demo ? await honorariosDemo() : null,
   ];

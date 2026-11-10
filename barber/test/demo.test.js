@@ -39,6 +39,8 @@ test("Demo: semeia, entra por papel, trava a rede, escuta só nesta máquina e r
     assert.deepEqual(info.papeis.map((p) => p.papel), ["dono", "recepcao", "barbeiro", "cliente"]);
     assert.ok(!JSON.stringify(info).includes("@"), "não expõe e-mails nem senhas");
 
+    // As páginas da demonstração não buscam nada fora (fontes do Google removidas)
+    for (const pag of ["/", "/app/"]) assert.ok(!(await (await fetch(url + pag)).text()).includes("fonts.g"), `sem fontes externas em ${pag}`);
     // Entrar como dono: cookie de sessão e painel com dados vivos
     const r = await fetch(`${url}/demo/entrar?papel=dono`, { redirect: "manual" });
     assert.equal(r.status, 302);

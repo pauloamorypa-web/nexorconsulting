@@ -133,7 +133,10 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     const html = alvo.endsWith(".html");
     res.setHeader("Content-Security-Policy", app ? CSP_APP : CSP_PAINEL);
     res.writeHead(200, { "Content-Type": TIPOS[extname(alvo)] ?? "application/octet-stream", "Cache-Control": html || alvo.endsWith("sw.js") ? "no-cache" : "public, max-age=3600", "Permissions-Policy": "camera=(), geolocation=(), microphone=()" });
-    res.end(await readFile(alvo));
+    let conteudo = await readFile(alvo);
+    // Demonstração offline: as páginas não buscam fontes no Google (usa a fonte do sistema; nada sai da máquina)
+    if (cfg.demo && html) conteudo = Buffer.from(conteudo.toString("utf8").replace(/^\s*<link[^>]+fonts\.(googleapis|gstatic)\.com[^>]*>\s*$/gm, ""));
+    res.end(conteudo);
     return true;
   }
 
