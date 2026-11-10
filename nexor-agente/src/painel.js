@@ -61,7 +61,9 @@ export function criarPainel({ config, agente, aprovacoes, perfil, central, linha
   const entrar = (res, dono, nome) => {
     const token = randomBytes(24).toString("hex");
     sessoes.set(token, { dono, nome, expira: Date.now() + DURACAO_MS });
-    res.setHeader("Set-Cookie", `${COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${DURACAO_MS / 1000}`);
+    // Atrás do Cloudflare Tunnel (https), o cookie só trafega por conexão segura
+    const seguro = String(res.req?.headers?.["x-forwarded-proto"] ?? "").split(",")[0].trim() === "https" ? "; Secure" : "";
+    res.setHeader("Set-Cookie", `${COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${DURACAO_MS / 1000}${seguro}`);
   };
   /** POST só com JSON e da mesma origem (proteção contra CSRF, junto com SameSite=Strict). */
   const postSeguro = (req) => {
