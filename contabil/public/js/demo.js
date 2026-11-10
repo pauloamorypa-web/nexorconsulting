@@ -16,7 +16,8 @@ body.nx-demo .p-topo { top: var(--demo-h); }
 .demo-faixa button { background: #fff; color: #92400e; border: 0; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
 .demo-faixa button:disabled { opacity: .7; cursor: progress; }
 .demo-faixa .demo-ia { font-weight: 400; opacity: .9; white-space: nowrap; }
-@media (max-width: 760px) { .demo-faixa nav, .demo-faixa .demo-ia { display: none; } .demo-faixa button { margin-left: auto; } }
+@media (max-width: 760px) { .demo-faixa { padding: 0 10px; gap: 8px; font-size: 12.5px; } .demo-faixa nav, .demo-faixa .demo-ia { display: none; } .demo-faixa button { margin-left: auto; padding: 6px 10px; } .demo-faixa .longo { display: none; } }
+@media (min-width: 761px) { .demo-faixa .curto { display: none; } }
 `;
 
 function el(tag, attrs = {}, ...filhos) {
@@ -56,13 +57,15 @@ async function iniciar() {
           location.replace(`/demo/entrar?papel=${encodeURIComponent(papelVolta)}`);
         } catch (e) {
           botao.disabled = false;
-          botao.textContent = "Reiniciar demonstração";
+          rotuloBotao();
           alert(`Não foi possível reiniciar: ${e.message}`);
         }
       },
     },
     "Reiniciar demonstração",
   );
+  const rotuloBotao = () => botao.replaceChildren(el("span", { class: "longo" }, "Reiniciar demonstração"), el("span", { class: "curto" }, "Reiniciar"));
+  rotuloBotao();
   const rotulos = { dono: "Contador dono", colaborador: "Colaborador", cliente: "Cliente (portal)" };
   const faixa = el(
     "div",
