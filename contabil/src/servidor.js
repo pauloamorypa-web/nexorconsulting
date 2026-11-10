@@ -244,6 +244,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       if (url.pathname === "/health") return json(res, 200, { ok: true });
       if (demo) {
         await pronto;
+        await demo.esperar();
         if (await demo.tratar(req, res, url)) return;
       } else if (url.pathname === "/demo" || url.pathname.startsWith("/demo/")) return json(res, 404, { erro: "não encontrado" });
       if (url.pathname === "/webhook/whatsapp") return await webhook(req, res, url);

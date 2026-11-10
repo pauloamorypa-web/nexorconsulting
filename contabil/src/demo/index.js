@@ -96,7 +96,14 @@ export function criarDemo({ repo, nucleo, cofre, cfg, api, agora, pecas }) {
     return true;
   }
 
-  async function reiniciar() {
+  // Enquanto o banco é refeito, as outras requisições esperam (senão veriam o banco vazio e deslogariam)
+  let emReinicio = Promise.resolve();
+  function reiniciar(depois = () => {}) {
+    const p = emReinicio.then(refazer).then(depois);
+    emReinicio = p.catch(() => {});
+    return p;
+  }
+  async function refazer() {
     await nucleo.ocioso();
     simulador.limpar();
     const tabelas = repo.todos("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").map((t) => t.name);
@@ -285,15 +292,16 @@ export function criarDemo({ repo, nucleo, cofre, cfg, api, agora, pecas }) {
       const painel = api.sessaoPainel(cookies);
       const papel = painel ? PAPEIS.find((p) => p.email === painel.email) : null;
       const portal = api.sessaoPortal(cookies);
-      await reiniciar();
-      if (papel && cookies[COOKIE_PAINEL]) {
-        const u = repo.um("SELECT id FROM usuarios WHERE email = ?", papel.email);
-        if (u) repo.criarSessao(sha256(cookies[COOKIE_PAINEL]), { usuario_id: u.id }, cfg.sessaoDias);
-      }
-      if (portal && cookies[COOKIE_PORTAL]) {
-        const u = repo.um("SELECT id FROM portal_usuarios WHERE email = ?", portal.email);
-        if (u) repo.criarSessao(sha256(cookies[COOKIE_PORTAL]), { portal_id: u.id }, cfg.sessaoPortalDias);
-      }
+      await reiniciar(() => {
+        if (papel && cookies[COOKIE_PAINEL]) {
+          const u = repo.um("SELECT id FROM usuarios WHERE email = ?", papel.email);
+          if (u) repo.criarSessao(sha256(cookies[COOKIE_PAINEL]), { usuario_id: u.id }, cfg.sessaoDias);
+        }
+        if (portal && cookies[COOKIE_PORTAL]) {
+          const u = repo.um("SELECT id FROM portal_usuarios WHERE email = ?", portal.email);
+          if (u) repo.criarSessao(sha256(cookies[COOKIE_PORTAL]), { portal_id: u.id }, cfg.sessaoPortalDias);
+        }
+      });
       return json(res, 200, { ok: true }), true;
     }
     if (caminho === "/api/demo/mensagens" && metodo === "GET") return json(res, 200, simulador.log.slice(0, 50)), true;
@@ -334,5 +342,5 @@ export function criarDemo({ repo, nucleo, cofre, cfg, api, agora, pecas }) {
     return json(res, 404, { erro: "não encontrado" }), true;
   }
 
-  return { tratar, semearSeVazio, reiniciar, simulador, receber, pagar };
+  return { tratar, semearSeVazio, reiniciar, simulador, receber, pagar, esperar: () => emReinicio };
 }
