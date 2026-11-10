@@ -84,7 +84,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
   /** Manda pelo WhatsApp (modelo aprovado, se houver) e, se não der, por SMS. Nunca derruba a operação. */
   async function notificar(cliente, motivo, { texto, parametros = [] }) {
     const b = exigirBarbearia();
-    if (!cliente?.fone || !cliente.aceita_mensagens) return { enviado: false };
+    if (!cliente?.fone || !cliente.aceita_mensagens) return { enviado: false, pulado: true };
     const c = canais(b);
     if (c.whatsapp.ativo) {
       try {
@@ -105,7 +105,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
         registrar(b, cliente.id, "sms", motivo, "erro", e.message);
       }
     }
-    return { enviado: false };
+    // falhou: algum canal estava ativo e não conseguiu (vale tentar de novo); sem canal ativo, não há o que tentar
+    return { enviado: false, falhou: c.whatsapp.ativo || (c.sms.ativo && (b.config.sms?.avisos ?? true)) };
   }
 
   /* ---------- Código de acesso (WhatsApp ou SMS) ---------- */
@@ -121,16 +122,23 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     const c = canais(b);
     const codigo = String(randomInt(0, 1_000_000)).padStart(6, "0");
     const texto = `${codigo} é o seu código para entrar na ${b.nome}. Ele vale por 10 minutos.`;
-    if (canal === "whatsapp") {
-      if (!c.whatsapp.ativo) recusar(400, "O login pelo WhatsApp não está ativo nesta barbearia.");
-      if (c.modelos.codigo) await c.whatsapp.codigo(fone, c.modelos.codigo, codigo);
-      else await c.whatsapp.texto(fone, texto);
-    } else {
-      if (!c.sms.ativo) recusar(400, "O login por SMS não está ativo nesta barbearia.");
-      await c.sms.enviar(fone, texto);
+    if (canal === "whatsapp" && !c.whatsapp.ativo) recusar(400, "O login pelo WhatsApp não está ativo nesta barbearia.");
+    if (canal !== "whatsapp" && !c.sms.ativo) recusar(400, "O login por SMS não está ativo nesta barbearia.");
+    // Grava o código antes de enviar: a contagem do limite por hora já vale para pedidos simultâneos (V-23).
+    // Códigos usados, vencidos ou que não saíram ficam com expira_em = 0 e continuam contando por uma hora.
+    repo.rodar("DELETE FROM codigos WHERE destino = ? AND criado_em < ?", fone, agora() - 3600_000);
+    const reg = repo.inserir("codigos", { destino: fone, canal, hash: hashCodigo(fone, codigo), expira_em: agora() + 10 * 60_000 });
+    try {
+      if (canal === "whatsapp") {
+        if (c.modelos.codigo) await c.whatsapp.codigo(fone, c.modelos.codigo, codigo);
+        else await c.whatsapp.texto(fone, texto);
+      } else await c.sms.enviar(fone, texto);
+    } catch (e) {
+      // O detalhe técnico fica no registro de envios; quem chama mostra uma mensagem simples (V-37)
+      repo.rodar("UPDATE codigos SET expira_em = 0 WHERE id = ?", reg.id);
+      registrar(b, null, canal, "codigo", "erro", e.message);
+      throw e;
     }
-    repo.rodar("DELETE FROM codigos WHERE destino = ? AND expira_em < ?", fone, agora());
-    repo.inserir("codigos", { destino: fone, canal, hash: hashCodigo(fone, codigo), expira_em: agora() + 10 * 60_000 });
     registrar(b, null, canal, "codigo", "enviado");
     return { fone, canal };
   }
@@ -145,7 +153,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
       repo.rodar("UPDATE codigos SET tentativas = tentativas + 1 WHERE id = ?", c.id);
       recusar(400, "Código incorreto.");
     }
-    repo.rodar("DELETE FROM codigos WHERE destino = ?", fone);
+    // Uso único: invalida os códigos do número, mas mantém os registros para o limite por hora
+    repo.rodar("UPDATE codigos SET expira_em = 0 WHERE destino = ?", fone);
     return fone;
   }
 
@@ -239,6 +248,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
   function agendar({ cliente, servicoId, barbeiroId = null, dia, hora, origem = "app", autor, encaixe = false, observacao = null, reservas = [] }) {
     const b = exigirBarbearia();
     const servico = servicoAtivo(servicoId);
+    if (encaixe && dia < hoje()) recusar(400, "Encaixe só para hoje ou datas futuras.");
     const ag = repo.transacao(() => {
       let candidatos = barbeiroId ? [barbeiroAtivo(barbeiroId)] : barbeirosAtivos().filter((x) => faz(x, servico.id));
       if (!barbeiroId) {
@@ -289,14 +299,41 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     return detalhe;
   }
 
+  /* Tetos de reserva pela loja do app (V-22): por produto no horário, por horário e por cliente */
+  const RESERVA_MAX = { produto: 5, horario: 10, cliente: 15 };
+
+  /** Reserva para retirar no horário. O mesmo produto no mesmo horário soma na mesma reserva. */
   function reservar(ag, produtoId, quantidade) {
     return repo.transacao(() => {
       const p = repo.obter("produtos", produtoId);
       if (!p?.ativo || !p.vitrine || !(p.preco_centavos > 0)) recusar(404, "Produto não encontrado.");
+      const ja = repo.um("SELECT * FROM reservas WHERE agendamento_id = ? AND produto_id = ? AND status = 'reservado' ORDER BY criado_em LIMIT 1", ag.id, p.id);
+      const total = (ja?.quantidade ?? 0) + quantidade;
+      if (total > RESERVA_MAX.produto) recusar(409, `Você pode reservar até ${RESERVA_MAX.produto} unidades de ${p.nome} por horário.`);
+      const noHorario = repo.um("SELECT COALESCE(SUM(quantidade),0) n FROM reservas WHERE agendamento_id = ? AND status = 'reservado'", ag.id).n;
+      if (noHorario + quantidade > RESERVA_MAX.horario) recusar(409, `Você pode reservar até ${RESERVA_MAX.horario} itens por horário.`);
+      const doCliente = repo.um("SELECT COALESCE(SUM(quantidade),0) n FROM reservas WHERE cliente_id = ? AND status = 'reservado'", ag.cliente_id).n;
+      if (doCliente + quantidade > RESERVA_MAX.cliente) recusar(409, `Você já tem ${doCliente} itens reservados. Retire os que já reservou antes de reservar mais.`);
       if (disponivel(p) < quantidade) recusar(409, `${p.nome}: só ${Math.max(0, disponivel(p))} em estoque.`);
+      if (ja) return repo.atualizar("reservas", ja.id, { quantidade: total });
       return repo.inserir("reservas", { barbearia_id: ag.barbearia_id, cliente_id: ag.cliente_id, agendamento_id: ag.id, produto_id: p.id, quantidade });
     });
   }
+
+  /** Muda a quantidade de uma reserva (o botão − e + do app) */
+  function mudarReserva(reserva, quantidade) {
+    return repo.transacao(() => {
+      const x = repo.obter("reservas", reserva.id);
+      if (x?.status !== "reservado") recusar(409, "Esta reserva já foi retirada.");
+      const delta = quantidade - x.quantidade;
+      if (delta <= 0) return repo.atualizar("reservas", x.id, { quantidade });
+      const ag = repo.obter("agendamentos", x.agendamento_id);
+      return reservar(ag, x.produto_id, delta);
+    });
+  }
+
+  /** Devolve à vitrine o que estava reservado para o horário (cancelou, faltou ou ninguém fechou) */
+  const liberarReservas = (agId) => repo.rodar("UPDATE reservas SET status = 'cancelado' WHERE agendamento_id = ? AND status = 'reservado'", agId).changes;
 
   const disponivel = (p) => p.estoque - repo.um("SELECT COALESCE(SUM(quantidade),0) n FROM reservas WHERE produto_id = ? AND status = 'reservado'", p.id).n;
 
@@ -347,7 +384,10 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
       if (a.status === status) return a;
       if (["concluido", "cancelado"].includes(a.status)) recusar(409, "Este atendimento já foi encerrado.");
       if (!TRANSICOES[a.status]?.includes(status)) recusar(409, `Não dá para mudar de "${ROTULO_STATUS[a.status]}" para "${ROTULO_STATUS[status]}".`);
-      if (status === "faltou") repo.rodar("DELETE FROM usos WHERE agendamento_id = ?", a.id);
+      if (status === "faltou") {
+        repo.rodar("DELETE FROM usos WHERE agendamento_id = ?", a.id);
+        liberarReservas(a.id);
+      }
       if (a.status === "faltou") {
         // Volta a ocupar a agenda: o horário pode ter sido dado a outro cliente
         const ocupado = repo.um("SELECT 1 FROM agendamentos WHERE barbeiro_id = ? AND id <> ? AND status IN ('agendado','chegou','em_atendimento','concluido') AND inicio < ? AND fim > ?", a.barbeiro_id, a.id, a.fim, a.inicio);
@@ -372,7 +412,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
       const a = repo.obter("agendamentos", ag.id) ?? recusar(404, "Agendamento não encontrado.");
       if (!["agendado", "chegou"].includes(a.status)) recusar(409, "Este horário não pode mais ser cancelado.");
       repo.atualizar("agendamentos", a.id, { status: "cancelado", cancelado_por: motivo });
-      repo.rodar("UPDATE reservas SET status = 'cancelado' WHERE agendamento_id = ? AND status = 'reservado'", a.id);
+      liberarReservas(a.id);
       repo.rodar("DELETE FROM usos WHERE agendamento_id = ?", a.id);
       repo.auditar(b.id, por, "agendamento_cancelado", { agendamento: a.id, motivo });
       return a;
@@ -385,6 +425,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
   /** Remarcar = novo horário com os mesmos dados; o antigo só é liberado se o novo couber */
   function remarcar(a, { dia, hora, barbeiroId, autor, encaixe = false }) {
     if (a.status !== "agendado") recusar(409, "Só horários marcados podem ser remarcados.");
+    if (encaixe && dia < hoje()) recusar(400, "Encaixe só para hoje ou datas futuras.");
     const b = exigirBarbearia();
     const servico = servicoAtivo(a.servico_id);
     const barbeiro = barbeiroAtivo(barbeiroId ?? a.barbeiro_id);
@@ -393,7 +434,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
       if (!r.ok) recusar(409, r.motivo);
       const conflito = repo.um("SELECT 1 FROM agendamentos WHERE cliente_id = ? AND id <> ? AND status IN ('agendado','chegou','em_atendimento') AND inicio < ? AND fim > ?", a.cliente_id, a.id, r.fim, r.inicio);
       if (conflito) recusar(409, "O cliente já tem um horário marcado nesse momento.");
-      repo.atualizar("agendamentos", a.id, { inicio: r.inicio, fim: r.fim, barbeiro_id: barbeiro.id, lembrete_em: null });
+      repo.atualizar("agendamentos", a.id, { inicio: r.inicio, fim: r.fim, barbeiro_id: barbeiro.id, lembrete_em: null, lembrete_tentativas: 0 });
       recalcularCobertura(a.id);
       repo.auditar(b.id, autor, "agendamento_remarcado", { agendamento: a.id, de: a.inicio, para: r.inicio });
       if (a.inicio > agora()) setImmediate(() => oferecerVaga(a).catch(() => {}));
@@ -421,17 +462,28 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
         if (it.tipo === "servico") {
           const s = repo.obter("servicos", it.id) ?? recusar(404, "Serviço não encontrado.");
           const clube = Boolean(it.clube);
-          linhas.push({ tipo: "servico", id: s.id, nome: s.nome, quantidade: qtd, unitario_centavos: s.preco_centavos, total_centavos: clube ? 0 : s.preco_centavos * qtd, clube, base_comissao: s.preco_centavos * qtd });
+          const unitario = !clube && Number.isInteger(it.preco_confirmado) ? it.preco_confirmado : s.preco_centavos;
+          linhas.push({ tipo: "servico", id: s.id, nome: s.nome, quantidade: qtd, unitario_centavos: unitario, total_centavos: clube ? 0 : unitario * qtd, clube, base_comissao: unitario * qtd });
         } else {
           const p = repo.obter("produtos", it.id) ?? recusar(404, "Produto não encontrado.");
-          const reservado = it.reserva_id ? qtd : 0;
-          if (p.estoque < qtd || disponivel(p) + reservado < qtd) recusar(409, `${p.nome}: só ${Math.max(0, p.estoque)} em estoque.`);
           const desc = plano?.desconto_produtos ? Math.round((p.preco_centavos * qtd * plano.desconto_produtos) / 100) : 0;
           const total = p.preco_centavos * qtd - desc;
           linhas.push({ tipo: "produto", id: p.id, nome: p.nome, quantidade: qtd, unitario_centavos: p.preco_centavos, desconto_clube_centavos: desc, total_centavos: total, base_comissao: total, reserva_id: it.reserva_id ?? null });
         }
       }
       if (!linhas.length) recusar(400, "A comanda está vazia.");
+      // Estoque conferido pelo total de cada produto na venda (o mesmo produto em duas linhas soma) (V-21)
+      const porProduto = new Map();
+      for (const l of linhas.filter((x) => x.tipo === "produto")) {
+        const t = porProduto.get(l.id) ?? { qtd: 0, reservado: 0 };
+        t.qtd += l.quantidade;
+        if (l.reserva_id) t.reservado += l.quantidade;
+        porProduto.set(l.id, t);
+      }
+      for (const [pid, t] of porProduto) {
+        const p = repo.obter("produtos", pid);
+        if (p.estoque < t.qtd || disponivel(p) + t.reservado < t.qtd) recusar(409, `${p.nome}: só ${Math.max(0, Math.min(p.estoque, disponivel(p) + t.reservado))} em estoque.`);
+      }
       const subtotal = linhas.reduce((s, l) => s + l.total_centavos, 0);
       const desconto = Math.min(Math.max(0, descontoCentavos), subtotal);
       const total = subtotal - desconto;
@@ -466,7 +518,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
       let a = repo.obter("agendamentos", ag.id) ?? recusar(404, "Agendamento não encontrado.");
       if (["concluido", "cancelado", "faltou"].includes(a.status) || a.venda_id) recusar(409, "Este atendimento já foi encerrado.");
       a = recalcularCobertura(a.id); // a assinatura pode ter sido cancelada ou atrasado desde o agendamento
-      const itens = [{ tipo: "servico", id: a.servico_id, quantidade: 1, clube: Boolean(a.assinatura_id) }];
+      // Cobra o preço confirmado ao cliente no agendamento, não o preço atual do serviço (V-30)
+      const itens = [{ tipo: "servico", id: a.servico_id, quantidade: 1, clube: Boolean(a.assinatura_id), preco_confirmado: a.preco_centavos }];
       for (const r of repo.todos("SELECT * FROM reservas WHERE agendamento_id = ? AND status = 'reservado'", a.id)) itens.push({ tipo: "produto", id: r.produto_id, quantidade: r.quantidade, reserva_id: r.id });
       for (const p of produtos) itens.push({ tipo: "produto", id: p.id, quantidade: p.quantidade });
       const venda = vender({ clienteId: a.cliente_id, barbeiroId: a.barbeiro_id, agendamento: a, itens, descontoCentavos, forma, autor });
@@ -570,7 +623,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
         // Se a assinatura já nasceu no Asaas, ela é cancelada lá também (senão o cliente seria cobrado sem registro aqui)
         repo.atualizar("assinaturas", a.id, { status: "cancelada", cancelada_em: agora() });
         await cancelarNoAsaas(repo.obter("assinaturas", a.id));
-        recusar(502, `Não foi possível gerar a cobrança: ${e.message}`);
+        console.error("[asaas] gerar cobrança", e.message);
+        recusar(502, "Não foi possível gerar a cobrança agora. Tente de novo em alguns minutos ou fale com a barbearia.");
       }
     }
     return a;
@@ -839,25 +893,61 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
   }
 
   /* ---------- Rotina: lembretes, retorno, fila e assinaturas ---------- */
+  /** Roda fn em até n itens ao mesmo tempo */
+  async function emParalelo(lista, n, fn) {
+    let i = 0;
+    await Promise.all(Array.from({ length: Math.min(n, lista.length) }, async () => {
+      while (i < lista.length) await fn(lista[i++]);
+    }));
+  }
+  /** "hoje às 10:00", "amanhã às 10:00" ou "quinta, 12/11 às 10:00" */
+  const quandoRelativo = (ms) => {
+    const d = hojeBR(ms);
+    if (d === hoje()) return `hoje às ${horaBR(ms)}`;
+    if (d === somarDias(hoje(), 1)) return `amanhã às ${horaBR(ms)}`;
+    return quando(ms);
+  };
+  const MAX_TENTATIVAS_LEMBRETE = 3;
+
+  /** Trava: duas rotinas ao mesmo tempo (relógio + botão do painel) não mandam mensagens em dobro */
+  let rotinaRodando = false;
   async function rotina() {
+    if (rotinaRodando) return { ocupada: true };
+    rotinaRodando = true;
+    try {
+      return await rotinaUmaVez();
+    } finally {
+      rotinaRodando = false;
+    }
+  }
+
+  async function rotinaUmaVez() {
     const b = barbearia();
     if (!b) return {};
     const r = b.config.regras;
     const t = agora();
-    const res = { lembretes: 0, retornos: 0, ofertas_vencidas: 0, assinaturas_atrasadas: 0, cancelamentos_asaas: 0 };
+    const res = { lembretes: 0, retornos: 0, ofertas_vencidas: 0, assinaturas_atrasadas: 0, cancelamentos_asaas: 0, reservas_liberadas: 0 };
+
+    // Reservas de horários que ninguém fechou: voltam para a vitrine 12 h depois do fim (V-20)
+    for (const a of repo.todos("SELECT DISTINCT g.id FROM agendamentos g JOIN reservas r ON r.agendamento_id = g.id WHERE r.status = 'reservado' AND g.status <> 'concluido' AND g.fim < ?", t - 12 * 3600_000)) if (liberarReservas(a.id)) res.reservas_liberadas++;
 
     // Clube: cancelamentos que não chegaram ao Asaas (ou assinatura cancelada que voltou a ser cobrada)
     for (const a of repo.lista("assinaturas", "WHERE cancelamento_pendente = 1 AND status = 'cancelada' LIMIT 20")) if (await cancelarNoAsaas(a)) res.cancelamentos_asaas++;
 
-    // Lembrete X horas antes
-    const prox = repo.lista("agendamentos", "WHERE status = 'agendado' AND lembrete_em IS NULL AND inicio > ? AND inicio <= ?", t, t + r.lembrete_horas * 3600_000);
-    for (const a of prox) {
-      repo.atualizar("agendamentos", a.id, { lembrete_em: t });
+    // Lembrete X horas antes. Marca antes de enviar (nunca manda em dobro); se o canal falhar, volta para a fila
+    // e é tentado de novo na próxima rodada, até 3 vezes. Envio em paralelo, até 4 de cada vez.
+    const prox = repo.lista("agendamentos", "WHERE status = 'agendado' AND lembrete_em IS NULL AND lembrete_tentativas < ? AND inicio > ? AND inicio <= ?", MAX_TENTATIVAS_LEMBRETE, t, t + r.lembrete_horas * 3600_000);
+    for (const a of prox) repo.atualizar("agendamentos", a.id, { lembrete_em: t });
+    await emParalelo(prox, 4, async (a) => {
       const d = detalhar(a);
       const c = repo.obter("clientes", a.cliente_id);
-      const envio = await notificar(c, "lembrete", { texto: `⏰ ${c.nome.split(" ")[0]}, lembrete: ${d.servico.nome} com ${d.barbeiro.nome} hoje às ${d.hora}. Chegando, toque em "Estou chegando" no app: ${linkApp()}`, parametros: [c.nome.split(" ")[0], d.servico.nome, quando(a.inicio), d.barbeiro.nome] });
+      const envio = await notificar(c, "lembrete", { texto: `⏰ ${c.nome.split(" ")[0]}, lembrete: ${d.servico.nome} com ${d.barbeiro.nome} ${quandoRelativo(a.inicio)}. Chegando, toque em "Estou chegando" no app: ${linkApp()}`, parametros: [c.nome.split(" ")[0], d.servico.nome, quando(a.inicio), d.barbeiro.nome] });
       if (envio.enviado) res.lembretes++;
-    }
+      else if (envio.falhou) {
+        const tentativas = (a.lembrete_tentativas ?? 0) + 1;
+        repo.atualizar("agendamentos", a.id, { lembrete_tentativas: tentativas, lembrete_em: tentativas < MAX_TENTATIVAS_LEMBRETE ? null : t });
+      }
+    });
 
     // Ofertas da lista de espera que venceram voltam para a fila; dias passados expiram
     for (const e of repo.lista("espera", "WHERE status = 'oferecida'")) {
@@ -917,6 +1007,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     canais,
     segredo,
     notificar,
+    registrarEnvio: (cliente_id, canal, motivo, status, erro) => registrar(exigirBarbearia(), cliente_id, canal, motivo, status, erro),
     enviarCodigo,
     conferirCodigo,
     livres,
@@ -935,6 +1026,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     movimentarEstoque,
     disponivel,
     reservar,
+    mudarReserva,
+    liberarReservas,
     atualizarRetorno,
     assinaturaAtual,
     usosNoCiclo,

@@ -24,8 +24,10 @@ export function assinaturaMetaValida(corpo, assinatura, segredo) {
   return esperado.length === recebido.length && timingSafeEqual(esperado, recebido);
 }
 
-async function pedir(fetchFn, url, init, rotulo) {
-  const r = await fetchFn(url, { ...init, signal: AbortSignal.timeout(20_000) });
+/** Mensagens (WhatsApp e SMS) esperam no máximo 5 s; pagamentos (Asaas) até 20 s */
+const TEMPO_MENSAGEM = 5_000;
+async function pedir(fetchFn, url, init, rotulo, tempo = 20_000) {
+  const r = await fetchFn(url, { ...init, signal: AbortSignal.timeout(tempo) });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(d?.error?.message ?? d?.message ?? d?.errors?.map?.((e) => e.description).join("; ") ?? `${rotulo} respondeu ${r.status}`), { statusExterno: r.status });
   return d;
@@ -33,7 +35,7 @@ async function pedir(fetchFn, url, init, rotulo) {
 
 export function criarWhatsApp({ token, idNumero, versao = "v23.0", idioma = "pt_BR", fetchFn = fetch }) {
   const base = `https://graph.facebook.com/${versao}/${idNumero}/messages`;
-  const enviar = (corpo) => pedir(fetchFn, base, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ messaging_product: "whatsapp", ...corpo }) }, "WhatsApp");
+  const enviar = (corpo) => pedir(fetchFn, base, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ messaging_product: "whatsapp", ...corpo }) }, "WhatsApp", TEMPO_MENSAGEM);
   return {
     ativo: Boolean(token && idNumero),
     texto: (para, texto) => enviar({ to: normalizarFone(para), type: "text", text: { body: texto.slice(0, 4000), preview_url: true } }),
@@ -52,7 +54,7 @@ export function criarSms({ sid, token, de, url = "https://api.twilio.com", fetch
     ativo: Boolean(sid && token && de),
     async enviar(para, texto) {
       const corpo = new URLSearchParams({ To: `+${normalizarFone(para)}`, Body: texto.slice(0, 600), ...(de.startsWith("MG") ? { MessagingServiceSid: de } : { From: de }) });
-      return pedir(fetchFn, `${url}/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`, { method: "POST", headers: { Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`, "Content-Type": "application/x-www-form-urlencoded" }, body: corpo.toString() }, "SMS");
+      return pedir(fetchFn, `${url}/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`, { method: "POST", headers: { Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`, "Content-Type": "application/x-www-form-urlencoded" }, body: corpo.toString() }, "SMS", TEMPO_MENSAGEM);
     },
   };
 }

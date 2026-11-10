@@ -624,3 +624,224 @@ test("V-12: toque duplo em Cancelar não confirma sozinho", async () => {
   assert.equal((app.match(/confirmarNoBotao\(/g) ?? []).length, 2);
   assert.ok(!app.includes('dataset.certeza'));
 });
+
+test("V-17: lembrete com o canal fora é tentado de novo (até 3 vezes), rotina não roda em dobro e o texto diz o dia certo", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte, rafael } = await barbeariaPronta(s);
+    const lucas = await clienteApp(s);
+    const a = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-10", hora: "10:00" })).dados;
+    const repo = s.app.repo;
+    s.agora.ir("2026-11-10T07:30:00-03:00");
+    s.rede.fora.add("graph.facebook.com");
+    s.rede.fora.add("api.twilio.com");
+    assert.equal((await s.app.rotina()).lembretes, 0);
+    assert.equal(repo.obter("agendamentos", a.id).lembrete_em, null, "volta para a fila");
+    assert.equal(repo.obter("agendamentos", a.id).lembrete_tentativas, 1);
+    s.rede.fora.clear();
+    assert.equal((await s.app.rotina()).lembretes, 1, "tenta de novo quando o canal volta");
+    assert.match(s.rede.whatsapp.at(-1).text.body, /hoje às 10:00/);
+    assert.equal((await s.app.rotina()).lembretes, 0, "um lembrete só");
+    // Três falhas: desiste (não fica tentando para sempre)
+    const b = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-10", hora: "11:00" })).dados;
+    s.rede.fora.add("graph.facebook.com");
+    s.rede.fora.add("api.twilio.com");
+    s.agora.ir("2026-11-10T08:30:00-03:00");
+    for (let i = 0; i < 4; i++) await s.app.rotina();
+    assert.equal(repo.obter("agendamentos", b.id).lembrete_tentativas, 3);
+    assert.ok(repo.obter("agendamentos", b.id).lembrete_em, "desistiu depois de 3");
+    s.rede.fora.clear();
+    // Duas rotinas ao mesmo tempo: uma só envia
+    await dono.put("/api/config", { regras: { lembrete_horas: 24 } });
+    s.agora.ir("2026-11-10T11:30:00-03:00");
+    const c = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-11", hora: "10:00" })).dados;
+    const antes = s.rede.whatsapp.length;
+    const [r1, r2] = await Promise.all([s.app.rotina(), s.app.rotina()]);
+    assert.equal((r1.lembretes ?? 0) + (r2.lembretes ?? 0), 1);
+    assert.ok(r1.ocupada || r2.ocupada, "a segunda vê a rotina em andamento");
+    assert.equal(s.rede.whatsapp.length - antes, 1);
+    assert.ok(repo.obter("agendamentos", c.id).lembrete_em);
+    assert.match(s.rede.whatsapp.at(-1).text.body, /amanhã às 10:00/, "horário de amanhã não diz 'hoje'");
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-37: falha externa vira mensagem em português; detalhe só no registro de envios; outro canal só se estiver ativo; contador no painel", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte } = await barbeariaPronta(s);
+    // Só WhatsApp ligado
+    const b = s.app.repo.barbearia();
+    s.app.repo.atualizar("barbearias", b.id, { config: { ...b.config, sms: {} } });
+    s.rede.fora.add("graph.facebook.com");
+    const c = await s.cliente().post("/api/app/codigo", { fone: "34999990009", canal: "whatsapp" });
+    assert.equal(c.status, 502);
+    assert.doesNotMatch(c.dados.erro, /SMS/, "não sugere um canal que não está ativo");
+    assert.doesNotMatch(c.dados.erro, /provedor|fetch|graph/i);
+    const t = await dono.post("/api/canais/testar", { canal: "whatsapp", fone: "34999990001" });
+    assert.equal(t.status, 502);
+    assert.doesNotMatch(t.dados.erro, /provedor|graph/i);
+    const envios = (await dono.get("/api/envios")).dados.filter((e) => e.status === "erro");
+    assert.ok(envios.length >= 2, "as falhas ficam no registro de envios");
+    assert.match(envios[0].erro, /provedor/, "com o detalhe técnico");
+    assert.ok((await dono.get("/api/eu")).dados.contagem.envios_erro >= 2, "contador para o painel");
+    s.rede.fora.clear();
+    // Asaas fora: o cliente não vê o erro do provedor
+    await dono.put("/api/canais", { asaas: { chave: "$aact_teste", ambiente: "sandbox" } });
+    const plano = (await dono.post("/api/planos", { nome: "P", preco_centavos: 8990, itens: [{ servico_id: corte.id, quantidade: 0 }] })).dados;
+    s.rede.falhas.push(/subscriptions/);
+    const lucas = await clienteApp(s);
+    const a = await lucas.post("/api/app/assinar", { plano_id: plano.id, cpf: "529.982.247-25" });
+    assert.equal(a.status, 502);
+    assert.doesNotMatch(a.dados.erro, /falha simulada/);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-20: 'faltou' e horário nunca fechado liberam o estoque reservado", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte, rafael } = await barbeariaPronta(s);
+    const p = (await dono.post("/api/produtos", { nome: "Pomada", preco_centavos: 3000, estoque: 4 })).dados;
+    const lucas = await clienteApp(s);
+    const disp = async () => (await lucas.get("/api/app/info")).dados.vitrine.find((x) => x.id === p.id)?.disponivel ?? 0;
+    const a = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-10", hora: "10:00", reservas: [{ produto_id: p.id, quantidade: 2 }] })).dados;
+    const b = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-11", hora: "10:00", reservas: [{ produto_id: p.id, quantidade: 2 }] })).dados;
+    assert.equal(await disp(), 0);
+    assert.equal((await dono.put(`/api/agendamentos/${a.id}`, { status: "faltou" })).status, 200);
+    assert.equal(await disp(), 2, "faltou libera");
+    // Horário que ninguém fechou: a rotina libera depois de 12 h do fim
+    s.agora.ir("2026-11-11T20:00:00-03:00");
+    await s.app.rotina();
+    assert.equal(await disp(), 2, "ainda dentro do prazo");
+    s.agora.ir("2026-11-12T08:00:00-03:00");
+    const r = await s.app.rotina();
+    assert.equal(r.reservas_liberadas, 1);
+    assert.equal(await disp(), 4);
+    assert.equal(s.app.repo.um("SELECT status FROM reservas WHERE agendamento_id = ?", b.id).status, "cancelado");
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-21: o mesmo produto em duas linhas da venda não deixa o estoque negativo", async () => {
+  const s = await subir();
+  try {
+    const { dono } = await barbeariaPronta(s);
+    const p = (await dono.post("/api/produtos", { nome: "Óleo", preco_centavos: 3000, estoque: 1 })).dados;
+    const v = await dono.post("/api/vendas", { itens: [{ tipo: "produto", id: p.id, quantidade: 1 }, { tipo: "produto", id: p.id, quantidade: 1 }], forma: "pix" });
+    assert.equal(v.status, 409);
+    assert.equal(s.app.repo.obter("produtos", p.id).estoque, 1);
+    // O banco também recusa baixar para negativo
+    assert.throws(() => s.app.repo.rodar("UPDATE produtos SET estoque = -1 WHERE id = ?", p.id), /estoque/);
+    // Banco antigo com estoque já negativo: o gatilho só barra baixar, então dá para corrigir subindo
+    s.app.repo.db.exec("DROP TRIGGER produtos_estoque_nao_negativo");
+    s.app.repo.rodar("UPDATE produtos SET estoque = -3 WHERE id = ?", p.id);
+    s.app.repo.db.exec("CREATE TRIGGER produtos_estoque_nao_negativo BEFORE UPDATE OF estoque ON produtos WHEN NEW.estoque < 0 AND NEW.estoque < OLD.estoque BEGIN SELECT RAISE(ABORT, 'estoque negativo'); END");
+    s.app.repo.rodar("UPDATE produtos SET estoque = -2 WHERE id = ?", p.id); // subir continua permitido no banco
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-22: reservas da loja com teto, somadas por produto e com desfazer", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte, rafael } = await barbeariaPronta(s);
+    const p = (await dono.post("/api/produtos", { nome: "Pomada", preco_centavos: 3000, estoque: 50 })).dados;
+    const lucas = await clienteApp(s);
+    const a = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-11", hora: "10:00" })).dados;
+    const reservar = (q = 1) => lucas.post(`/api/app/agendamentos/${a.id}/reservas`, { produto_id: p.id, quantidade: q });
+    for (let i = 0; i < 3; i++) assert.equal((await reservar()).status, 200);
+    let r = (await lucas.get("/api/app/eu")).dados.proximos[0].reservas.filter((x) => x.status === "reservado");
+    assert.equal(r.length, 1, "mesmo produto vira uma reserva só");
+    assert.equal(r[0].quantidade, 3);
+    assert.equal((await reservar(3)).status, 409, "no máximo 5 do mesmo produto por horário");
+    // Diminuir e desfazer
+    assert.equal((await lucas.put(`/api/app/reservas/${r[0].id}`, { quantidade: 1 })).status, 200);
+    assert.equal((await lucas.get("/api/app/info")).dados.vitrine[0].disponivel, 49);
+    assert.equal((await lucas.del(`/api/app/reservas/${r[0].id}`)).status, 200);
+    assert.equal((await lucas.get("/api/app/info")).dados.vitrine[0].disponivel, 50);
+    // Teto por horário somando produtos diferentes
+    const outros = [];
+    for (let i = 0; i < 3; i++) outros.push((await dono.post("/api/produtos", { nome: `P${i}`, preco_centavos: 1000, estoque: 50 })).dados);
+    for (const o of outros.slice(0, 2)) assert.equal((await lucas.post(`/api/app/agendamentos/${a.id}/reservas`, { produto_id: o.id, quantidade: 5 })).status, 200);
+    assert.equal((await lucas.post(`/api/app/agendamentos/${a.id}/reservas`, { produto_id: outros[2].id, quantidade: 1 })).status, 409, "no máximo 10 itens por horário");
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-23: limite de 5 códigos por celular vale com pedidos simultâneos e não zera depois do acerto", async () => {
+  const s = await subir();
+  try {
+    await barbeariaPronta(s);
+    const c = s.cliente();
+    const pedidos = Array.from({ length: 8 }, () => c.lenta("POST", "/api/app/codigo", { fone: "34988880000", canal: "sms" }));
+    await new Promise((ok) => setTimeout(ok, 100));
+    for (const x of pedidos) x.fim();
+    const r = await Promise.all(pedidos.map((x) => x.p));
+    assert.equal(r.filter((x) => x.status === 200).length, 5, JSON.stringify(r.map((x) => x.status)));
+    assert.equal(s.rede.sms.length, 5, "só 5 SMS saíram");
+    // Acertar o código não libera mais envios na mesma hora
+    assert.equal((await c.post("/api/app/verificar", { fone: "34988880000", codigo: s.rede.ultimoCodigo() })).status, 200);
+    assert.equal((await s.cliente().post("/api/app/codigo", { fone: "34988880000", canal: "sms" })).status, 429);
+    assert.equal((await c.post("/api/app/verificar", { fone: "34988880000", codigo: s.rede.ultimoCodigo() })).status, 400, "código usado não vale de novo");
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-30: a comanda cobra o preço confirmado no agendamento, não o reajustado depois", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte, rafael } = await barbeariaPronta(s);
+    const lucas = await clienteApp(s);
+    const a = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-10", hora: "10:00" })).dados;
+    assert.equal(a.preco_centavos, 5000);
+    await dono.put(`/api/servicos/${corte.id}`, { preco_centavos: 6500 });
+    s.agora.ir("2026-11-10T10:45:00-03:00");
+    const fim = await dono.post(`/api/agendamentos/${a.id}/concluir`, { forma: "pix" });
+    assert.equal(fim.status, 200);
+    assert.equal(fim.dados.venda.total_centavos, 5000);
+    // Venda avulsa no balcão usa o preço atual
+    const v = await dono.post("/api/vendas", { itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix" });
+    assert.equal(v.dados.total_centavos, 6500);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-34: dois primeiros cadastros ao mesmo tempo criam uma barbearia só", async () => {
+  const s = await subir();
+  try {
+    const a = s.cliente();
+    const b = s.cliente();
+    const pedidos = [a.lenta("POST", "/api/cadastro", { barbearia: "A", nome: "Ana", email: "a@a.test", senha: "senha-forte-1" }), b.lenta("POST", "/api/cadastro", { barbearia: "B", nome: "Bia", email: "b@b.test", senha: "senha-forte-1" })];
+    await new Promise((ok) => setTimeout(ok, 100));
+    for (const x of pedidos) x.fim();
+    const r = await Promise.all(pedidos.map((x) => x.p));
+    assert.deepEqual(r.map((x) => x.status).sort(), [200, 403], JSON.stringify(r));
+    assert.equal(s.app.repo.um("SELECT COUNT(*) n FROM barbearias").n, 1);
+    assert.equal(s.app.repo.um("SELECT COUNT(*) n FROM usuarios WHERE papel = 'dono'").n, 1);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-39: encaixe só no próprio dia ou em datas futuras", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte, rafael } = await barbeariaPronta(s);
+    const novo = (dia, hora = "07:00") => dono.post("/api/agendamentos", { cliente: { nome: "Walk-in" }, servico_id: corte.id, barbeiro_id: rafael.id, dia, hora, encaixe: true });
+    for (const dia of ["2020-01-01", "2026-11-09"]) assert.equal((await novo(dia)).status, 400, dia);
+    assert.equal((await novo("2026-11-10", "21:00")).status, 200, "hoje, fora do expediente");
+    const a = await novo("2026-11-12");
+    assert.equal(a.status, 200);
+    assert.equal((await dono.put(`/api/agendamentos/${a.dados.id}`, { dia: "2026-11-01", hora: "07:00", encaixe: true })).status, 400, "remarcar para o passado também não");
+  } finally {
+    s.fechar();
+  }
+});

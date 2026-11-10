@@ -16,7 +16,7 @@ const ROTAS = {
   comissoes: { titulo: "Comissões", icone: "grafico", carregar: () => import("./views/comissoes.js"), papeis: TODOS },
   folgas: { titulo: "Folgas e horários", icone: "relogio", carregar: () => import("./views/folgas.js"), papeis: TODOS },
   relatorios: { titulo: "Relatórios", icone: "raio", carregar: () => import("./views/relatorios.js"), papeis: ADM, modulo: "modulo.relatorios" },
-  config: { titulo: "Configurações", icone: "config", carregar: () => import("./views/config.js"), papeis: ADM },
+  config: { titulo: "Configurações", icone: "config", carregar: () => import("./views/config.js"), papeis: ADM, selo: "envios_erro" },
 };
 export const PAPEIS = { dono: "Dono", admin: "Administrador", recepcao: "Recepção", barbeiro: "Barbeiro" };
 

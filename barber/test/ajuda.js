@@ -26,12 +26,15 @@ export function rede() {
   const asaas = [];
   /** Caminhos do Asaas falso que devem falhar (regex), para testar erros no meio do caminho */
   const falhas = [];
+  /** Provedores fora do ar (hostname): WhatsApp "graph.facebook.com", SMS "api.twilio.com" */
+  const fora = new Set();
   let n = 0;
   let assinaturas = 0;
   const resp = (status, dados, cab = {}) => new Response(JSON.stringify(dados), { status, headers: { "content-type": "application/json", ...cab } });
   const fetchFn = async (url, init = {}) => {
     const u = new URL(url);
     if (u.pathname.startsWith("/api/v1/")) return fetch(url, init);
+    if (fora.has(u.hostname)) return resp(500, { error: { message: `erro técnico do provedor ${u.hostname}` } });
     if (u.hostname === "graph.facebook.com") {
       whatsapp.push(JSON.parse(init.body));
       return resp(200, { messages: [{ id: `wamid.${++n}` }] });
@@ -61,7 +64,7 @@ export function rede() {
     const texto = w?.template?.components?.[0]?.parameters?.[0]?.text ?? w?.text?.body ?? sms.at(-1)?.Body ?? "";
     return /\d{6}/.exec(texto)?.[0];
   };
-  return { fetchFn, whatsapp, sms, asaas, falhas, ultimoCodigo };
+  return { fetchFn, whatsapp, sms, asaas, falhas, fora, ultimoCodigo };
 }
 
 /** Relógio controlado: começa numa terça-feira, 10/11/2026 às 08:00 de Brasília */

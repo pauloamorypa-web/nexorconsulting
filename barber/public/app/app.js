@@ -547,6 +547,23 @@ function assinar(p) {
 }
 
 /* ----- Loja ----- */
+/** Reservado no próximo horário: "Reservar" ou − quantidade + (somam na mesma reserva; − no 1 desfaz) */
+function controleReserva(p, proximo) {
+  const minha = proximo?.reservas.find((r) => r.produto_id === p.id && r.status === "reservado");
+  const atualizar = async (fn, msg) => (await fn(), msg && aviso(msg), await carregarInfo(), await recarregarEu(), desenhar());
+  if (minha)
+    return h(
+      "div",
+      { class: "linha-esq" },
+      botao("−", () => atualizar(() => (minha.quantidade > 1 ? api(`/reservas/${minha.id}`, { metodo: "PUT", corpo: { quantidade: minha.quantidade - 1 } }) : api(`/reservas/${minha.id}`, { metodo: "DELETE" })), minha.quantidade > 1 ? null : "Reserva desfeita."), "btn-fantasma btn-peq"),
+      h("strong", { "aria-label": "Quantidade reservada" }, String(minha.quantidade)),
+      p.disponivel && minha.quantidade < 5 ? botao("+", () => atualizar(() => post(`/agendamentos/${proximo.id}/reservas`, { produto_id: p.id, quantidade: 1 })), "btn-fantasma btn-peq") : null,
+      h("small", { class: "suave" }, "reservado"),
+    );
+  if (!p.disponivel) return h("small", { class: "suave" }, "Esgotado");
+  return proximo ? botao("Reservar", () => atualizar(() => post(`/agendamentos/${proximo.id}/reservas`, { produto_id: p.id, quantidade: 1 }), `${p.nome} reservado para o seu horário.`), "btn-fantasma btn-peq") : null;
+}
+
 function loja(area) {
   const proximo = S.eu?.proximos.find((a) => a.status === "agendado");
   const desconto = S.eu?.clube?.status === "ativa" ? S.eu.clube.plano.desconto_produtos : 0;
@@ -565,7 +582,7 @@ function loja(area) {
           h("strong", {}, p.nome),
           p.descricao ? h("small", { class: "suave" }, p.descricao) : null,
           h("span", {}, reais(p.preco_centavos)),
-          p.disponivel ? (proximo ? botao("Reservar", async () => (await post(`/agendamentos/${proximo.id}/reservas`, { produto_id: p.id, quantidade: 1 }), aviso(`${p.nome} reservado para o seu horário.`), await carregarInfo(), await recarregarEu(), desenhar()), "btn-fantasma btn-peq") : null) : h("small", { class: "suave" }, "Esgotado"),
+          controleReserva(p, proximo),
         ),
       ),
     ),

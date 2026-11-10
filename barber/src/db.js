@@ -181,6 +181,12 @@ function migrar(db, agora) {
   }
   db.exec("UPDATE assinaturas SET pago_ate = ciclo_fim WHERE pago_ate IS NULL AND ciclo_fim IS NOT NULL");
 
+  // V-17: tentativas de envio do lembrete (o canal pode estar fora na primeira)
+  coluna("agendamentos", "lembrete_tentativas", "INTEGER NOT NULL DEFAULT 0");
+
+  // V-21: o estoque não baixa para negativo. Só barra a baixa: estoque já negativo de banco antigo pode ser corrigido subindo
+  db.exec("CREATE TRIGGER IF NOT EXISTS produtos_estoque_nao_negativo BEFORE UPDATE OF estoque ON produtos WHEN NEW.estoque < 0 AND NEW.estoque < OLD.estoque BEGIN SELECT RAISE(ABORT, 'estoque negativo'); END");
+
   // V-06: cancelamento que falhou no Asaas (a rotina tenta de novo)
   coluna("assinaturas", "cancelamento_pendente", "INTEGER NOT NULL DEFAULT 0");
 

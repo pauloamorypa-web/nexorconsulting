@@ -86,6 +86,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const d = validar(z.object({ barbearia: t(100), nome: t(120), email, senha, tambem_corta: z.boolean().optional() }), b);
     const senhaHash = await hashSenha(d.senha);
     const u = repo.transacao(() => {
+      // Confere de novo dentro da transação: dois primeiros cadastros ao mesmo tempo criam uma barbearia só (V-34)
+      if (repo.contarUsuarios() > 0) falha(403, "Esta barbearia já foi criada. Peça um acesso ao dono.");
       const bb = repo.inserir("barbearias", { nome: d.barbearia, config: { horario: HORARIO_PADRAO, regras: REGRAS_PADRAO, retorno: { ativo: true, margem_dias: 2 }, marca: { cor: "#3b8dff" } } });
       SERVICOS_PADRAO.forEach((s, i) => repo.inserir("servicos", { barbearia_id: bb.id, ...s, ordem: i }));
       const barbeiro = d.tambem_corta !== false ? repo.inserir("barbeiros", { barbearia_id: bb.id, nome: d.nome.split(" ")[0], ordem: 0 }) : null;
@@ -129,6 +131,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
         estoque_baixo: n("SELECT COUNT(*) n FROM produtos WHERE ativo = 1 AND estoque <= estoque_minimo"),
         clube_atraso: n("SELECT COUNT(*) n FROM assinaturas WHERE status = 'atrasada'"),
         espera: n("SELECT COUNT(*) n FROM espera WHERE status IN ('aguardando','oferecida') AND dia >= ?", hoje()),
+        envios_erro: n("SELECT COUNT(*) n FROM envios WHERE status = 'erro' AND criado_em > ?", agora() - 86400_000),
       },
     };
   });
@@ -546,7 +549,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
       }
     } catch (e) {
       if (e.status) throw e;
-      falha(502, `Falhou: ${e.message}`);
+      nucleo.registrarEnvio(null, d.canal, "teste", "erro", e.message);
+      falha(502, `${d.canal === "whatsapp" ? "O WhatsApp" : "O SMS"} não aceitou a mensagem de teste. Confira os dados do canal; o detalhe técnico está em Configurações > Auditoria, em "Mensagens enviadas".`);
     }
     return { ok: true };
   });

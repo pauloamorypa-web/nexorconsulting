@@ -56,7 +56,10 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
       return { ok: true, fone: `•••• ${r2.fone.slice(-4)}`, canal: r2.canal };
     } catch (e) {
       if (e.status) throw e;
-      falha(502, d.canal === "whatsapp" ? "Não conseguimos mandar o código pelo WhatsApp. Tente por SMS." : "Não conseguimos mandar o SMS agora. Tente pelo WhatsApp.");
+      // Sugere o outro canal só se ele estiver ativo nesta barbearia (V-37)
+      const c = nucleo.canais();
+      const outro = d.canal === "whatsapp" ? c.sms.ativo && "por SMS" : c.whatsapp.ativo && "pelo WhatsApp";
+      falha(502, `${d.canal === "whatsapp" ? "Não conseguimos mandar o código pelo WhatsApp agora." : "Não conseguimos mandar o SMS agora."} ${outro ? `Tente ${outro}.` : "Tente de novo em alguns minutos."}`);
     }
   });
 
@@ -218,6 +221,11 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
     const d = validar(z.object({ produto_id: id, quantidade: z.number().int().min(1).max(5) }), await ctx.corpo());
     nucleo.reservar(a, d.produto_id, d.quantidade);
     return nucleo.detalhar(repo.obter("agendamentos", a.id));
+  });
+  r.put("/api/app/reservas/:id", APP, async (ctx) => {
+    const d = validar(z.object({ quantidade: z.number().int().min(1).max(5) }), await ctx.corpo());
+    const x = meu(ctx, "reservas", ctx.params.id, "Reserva");
+    return nucleo.mudarReserva(x, d.quantidade);
   });
   r.delete("/api/app/reservas/:id", APP, (ctx) => {
     const x = meu(ctx, "reservas", ctx.params.id, "Reserva");
