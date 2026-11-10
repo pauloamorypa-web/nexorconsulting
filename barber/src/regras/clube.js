@@ -5,8 +5,22 @@ import { diaSemana, diasEntre, horaBR, hojeBR, somarDias, somarMeses } from "./d
 /** Ciclo que começa num dia: vale até a véspera do mesmo dia do mês seguinte */
 export const cicloDe = (inicio) => ({ ciclo_inicio: inicio, ciclo_fim: somarDias(somarMeses(inicio, 1), -1) });
 
-/** A assinatura dá direito a usar o clube hoje? */
-export const assinaturaValida = (a, dia) => Boolean(a && a.status === "ativa" && a.ciclo_inicio <= dia && dia <= a.ciclo_fim);
+/** Último dia já pago (assinaturas de antes da coluna pago_ate: o fim do ciclo) */
+export const pagoAte = (a) => a?.pago_ate ?? a?.ciclo_fim ?? null;
+
+/**
+ * A assinatura dá direito a usar o clube neste dia? Vale pelo período pago (pago_ate), não só pelo ciclo atual:
+ * quem paga a renovação antes do fim do ciclo continua coberto no resto do mês já pago.
+ */
+export const assinaturaValida = (a, dia) => Boolean(a && a.status === "ativa" && a.ciclo_inicio && dia <= pagoAte(a));
+
+/** Ciclo mensal que contém o dia, contando a partir do ciclo guardado (para frente) */
+export function cicloNoDia(a, dia) {
+  if (!a?.ciclo_inicio) return null;
+  let c = { ciclo_inicio: a.ciclo_inicio, ciclo_fim: a.ciclo_fim };
+  for (let i = 0; c.ciclo_fim < dia && i < 240; i++) c = cicloDe(somarDias(c.ciclo_fim, 1));
+  return c;
+}
 
 /**
  * O plano cobre este serviço neste dia?

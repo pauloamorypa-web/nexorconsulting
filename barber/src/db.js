@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { hojeBR, somarDias, somarMeses } from "./regras/datas.js";
 
 const ESQUEMA = `
 CREATE TABLE IF NOT EXISTS barbearias (id TEXT PRIMARY KEY, nome TEXT NOT NULL, config TEXT NOT NULL DEFAULT '{}', criada_em INTEGER NOT NULL);
@@ -130,11 +131,73 @@ const lerJson = (v, padrao) => {
   }
 };
 
+/**
+ * Migrações de bancos já existentes. Rodam a cada abertura e são idempotentes: cada passo confere antes de mudar.
+ * Índices únicos que dados antigos duplicados impediriam não derrubam o sistema: ficam para a próxima abertura
+ * e a pendência vai para a auditoria (com os registros que precisam ser corrigidos pelo painel).
+ */
+function migrar(db, agora) {
+  const existe = (nome) => Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE name = ?").get(nome));
+  const pendencias = [];
+  const temColuna = (tabela, coluna) => db.prepare(`PRAGMA table_info(${tabela})`).all().some((c) => c.name === coluna);
+  const coluna = (tabela, nome, definicao) => {
+    if (!temColuna(tabela, nome)) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${nome} ${definicao}`);
+  };
+  const indiceUnico = (nome, criar, sqlDuplicados) => {
+    if (existe(nome)) return;
+    const dup = db.prepare(sqlDuplicados).all();
+    if (!dup.length) return db.exec(criar);
+    pendencias.push({ indice: nome, duplicados: dup.slice(0, 50) });
+  };
+
+  // V-01: no máximo uma venda paga por atendimento
+  indiceUnico(
+    "vendas_agendamento_paga",
+    "CREATE UNIQUE INDEX vendas_agendamento_paga ON vendas (agendamento_id) WHERE status = 'paga' AND agendamento_id IS NOT NULL",
+    "SELECT agendamento_id, group_concat(id) vendas FROM vendas WHERE status = 'paga' AND agendamento_id IS NOT NULL GROUP BY agendamento_id HAVING COUNT(*) > 1",
+  );
+
+  // V-05: no máximo uma assinatura vigente (pendente, ativa ou atrasada) por cliente
+  indiceUnico(
+    "assinaturas_cliente_vigente",
+    "CREATE UNIQUE INDEX assinaturas_cliente_vigente ON assinaturas (cliente_id) WHERE status IN ('pendente','ativa','atrasada')",
+    "SELECT cliente_id, group_concat(id) assinaturas FROM assinaturas WHERE status IN ('pendente','ativa','atrasada') GROUP BY cliente_id HAVING COUNT(*) > 1",
+  );
+
+  // V-02: quem registrou o pagamento ("Asaas" pelo webhook ou o nome de quem lançou no balcão)
+  coluna("cobrancas", "registrado_por", "TEXT");
+  // V-04: período que cada pagamento cobriu e estorno (o pagamento estornado continua "já processado")
+  coluna("cobrancas", "ciclo_inicio", "TEXT");
+  coluna("cobrancas", "ciclo_fim", "TEXT");
+  coluna("cobrancas", "estornada_em", "INTEGER");
+  // V-08: período pago separado do ciclo atual. Dados antigos: pago até o fim do ciclo guardado; quem renovou
+  // antes da hora (o ciclo saltou para o futuro e o cliente perdeu o resto do mês pago) volta para o ciclo de hoje.
+  coluna("assinaturas", "pago_ate", "TEXT");
+  const hoje = hojeBR(agora());
+  const adiantadas = db.prepare("SELECT id, ciclo_inicio, ciclo_fim FROM assinaturas WHERE pago_ate IS NULL AND ciclo_inicio IS NOT NULL AND status = 'ativa' AND ciclo_inicio > ?").all(hoje);
+  for (const a of adiantadas) {
+    const anterior = db.prepare("SELECT MAX(ciclo_inicio) c FROM usos WHERE assinatura_id = ? AND ciclo_inicio < ?").get(a.id, a.ciclo_inicio)?.c ?? somarMeses(a.ciclo_inicio, -1);
+    db.prepare("UPDATE assinaturas SET ciclo_inicio = ?, ciclo_fim = ?, pago_ate = ? WHERE id = ?").run(anterior, somarDias(a.ciclo_inicio, -1), a.ciclo_fim, a.id);
+  }
+  db.exec("UPDATE assinaturas SET pago_ate = ciclo_fim WHERE pago_ate IS NULL AND ciclo_fim IS NOT NULL");
+
+  // V-06: cancelamento que falhou no Asaas (a rotina tenta de novo)
+  coluna("assinaturas", "cancelamento_pendente", "INTEGER NOT NULL DEFAULT 0");
+
+  if (pendencias.length) {
+    console.warn("[banco] migração pendente: há registros duplicados que precisam ser corrigidos no painel", JSON.stringify(pendencias));
+    const b = db.prepare("SELECT id FROM barbearias ORDER BY criada_em LIMIT 1").get();
+    const ja = b && db.prepare("SELECT detalhe FROM auditoria WHERE acao = 'migracao_pendente' ORDER BY criado_em DESC LIMIT 1").get();
+    if (b && ja?.detalhe !== JSON.stringify(pendencias)) db.prepare("INSERT INTO auditoria (id, barbearia_id, autor, acao, detalhe, criado_em) VALUES (?,?,?,?,?,?)").run(randomUUID(), b.id, "sistema", "migracao_pendente", JSON.stringify(pendencias), agora());
+  }
+}
+
 export function abrirBanco(caminho, agora = () => Date.now()) {
   if (caminho !== ":memory:") mkdirSync(dirname(caminho), { recursive: true });
   const db = new DatabaseSync(caminho);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(ESQUEMA);
+  migrar(db, agora);
   const cache = new Map();
   const q = (sql) => {
     let s = cache.get(sql);

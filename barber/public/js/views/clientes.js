@@ -68,7 +68,7 @@ export async function render(area, ctx) {
             ["Entrou com", k.google ? "Google" : k.fone ? "Celular" : "Balcão"],
           ].map(([r, v]) => h("div", { class: "dado" }, h("small", {}, r), h("strong", {}, v))),
         ),
-        d.assinatura ? h("div", { class: "aviso-cartao" }, icone("coroa", 16), h("span", {}, `Clube ${d.assinatura.plano.nome} · `, sit(d.assinatura.status), d.assinatura.ciclo_fim ? ` · ciclo até ${dataBR(d.assinatura.ciclo_fim)}` : "")) : null,
+        d.assinatura ? h("div", { class: "aviso-cartao" }, icone("coroa", 16), h("span", {}, `Clube ${d.assinatura.plano.nome} · `, sit(d.assinatura.status), (d.assinatura.pago_ate ?? d.assinatura.ciclo_fim) ? ` · pago até ${dataBR(d.assinatura.pago_ate ?? d.assinatura.ciclo_fim)}` : "")) : null,
         k.observacoes ? h("p", { class: "citacao" }, k.observacoes) : null,
         h("h3", {}, "Histórico"),
         tabela(

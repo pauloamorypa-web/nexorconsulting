@@ -171,7 +171,8 @@ export async function render(area, ctx) {
   }
 
   async function canais() {
-    const c = (await get("/config")).config;
+    // Rota só para dono e admin: traz o token do webhook do Asaas e a verificação do WhatsApp
+    const c = await get("/canais");
     const base = location.origin;
     const url = (t, v) => h("div", { class: "copiavel" }, h("small", { class: "campo-rotulo" }, t), h("div", { class: "linha-entre" }, h("code", {}, v), h("button", { class: "btn-icone", "aria-label": "Copiar", onclick: () => copiarTexto(v) }, icone("copiar", 15))));
     const f = formulario(
@@ -196,7 +197,8 @@ export async function render(area, ctx) {
         { titulo: "Clube: cobrança automática (Asaas)" },
         { nome: "asaas.chave", rotulo: c.asaas.chave ? "Chave da API (já configurada)" : "Chave da API do Asaas", tipo: "senha" },
         { nome: "asaas.ambiente", rotulo: "Ambiente", tipo: "select", opcoes: [["sandbox", "Teste (sandbox)"], ["producao", "Produção"]] },
-      ],
+        c.asaas.token_webhook ? { nome: "asaas.novo_token_webhook", rotulo: "Gerar um token novo para o webhook do Asaas", tipo: "check", largura: 2, ajuda: "Depois de salvar, cole o token novo no painel do Asaas. O antigo para de valer na hora." } : null,
+      ].filter(Boolean),
       { ...c, whatsapp: { ...c.whatsapp, token: "", segredo: "" }, sms: { ...c.sms, token: "" }, asaas: { ...c.asaas, chave: "" } },
     );
     const teste = entrada({ placeholder: "Seu celular para teste", inputmode: "tel" });

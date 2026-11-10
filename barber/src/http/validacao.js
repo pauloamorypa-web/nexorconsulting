@@ -45,11 +45,20 @@ export const usuarioPublico = ({ senha_hash, ...u }) => u;
 export const clientePublico = ({ google_sub, ...c }) => ({ ...c, google: Boolean(google_sub) });
 export const barbeiroPublico = (b) => ({ id: b.id, nome: b.nome, bio: b.bio, cor: b.cor, servicos: b.servicos });
 
-/** Configuração da barbearia sem os segredos (tokens viram só "configurado: sim/não") */
+/** Configuração da barbearia sem os segredos (tokens viram só "configurado: sim/não"). Vale para toda a equipe. */
 export function configPublica(config) {
   const { whatsapp = {}, sms = {}, asaas = {}, ...resto } = config;
-  const { token_cripto, segredo_cripto, ...w } = whatsapp;
+  const { token_cripto, segredo_cripto, verificacao, ...w } = whatsapp;
   const { token_cripto: st, ...s } = sms;
-  const { chave_cripto, ...a } = asaas;
-  return { ...resto, whatsapp: { ...w, token: Boolean(token_cripto), segredo: Boolean(segredo_cripto) }, sms: { ...s, token: Boolean(st) }, asaas: { ...a, chave: Boolean(chave_cripto) } };
+  const { chave_cripto, token_webhook, token_webhook_cripto, ...a } = asaas;
+  return { ...resto, whatsapp: { ...w, token: Boolean(token_cripto), segredo: Boolean(segredo_cripto), verificacao: Boolean(verificacao) }, sms: { ...s, token: Boolean(st) }, asaas: { ...a, chave: Boolean(chave_cripto), token_webhook: Boolean(token_webhook_cripto || token_webhook) } };
+}
+
+/**
+ * Aba Canais (só dono e admin): a configuração pública mais os dois valores que precisam ser colados
+ * nos painéis da Meta e do Asaas (verificação do webhook do WhatsApp e token do webhook do Asaas).
+ */
+export function configCanais(config, tokenWebhookAsaas) {
+  const p = configPublica(config);
+  return { ...p, whatsapp: { ...p.whatsapp, verificacao: config.whatsapp?.verificacao || null }, asaas: { ...p.asaas, token_webhook: tokenWebhookAsaas || null } };
 }

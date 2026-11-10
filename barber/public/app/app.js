@@ -319,7 +319,7 @@ function cartaoClube(c) {
     "section",
     { class: "cartao destaque" },
     h("div", { class: "linha" }, h("span", { class: "rotulo" }, ic("coroa", 14), ` ${/^clube/i.test(c.plano.nome) ? "" : "Clube "}${c.plano.nome}`), h("span", { class: `chip ${c.status === "ativa" ? "chip-ok" : "chip-alerta"}` }, { ativa: "ativo", pendente: "aguardando pagamento", atrasada: "pagamento em atraso" }[c.status] ?? c.status)),
-    c.ciclo_fim ? h("small", { class: "suave" }, `Ciclo até ${c.ciclo_fim.slice(8)}/${c.ciclo_fim.slice(5, 7)}`) : null,
+    c.ciclo_fim ? h("small", { class: "suave" }, `Ciclo até ${c.ciclo_fim.slice(8)}/${c.ciclo_fim.slice(5, 7)}${c.pago_ate && c.pago_ate !== c.ciclo_fim ? ` · pago até ${c.pago_ate.slice(8)}/${c.pago_ate.slice(5, 7)}` : ""}`) : null,
     c.usos.map((u) => h("div", { class: "uso" }, h("div", { class: "linha" }, h("span", {}, u.nome), h("small", { class: "suave" }, u.quantidade ? `${u.usados} de ${u.quantidade}` : `${u.usados} · ilimitado`)), h("div", { class: "trilho" }, h("i", { style: { width: u.quantidade ? `${Math.min(100, (u.usados / u.quantidade) * 100)}%` : "100%" } })))),
     c.link ? h("a", { class: "btn btn-cor btn-bloco", href: c.link, target: "_blank", rel: "noopener" }, "Pagar mensalidade") : null,
     c.status === "pendente" && !c.link ? h("small", { class: "suave" }, "Pague a primeira mensalidade na barbearia para ativar.") : null,

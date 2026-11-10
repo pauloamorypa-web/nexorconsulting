@@ -2,7 +2,7 @@
 
 import { get, post } from "./api.js";
 import { acao, aviso, campo, debounce, entrada, h, icone, janela, limpar, reais, seletor } from "./ui.js";
-import { paraCentavos } from "./comum.js";
+import { descontoCentavos, paraCentavos } from "./comum.js";
 
 export const hojeISO = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
 export const somarDias = (d, n) => new Date(Date.parse(`${d}T12:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
@@ -124,7 +124,7 @@ export async function comanda(ctx, ag, aoSalvar) {
     const servico = ag.clube ? 0 : ag.servico.preco_centavos;
     const reservados = ag.reservas.filter((r) => r.status === "reservado").reduce((s, r) => s + r.preco_centavos * r.quantidade, 0);
     const ext = extras.reduce((s, e) => s + e.preco_centavos * e.quantidade, 0);
-    const desc = paraCentavos(desconto.value);
+    const desc = paraCentavos(desconto.value) ?? 0;
     limpar(
       lista,
       linha(ag.servico.nome, ag.clube ? h("span", { class: "chip chip-ok" }, "pelo clube") : reais(servico)),
@@ -155,7 +155,7 @@ export async function comanda(ctx, ag, aoSalvar) {
   });
   fechar.onclick = () =>
     acao(fechar, async () => {
-      const r = await post(`/agendamentos/${ag.id}/concluir`, { forma, desconto_centavos: paraCentavos(desconto.value), produtos: extras.map((e) => ({ id: e.id, quantidade: e.quantidade })) });
+      const r = await post(`/agendamentos/${ag.id}/concluir`, { forma, desconto_centavos: descontoCentavos(desconto.value), produtos: extras.map((e) => ({ id: e.id, quantidade: e.quantidade })) });
       aviso(`Comanda fechada: ${reais(r.venda.total_centavos)}.`);
       j.fechar();
       aoSalvar?.(r);

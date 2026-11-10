@@ -97,6 +97,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   if (cfg.producao && !cfg.codigoInstalacao && repo.contarUsuarios() === 0) cfg = { ...cfg, codigoInstalacao: codigoDeInstalacao(cfg.pastaDados) };
   const central = criarCentralNexor({ cfg, agora, fetchFn, produto: "barber", versao: cfg.sistema.versao, saude: () => saudeDaInstalacao(repo, cfg, agora) });
   const nucleo = criarNucleo({ repo, cofre, cfg, fetchFn, agora });
+  nucleo.migrarConfig();
   const google = criarGoogle({ url: cfg.google.certificados, fetchFn, agora });
   const api = criarApi({ repo, nucleo, cofre, cfg, central, agora, google });
   const pausado = () => central.estado().situacao === "bloqueado";
@@ -146,6 +147,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       usuario = api.sessaoPainel(cookies);
       if (!usuario) return json(res, 401, { erro: "Faça login para continuar." });
       if (rota.opcoes.papeis && !rota.opcoes.papeis.includes(usuario.papel)) return json(res, 403, { erro: "Seu perfil não tem permissão para esta ação." });
+      // Barbeiro sem barbeiro vinculado: sem o recorte, veria a agenda, as vendas e as comissões de todos (V-14)
+      if (usuario.papel === "barbeiro" && !usuario.barbeiro_id && !["/api/eu", "/api/eu/senha"].includes(url.pathname)) return json(res, 403, { erro: "Este acesso de barbeiro não está ligado a nenhum barbeiro. Peça ao dono para corrigir em Configurações > Acessos." });
       barbearia = nucleo.barbearia();
     }
     if (rota.opcoes.nexor && !usuario?.nexor) return json(res, 403, { erro: "Área exclusiva do Suporte Nexor." });
@@ -226,7 +229,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   async function webhookAsaas(req, res) {
     if (req.method !== "POST") return json(res, 405, { erro: "método não permitido" });
     const b = repo.barbearia();
-    const token = b?.config.asaas?.token_webhook;
+    const token = nucleo.tokenWebhookAsaas(b);
     if (!token || !iguais(String(req.headers["asaas-access-token"] ?? ""), token)) return json(res, 401, { erro: "token inválido" });
     const corpo = await lerCorpo(req, 512 * 1024);
     let evento;

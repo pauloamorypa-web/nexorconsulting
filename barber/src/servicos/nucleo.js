@@ -2,9 +2,10 @@
    Tudo o que mexe em agenda, estoque ou dinheiro roda dentro de uma transação. */
 
 import { createHmac, randomInt } from "node:crypto";
+import { z } from "zod";
 import { OCUPA, REGRAS_PADRAO, cabe, faz, horariosLivres } from "../regras/agenda.js";
-import { assinaturaValida, cicloDe, cicloDeRetorno, cobertura } from "../regras/clube.js";
-import { diasEntre, hojeBR, horaBR, paraMs, quando, somarDias } from "../regras/datas.js";
+import { assinaturaValida, cicloDe, cicloDeRetorno, cicloNoDia, cobertura, pagoAte } from "../regras/clube.js";
+import { diasEntre, hojeBR, horaBR, paraMs, quando, somarDias, somarMeses } from "../regras/datas.js";
 import { gerarToken, sha256 } from "../seguranca.js";
 import { acaoAsaas, criarAsaas, criarSms, criarWhatsApp, normalizarFone } from "./canais.js";
 
@@ -37,6 +38,32 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     return b;
   };
   const exigirBarbearia = () => barbearia() ?? recusar(409, "A barbearia ainda não foi criada.");
+
+  /* ---------- Token do webhook do Asaas: gerado no servidor, guardado cifrado ---------- */
+  const TOKEN_WEBHOOK_MIN = 24;
+  const novoTokenWebhook = () => cofre.cifrar(gerarToken(24));
+  /** Token em claro (para conferir o webhook e mostrar na aba Canais). Vazio se não houver ou for curto demais. */
+  function tokenWebhookAsaas(b = barbearia()) {
+    const a = b?.config.asaas ?? {};
+    const t = a.token_webhook_cripto ? segredo(a.token_webhook_cripto) : "";
+    return t.length >= TOKEN_WEBHOOK_MIN ? t : "";
+  }
+  /**
+   * Migração de bancos antigos (idempotente): o token do webhook do Asaas saía em texto puro na configuração.
+   * Tokens com 24+ caracteres são cifrados e continuam valendo; curtos (ou "true"/"false") são trocados por um novo.
+   */
+  function migrarConfig() {
+    const b = repo.barbearia();
+    const a = b?.config.asaas;
+    if (!a || !("token_webhook" in a)) return false;
+    const { token_webhook: antigo, ...resto } = a;
+    const valido = typeof antigo === "string" && antigo.length >= TOKEN_WEBHOOK_MIN && antigo !== "true" && antigo !== "false";
+    const asaas = { ...resto, token_webhook_cripto: resto.token_webhook_cripto || (valido ? cofre.cifrar(antigo) : antigo ? novoTokenWebhook() : undefined) };
+    if (!asaas.token_webhook_cripto) delete asaas.token_webhook_cripto;
+    repo.atualizar("barbearias", b.id, { config: { ...b.config, asaas } });
+    if (antigo && !valido) repo.auditar(b.id, "sistema", "token_webhook_asaas_trocado", { motivo: "token antigo curto demais; cole o novo no painel do Asaas" });
+    return true;
+  }
   const linkApp = (caminho = "") => `${cfg.urlPublica || ""}/app/${caminho}`;
 
   function canais(b = exigirBarbearia()) {
@@ -166,17 +193,26 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     });
   }
 
-  function assinaturaAtual(clienteId) {
-    return repo.lista("assinaturas", "WHERE cliente_id = ? AND status IN ('ativa','atrasada','pendente') ORDER BY criado_em DESC LIMIT 1", clienteId)[0] ?? null;
+  /** O ciclo guardado passou e o período seguinte já está pago: avança para o ciclo de hoje (a contagem de usos recomeça) */
+  function virarCiclo(a) {
+    if (!a?.ciclo_fim || a.ciclo_fim >= hoje() || !(pagoAte(a) >= hoje())) return a;
+    return repo.atualizar("assinaturas", a.id, cicloNoDia(a, hoje()));
   }
-  const usosNoCiclo = (a, servicoId) => (a?.ciclo_inicio ? repo.um("SELECT COUNT(*) n FROM usos WHERE assinatura_id = ? AND servico_id = ? AND ciclo_inicio = ?", a.id, servicoId, a.ciclo_inicio).n : 0);
+  function assinaturaAtual(clienteId) {
+    return virarCiclo(repo.lista("assinaturas", "WHERE cliente_id = ? AND status IN ('ativa','atrasada','pendente') ORDER BY criado_em DESC LIMIT 1", clienteId)[0] ?? null);
+  }
+  /** Usos do serviço no ciclo que contém o dia (padrão: hoje) */
+  const usosNoCiclo = (a, servicoId, dia = hoje()) => {
+    const c = cicloNoDia(a, dia);
+    return c ? repo.um("SELECT COUNT(*) n FROM usos WHERE assinatura_id = ? AND servico_id = ? AND ciclo_inicio = ?", a.id, servicoId, c.ciclo_inicio).n : 0;
+  };
 
   /** O clube cobre este serviço neste dia para o cliente? */
   function coberturaDoCliente(clienteId, servicoId, dia) {
     const a = assinaturaAtual(clienteId);
     if (!a) return { coberto: false, assinatura: null };
     const plano = repo.obter("planos", a.plano_id);
-    return { ...cobertura(plano, a, servicoId, dia, usosNoCiclo(a, servicoId)), assinatura: a, plano };
+    return { ...cobertura(plano, a, servicoId, dia, usosNoCiclo(a, servicoId, dia)), assinatura: a, plano };
   }
 
   /**
@@ -189,7 +225,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     const plano = repo.obter("planos", a.plano_id);
     const r = { assinante: true, status: a.status, plano: { id: plano.id, nome: plano.nome, desconto_produtos: plano.desconto_produtos }, ciclo_fim: a.ciclo_fim, coberto: false, restante: null, motivo: null, link: a.status !== "ativa" ? a.link : null };
     if (!servicoId) return r;
-    const cob = cobertura(plano, a, servicoId, dia, usosNoCiclo(a, servicoId));
+    const cob = cobertura(plano, a, servicoId, dia, usosNoCiclo(a, servicoId, dia));
     const noPlano = (plano.itens ?? []).some((i) => i.servico_id === servicoId);
     if (cob.coberto) return { ...r, coberto: true, restante: cob.restante ?? null };
     if (a.status === "pendente") return { ...r, motivo: "Sua assinatura ainda aguarda o primeiro pagamento." };
@@ -239,7 +275,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
         assinatura_id: cob.coberto ? cob.assinatura.id : null,
         observacao,
       });
-      if (cob.coberto) repo.inserir("usos", { barbearia_id: b.id, assinatura_id: cob.assinatura.id, servico_id: servico.id, agendamento_id: novo.id, ciclo_inicio: cob.assinatura.ciclo_inicio });
+      if (cob.coberto) repo.inserir("usos", { barbearia_id: b.id, assinatura_id: cob.assinatura.id, servico_id: servico.id, agendamento_id: novo.id, ciclo_inicio: cicloNoDia(cob.assinatura, dia).ciclo_inicio });
       for (const r of reservas) reservar(novo, r.produto_id, r.quantidade);
       repo.auditar(b.id, autor ?? cliente.nome, "agendamento_criado", { agendamento: novo.id, origem, encaixe });
       return novo;
@@ -256,7 +292,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
   function reservar(ag, produtoId, quantidade) {
     return repo.transacao(() => {
       const p = repo.obter("produtos", produtoId);
-      if (!p?.ativo || !p.vitrine) recusar(404, "Produto não encontrado.");
+      if (!p?.ativo || !p.vitrine || !(p.preco_centavos > 0)) recusar(404, "Produto não encontrado.");
       if (disponivel(p) < quantidade) recusar(409, `${p.nome}: só ${Math.max(0, disponivel(p))} em estoque.`);
       return repo.inserir("reservas", { barbearia_id: ag.barbearia_id, cliente_id: ag.cliente_id, agendamento_id: ag.id, produto_id: p.id, quantidade });
     });
@@ -272,7 +308,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     let restante = null;
     if (ass) {
       const item = (repo.obter("planos", ass.plano_id)?.itens ?? []).find((i) => i.servico_id === a.servico_id);
-      if (item?.quantidade > 0) restante = Math.max(0, item.quantidade - usosNoCiclo(ass, a.servico_id));
+      if (item?.quantidade > 0) restante = Math.max(0, item.quantidade - usosNoCiclo(ass, a.servico_id, hojeBR(a.inicio)));
     }
     return { plano: id.plano, status: id.status, coberto: Boolean(a.assinatura_id), restante };
   }
@@ -285,20 +321,61 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     return { ...a, dia: hojeBR(a.inicio), hora: horaBR(a.inicio), servico: servico && { id: servico.id, nome: servico.nome, duracao_min: servico.duracao_min, preco_centavos: servico.preco_centavos }, barbeiro: barbeiro && { id: barbeiro.id, nome: barbeiro.nome, cor: barbeiro.cor }, cliente: cliente && { id: cliente.id, nome: cliente.nome, fone: cliente.fone }, reservas, clube: Boolean(a.assinatura_id), assinante: assinanteDoHorario(a) };
   }
 
+  /**
+   * Recalcula se o horário sai pelo clube (dentro de uma transação): no remarcar, ao voltar de "faltou" e ao fechar a
+   * comanda. Tira o uso do próprio horário, confere de novo a assinatura, o plano e a cota do ciclo do dia do horário.
+   */
+  function recalcularCobertura(id) {
+    const a = repo.obter("agendamentos", id);
+    const servico = repo.obter("servicos", a.servico_id);
+    repo.rodar("DELETE FROM usos WHERE agendamento_id = ?", a.id);
+    const dia = hojeBR(a.inicio);
+    const cob = coberturaDoCliente(a.cliente_id, a.servico_id, dia);
+    if (cob.coberto) repo.inserir("usos", { barbearia_id: a.barbearia_id, assinatura_id: cob.assinatura.id, servico_id: a.servico_id, agendamento_id: a.id, ciclo_inicio: cicloNoDia(cob.assinatura, dia).ciclo_inicio });
+    // Deixou de sair pelo clube: volta o preço do serviço; continua fora do clube: mantém o preço confirmado
+    const preco = cob.coberto ? 0 : a.assinatura_id ? servico.preco_centavos : a.preco_centavos;
+    return repo.atualizar("agendamentos", a.id, { preco_centavos: preco, assinatura_id: cob.coberto ? cob.assinatura.id : null });
+  }
+
+  /** Mudanças de status que a equipe pode fazer pelo painel (cancelar tem a própria função; concluir é a comanda) */
+  const TRANSICOES = { agendado: ["chegou", "em_atendimento", "faltou"], chegou: ["agendado", "em_atendimento", "faltou"], em_atendimento: ["agendado", "chegou", "faltou"], faltou: ["agendado", "chegou", "em_atendimento"], concluido: [], cancelado: [] };
+  const ROTULO_STATUS = { agendado: "agendado", chegou: "chegou", em_atendimento: "em atendimento", faltou: "faltou", concluido: "concluído", cancelado: "cancelado" };
+  function mudarStatus(id, status, { autor }) {
+    const b = exigirBarbearia();
+    return repo.transacao(() => {
+      const a = repo.obter("agendamentos", id) ?? recusar(404, "Agendamento não encontrado.");
+      if (a.status === status) return a;
+      if (["concluido", "cancelado"].includes(a.status)) recusar(409, "Este atendimento já foi encerrado.");
+      if (!TRANSICOES[a.status]?.includes(status)) recusar(409, `Não dá para mudar de "${ROTULO_STATUS[a.status]}" para "${ROTULO_STATUS[status]}".`);
+      if (status === "faltou") repo.rodar("DELETE FROM usos WHERE agendamento_id = ?", a.id);
+      if (a.status === "faltou") {
+        // Volta a ocupar a agenda: o horário pode ter sido dado a outro cliente
+        const ocupado = repo.um("SELECT 1 FROM agendamentos WHERE barbeiro_id = ? AND id <> ? AND status IN ('agendado','chegou','em_atendimento','concluido') AND inicio < ? AND fim > ?", a.barbeiro_id, a.id, a.fim, a.inicio);
+        if (ocupado) recusar(409, "Esse horário já foi ocupado por outro cliente.");
+      }
+      repo.atualizar("agendamentos", a.id, { status, chegou_em: status === "chegou" ? agora() : a.chegou_em });
+      if (a.status === "faltou") recalcularCobertura(a.id);
+      repo.auditar(b.id, autor, "agendamento_status", { agendamento: a.id, de: a.status, status });
+      return repo.obter("agendamentos", a.id);
+    });
+  }
+
   /** O cliente pode cancelar ou remarcar sozinho? (até X horas antes) */
   function podeMudar(a) {
     const b = exigirBarbearia();
     return a.status === "agendado" && a.inicio - agora() >= b.config.regras.cancelamento_horas * 3600_000;
   }
 
-  function cancelar(a, { por, motivo = "cliente" } = {}) {
-    if (!["agendado", "chegou"].includes(a.status)) recusar(409, "Este horário não pode mais ser cancelado.");
+  function cancelar(ag, { por, motivo = "cliente" } = {}) {
     const b = exigirBarbearia();
-    repo.transacao(() => {
+    const a = repo.transacao(() => {
+      const a = repo.obter("agendamentos", ag.id) ?? recusar(404, "Agendamento não encontrado.");
+      if (!["agendado", "chegou"].includes(a.status)) recusar(409, "Este horário não pode mais ser cancelado.");
       repo.atualizar("agendamentos", a.id, { status: "cancelado", cancelado_por: motivo });
       repo.rodar("UPDATE reservas SET status = 'cancelado' WHERE agendamento_id = ? AND status = 'reservado'", a.id);
       repo.rodar("DELETE FROM usos WHERE agendamento_id = ?", a.id);
       repo.auditar(b.id, por, "agendamento_cancelado", { agendamento: a.id, motivo });
+      return a;
     });
     // A vaga aberta vai direto para a lista de espera (se o horário ainda não passou)
     if (a.inicio > agora()) oferecerVaga(a).catch((e) => console.error("[espera]", e.message));
@@ -314,7 +391,10 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     return repo.transacao(() => {
       const r = cabe({ barbearia: b, barbeiro, servico, dia, hora, ocupados: ocupados(barbeiro.id, dia, a.id), agora: agora(), encaixe });
       if (!r.ok) recusar(409, r.motivo);
+      const conflito = repo.um("SELECT 1 FROM agendamentos WHERE cliente_id = ? AND id <> ? AND status IN ('agendado','chegou','em_atendimento') AND inicio < ? AND fim > ?", a.cliente_id, a.id, r.fim, r.inicio);
+      if (conflito) recusar(409, "O cliente já tem um horário marcado nesse momento.");
       repo.atualizar("agendamentos", a.id, { inicio: r.inicio, fim: r.fim, barbeiro_id: barbeiro.id, lembrete_em: null });
+      recalcularCobertura(a.id);
       repo.auditar(b.id, autor, "agendamento_remarcado", { agendamento: a.id, de: a.inicio, para: r.inicio });
       if (a.inicio > agora()) setImmediate(() => oferecerVaga(a).catch(() => {}));
       return detalhar(repo.obter("agendamentos", a.id));
@@ -380,9 +460,12 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
   }
 
   /** Fecha o atendimento: serviço (pelo clube ou não) + produtos reservados e extras */
-  function concluir(a, { produtos = [], descontoCentavos = 0, forma, autor }) {
-    if (["concluido", "cancelado", "faltou"].includes(a.status)) recusar(409, "Este atendimento já foi encerrado.");
+  function concluir(ag, { produtos = [], descontoCentavos = 0, forma, autor }) {
     return repo.transacao(() => {
+      // Confere o status dentro da transação, no registro atual (dois "fechar comanda" ao mesmo tempo: só um passa)
+      let a = repo.obter("agendamentos", ag.id) ?? recusar(404, "Agendamento não encontrado.");
+      if (["concluido", "cancelado", "faltou"].includes(a.status) || a.venda_id) recusar(409, "Este atendimento já foi encerrado.");
+      a = recalcularCobertura(a.id); // a assinatura pode ter sido cancelada ou atrasado desde o agendamento
       const itens = [{ tipo: "servico", id: a.servico_id, quantidade: 1, clube: Boolean(a.assinatura_id) }];
       for (const r of repo.todos("SELECT * FROM reservas WHERE agendamento_id = ? AND status = 'reservado'", a.id)) itens.push({ tipo: "produto", id: r.produto_id, quantidade: r.quantidade, reserva_id: r.id });
       for (const p of produtos) itens.push({ tipo: "produto", id: p.id, quantidade: p.quantidade });
@@ -432,82 +515,263 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
   }
 
   /* ---------- Clube de assinatura ---------- */
-  async function assinar({ cliente, planoId, cpf = null, autor, pagoAgora = null }) {
+  /** Trava por cliente: dois "assinar" ao mesmo tempo não criam duas assinaturas (nem duas cobranças no Asaas) */
+  const assinando = new Set();
+  async function assinar(dados) {
+    const id = dados.cliente.id;
+    if (assinando.has(id)) recusar(409, "Já estamos gerando esta assinatura. Aguarde um instante.");
+    assinando.add(id);
+    try {
+      return await assinarTravado(dados);
+    } finally {
+      assinando.delete(id);
+    }
+  }
+
+  async function assinarTravado({ cliente, planoId, cpf = null, autor, pagoAgora = null }) {
     const b = exigirBarbearia();
     const plano = repo.obter("planos", planoId);
     if (!plano?.ativo) recusar(404, "Plano não encontrado.");
+    const { asaas } = canais(b);
     const atual = assinaturaAtual(cliente.id);
     if (atual && atual.status !== "pendente") recusar(409, "Este cliente já tem uma assinatura. Cancele a atual para trocar de plano.");
-    if (atual) repo.atualizar("assinaturas", atual.id, { status: "cancelada", cancelada_em: agora() });
+    if (atual && atual.plano_id === plano.id) {
+      // A mesma assinatura pendente (com o mesmo link de pagamento), em vez de criar outra
+      if (pagoAgora) return registrarPagamento(atual, { forma: pagoAgora, autor });
+      if (!asaas.ativo || atual.asaas_assinatura) return atual;
+    }
+    if (asaas.ativo && !pagoAgora && !cpf) recusar(400, "Informe o CPF para gerar a cobrança.");
+    if (atual) {
+      // Trocou de plano antes de pagar: a cobrança anterior para no Asaas antes de nascer a nova
+      if (atual.asaas_assinatura && asaas.ativo) {
+        try {
+          await asaas.cancelar(atual.asaas_assinatura);
+        } catch (e) {
+          console.error("[asaas] cancelar pendente", e.message);
+          recusar(502, "Não foi possível cancelar a cobrança anterior no Asaas. Tente de novo em instantes.");
+        }
+      }
+      repo.atualizar("assinaturas", atual.id, { status: "cancelada", cancelada_em: agora() });
+      repo.auditar(b.id, autor, "assinatura_substituida", { assinatura: atual.id });
+    }
     let a = repo.inserir("assinaturas", { barbearia_id: b.id, cliente_id: cliente.id, plano_id: plano.id, status: "pendente", cpf });
     repo.auditar(b.id, autor, "assinatura_criada", { assinatura: a.id, plano: plano.nome });
     if (pagoAgora) return registrarPagamento(a, { forma: pagoAgora, autor });
-    const { asaas } = canais(b);
     if (asaas.ativo) {
-      if (!cpf) recusar(400, "Informe o CPF para gerar a cobrança.");
       try {
-        const r = await asaas.assinar({ cliente, cpf, plano, assinaturaId: a.id, vencimento: hoje() });
-        a = repo.atualizar("assinaturas", a.id, { asaas_cliente: r.cliente, asaas_assinatura: r.assinatura, link: r.pagamento?.link ?? null });
-        if (r.pagamento) repo.inserir("cobrancas", { barbearia_id: b.id, assinatura_id: a.id, valor_centavos: r.pagamento.valor || plano.preco_centavos, vencimento: r.pagamento.vencimento ?? hoje(), externo_id: r.pagamento.id, link: r.pagamento.link });
+        const clienteAsaas = await asaas.criarCliente({ cliente, cpf });
+        a = repo.atualizar("assinaturas", a.id, { asaas_cliente: clienteAsaas });
+        const assinaturaAsaas = await asaas.criarAssinatura({ clienteAsaas, plano, assinaturaId: a.id, vencimento: hoje() });
+        a = repo.atualizar("assinaturas", a.id, { asaas_assinatura: assinaturaAsaas });
+        const p = await asaas.primeiroPagamento(assinaturaAsaas);
+        a = repo.atualizar("assinaturas", a.id, { link: p?.link ?? null });
+        if (p && !repo.um("SELECT 1 FROM cobrancas WHERE externo_id = ?", p.id)) repo.inserir("cobrancas", { barbearia_id: b.id, assinatura_id: a.id, valor_centavos: p.valor || plano.preco_centavos, vencimento: p.vencimento ?? hoje(), externo_id: p.id, link: p.link });
       } catch (e) {
+        // Se a assinatura já nasceu no Asaas, ela é cancelada lá também (senão o cliente seria cobrado sem registro aqui)
         repo.atualizar("assinaturas", a.id, { status: "cancelada", cancelada_em: agora() });
+        await cancelarNoAsaas(repo.obter("assinaturas", a.id));
         recusar(502, `Não foi possível gerar a cobrança: ${e.message}`);
       }
     }
     return a;
   }
 
-  /** Pagamento confirmado (balcão ou Asaas): ativa ou renova o ciclo */
+  /**
+   * Período que um pagamento novo cobre: o mês seguinte ao último já pago (adiantado ou atrasado dentro do mês);
+   * sem período anterior, ou com mais de um mês sem pagar, começa hoje.
+   */
+  function proximoPeriodo(atual) {
+    const pa = pagoAte(atual);
+    if (atual.ciclo_inicio && pa && ["ativa", "atrasada"].includes(atual.status)) {
+      const prox = cicloDe(somarDias(pa, 1));
+      if (prox.ciclo_fim >= hoje()) return prox;
+    }
+    return cicloDe(hoje());
+  }
+
+  /** Pagamento confirmado (balcão ou Asaas): ativa ou renova. O ciclo atual só muda quando o período pago começa. */
   function registrarPagamento(a, { forma = "outro", autor, externoId = null, valor = null }) {
     const b = exigirBarbearia();
     return repo.transacao(() => {
       const plano = repo.obter("planos", a.plano_id);
       const atual = repo.obter("assinaturas", a.id);
-      const inicio = atual.status === "ativa" && atual.ciclo_fim >= hoje() ? somarDias(atual.ciclo_fim, 1) : hoje();
-      const ciclo = cicloDe(inicio);
+      const ciclo = proximoPeriodo(atual);
+      const vigente = ciclo.ciclo_inicio <= hoje() ? ciclo : cicloNoDia(atual, hoje());
       let cob = externoId ? repo.um("SELECT * FROM cobrancas WHERE externo_id = ?", externoId) : null;
-      if (cob?.status === "paga") return atual; // webhook repetido
-      if (cob) repo.rodar("UPDATE cobrancas SET status = 'paga', pago_em = ?, forma = ? WHERE id = ?", agora(), forma, cob.id);
-      else repo.inserir("cobrancas", { barbearia_id: b.id, assinatura_id: a.id, valor_centavos: valor ?? plano.preco_centavos, vencimento: hoje(), status: "paga", forma, externo_id: externoId, pago_em: agora() });
+      // Já processado (pago antes, mesmo que estornado depois): webhook repetido não renova de novo
+      if (cob?.pago_em) return atual;
+      if (cob) repo.rodar("UPDATE cobrancas SET status = 'paga', pago_em = ?, forma = ?, registrado_por = ?, ciclo_inicio = ?, ciclo_fim = ? WHERE id = ?", agora(), forma, autor ?? null, ciclo.ciclo_inicio, ciclo.ciclo_fim, cob.id);
+      else repo.inserir("cobrancas", { barbearia_id: b.id, assinatura_id: a.id, valor_centavos: valor ?? plano.preco_centavos, vencimento: hoje(), status: "paga", forma, externo_id: externoId, pago_em: agora(), registrado_por: autor ?? null, ...ciclo });
       repo.auditar(b.id, autor, "assinatura_paga", { assinatura: a.id, forma, ciclo });
-      return repo.atualizar("assinaturas", a.id, { status: "ativa", ...ciclo });
+      return repo.atualizar("assinaturas", a.id, { status: "ativa", ...vigente, pago_ate: ciclo.ciclo_fim });
     });
+  }
+
+  /**
+   * Pagamento registrado pela equipe no balcão. Protegido contra envio duplo:
+   * - chave de idempotência do painel (o mesmo pedido reenviado devolve o resultado sem registrar de novo);
+   * - sem chave, recusa um 2º pagamento manual da mesma assinatura em poucos minutos;
+   * - com Asaas, dá baixa na cobrança aberta lá (receiveInCash) em vez de criar outra aqui.
+   */
+  const emPagamento = new Set();
+  const JANELA_PAGAMENTO = 5 * 60_000;
+  async function pagamentoManual(a, { forma, autor, chave = null }) {
+    const b = exigirBarbearia();
+    const externoChave = chave ? `manual:${chave}` : null;
+    if (externoChave && repo.um("SELECT 1 FROM cobrancas WHERE externo_id = ? AND pago_em IS NOT NULL", externoChave)) return repo.obter("assinaturas", a.id);
+    if (emPagamento.has(a.id)) recusar(409, "Este pagamento já está sendo registrado.");
+    const atual = repo.obter("assinaturas", a.id);
+    if (atual.status === "cancelada") recusar(409, "Assinatura cancelada.");
+    const recente = repo.um("SELECT 1 FROM cobrancas WHERE assinatura_id = ? AND pago_em > ? AND registrado_por IS NOT NULL AND registrado_por <> 'Asaas'", a.id, agora() - JANELA_PAGAMENTO);
+    if (recente) recusar(409, "Já foi registrado um pagamento desta assinatura há poucos minutos. Confira a lista antes de registrar de novo.");
+    const { asaas } = canais(b);
+    const aberta = atual.asaas_assinatura ? repo.um("SELECT * FROM cobrancas WHERE assinatura_id = ? AND status = 'aberta' AND pago_em IS NULL AND externo_id IS NOT NULL AND externo_id NOT LIKE 'manual:%' ORDER BY vencimento LIMIT 1", a.id) : null;
+    emPagamento.add(a.id);
+    try {
+      if (aberta && asaas.ativo) {
+        try {
+          await asaas.receberEmDinheiro(aberta.externo_id, { data: hoje(), valorCentavos: aberta.valor_centavos });
+        } catch (e) {
+          console.error("[asaas] baixa manual", e.message);
+          recusar(502, "Não foi possível dar baixa na cobrança do Asaas agora. Nada foi registrado; tente de novo em instantes.");
+        }
+        return registrarPagamento(atual, { forma, autor, externoId: aberta.externo_id, valor: aberta.valor_centavos });
+      }
+      return registrarPagamento(atual, { forma, autor, externoId: externoChave });
+    } finally {
+      emPagamento.delete(a.id);
+    }
+  }
+
+  /**
+   * Cancela a assinatura no Asaas. Se não der (Asaas fora ou chave removida), marca cancelamento_pendente e a
+   * rotina tenta de novo; o cliente nunca fica sendo cobrado lá sem ninguém saber. 404 = já não existe lá.
+   */
+  async function cancelarNoAsaas(a) {
+    if (!a.asaas_assinatura) return true;
+    const b = exigirBarbearia();
+    const { asaas } = canais(b);
+    try {
+      if (!asaas.ativo) throw new Error("Asaas desligado nesta barbearia");
+      await asaas.cancelar(a.asaas_assinatura);
+    } catch (e) {
+      if (e.statusExterno !== 404) {
+        console.error("[asaas] cancelar assinatura", a.asaas_assinatura, e.message);
+        if (!repo.obter("assinaturas", a.id).cancelamento_pendente) repo.auditar(b.id, "sistema", "cancelamento_asaas_pendente", { assinatura: a.id, erro: String(e.message).slice(0, 200) });
+        repo.atualizar("assinaturas", a.id, { cancelamento_pendente: 1 });
+        return false;
+      }
+    }
+    repo.atualizar("assinaturas", a.id, { cancelamento_pendente: 0 });
+    return true;
   }
 
   async function cancelarAssinatura(a, { autor }) {
     if (a.status === "cancelada") recusar(409, "Assinatura já cancelada.");
     const b = exigirBarbearia();
-    const { asaas } = canais(b);
-    if (asaas.ativo && a.asaas_assinatura) await asaas.cancelar(a.asaas_assinatura).catch((e) => console.error("[asaas]", e.message));
+    repo.atualizar("assinaturas", a.id, { status: "cancelada", cancelada_em: agora() });
     repo.auditar(b.id, autor, "assinatura_cancelada", { assinatura: a.id });
-    return repo.atualizar("assinaturas", a.id, { status: "cancelada", cancelada_em: agora() });
+    await cancelarNoAsaas(a);
+    return repo.obter("assinaturas", a.id);
   }
 
-  /** Webhook do Asaas: paga, atrasada, cancelada ou nova cobrança da assinatura */
+  /** Formato mínimo de um evento de cobrança do Asaas (o resto do payload é ignorado) */
+  const valorAsaas = z.union([z.number(), z.string().regex(/^\d+(\.\d+)?$/).transform(Number)]).pipe(z.number().positive().max(1_000_000));
+  const ESQ_PAGAMENTO_ASAAS = z.object({
+    id: z.string().min(1).max(100),
+    subscription: z.string().max(100).optional().nullable(),
+    value: valorAsaas.optional().nullable(),
+    dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+    invoiceUrl: z.string().max(500).optional().nullable(),
+    billingType: z.string().max(40).optional().nullable(),
+  });
+  const ignorar = (motivo, evento) => {
+    console.warn("[asaas] webhook ignorado:", motivo, String(evento?.event ?? "").slice(0, 60), String(evento?.payment?.id ?? "").slice(0, 60));
+    return { ignorado: true, motivo };
+  };
+
+  /** Webhook do Asaas: paga, atrasada, estornada, cancelada ou nova cobrança da assinatura */
   function eventoAsaas(evento) {
     const acao = acaoAsaas(evento?.event);
-    const p = evento?.payment;
-    if (!acao || !p?.id) return { ignorado: true };
+    if (!acao || !evento?.payment) return { ignorado: true };
+    // Evento malformado responde 200 com "ignorado" (um 500 repetido faz o Asaas pausar a fila de webhooks)
+    const lido = ESQ_PAGAMENTO_ASAAS.safeParse(evento.payment);
+    if (!lido.success) return ignorar("evento malformado", evento);
+    const p = lido.data;
     const a = p.subscription ? repo.um("SELECT * FROM assinaturas WHERE asaas_assinatura = ?", p.subscription) : null;
     if (!a) return { ignorado: true };
     const b = exigirBarbearia();
+    const valor = p.value ? Math.round(p.value * 100) : null;
     if (acao === "nova") {
-      if (!repo.um("SELECT 1 FROM cobrancas WHERE externo_id = ?", p.id)) repo.inserir("cobrancas", { barbearia_id: b.id, assinatura_id: a.id, valor_centavos: Math.round(Number(p.value) * 100), vencimento: p.dueDate, externo_id: p.id, link: p.invoiceUrl ?? null });
+      if (!valor || !p.dueDate) return ignorar("cobrança sem valor ou vencimento", evento);
+      if (!repo.um("SELECT 1 FROM cobrancas WHERE externo_id = ?", p.id)) repo.inserir("cobrancas", { barbearia_id: b.id, assinatura_id: a.id, valor_centavos: valor, vencimento: p.dueDate, externo_id: p.id, link: p.invoiceUrl ?? null });
       repo.atualizar("assinaturas", a.id, { link: p.invoiceUrl ?? a.link });
       return { ok: true };
     }
+    if (acao === "paga" && a.status === "cancelada") return pagamentoDeCancelada(a, { ...p, value: p.value ?? null });
     if (acao === "paga") {
-      registrarPagamento(repo.ler("assinaturas", a), { forma: String(p.billingType ?? "asaas").toLowerCase(), autor: "Asaas", externoId: p.id, valor: Math.round(Number(p.value) * 100) });
+      registrarPagamento(repo.ler("assinaturas", a), { forma: String(p.billingType ?? "asaas").toLowerCase(), autor: "Asaas", externoId: p.id, valor });
       return { ok: true };
     }
     if (acao === "atrasada" && a.status !== "cancelada") {
+      // Fora de ordem: a cobrança já foi paga, ou o período pago ainda cobre hoje (V-18)
+      if (repo.um("SELECT 1 FROM cobrancas WHERE externo_id = ? AND pago_em IS NOT NULL", p.id)) return { ignorado: true, motivo: "cobrança já paga" };
+      if (a.status === "ativa" && pagoAte(a) && pagoAte(a) >= hoje()) return { ignorado: true, motivo: "período pago cobre hoje" };
       repo.atualizar("assinaturas", a.id, { status: "atrasada", link: p.invoiceUrl ?? a.link });
       const cliente = repo.obter("clientes", a.cliente_id);
       notificar(cliente, "clube_atraso", { texto: `${cliente.nome.split(" ")[0]}, a mensalidade do seu clube na ${b.nome} está em aberto. Pague aqui para continuar usando: ${p.invoiceUrl ?? linkApp()}`, parametros: [cliente.nome.split(" ")[0], p.invoiceUrl ?? linkApp()] }).catch(() => {});
       return { ok: true };
     }
-    if (acao === "cancelada") repo.rodar("UPDATE cobrancas SET status = 'cancelada' WHERE externo_id = ?", p.id);
+    if (acao === "estornada") return estornar(a, p.id);
+    // Cobrança apagada no Asaas antes de ser paga
+    if (acao === "cancelada") repo.rodar("UPDATE cobrancas SET status = 'cancelada' WHERE externo_id = ? AND pago_em IS NULL", p.id);
     return { ok: true };
+  }
+
+  /**
+   * Pagamento de uma assinatura já cancelada aqui: o dinheiro entrou, então a cobrança fica registrada como paga,
+   * mas a assinatura não volta a valer. A equipe vê na auditoria (para devolver ou reativar com o cliente) e a
+   * rotina tenta cancelar de novo no Asaas, que ainda está cobrando.
+   */
+  function pagamentoDeCancelada(a, p) {
+    const b = exigirBarbearia();
+    return repo.transacao(() => {
+      const cob = repo.um("SELECT * FROM cobrancas WHERE externo_id = ?", p.id);
+      if (cob?.pago_em) return { ok: true };
+      const valor = Math.round(Number(p.value) * 100) || repo.obter("planos", a.plano_id)?.preco_centavos || 0;
+      const forma = String(p.billingType ?? "asaas").toLowerCase();
+      if (cob) repo.rodar("UPDATE cobrancas SET status = 'paga', pago_em = ?, forma = ?, registrado_por = 'Asaas' WHERE id = ?", agora(), forma, cob.id);
+      else repo.inserir("cobrancas", { barbearia_id: b.id, assinatura_id: a.id, valor_centavos: valor, vencimento: p.dueDate ?? hoje(), status: "paga", forma, externo_id: p.id, pago_em: agora(), registrado_por: "Asaas" });
+      repo.atualizar("assinaturas", a.id, { cancelamento_pendente: 1 });
+      repo.auditar(b.id, "Asaas", "pagamento_assinatura_cancelada", { assinatura: a.id, cliente: a.cliente_id, cobranca: p.id, valor_centavos: valor });
+      console.warn("[asaas] pagamento recebido de assinatura cancelada", a.id, p.id);
+      return { ok: true, assinatura_cancelada: true };
+    });
+  }
+
+  /**
+   * Estorno ou chargeback de uma cobrança: ela deixa de contar como recebida e o período que ela pagou sai da
+   * assinatura. A assinatura volta para o último período pago que sobrou; sem nenhum que cubra hoje, fica "atrasada".
+   */
+  function estornar(a, externoId) {
+    const b = exigirBarbearia();
+    return repo.transacao(() => {
+      const cob = repo.um("SELECT * FROM cobrancas WHERE externo_id = ?", externoId);
+      if (!cob) return { ignorado: true };
+      if (cob.estornada_em) return { ok: true }; // repetido
+      repo.rodar("UPDATE cobrancas SET status = 'cancelada', estornada_em = ? WHERE id = ?", agora(), cob.id);
+      if (!cob.pago_em) return { ok: true };
+      const atual = repo.obter("assinaturas", a.id);
+      repo.auditar(b.id, "Asaas", "assinatura_estornada", { assinatura: a.id, cobranca: externoId });
+      if (atual.status === "cancelada") return { ok: true };
+      // Tira do período pago o mês que a cobrança estornada pagou (cobrança antiga, sem período gravado: o último mês)
+      const pa = pagoAte(atual);
+      let novoPagoAte = pa;
+      if (pa && cob.ciclo_fim === pa) novoPagoAte = somarDias(cob.ciclo_inicio, -1);
+      else if (pa) novoPagoAte = somarDias(somarMeses(somarDias(pa, 1), -1), -1);
+      repo.atualizar("assinaturas", a.id, { pago_ate: novoPagoAte, status: novoPagoAte && novoPagoAte >= hoje() ? "ativa" : "atrasada" });
+      return { ok: true, estornada: true };
+    });
   }
 
   /* ---------- Lista de espera relâmpago ---------- */
@@ -580,7 +844,10 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     if (!b) return {};
     const r = b.config.regras;
     const t = agora();
-    const res = { lembretes: 0, retornos: 0, ofertas_vencidas: 0, assinaturas_atrasadas: 0 };
+    const res = { lembretes: 0, retornos: 0, ofertas_vencidas: 0, assinaturas_atrasadas: 0, cancelamentos_asaas: 0 };
+
+    // Clube: cancelamentos que não chegaram ao Asaas (ou assinatura cancelada que voltou a ser cobrada)
+    for (const a of repo.lista("assinaturas", "WHERE cancelamento_pendente = 1 AND status = 'cancelada' LIMIT 20")) if (await cancelarNoAsaas(a)) res.cancelamentos_asaas++;
 
     // Lembrete X horas antes
     const prox = repo.lista("agendamentos", "WHERE status = 'agendado' AND lembrete_em IS NULL AND inicio > ? AND inicio <= ?", t, t + r.lembrete_horas * 3600_000);
@@ -601,18 +868,26 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     }
     repo.rodar("UPDATE espera SET status = 'expirada' WHERE status IN ('aguardando','oferecida') AND dia < ?", hojeBR(t));
 
-    // Clube: ciclo vencido sem pagamento vira "atrasada" (3 dias de tolerância)
-    for (const a of repo.lista("assinaturas", "WHERE status = 'ativa' AND ciclo_fim < ?", somarDias(hojeBR(t), -3))) {
+    // Clube: período pago vencido vira "atrasada" (3 dias de tolerância); período seguinte já pago vira o ciclo
+    for (const a of repo.lista("assinaturas", "WHERE status = 'ativa' AND COALESCE(pago_ate, ciclo_fim) < ?", somarDias(hojeBR(t), -3))) {
       repo.atualizar("assinaturas", a.id, { status: "atrasada" });
       res.assinaturas_atrasadas++;
     }
+    for (const a of repo.lista("assinaturas", "WHERE status = 'ativa' AND ciclo_fim < ? AND pago_ate >= ?", hojeBR(t), hojeBR(t))) virarCiclo(a);
 
     // Retorno no tempo certo: das 10h às 19h, quem passou do próprio ciclo e não tem horário marcado
     const hora = horaBR(t);
     if (b.config.retorno?.ativo !== false && hora >= "10:00" && hora <= "19:00") {
       const margem = Number(b.config.retorno?.margem_dias ?? 2);
-      const candidatos = repo.lista("clientes", "WHERE ativo = 1 AND aceita_mensagens = 1 AND fone IS NOT NULL AND ciclo_dias IS NOT NULL AND ultima_visita IS NOT NULL AND retorno_avisado_em IS NULL");
-      for (const c of candidatos.slice(0, 40)) {
+      // Filtra no SQL quem já passou do ciclo e não tem horário marcado; o limite de 40 vem depois do filtro (V-11)
+      const candidatos = repo.lista(
+        "clientes",
+        "WHERE ativo = 1 AND aceita_mensagens = 1 AND fone IS NOT NULL AND ciclo_dias IS NOT NULL AND ultima_visita IS NOT NULL AND retorno_avisado_em IS NULL AND julianday(?) - julianday(ultima_visita) >= ciclo_dias + ? AND NOT EXISTS (SELECT 1 FROM agendamentos g WHERE g.cliente_id = clientes.id AND g.status = 'agendado' AND g.inicio > ?) ORDER BY ultima_visita LIMIT 40",
+        hojeBR(t),
+        margem,
+        t,
+      );
+      for (const c of candidatos) {
         const passaram = diasEntre(c.ultima_visita, hojeBR(t));
         if (passaram < c.ciclo_dias + margem) continue;
         if (repo.um("SELECT 1 FROM agendamentos WHERE cliente_id = ? AND status = 'agendado' AND inicio > ?", c.id, t)) continue;
@@ -636,6 +911,9 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
   return {
     barbearia,
     exigirBarbearia,
+    tokenWebhookAsaas,
+    novoTokenWebhook,
+    migrarConfig,
     canais,
     segredo,
     notificar,
@@ -649,6 +927,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     podeMudar,
     cancelar,
     remarcar,
+    mudarStatus,
+    recalcularCobertura,
     vender,
     concluir,
     cancelarVenda,
@@ -662,6 +942,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     identificarAssinante,
     assinar,
     registrarPagamento,
+    pagamentoManual,
     cancelarAssinatura,
     eventoAsaas,
     entrarNaEspera,

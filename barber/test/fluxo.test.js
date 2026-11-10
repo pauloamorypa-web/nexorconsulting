@@ -216,6 +216,8 @@ test("clube pelo Asaas: CPF obrigatório, link de pagamento e webhook ativa", as
     const eu = (await lucas.get("/api/app/eu")).dados;
     assert.equal(eu.clube.status, "ativa");
     assert.equal(eu.clube.ciclo_fim, "2026-12-09");
+    // OVERDUE só vale depois que o período pago acabou (V-18: antes disso é evento fora de ordem)
+    s.agora.ir("2026-12-11T10:00:00-03:00");
     await enviar({ event: "PAYMENT_OVERDUE", payment: { id: "pay_2", subscription: "sub_1", invoiceUrl: "https://asaas.com/i/pay_2" } });
     assert.equal((await lucas.get("/api/app/eu")).dados.clube.status, "atrasada");
     assert.equal((await lucas.post("/api/app/assinatura/cancelar")).dados.status, "cancelada");

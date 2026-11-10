@@ -94,7 +94,8 @@ test("CSRF, segredos fora das respostas e webhooks assinados", async () => {
     await w(assinar("seg-meta"));
     await s.app.ocioso();
     assert.equal(s.rede.whatsapp.length, antes + 1, "uma resposta por dia");
-    const verif = (await dono.get("/api/config")).dados.config.whatsapp.verificacao;
+    // A verificação do webhook só aparece na aba Canais (dono e admin)
+    const verif = (await dono.get("/api/canais")).dados.whatsapp.verificacao;
     const v = await fetch(`${s.url}/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=${verif}&hub.challenge=42`);
     assert.equal(await v.text(), "42");
     assert.equal((await fetch(`${s.url}/webhook/asaas`, { method: "POST", body: "{}" })).status, 401);

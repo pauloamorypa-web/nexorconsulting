@@ -5,12 +5,13 @@
 import { z } from "zod";
 import { HORARIO_PADRAO, OCUPA, REGRAS_PADRAO, expediente, ocupacao } from "../regras/agenda.js";
 import { diasEntre, hojeBR, paraMs, somarDias } from "../regras/datas.js";
-import { conferirSenha, gerarHashSenha, gerarToken, iguais, precisaRefazerHash, sha256 } from "../seguranca.js";
+import { gerarHashSenha, gerarToken, hashSenha, iguais, precisaRefazerHash, senhaConfere, sha256 } from "../seguranca.js";
 import { CATALOGO, chaveValida } from "../nexor/politica.js";
+import { cicloNoDia } from "../regras/clube.js";
 import { FORMAS } from "../servicos/nucleo.js";
 import { normalizarFone } from "../servicos/canais.js";
 import { criarRoteador, falha } from "./roteador.js";
-import { COOKIE_PAINEL, centavos, clientePublico, configPublica, cor, dia, email, hora, id, op, pct, senha, t, tabelaHorario, usuarioPublico, validar } from "./validacao.js";
+import { COOKIE_PAINEL, centavos, clientePublico, configCanais, configPublica, cor, dia, email, hora, id, op, pct, senha, t, tabelaHorario, usuarioPublico, validar } from "./validacao.js";
 import { rotasApp } from "./app.js";
 
 const ADM = { papeis: ["dono", "admin"] };
@@ -83,11 +84,12 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const b = await corpo();
     if (exigeCodigo() && !iguais(String(b?.codigo_instalacao ?? "").trim(), cfg.codigoInstalacao)) falha(403, "Código de instalação incorreto. Ele está no arquivo codigo-instalacao.txt do servidor ou com a Nexor.");
     const d = validar(z.object({ barbearia: t(100), nome: t(120), email, senha, tambem_corta: z.boolean().optional() }), b);
+    const senhaHash = await hashSenha(d.senha);
     const u = repo.transacao(() => {
       const bb = repo.inserir("barbearias", { nome: d.barbearia, config: { horario: HORARIO_PADRAO, regras: REGRAS_PADRAO, retorno: { ativo: true, margem_dias: 2 }, marca: { cor: "#3b8dff" } } });
       SERVICOS_PADRAO.forEach((s, i) => repo.inserir("servicos", { barbearia_id: bb.id, ...s, ordem: i }));
       const barbeiro = d.tambem_corta !== false ? repo.inserir("barbeiros", { barbearia_id: bb.id, nome: d.nome.split(" ")[0], ordem: 0 }) : null;
-      return repo.inserir("usuarios", { barbearia_id: bb.id, nome: d.nome, email: d.email, senha_hash: gerarHashSenha(d.senha), papel: "dono", barbeiro_id: barbeiro?.id ?? null });
+      return repo.inserir("usuarios", { barbearia_id: bb.id, nome: d.nome, email: d.email, senha_hash: senhaHash, papel: "dono", barbeiro_id: barbeiro?.id ?? null });
     });
     repo.auditar(u.barbearia_id, u.nome, "conta_criada");
     iniciarSessao(res, u.id);
@@ -99,9 +101,9 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     limitar(`login:${ip}`);
     limitar(`login:${d.email}`);
     const u = repo.usuarioPorEmail(d.email);
-    const ok = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
+    const ok = await senhaConfere(d.senha, u?.senha_hash ?? HASH_FALSO);
     if (!u || !ok) falha(401, "E-mail ou senha incorretos.");
-    if (precisaRefazerHash(u.senha_hash)) repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", gerarHashSenha(d.senha), u.id);
+    if (precisaRefazerHash(u.senha_hash)) repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", await hashSenha(d.senha), u.id);
     iniciarSessao(res, u.id);
     repo.auditar(u.barbearia_id, u.nome, "login");
     return { ok: true };
@@ -190,30 +192,26 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     return nucleo.agendar({ cliente, servicoId: d.servico_id, barbeiroId, dia: d.dia, hora: d.hora, origem: "painel", autor: ctx.usuario.nome, encaixe: Boolean(d.encaixe), observacao: d.observacao ?? null });
   });
 
+  // Lê o corpo antes do registro: com rede lenta, o agendamento lido antes do await já pode ter mudado (V-01)
   r.put("/api/agendamentos/:id", async (ctx) => {
+    const d = validar(z.object({ status: z.enum(["agendado", "chegou", "em_atendimento", "faltou", "cancelado"]).optional(), dia: dia.optional(), hora: hora.optional(), barbeiro_id: id.optional(), encaixe: z.boolean().optional(), observacao: op(500) }), await ctx.corpo());
     const a = exigir("agendamentos", ctx.params.id, "Agendamento");
     doBarbeiro(ctx, a.barbeiro_id);
-    const d = validar(z.object({ status: z.enum(["agendado", "chegou", "em_atendimento", "faltou", "cancelado"]).optional(), dia: dia.optional(), hora: hora.optional(), barbeiro_id: id.optional(), encaixe: z.boolean().optional(), observacao: op(500) }), await ctx.corpo());
     if (d.dia && d.hora) {
       if (d.barbeiro_id) doBarbeiro(ctx, d.barbeiro_id);
       return nucleo.remarcar(a, { dia: d.dia, hora: d.hora, barbeiroId: d.barbeiro_id, autor: ctx.usuario.nome, encaixe: Boolean(d.encaixe) });
     }
     if (d.status === "cancelado") return nucleo.cancelar(a, { por: ctx.usuario.nome, motivo: "barbearia" });
-    if (d.status) {
-      if (["concluido", "cancelado"].includes(a.status)) falha(409, "Este atendimento já foi encerrado.");
-      if (d.status === "faltou") repo.rodar("DELETE FROM usos WHERE agendamento_id = ?", a.id);
-      repo.atualizar("agendamentos", a.id, { status: d.status, chegou_em: d.status === "chegou" ? agora() : a.chegou_em });
-      auditar(ctx, "agendamento_status", { agendamento: a.id, status: d.status });
-    }
+    if (d.status) nucleo.mudarStatus(a.id, d.status, { autor: ctx.usuario.nome });
     if (d.observacao !== undefined) repo.atualizar("agendamentos", a.id, { observacao: d.observacao });
     return nucleo.detalhar(repo.obter("agendamentos", a.id));
   });
 
   const ESQ_PRODUTOS = z.array(z.object({ id, quantidade: z.number().int().min(1).max(100) })).max(30);
   r.post("/api/agendamentos/:id/concluir", async (ctx) => {
+    const d = validar(z.object({ produtos: ESQ_PRODUTOS.optional(), desconto_centavos: centavos.optional(), forma: z.enum(Object.keys(FORMAS)) }), await ctx.corpo());
     const a = exigir("agendamentos", ctx.params.id, "Agendamento");
     doBarbeiro(ctx, a.barbeiro_id);
-    const d = validar(z.object({ produtos: ESQ_PRODUTOS.optional(), desconto_centavos: centavos.optional(), forma: z.enum(Object.keys(FORMAS)) }), await ctx.corpo());
     const r2 = nucleo.concluir(a, { produtos: d.produtos ?? [], descontoCentavos: d.desconto_centavos ?? 0, forma: d.forma, autor: ctx.usuario.nome });
     return r2;
   });
@@ -335,7 +333,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const lista = repo.lista("assinaturas", status ? "WHERE status = ? ORDER BY atualizado_em DESC" : "WHERE status <> 'cancelada' ORDER BY atualizado_em DESC", ...(status ? [status] : []));
     const ativas = repo.todos("SELECT p.preco_centavos FROM assinaturas a JOIN planos p ON p.id = a.plano_id WHERE a.status = 'ativa'");
     return {
-      lista: lista.map((a) => ({ ...a, cliente: clientePublico(repo.obter("clientes", a.cliente_id)), plano: repo.obter("planos", a.plano_id), usos: repo.um("SELECT COUNT(*) n FROM usos WHERE assinatura_id = ? AND ciclo_inicio = ?", a.id, a.ciclo_inicio ?? "").n })),
+      lista: lista.map((a) => ({ ...a, cliente: clientePublico(repo.obter("clientes", a.cliente_id)), plano: repo.obter("planos", a.plano_id), usos: repo.um("SELECT COUNT(*) n FROM usos WHERE assinatura_id = ? AND ciclo_inicio = ?", a.id, cicloNoDia(a, hoje())?.ciclo_inicio ?? "").n })),
       resumo: { ativas: ativas.length, receita_mensal_centavos: ativas.reduce((s, x) => s + x.preco_centavos, 0), atrasadas: repo.um("SELECT COUNT(*) n FROM assinaturas WHERE status = 'atrasada'").n, pendentes: repo.um("SELECT COUNT(*) n FROM assinaturas WHERE status = 'pendente'").n },
     };
   });
@@ -345,10 +343,9 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     return nucleo.assinar({ cliente, planoId: d.plano_id, cpf: d.cpf?.replace(/\D/g, "") || null, autor: ctx.usuario.nome, pagoAgora: d.pago_agora ?? null });
   });
   r.post("/api/assinaturas/:id/pagamento", EQUIPE, async (ctx) => {
+    const d = validar(z.object({ forma: z.enum(Object.keys(FORMAS)), chave: z.string().regex(/^[\w-]{16,64}$/).optional() }), await ctx.corpo());
     const a = exigir("assinaturas", ctx.params.id, "Assinatura");
-    if (a.status === "cancelada") falha(409, "Assinatura cancelada.");
-    const d = validar(z.object({ forma: z.enum(Object.keys(FORMAS)) }), await ctx.corpo());
-    return nucleo.registrarPagamento(a, { forma: d.forma, autor: ctx.usuario.nome });
+    return nucleo.pagamentoManual(a, { forma: d.forma, autor: ctx.usuario.nome, chave: d.chave ?? null });
   });
   r.post("/api/assinaturas/:id/cancelar", EQUIPE, async (ctx) => nucleo.cancelarAssinatura(exigir("assinaturas", ctx.params.id, "Assinatura"), { autor: ctx.usuario.nome }));
 
@@ -358,6 +355,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.post("/api/produtos", EQUIPE, async (ctx) => {
     const d = validar(ESQ_PRODUTO.extend({ estoque: z.number().int().min(0).max(100000).optional() }), await ctx.corpo());
     const { estoque = 0, ...resto } = d;
+    if (d.vitrine !== false && !(d.preco_centavos > 0)) falha(400, "Informe o preço para mostrar o produto na vitrine do app (ou tire da vitrine).");
     const p = repo.inserir("produtos", { ...resto, barbearia_id: ctx.barbearia.id });
     auditar(ctx, "produto_criado", { nome: d.nome });
     return estoque ? nucleo.movimentarEstoque(p, { tipo: "entrada", quantidade: estoque, motivo: "estoque inicial", autor: ctx.usuario.nome }) : p;
@@ -365,6 +363,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.put("/api/produtos/:id", EQUIPE, async (ctx) => {
     const p = exigir("produtos", ctx.params.id, "Produto");
     const d = validar(ESQ_PRODUTO.partial(), await ctx.corpo());
+    if ((d.vitrine ?? p.vitrine) && !((d.preco_centavos ?? p.preco_centavos) > 0)) falha(400, "Informe o preço para mostrar o produto na vitrine do app (ou tire da vitrine).");
     auditar(ctx, "produto_alterado", { produto: p.id });
     return repo.atualizar("produtos", p.id, d);
   });
@@ -494,6 +493,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
 
   /** Canais: WhatsApp, SMS, Google e Asaas. Campos secretos vazios mantêm o valor atual. */
+  const canaisAdm = (b) => configCanais(b.config, nucleo.tokenWebhookAsaas(b));
+  r.get("/api/canais", ADM, ({ barbearia }) => canaisAdm(barbearia));
   r.put("/api/canais", ADM, async (ctx) => {
     const sec = z.string().trim().max(500).optional().nullable();
     const d = validar(
@@ -501,7 +502,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
         whatsapp: z.object({ id_numero: op(40), token: sec, segredo: sec, verificacao: op(80), idioma: op(10), modelos: z.object({ codigo: op(80), confirmacao: op(80), lembrete: op(80), vaga: op(80), retorno: op(80), clube_atraso: op(80) }).partial().optional() }).partial().optional(),
         sms: z.object({ sid: op(60), token: sec, de: op(40), avisos: z.boolean().optional() }).partial().optional(),
         google: z.object({ client_id: z.string().trim().max(200).regex(/^$|\.apps\.googleusercontent\.com$/, "Client ID termina em .apps.googleusercontent.com").optional().nullable() }).partial().optional(),
-        asaas: z.object({ chave: sec, ambiente: z.enum(["sandbox", "producao"]).optional(), token_webhook: sec }).partial().optional(),
+        asaas: z.object({ chave: sec, ambiente: z.enum(["sandbox", "producao"]).optional(), novo_token_webhook: z.boolean().optional() }).partial().optional(),
       }),
       await ctx.corpo(),
     );
@@ -520,13 +521,16 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     }
     const a = { ...c.asaas };
     if (d.asaas) {
-      const { chave, token_webhook, ...resto } = d.asaas;
-      Object.assign(a, resto, { chave_cripto: novoSegredo(chave, a.chave_cripto), token_webhook: token_webhook && token_webhook !== "true" ? token_webhook : a.token_webhook || gerarToken(18) });
+      // O token do webhook só é gerado aqui no servidor (24 bytes aleatórios) e fica cifrado
+      const { chave, novo_token_webhook, ...resto } = d.asaas;
+      Object.assign(a, resto, { chave_cripto: novoSegredo(chave, a.chave_cripto), token_webhook_cripto: novo_token_webhook || !nucleo.tokenWebhookAsaas(ctx.barbearia) ? nucleo.novoTokenWebhook() : a.token_webhook_cripto });
+      delete a.token_webhook;
+      if (novo_token_webhook) auditar(ctx, "token_webhook_asaas_trocado", {});
     }
     const config = { ...c, whatsapp: w, sms: s, google: { ...c.google, ...(d.google ?? {}) }, asaas: a };
     auditar(ctx, "canais_alterados", { canais: Object.keys(d) });
     const b = repo.atualizar("barbearias", ctx.barbearia.id, { config });
-    return configPublica(b.config);
+    return canaisAdm(b);
   });
   r.post("/api/canais/testar", ADM, async (ctx) => {
     const d = validar(z.object({ canal: z.enum(["whatsapp", "sms"]), fone: z.string().max(30) }), await ctx.corpo());
@@ -557,18 +561,37 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     if (d.barbeiro_id) exigir("barbeiros", d.barbeiro_id, "Barbeiro");
     const { senha: s, ...resto } = d;
     auditar(ctx, "usuario_criado", { email: d.email, papel: d.papel });
-    return usuarioPublico(repo.inserir("usuarios", { ...resto, barbearia_id: ctx.barbearia.id, senha_hash: gerarHashSenha(s) }));
+    return usuarioPublico(repo.inserir("usuarios", { ...resto, barbearia_id: ctx.barbearia.id, senha_hash: await hashSenha(s) }));
   });
   r.put("/api/usuarios/:id", ADM, async (ctx) => {
     const u = repo.obter("usuarios", ctx.params.id);
     if (!u || u.nexor) falha(404, "Acesso não encontrado.");
     const d = validar(z.object({ nome: op(120), papel: z.enum(["admin", "recepcao", "barbeiro"]).optional(), barbeiro_id: id.optional().nullable(), ativo: z.boolean().optional(), senha: senha.optional() }), await ctx.corpo());
+    // Só o próprio dono mexe na conta do dono (um admin não troca a senha nem o e-mail dele)
+    if (u.papel === "dono" && u.id !== ctx.usuario.id) falha(403, "Só o dono pode alterar a própria conta.");
     if (u.papel === "dono" && (d.papel || d.ativo === false)) falha(400, "O dono da conta não pode ser alterado.");
     if (u.id === ctx.usuario.id && (d.papel || d.ativo === false)) falha(400, "Você não pode mudar o próprio perfil.");
-    const novo = repo.atualizar("usuarios", u.id, { ...d, senha: undefined, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined });
+    const papelFinal = d.papel ?? u.papel;
+    const vinculo = d.barbeiro_id !== undefined ? d.barbeiro_id : u.barbeiro_id;
+    if (papelFinal === "barbeiro" && !vinculo) falha(400, "Escolha qual barbeiro é este acesso.");
+    if (d.barbeiro_id) exigir("barbeiros", d.barbeiro_id, "Barbeiro");
+    if (u.id === ctx.usuario.id && d.senha) falha(400, "Para trocar a sua senha, use \"Trocar minha senha\" (pede a senha atual).");
+    const novoHash = d.senha ? await hashSenha(d.senha) : undefined;
+    const novo = repo.atualizar("usuarios", u.id, { ...d, senha: undefined, senha_hash: novoHash });
     if (d.ativo === false || d.senha) repo.rodar("DELETE FROM sessoes WHERE usuario_id = ?", u.id);
     auditar(ctx, "usuario_alterado", { email: u.email });
     return usuarioPublico(novo);
+  });
+  /** Troca da própria senha: pede a senha atual e encerra as outras sessões */
+  r.put("/api/eu/senha", async (ctx) => {
+    const d = validar(z.object({ atual: z.string().min(1).max(200), nova: senha }), await ctx.corpo());
+    limitar(`senha:${ctx.usuario.id}`);
+    const u = repo.obter("usuarios", ctx.usuario.id);
+    if (!(await senhaConfere(d.atual, u.senha_hash))) falha(400, "A senha atual não confere.");
+    repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", await hashSenha(d.nova), u.id);
+    repo.rodar("DELETE FROM sessoes WHERE usuario_id = ? AND token_hash <> ?", u.id, sha256(ctx.cookies[COOKIE_PAINEL] ?? ""));
+    auditar(ctx, "senha_trocada", { email: u.email });
+    return { ok: true };
   });
   r.get("/api/auditoria", ADM, () => repo.lista("auditoria", "ORDER BY criado_em DESC LIMIT 300"));
   r.get("/api/envios", ADM, () => repo.lista("envios", "ORDER BY criado_em DESC LIMIT 200"));

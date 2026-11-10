@@ -1,6 +1,6 @@
 /* Senhas, sessões, criptografia de segredos e comparação segura. */
 
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, scrypt, scryptSync, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -21,6 +21,47 @@ export function conferirSenha(senha, guardado) {
   const custo = Number(n);
   if (!Number.isInteger(custo) || custo < 1024 || custo > 1048576 || (custo & (custo - 1)) !== 0) return false;
   const calculado = scryptSync(senha, Buffer.from(sal, "base64"), esperado.length, opcoes(custo));
+  return timingSafeEqual(esperado, calculado);
+}
+
+/*
+ * Versões assíncronas (V-10): o scrypt roda no pool de threads e o servidor continua respondendo durante o login.
+ * Fila com no máximo 2 cálculos ao mesmo tempo (cada um usa ~128 MB) e até 64 esperando; além disso, 503.
+ */
+const MAX_SIMULTANEOS = 2;
+const MAX_FILA = 64;
+let emCalculo = 0;
+const espera = [];
+function scryptNaFila(senha, sal, tamanho, opc) {
+  if (espera.length >= MAX_FILA) return Promise.reject(Object.assign(new Error("Servidor ocupado. Tente entrar de novo em instantes."), { status: 503 }));
+  return new Promise((ok, falhou) => {
+    const calcular = () => {
+      emCalculo += 1;
+      scrypt(senha, sal, tamanho, opc, (err, chave) => {
+        emCalculo -= 1;
+        espera.shift()?.();
+        if (err) falhou(err);
+        else ok(chave);
+      });
+    };
+    if (emCalculo < MAX_SIMULTANEOS) calcular();
+    else espera.push(calcular);
+  });
+}
+
+export async function hashSenha(senha) {
+  const sal = randomBytes(16);
+  const hash = await scryptNaFila(senha, sal, 64, opcoes(N));
+  return `scrypt$${N}$${sal.toString("base64")}$${hash.toString("base64")}`;
+}
+
+export async function senhaConfere(senha, guardado) {
+  const [alg, n, sal, hash] = String(guardado ?? "").split("$");
+  if (alg !== "scrypt" || !sal || !hash) return false;
+  const esperado = Buffer.from(hash, "base64");
+  const custo = Number(n);
+  if (!Number.isInteger(custo) || custo < 1024 || custo > 1048576 || (custo & (custo - 1)) !== 0) return false;
+  const calculado = await scryptNaFila(senha, Buffer.from(sal, "base64"), esperado.length, opcoes(custo));
   return timingSafeEqual(esperado, calculado);
 }
 

@@ -43,7 +43,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
       servicos: repo.lista("servicos", "WHERE ativo = 1 ORDER BY ordem, nome").map((s) => ({ id: s.id, nome: s.nome, descricao: s.descricao, categoria: s.categoria, duracao_min: s.duracao_min, preco_centavos: s.preco_centavos })),
       barbeiros: repo.lista("barbeiros", "WHERE ativo = 1 ORDER BY ordem, nome").map(barbeiroPublico),
       planos: repo.ocultos(b.id).includes("modulo.clube") ? [] : repo.lista("planos", "WHERE ativo = 1 ORDER BY preco_centavos").map((p) => ({ id: p.id, nome: p.nome, descricao: p.descricao, preco_centavos: p.preco_centavos, itens: p.itens, dias_semana: p.dias_semana, desconto_produtos: p.desconto_produtos })),
-      vitrine: repo.ocultos(b.id).includes("modulo.produtos") ? [] : repo.lista("produtos", "WHERE ativo = 1 AND vitrine = 1 ORDER BY nome").map((p) => ({ id: p.id, nome: p.nome, descricao: p.descricao, categoria: p.categoria, preco_centavos: p.preco_centavos, disponivel: Math.max(0, nucleo.disponivel(p)) })),
+      vitrine: repo.ocultos(b.id).includes("modulo.produtos") ? [] : repo.lista("produtos", "WHERE ativo = 1 AND vitrine = 1 AND preco_centavos > 0 ORDER BY nome").map((p) => ({ id: p.id, nome: p.nome, descricao: p.descricao, categoria: p.categoria, preco_centavos: p.preco_centavos, disponivel: Math.max(0, nucleo.disponivel(p)) })),
     };
   });
 
@@ -125,7 +125,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
     if (!a) return null;
     const plano = repo.obter("planos", a.plano_id);
     const usos = (plano.itens ?? []).map((i) => ({ servico_id: i.servico_id, nome: repo.obter("servicos", i.servico_id)?.nome, quantidade: i.quantidade, usados: nucleo.usosNoCiclo(a, i.servico_id) }));
-    return { id: a.id, status: a.status, ciclo_inicio: a.ciclo_inicio, ciclo_fim: a.ciclo_fim, link: a.status !== "ativa" ? a.link : null, plano: { id: plano.id, nome: plano.nome, preco_centavos: plano.preco_centavos, dias_semana: plano.dias_semana, desconto_produtos: plano.desconto_produtos }, usos };
+    return { id: a.id, status: a.status, ciclo_inicio: a.ciclo_inicio, ciclo_fim: a.ciclo_fim, pago_ate: a.pago_ate ?? a.ciclo_fim, link: a.status !== "ativa" ? a.link : null, plano: { id: plano.id, nome: plano.nome, preco_centavos: plano.preco_centavos, dias_semana: plano.dias_semana, desconto_produtos: plano.desconto_produtos }, usos };
   }
 
   r.get("/api/app/eu", APP, ({ cliente }) => {

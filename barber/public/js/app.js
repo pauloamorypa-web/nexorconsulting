@@ -1,7 +1,7 @@
 /* Painel do Nexor Barber: login, menu por papel, rotas, faixa do contrato e acesso do Suporte Nexor. */
 
-import { definirAoDeslogar, get, post } from "./api.js";
-import { acao, aviso, avatar, h, icone, limpar } from "./ui.js";
+import { definirAoDeslogar, get, post, put } from "./api.js";
+import { acao, aviso, avatar, h, icone, janela, limpar } from "./ui.js";
 import { formulario } from "./comum.js";
 
 const TODOS = ["dono", "admin", "recepcao", "barbeiro"];
@@ -143,6 +143,7 @@ function layout() {
           "div",
           { class: "lateral-acoes" },
           h("button", { class: "btn-icone", title: "Alternar tema", "aria-label": "Alternar tema", onclick: alternarTema }, icone("lua")),
+          usuario.nexor ? null : h("button", { class: "btn-icone", title: "Trocar minha senha", "aria-label": "Trocar minha senha", onclick: trocarSenha }, icone("escudo")),
           h("button", { class: "btn-icone", title: "Sair", "aria-label": "Sair", onclick: async () => (await post("/sair"), location.reload()) }, icone("sair")),
         ),
       ),
@@ -229,4 +230,15 @@ iniciar().catch((e) => {
   console.error(e);
   limpar(app, h("div", { class: "vazio" }, h("h3", {}, "Não foi possível carregar o painel"), h("p", {}, e.message)));
 });
+/** Troca da própria senha (pede a senha atual) */
+function trocarSenha() {
+  const f = formulario([
+    { nome: "atual", rotulo: "Senha atual", tipo: "senha", obrigatorio: true },
+    { nome: "nova", rotulo: "Nova senha (mínimo 8 caracteres)", tipo: "senha", obrigatorio: true },
+  ]);
+  const ok = h("button", { class: "btn btn-primario" }, "Trocar senha");
+  const j = janela({ titulo: "Trocar minha senha", conteudo: f.el, acoes: [ok] });
+  ok.onclick = () => acao(ok, async () => (await put("/eu/senha", f.ler()), aviso("Senha trocada. Os outros aparelhos vão pedir login de novo."), j.fechar()));
+}
+
 export { aviso };

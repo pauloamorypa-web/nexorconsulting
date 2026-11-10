@@ -27,7 +27,7 @@ export function assinaturaMetaValida(corpo, assinatura, segredo) {
 async function pedir(fetchFn, url, init, rotulo) {
   const r = await fetchFn(url, { ...init, signal: AbortSignal.timeout(20_000) });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d?.error?.message ?? d?.message ?? d?.errors?.map?.((e) => e.description).join("; ") ?? `${rotulo} respondeu ${r.status}`);
+  if (!r.ok) throw Object.assign(new Error(d?.error?.message ?? d?.message ?? d?.errors?.map?.((e) => e.description).join("; ") ?? `${rotulo} respondeu ${r.status}`), { statusExterno: r.status });
   return d;
 }
 
@@ -99,14 +99,23 @@ export function criarAsaas({ chave, url, fetchFn = fetch }) {
   const chamar = (metodo, caminho, corpo) => pedir(fetchFn, `${url}${caminho}`, { method: metodo, headers: { "Content-Type": "application/json", access_token: chave, "User-Agent": "nexor-barber" }, body: corpo ? JSON.stringify(corpo) : undefined }, "Asaas");
   return {
     ativo: Boolean(chave),
-    async assinar({ cliente, cpf, plano, assinaturaId, vencimento }) {
+    /* Passos separados: quem chama guarda cada id assim que ele existe (se um passo seguinte falhar, dá para desfazer) */
+    async criarCliente({ cliente, cpf }) {
       const c = await chamar("POST", "/customers", { name: cliente.nome, cpfCnpj: cpf, email: cliente.email || undefined, mobilePhone: cliente.fone ? cliente.fone.slice(2) : undefined, externalReference: cliente.id });
-      const s = await chamar("POST", "/subscriptions", { customer: c.id, billingType: "UNDEFINED", value: plano.preco_centavos / 100, nextDueDate: vencimento, cycle: "MONTHLY", description: `Clube ${plano.nome}`, externalReference: assinaturaId });
-      const pagamentos = await chamar("GET", `/subscriptions/${encodeURIComponent(s.id)}/payments`);
+      return c.id;
+    },
+    async criarAssinatura({ clienteAsaas, plano, assinaturaId, vencimento }) {
+      const s = await chamar("POST", "/subscriptions", { customer: clienteAsaas, billingType: "UNDEFINED", value: plano.preco_centavos / 100, nextDueDate: vencimento, cycle: "MONTHLY", description: `Clube ${plano.nome}`, externalReference: assinaturaId });
+      return s.id;
+    },
+    async primeiroPagamento(assinaturaAsaas) {
+      const pagamentos = await chamar("GET", `/subscriptions/${encodeURIComponent(assinaturaAsaas)}/payments`);
       const p = pagamentos.data?.[0] ?? null;
-      return { cliente: c.id, assinatura: s.id, pagamento: p ? { id: p.id, link: p.invoiceUrl ?? null, vencimento: p.dueDate, valor: Math.round(Number(p.value) * 100) } : null };
+      return p ? { id: p.id, link: p.invoiceUrl ?? null, vencimento: p.dueDate, valor: Math.round(Number(p.value) * 100) } : null;
     },
     cancelar: (id) => chamar("DELETE", `/subscriptions/${encodeURIComponent(id)}`),
+    /** Baixa manual de uma cobrança paga no balcão (o Asaas para de cobrar o cliente) */
+    receberEmDinheiro: (id, { data, valorCentavos }) => chamar("POST", `/payments/${encodeURIComponent(id)}/receiveInCash`, { paymentDate: data, value: valorCentavos / 100, notifyCustomer: false }),
   };
 }
 
@@ -114,7 +123,9 @@ export function criarAsaas({ chave, url, fetchFn = fetch }) {
 export function acaoAsaas(evento) {
   if (["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED_IN_CASH"].includes(evento)) return "paga";
   if (evento === "PAYMENT_OVERDUE") return "atrasada";
-  if (["PAYMENT_DELETED", "PAYMENT_REFUNDED"].includes(evento)) return "cancelada";
+  // Estorno e contestação do cartão: o dinheiro volta para o cliente, então o clube sai
+  if (["PAYMENT_REFUNDED", "PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_CHARGEBACK_DISPUTE"].includes(evento)) return "estornada";
+  if (evento === "PAYMENT_DELETED") return "cancelada";
   if (evento === "PAYMENT_CREATED") return "nova";
   return null;
 }
