@@ -146,9 +146,24 @@ export async function acao(botao, fn) {
 
 /* ---------- Janela (modal) ---------- */
 
+/* Duplo clique num botão da janela (banca V-28): o 1º clique fecha a janela e o 2º "cairia" na agenda por baixo,
+   abrindo outra janela (ou acertaria um botão da janela seguinte). Por 400 ms depois de fechar, cliques são ignorados. */
+let ignorarCliquesAte = 0;
+document.addEventListener(
+  "click",
+  (e) => {
+    if (Date.now() < ignorarCliquesAte) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  },
+  true,
+);
+
 export function janela({ titulo, conteudo, acoes = [], largura = 560, aoFechar }) {
   const fundo = h("div", { class: "modal-fundo" });
   const fechar = () => {
+    ignorarCliquesAte = Date.now() + 400;
     fundo.remove();
     document.removeEventListener("keydown", tecla);
     aoFechar?.();

@@ -19,6 +19,7 @@ sudo SISTEMAS="barber" ./instalar.sh
 
 O instalador pergunta o identificador da empresa, o endereço do app, o token do túnel e o código `NX-…`. No fim mostra o **código de instalação**.
 
+- [ ] Confira que o serviço `barber` do `docker-compose.yml` tem `TRUST_PROXY: "1"` (vem assim). Atrás do Cloudflare Tunnel, é isso que faz o servidor ler o IP real do visitante nos limites de login. Fora do túnel, com a porta 8795 exposta direto, use `TRUST_PROXY=0` (o padrão do sistema).
 - [ ] Guarde a `BARBER_MASTER_KEY` do `.env` no cofre da Nexor (sem ela, os tokens de WhatsApp, SMS e Asaas não abrem).
 - [ ] Abra `https://SEU-ENDERECO/` e crie a barbearia com o código de instalação.
 - [ ] Confira na Nexor Central que o sistema apareceu vinculado (ou vincule em Configurações → Nexor).

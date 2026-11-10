@@ -2,7 +2,7 @@
    canais (WhatsApp, SMS, Google, Asaas), acessos da equipe, Nexor Central e auditoria. */
 
 import { get, post, put } from "../api.js";
-import { abas, acao, aviso, copiarTexto, entrada, h, icone, janela, limpar, reais } from "../ui.js";
+import { abas, acao, aviso, confirmar, copiarTexto, entrada, h, icone, janela, limpar, reais } from "../ui.js";
 import { formulario, tabela, topo } from "../comum.js";
 import { editorHorario, hojeISO } from "../base.js";
 import { PAPEIS } from "../app.js";
@@ -206,6 +206,28 @@ export async function render(area, ctx) {
       h("section", { class: "cartao" }, f.el, salvarBtn("Salvar canais", async () => (await put("/canais", f.ler()), aviso("Canais salvos."), carregar()))),
       h("section", { class: "cartao pilha" }, h("h3", {}, "Endereços para colar nos painéis da Meta e do Asaas"), url("Webhook do WhatsApp (URL de retorno)", `${base}/webhook/whatsapp`), c.whatsapp.verificacao ? url("Token de verificação do webhook", c.whatsapp.verificacao) : h("p", { class: "suave pequeno" }, "Salve o WhatsApp para gerar o token de verificação."), url("Webhook do Asaas", `${base}/webhook/asaas`), c.asaas.token_webhook ? url("Token de autenticação do webhook do Asaas", c.asaas.token_webhook) : null, url("Link do app para divulgar (bio do Instagram, QR no balcão)", ctx.eu.link_app)),
       h("section", { class: "cartao" }, h("h3", {}, "Testar envio"), h("div", { class: "linha-entre" }, teste, h("div", { class: "item-acoes" }, ...["whatsapp", "sms"].map((canal) => h("button", { class: "btn btn-fantasma", onclick: (e) => acao(e.currentTarget, async () => (await post("/canais/testar", { canal, fone: teste.value }), aviso(`Mensagem de teste enviada por ${canal === "sms" ? "SMS" : "WhatsApp"}.`))) }, canal === "sms" ? "Testar SMS" : "Testar WhatsApp"))))),
+      // Banca V-25: apagar a chave guardada (ex.: deixar o Asaas e voltar a receber a mensalidade no balcão)
+      [["whatsapp", "WhatsApp", c.whatsapp.token || c.whatsapp.segredo], ["sms", "SMS", c.sms.token], ["asaas", "Asaas", c.asaas.chave]].some(([, , tem]) => tem)
+        ? h(
+            "section",
+            { class: "cartao pilha" },
+            h("h3", {}, "Remover credenciais"),
+            h("p", { class: "suave pequeno" }, "Apaga a chave guardada do canal. Sem a chave do Asaas, a assinatura do clube volta a ser paga no balcão."),
+            h(
+              "div",
+              { class: "item-acoes" },
+              [["whatsapp", "WhatsApp", c.whatsapp.token || c.whatsapp.segredo], ["sms", "SMS", c.sms.token], ["asaas", "Asaas", c.asaas.chave]]
+                .filter(([, , tem]) => tem)
+                .map(([canal, nome]) =>
+                  h("button", { class: "btn btn-perigo-fantasma", onclick: async (e) => {
+                    const b = e.currentTarget;
+                    if (!(await confirmar(`Remover a chave do ${nome}? O canal para de funcionar até você cadastrar outra.`, { botao: `Remover ${nome}`, perigo: true }))) return;
+                    await acao(b, async () => (await put("/canais", { remover: [canal] }), aviso(`Chave do ${nome} removida.`), carregar()));
+                  } }, `Remover ${nome}`),
+                ),
+            ),
+          )
+        : null,
     );
   }
 

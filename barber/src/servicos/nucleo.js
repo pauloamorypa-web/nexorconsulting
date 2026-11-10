@@ -5,7 +5,7 @@ import { createHmac, randomInt } from "node:crypto";
 import { OCUPA, REGRAS_PADRAO, cabe, faz, horariosLivres } from "../regras/agenda.js";
 import { assinaturaValida, cicloDe, cicloDeRetorno, cobertura } from "../regras/clube.js";
 import { diasEntre, hojeBR, horaBR, paraMs, quando, somarDias } from "../regras/datas.js";
-import { gerarToken, sha256 } from "../seguranca.js";
+import { gerarToken, iguais, sha256 } from "../seguranca.js";
 import { acaoAsaas, criarAsaas, criarSms, criarWhatsApp, normalizarFone } from "./canais.js";
 
 export class ErroRegra extends Error {
@@ -114,7 +114,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     const c = fone ? repo.um("SELECT * FROM codigos WHERE destino = ? AND expira_em > ? ORDER BY criado_em DESC LIMIT 1", fone, agora()) : null;
     if (!c) recusar(400, "Código vencido. Peça um novo.");
     if (c.tentativas >= 5) recusar(429, "Código bloqueado depois de muitas tentativas. Peça um novo.");
-    if (c.hash !== hashCodigo(fone, String(codigo ?? "").replace(/\D/g, ""))) {
+    if (!iguais(c.hash, hashCodigo(fone, String(codigo ?? "").replace(/\D/g, "")))) {
       repo.rodar("UPDATE codigos SET tentativas = tentativas + 1 WHERE id = ?", c.id);
       recusar(400, "Código incorreto.");
     }
@@ -264,25 +264,51 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
 
   const disponivel = (p) => p.estoque - repo.um("SELECT COALESCE(SUM(quantidade),0) n FROM reservas WHERE produto_id = ? AND status = 'reservado'", p.id).n;
 
+  /** Memória de uma chamada: cada serviço, barbeiro, cliente, plano e assinante é lido uma vez só (evita N+1 nas listas) */
+  function memoria() {
+    const m = new Map();
+    return (chave, fn) => {
+      if (!m.has(chave)) m.set(chave, fn());
+      return m.get(chave);
+    };
+  }
+
   /** Assinante no horário: o plano, a situação de hoje e, se saiu pelo clube, quantos usos ainda restam no ciclo */
-  function assinanteDoHorario(a) {
-    const id = identificarAssinante(a.cliente_id);
+  function assinanteDoHorario(a, m = memoria()) {
+    const id = m(`assinante:${a.cliente_id}`, () => identificarAssinante(a.cliente_id));
     if (!id.assinante) return null;
-    const ass = a.assinatura_id ? repo.obter("assinaturas", a.assinatura_id) : null;
+    const ass = a.assinatura_id ? m(`assinatura:${a.assinatura_id}`, () => repo.obter("assinaturas", a.assinatura_id)) : null;
     let restante = null;
     if (ass) {
-      const item = (repo.obter("planos", ass.plano_id)?.itens ?? []).find((i) => i.servico_id === a.servico_id);
-      if (item?.quantidade > 0) restante = Math.max(0, item.quantidade - usosNoCiclo(ass, a.servico_id));
+      const item = (m(`plano:${ass.plano_id}`, () => repo.obter("planos", ass.plano_id))?.itens ?? []).find((i) => i.servico_id === a.servico_id);
+      if (item?.quantidade > 0) restante = Math.max(0, item.quantidade - m(`usos:${ass.id}:${a.servico_id}`, () => usosNoCiclo(ass, a.servico_id)));
     }
     return { plano: id.plano, status: id.status, coberto: Boolean(a.assinatura_id), restante };
   }
 
-  function detalhar(a) {
-    const servico = repo.obter("servicos", a.servico_id);
-    const barbeiro = repo.obter("barbeiros", a.barbeiro_id);
-    const cliente = repo.obter("clientes", a.cliente_id);
-    const reservas = repo.todos("SELECT r.id, r.quantidade, r.status, p.id produto_id, p.nome, p.preco_centavos FROM reservas r JOIN produtos p ON p.id = r.produto_id WHERE r.agendamento_id = ?", a.id);
-    return { ...a, dia: hojeBR(a.inicio), hora: horaBR(a.inicio), servico: servico && { id: servico.id, nome: servico.nome, duracao_min: servico.duracao_min, preco_centavos: servico.preco_centavos }, barbeiro: barbeiro && { id: barbeiro.id, nome: barbeiro.nome, cor: barbeiro.cor }, cliente: cliente && { id: cliente.id, nome: cliente.nome, fone: cliente.fone }, reservas, clube: Boolean(a.assinatura_id), assinante: assinanteDoHorario(a) };
+  const SQL_RESERVAS = "SELECT r.agendamento_id, r.id, r.quantidade, r.status, p.id produto_id, p.nome, p.preco_centavos FROM reservas r JOIN produtos p ON p.id = r.produto_id";
+  function detalharCom(a, m, reservasPorAg = null) {
+    const servico = m(`servico:${a.servico_id}`, () => repo.obter("servicos", a.servico_id));
+    const barbeiro = m(`barbeiro:${a.barbeiro_id}`, () => repo.obter("barbeiros", a.barbeiro_id));
+    const cliente = m(`cliente:${a.cliente_id}`, () => repo.obter("clientes", a.cliente_id));
+    const reservas = (reservasPorAg ? (reservasPorAg.get(a.id) ?? []) : repo.todos(`${SQL_RESERVAS} WHERE r.agendamento_id = ?`, a.id)).map(({ agendamento_id, ...r }) => r);
+    return { ...a, dia: hojeBR(a.inicio), hora: horaBR(a.inicio), servico: servico && { id: servico.id, nome: servico.nome, duracao_min: servico.duracao_min, preco_centavos: servico.preco_centavos }, barbeiro: barbeiro && { id: barbeiro.id, nome: barbeiro.nome, cor: barbeiro.cor }, cliente: cliente && { id: cliente.id, nome: cliente.nome, fone: cliente.fone }, reservas, clube: Boolean(a.assinatura_id), assinante: assinanteDoHorario(a, m) };
+  }
+  const detalhar = (a) => detalharCom(a, memoria());
+  /** Vários horários de uma vez: cadastros lidos uma vez e as reservas numa consulta só por faixa */
+  function detalharVarios(ags) {
+    if (!ags.length) return [];
+    const m = memoria();
+    const reservasPorAg = new Map();
+    const ids = new Set(ags.map((a) => a.id));
+    const ini = Math.min(...ags.map((a) => a.inicio));
+    const fim = Math.max(...ags.map((a) => a.inicio));
+    for (const r of repo.todos(`${SQL_RESERVAS} JOIN agendamentos ag ON ag.id = r.agendamento_id WHERE ag.inicio >= ? AND ag.inicio <= ?`, ini, fim)) {
+      if (!ids.has(r.agendamento_id)) continue;
+      if (!reservasPorAg.has(r.agendamento_id)) reservasPorAg.set(r.agendamento_id, []);
+      reservasPorAg.get(r.agendamento_id).push(r);
+    }
+    return ags.map((a) => detalharCom(a, m, reservasPorAg));
   }
 
   /** O cliente pode cancelar ou remarcar sozinho? (até X horas antes) */
@@ -646,6 +672,7 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     ocupados,
     agendar,
     detalhar,
+    detalharVarios,
     podeMudar,
     cancelar,
     remarcar,

@@ -116,6 +116,7 @@ services:
       DATA_DIR: /dados
       PUBLIC_URL: ${BARBER_PUBLIC_URL:-}
       MASTER_KEY: ${BARBER_MASTER_KEY:-}
+      # Atrás do Cloudflare Tunnel (ou do Caddy): 1 proxy confiável. O padrão do Barber é 0 (sem proxy).
       TRUST_PROXY: "1"
       NEXOR_CODIGO: ${NEXOR_CODIGO:-}
       NEXOR_CENTRAL_URL: ${NEXOR_CENTRAL_URL:-}

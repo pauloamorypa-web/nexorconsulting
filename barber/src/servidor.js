@@ -29,7 +29,7 @@ const CSP_PAINEL = "default-src 'self'; img-src 'self' data: blob:; style-src 's
 // O app do cliente carrega o botão "Entrar com Google" (Google Identity Services)
 const CSP_APP = "default-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
-export function ipCliente(req, proxies = 1) {
+export function ipCliente(req, proxies = 0) {
   const direto = String(req.socket?.remoteAddress ?? "");
   if (!proxies) return direto;
   const lista = String(req.headers["x-forwarded-for"] ?? "").split(",").map((x) => x.trim()).filter(Boolean);
@@ -256,6 +256,11 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     } catch (err) {
       const status = err instanceof ErroRegra || err instanceof ErroHttp ? err.status : (err.status ?? 500);
       if (status >= 500 && status !== 502) console.error("[servidor]", err);
+      // Corpo grande demais: responde 413 primeiro e só então fecha a conexão (o resto do envio é descartado)
+      if (err.fecharConexao) {
+        if (!res.headersSent) res.setHeader("Connection", "close");
+        res.once("finish", () => req.destroy());
+      }
       json(res, status, { erro: status < 500 || status === 502 ? err.message : "Erro interno." });
     }
   });

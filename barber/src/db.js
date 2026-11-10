@@ -118,6 +118,17 @@ CREATE TABLE IF NOT EXISTS auditoria (id TEXT PRIMARY KEY, barbearia_id TEXT NOT
 CREATE INDEX IF NOT EXISTS auditoria_barbearia ON auditoria (barbearia_id, criado_em);
 `;
 
+/* Índices de desempenho (banca V-24). IF NOT EXISTS: rodam em bancos novos e nos que já existem. */
+const INDICES = `
+CREATE INDEX IF NOT EXISTS assinaturas_asaas ON assinaturas (asaas_assinatura) WHERE asaas_assinatura IS NOT NULL;
+CREATE INDEX IF NOT EXISTS agendamentos_status ON agendamentos (status, inicio);
+CREATE INDEX IF NOT EXISTS agendamentos_inicio ON agendamentos (inicio);
+CREATE INDEX IF NOT EXISTS reservas_agendamento ON reservas (agendamento_id);
+CREATE INDEX IF NOT EXISTS reservas_produto ON reservas (produto_id, status);
+CREATE INDEX IF NOT EXISTS usos_ciclo ON usos (assinatura_id, servico_id, ciclo_inicio);
+CREATE INDEX IF NOT EXISTS cobrancas_assinatura ON cobrancas (assinatura_id, status);
+`;
+
 const JSON_COLS = { barbearias: ["config"], barbeiros: ["horario", "servicos"], clientes: ["preferencias"], planos: ["itens", "dias_semana"], vendas: ["itens"], espera: ["oferta"], auditoria: ["detalhe"] };
 const BOOL_COLS = new Set(["ativo", "nexor", "aceita_mensagens", "vitrine"]);
 const LISTAS = new Set(["servicos", "itens", "dias_semana"]);
@@ -135,6 +146,9 @@ export function abrirBanco(caminho, agora = () => Date.now()) {
   const db = new DatabaseSync(caminho);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(ESQUEMA);
+  db.exec(INDICES);
+  // Minúsculas com acentos (o lower() do SQLite só trata A-Z): usado na busca de clientes
+  db.function("minusculas", { deterministic: true }, (v) => (v === null || v === undefined ? null : String(v).toLowerCase()));
   const cache = new Map();
   const q = (sql) => {
     let s = cache.get(sql);

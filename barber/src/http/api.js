@@ -10,7 +10,7 @@ import { CATALOGO, chaveValida } from "../nexor/politica.js";
 import { FORMAS } from "../servicos/nucleo.js";
 import { normalizarFone } from "../servicos/canais.js";
 import { criarRoteador, falha } from "./roteador.js";
-import { COOKIE_PAINEL, centavos, clientePublico, configPublica, cor, dia, email, hora, id, op, pct, senha, t, tabelaHorario, usuarioPublico, validar } from "./validacao.js";
+import { COOKIE_PAINEL, centavos, clientePublico, configPublica, cor, dia, email, hora, id, nascimento, op, pct, senha, t, tabelaHorario, usuarioPublico, validar } from "./validacao.js";
 import { rotasApp } from "./app.js";
 
 const ADM = { papeis: ["dono", "admin"] };
@@ -40,13 +40,21 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   const HASH_FALSO = gerarHashSenha(gerarToken());
   const hoje = () => hojeBR(agora());
 
-  function limitar(chave, maximo = cfg.limites.tentativasLogin, janela = 15 * 60_000) {
-    const t0 = agora();
-    const l = (tentativas.get(chave) ?? []).filter((x) => t0 - x < janela);
-    if (l.length >= maximo) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
-    l.push(t0);
+  const JANELA_LIMITE = 15 * 60_000;
+  const recentes = (chave, janela = JANELA_LIMITE) => (tentativas.get(chave) ?? []).filter((x) => agora() - x < janela);
+  /** Recusa com 429 se a chave já passou do máximo na janela (não conta esta tentativa) */
+  function conferirLimite(chave, maximo = cfg.limites.tentativasLogin, janela = JANELA_LIMITE) {
+    if (recentes(chave, janela).length >= maximo) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
+  }
+  function contarTentativa(chave, janela = JANELA_LIMITE) {
+    const l = recentes(chave, janela);
+    l.push(agora());
     tentativas.set(chave, l);
     if (tentativas.size > 20_000) tentativas.delete(tentativas.keys().next().value);
+  }
+  function limitar(chave, maximo = cfg.limites.tentativasLogin, janela = JANELA_LIMITE) {
+    conferirLimite(chave, maximo, janela);
+    contarTentativa(chave, janela);
   }
   function cookie(res, nome, token, dias) {
     const a = [`${nome}=${token}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${Math.round(dias * 86400)}`];
@@ -96,11 +104,20 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.post("/api/entrar", { publico: true }, async ({ corpo, res, ip }) => {
     const d = validar(z.object({ email, senha: z.string().min(1).max(200) }), await corpo());
-    limitar(`login:${ip}`);
-    limitar(`login:${d.email}`);
+    // Só os erros contam: por e-mail + IP (um terceiro não tranca o dono de outro lugar) e por IP, mais folgado
+    // (a equipe no mesmo Wi-Fi entra quantas vezes quiser). Um acerto zera o contador daquele e-mail nesse IP.
+    const chaveConta = `login:${d.email}:${ip}`;
+    const chaveIp = `login:${ip}`;
+    conferirLimite(chaveConta);
+    conferirLimite(chaveIp, cfg.limites.tentativasLogin * 3);
     const u = repo.usuarioPorEmail(d.email);
     const ok = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
-    if (!u || !ok) falha(401, "E-mail ou senha incorretos.");
+    if (!u || !ok) {
+      contarTentativa(chaveConta);
+      contarTentativa(chaveIp);
+      falha(401, "E-mail ou senha incorretos.");
+    }
+    tentativas.delete(chaveConta);
     if (precisaRefazerHash(u.senha_hash)) repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", gerarHashSenha(d.senha), u.id);
     iniciarSessao(res, u.id);
     repo.auditar(u.barbearia_id, u.nome, "login");
@@ -135,11 +152,11 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   const listarDia = (d, barbeiroId) => {
     const ini = paraMs(d);
     const ags = repo.lista("agendamentos", `WHERE inicio >= ? AND inicio < ? ${barbeiroId ? "AND barbeiro_id = ?" : ""} ORDER BY inicio`, ini, ini + 86400_000, ...(barbeiroId ? [barbeiroId] : []));
-    return ags.map(nucleo.detalhar);
+    return nucleo.detalharVarios(ags);
   };
 
   r.get("/api/hoje", ({ query, usuario, barbearia }) => {
-    const d = validar(dia.optional(), query.get("dia") || undefined) ?? hoje();
+    const d = validar(dia, query.get("dia") || hoje());
     const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : query.get("barbeiro") || null;
     const barbeiros = repo.lista("barbeiros", "WHERE ativo = 1 ORDER BY ordem, nome").filter((x) => !filtro || x.id === filtro);
     const ags = listarDia(d, filtro);
@@ -164,8 +181,10 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.get("/api/agendamentos", ({ query, usuario }) => {
     const de = validar(dia, query.get("de") || hoje());
     const ate = validar(dia, query.get("ate") || somarDias(de, 6));
+    if (ate < de) falha(400, "A data final precisa ser depois da inicial.");
+    if (diasEntre(de, ate) > 31) falha(400, "Consulte no máximo 31 dias de uma vez.");
     const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : query.get("barbeiro") || null;
-    return repo.lista("agendamentos", `WHERE inicio >= ? AND inicio < ? ${filtro ? "AND barbeiro_id = ?" : ""} ORDER BY inicio`, paraMs(de), paraMs(ate) + 86400_000, ...(filtro ? [filtro] : [])).map(nucleo.detalhar);
+    return nucleo.detalharVarios(repo.lista("agendamentos", `WHERE inicio >= ? AND inicio < ? ${filtro ? "AND barbeiro_id = ?" : ""} ORDER BY inicio`, paraMs(de), paraMs(ate) + 86400_000, ...(filtro ? [filtro] : [])));
   });
 
   r.get("/api/horarios", ({ query }) => {
@@ -245,22 +264,30 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   /* ---------- Clientes ---------- */
   r.get("/api/clientes", ({ query }) => {
+    // Filtra e pagina no banco: a busca alcança a base inteira, não só os 2.000 primeiros por nome
     const busca = String(query.get("busca") ?? "").trim().toLowerCase().slice(0, 60);
     const filtro = query.get("filtro");
-    let lista = repo.lista("clientes", "WHERE ativo = 1 ORDER BY nome LIMIT 2000");
+    const porPagina = 300;
+    const pagina = Math.min(1000, Math.max(1, Math.floor(Number(query.get("pagina")) || 1)));
+    const h = hoje();
+    const cond = ["c.ativo = 1"];
+    const p = [];
     if (busca) {
       const dig = busca.replace(/\D/g, "");
-      lista = lista.filter((c) => c.nome.toLowerCase().includes(busca) || (dig.length >= 4 && c.fone?.includes(dig)) || c.email?.includes(busca));
+      const como = `%${busca.replace(/[\\%_]/g, (x) => `\\${x}`)}%`;
+      cond.push(`(minusculas(c.nome) LIKE ? ESCAPE '\\' OR minusculas(c.email) LIKE ? ESCAPE '\\'${dig.length >= 4 ? " OR instr(c.fone, ?) > 0" : ""})`);
+      p.push(como, como, ...(dig.length >= 4 ? [dig] : []));
     }
-    const assinantes = new Set(repo.todos("SELECT cliente_id FROM assinaturas WHERE status = 'ativa'").map((x) => x.cliente_id));
-    const h = hoje();
+    const SUMIDO = "c.ciclo_dias IS NOT NULL AND c.ultima_visita IS NOT NULL AND CAST(round(julianday(?) - julianday(c.ultima_visita)) AS INTEGER) > c.ciclo_dias + 7";
+    if (filtro === "assinantes") cond.push("c.id IN (SELECT cliente_id FROM assinaturas WHERE status = 'ativa')");
+    if (filtro === "sumidos") (cond.push(SUMIDO), p.push(h));
+    if (filtro === "aniversario") (cond.push("substr(c.nascimento, 6, 2) = ?"), p.push(h.slice(5, 7)));
+    const sql = `SELECT c.*, EXISTS (SELECT 1 FROM assinaturas a WHERE a.cliente_id = c.id AND a.status = 'ativa') AS assinante_ativo FROM clientes c WHERE ${cond.join(" AND ")} ORDER BY c.nome LIMIT ? OFFSET ?`;
+    const lista = repo.todos(sql, ...p, porPagina, (pagina - 1) * porPagina).map((c) => repo.ler("clientes", c));
     const comRisco = (c) => Boolean(c.ciclo_dias && c.ultima_visita && diasEntre(c.ultima_visita, h) > c.ciclo_dias + 7);
-    if (filtro === "assinantes") lista = lista.filter((c) => assinantes.has(c.id));
-    if (filtro === "sumidos") lista = lista.filter(comRisco);
-    if (filtro === "aniversario") lista = lista.filter((c) => c.nascimento?.slice(5, 7) === h.slice(5, 7));
-    return lista.slice(0, 300).map((c) => ({ ...clientePublico(c), assinante: assinantes.has(c.id), sumido: comRisco(c), dias_desde: c.ultima_visita ? diasEntre(c.ultima_visita, h) : null }));
+    return lista.map(({ assinante_ativo, ...c }) => ({ ...clientePublico(c), assinante: Boolean(assinante_ativo), sumido: comRisco(c), dias_desde: c.ultima_visita ? diasEntre(c.ultima_visita, h) : null }));
   });
-  const ESQ_CLIENTE = z.object({ nome: t(120), fone: foneOpc, email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: dia.optional().nullable().or(z.literal("").transform(() => null)), observacoes: op(1000), aceita_mensagens: z.boolean().optional() });
+  const ESQ_CLIENTE = z.object({ nome: t(120), fone: foneOpc, email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: nascimento.optional().nullable().or(z.literal("").transform(() => null)), observacoes: op(1000), aceita_mensagens: z.boolean().optional() });
   r.post("/api/clientes", EQUIPE, async (ctx) => {
     const d = validar(ESQ_CLIENTE, await ctx.corpo());
     if (d.fone && repo.um("SELECT 1 FROM clientes WHERE fone = ?", d.fone)) falha(409, "Já existe um cliente com este celular.");
@@ -269,7 +296,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
   r.get("/api/clientes/:id", (ctx) => {
     const c = exigir("clientes", ctx.params.id, "Cliente");
-    const historico = repo.lista("agendamentos", "WHERE cliente_id = ? ORDER BY inicio DESC LIMIT 30", c.id).map(nucleo.detalhar);
+    const historico = nucleo.detalharVarios(repo.lista("agendamentos", "WHERE cliente_id = ? ORDER BY inicio DESC LIMIT 30", c.id));
     const a = nucleo.assinaturaAtual(c.id);
     const vendas = ehBarbeiro(ctx.usuario) ? [] : repo.lista("vendas", "WHERE cliente_id = ? AND status = 'paga' ORDER BY criado_em DESC LIMIT 20", c.id);
     return { cliente: clientePublico(c), historico, assinatura: a ? { ...a, plano: repo.obter("planos", a.plano_id) } : null, vendas, gasto_total_centavos: ehBarbeiro(ctx.usuario) ? null : repo.um("SELECT COALESCE(SUM(total_centavos),0) n FROM vendas WHERE cliente_id = ? AND status = 'paga'", c.id).n };
@@ -332,10 +359,15 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.get("/api/assinaturas", EQUIPE, ({ query }) => {
     const status = query.get("status");
-    const lista = repo.lista("assinaturas", status ? "WHERE status = ? ORDER BY atualizado_em DESC" : "WHERE status <> 'cancelada' ORDER BY atualizado_em DESC", ...(status ? [status] : []));
+    // Paginada (200 por página) e com cada plano lido uma vez só
+    const porPagina = 200;
+    const pagina = Math.min(1000, Math.max(1, Math.floor(Number(query.get("pagina")) || 1)));
+    const lista = repo.lista("assinaturas", `${status ? "WHERE status = ?" : "WHERE status <> 'cancelada'"} ORDER BY atualizado_em DESC LIMIT ? OFFSET ?`, ...(status ? [status] : []), porPagina, (pagina - 1) * porPagina);
     const ativas = repo.todos("SELECT p.preco_centavos FROM assinaturas a JOIN planos p ON p.id = a.plano_id WHERE a.status = 'ativa'");
+    const planos = new Map();
+    const plano = (pid) => (planos.has(pid) ? planos.get(pid) : (planos.set(pid, repo.obter("planos", pid)), planos.get(pid)));
     return {
-      lista: lista.map((a) => ({ ...a, cliente: clientePublico(repo.obter("clientes", a.cliente_id)), plano: repo.obter("planos", a.plano_id), usos: repo.um("SELECT COUNT(*) n FROM usos WHERE assinatura_id = ? AND ciclo_inicio = ?", a.id, a.ciclo_inicio ?? "").n })),
+      lista: lista.map((a) => ({ ...a, cliente: clientePublico(repo.obter("clientes", a.cliente_id)), plano: plano(a.plano_id), usos: repo.um("SELECT COUNT(*) n FROM usos WHERE assinatura_id = ? AND ciclo_inicio = ?", a.id, a.ciclo_inicio ?? "").n })),
       resumo: { ativas: ativas.length, receita_mensal_centavos: ativas.reduce((s, x) => s + x.preco_centavos, 0), atrasadas: repo.um("SELECT COUNT(*) n FROM assinaturas WHERE status = 'atrasada'").n, pendentes: repo.um("SELECT COUNT(*) n FROM assinaturas WHERE status = 'pendente'").n },
     };
   });
@@ -502,6 +534,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
         sms: z.object({ sid: op(60), token: sec, de: op(40), avisos: z.boolean().optional() }).partial().optional(),
         google: z.object({ client_id: z.string().trim().max(200).regex(/^$|\.apps\.googleusercontent\.com$/, "Client ID termina em .apps.googleusercontent.com").optional().nullable() }).partial().optional(),
         asaas: z.object({ chave: sec, ambiente: z.enum(["sandbox", "producao"]).optional(), token_webhook: sec }).partial().optional(),
+        // Apaga as credenciais guardadas de um canal (ex.: voltar a "pagar no balcão" sem o Asaas)
+        remover: z.array(z.enum(["whatsapp", "sms", "asaas"])).max(3).optional(),
       }),
       await ctx.corpo(),
     );
@@ -523,8 +557,12 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
       const { chave, token_webhook, ...resto } = d.asaas;
       Object.assign(a, resto, { chave_cripto: novoSegredo(chave, a.chave_cripto), token_webhook: token_webhook && token_webhook !== "true" ? token_webhook : a.token_webhook || gerarToken(18) });
     }
+    const remover = new Set(d.remover ?? []);
+    if (remover.has("whatsapp")) (delete w.token_cripto, delete w.segredo_cripto);
+    if (remover.has("sms")) delete s.token_cripto;
+    if (remover.has("asaas")) delete a.chave_cripto;
     const config = { ...c, whatsapp: w, sms: s, google: { ...c.google, ...(d.google ?? {}) }, asaas: a };
-    auditar(ctx, "canais_alterados", { canais: Object.keys(d) });
+    auditar(ctx, "canais_alterados", { canais: Object.keys(d), ...(remover.size ? { removidos: [...remover] } : {}) });
     const b = repo.atualizar("barbearias", ctx.barbearia.id, { config });
     return configPublica(b.config);
   });

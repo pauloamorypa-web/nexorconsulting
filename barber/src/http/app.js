@@ -6,7 +6,7 @@ import { deSempre, proximosDias } from "../regras/clube.js";
 import { diasEntre, hojeBR, paraMs, somarDias } from "../regras/datas.js";
 import { gerarToken, sha256 } from "../seguranca.js";
 import { falha } from "./roteador.js";
-import { COOKIE_CLIENTE, barbeiroPublico, clientePublico, cpf, dia, email, hora, id, op, t, validar } from "./validacao.js";
+import { COOKIE_CLIENTE, barbeiroPublico, clientePublico, cpf, dia, email, hora, id, nascimento, op, t, validar } from "./validacao.js";
 
 const APP = { cliente: true };
 
@@ -39,6 +39,9 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
       nome: b.nome,
       marca: { cor: m.cor ?? "#3b8dff", slogan: m.slogan ?? null, endereco: m.endereco ?? null, telefone: m.telefone ?? null, instagram: m.instagram ?? null, mapa: m.mapa || null },
       entrar: { google: b.config.google?.client_id || null, whatsapp: c.whatsapp.ativo, sms: c.sms.ativo },
+      // Por onde saem confirmação e lembrete, e se a mensalidade do clube é cobrada online (Asaas) ou no balcão
+      avisos: { whatsapp: c.whatsapp.ativo, sms: c.sms.ativo && (b.config.sms?.avisos ?? true) },
+      cobranca_online: c.asaas.ativo,
       regras: { cancelamento_horas: b.config.regras.cancelamento_horas, janela_dias: b.config.regras.janela_dias, lista_espera: b.config.regras.lista_espera !== false && !repo.ocultos(b.id).includes("modulo.espera") },
       servicos: repo.lista("servicos", "WHERE ativo = 1 ORDER BY ordem, nome").map((s) => ({ id: s.id, nome: s.nome, descricao: s.descricao, categoria: s.categoria, duracao_min: s.duracao_min, preco_centavos: s.preco_centavos })),
       barbeiros: repo.lista("barbeiros", "WHERE ativo = 1 ORDER BY ordem, nome").map(barbeiroPublico),
@@ -146,7 +149,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
   });
 
   r.put("/api/app/eu", APP, async (ctx) => {
-    const d = validar(z.object({ nome: t(120).refine((v) => v.toLowerCase() !== "cliente", "digite o seu nome").optional(), email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: dia.optional().nullable().or(z.literal("").transform(() => null)), aceita_mensagens: z.boolean().optional(), preferencias: op(300) }), await ctx.corpo());
+    const d = validar(z.object({ nome: t(120).refine((v) => v.toLowerCase() !== "cliente", "digite o seu nome").optional(), email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: nascimento.optional().nullable().or(z.literal("").transform(() => null)), aceita_mensagens: z.boolean().optional(), preferencias: op(300) }), await ctx.corpo());
     return clientePublico(repo.atualizar("clientes", ctx.cliente.id, d));
   });
 
@@ -192,6 +195,9 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
 
   r.post("/api/app/agendar", APP, async (ctx) => {
     const d = validar(z.object({ servico_id: id, barbeiro_id: id.optional().nullable(), dia, hora, observacao: op(300), reservas: z.array(z.object({ produto_id: id, quantidade: z.number().int().min(1).max(5) })).max(5).optional() }), await ctx.corpo());
+    // O mesmo cliente confirmando o mesmo horário de novo (outra aba, toque repetido): devolve o que já está marcado
+    const jaMarcado = repo.um(`SELECT id FROM agendamentos WHERE cliente_id = ? AND servico_id = ? AND inicio = ? AND status IN ('agendado','chegou') ${d.barbeiro_id ? "AND barbeiro_id = ?" : ""} LIMIT 1`, ctx.cliente.id, d.servico_id, paraMs(d.dia, d.hora), ...(d.barbeiro_id ? [d.barbeiro_id] : []));
+    if (jaMarcado) return { ...nucleo.detalhar(repo.obter("agendamentos", jaMarcado.id)), ja_marcado: true };
     limitar(`agendar:${ctx.cliente.id}`, 12, 3600_000);
     const futuros = repo.um("SELECT COUNT(*) n FROM agendamentos WHERE cliente_id = ? AND status = 'agendado' AND inicio > ?", ctx.cliente.id, agora()).n;
     if (futuros >= 3) falha(409, "Você já tem 3 horários marcados. Para mais, fale com a barbearia.");
