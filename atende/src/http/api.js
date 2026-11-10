@@ -11,7 +11,7 @@ import { tipoWhatsApp } from "../servicos/midia.js";
 import { CATALOGO, chaveValida } from "../nexor/politica.js";
 import { criarRoteador, falha, lerCorpo } from "./roteador.js";
 
-const COOKIE = "nx_sessao";
+export const COOKIE = "nx_sessao";
 const t = (max, min = 1) => z.string().trim().min(min).max(max);
 const op = (max) => z.string().trim().max(max).optional();
 const email = z.string().trim().toLowerCase().email().max(160);

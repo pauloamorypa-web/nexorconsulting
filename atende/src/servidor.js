@@ -22,6 +22,8 @@ import { assinaturaValida } from "./meta/webhook.js";
 import { criarCentralNexor, recusaPorTeste } from "./nexor/central.js";
 import { CATALOGO as CATALOGO_NEXOR, LIMITES_TESTE, bloqueadoPorAjuste, iaLiberada, recusaPorLicenca } from "./nexor/politica.js";
 import { criarCofre, gerarToken, iguais } from "./seguranca.js";
+import { apagarDadosDemo, criarModoDemo } from "./demo/index.js";
+import { instalarTravaDeRede } from "./demo/rede.js";
 import { criarAgendador } from "./servicos/agendador.js";
 import { criarAtendimento } from "./servicos/atendimento.js";
 import { criarEventos } from "./servicos/eventos.js";
@@ -72,7 +74,15 @@ function saudeDaInstalacao(repo, cfg, agora) {
 }
 
 /** Monta todas as peças. Os testes trocam o cliente do Claude e o fetch da Meta por versões falsas. */
-export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, fetchFn = fetch, agora = () => Date.now(), atrasoAgrupamento } = {}) {
+export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, fetchFn = fetch, agora = () => Date.now(), atrasoAgrupamento, atrasoIA } = {}) {
+  // Modo Demonstração: trava de rede, simuladores no lugar da Meta, da IA e da Central (ver DEMO.md)
+  const destravarRede = cfg.demo ? instalarTravaDeRede({ iaReal: cfg.demoIaReal }) : () => {};
+  if (cfg.demo && cfg.demoReset && caminhoBanco !== ":memory:") apagarDadosDemo(cfg.pastaDados);
+  const demo = cfg.demo ? criarModoDemo({ cfg, agora, atrasoIA }) : null;
+  if (demo) {
+    fetchFn = demo.fetchFn;
+    clienteIA ??= demo.clienteIA ?? undefined;
+  }
   const cofre = criarCofre(cfg);
   cfg = { ...cfg, meta: { ...cfg.meta, tokenVerificacao: tokenVerificacao(cfg) } };
   const repo = abrirBanco(caminhoBanco ?? join(cfg.pastaDados, "atende.db"));
@@ -82,10 +92,11 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
   const eventos = criarEventos();
   const agente = criarAgente({ cliente, repo, conhecimento, carregarMidia: (a) => midia.ler(a), agora, ia: cfg.ia });
   const copiloto = criarCopiloto({ cliente, repo, conhecimento, ia: cfg.ia });
-  const central = criarCentralNexor({ cfg, agora, fetchFn, produto: "atende", versao: "1.0.0", saude: () => saudeDaInstalacao(repo, cfg, agora) });
+  const central = demo ? demo.central : criarCentralNexor({ cfg, agora, fetchFn, produto: "atende", versao: "1.0.0", saude: () => saudeDaInstalacao(repo, cfg, agora) });
   const atendimento = criarAtendimento({ repo, cofre, agente, copiloto, eventos, midia, fetchFn, agora, ia: cfg.ia, versaoGraph: cfg.meta.versaoGraph, atrasoAgrupamento, iaLiberada: () => iaLiberada(central.estado(), () => saudeDaInstalacao(repo, cfg, agora)) });
   const agendador = criarAgendador({ repo, atendimento, eventos, agora });
   const api = criarApi({ repo, cofre, atendimento, copiloto, conhecimento, eventos, midia, cfg, fetchFn, agora, central });
+  demo?.ligar({ repo, atendimento, cofre });
 
   /** O webhook pode ser assinado pelo app global (META_APP_SECRET) ou pelo app próprio da empresa */
   function webhookAutentico(corpo, assinatura) {
@@ -126,7 +137,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
     if (!info?.isFile()) return false;
     const html = alvo.endsWith(".html");
     res.writeHead(200, { "Content-Type": TIPOS[extname(alvo)] ?? "application/octet-stream", "Cache-Control": html ? "no-cache" : "public, max-age=3600", ...SEGURANCA, ...(cfg.producao ? HSTS : {}) });
-    res.end(await readFile(alvo));
+    res.end(demo && html ? demo.html(await readFile(alvo, "utf8")) : await readFile(alvo));
     return true;
   }
 
@@ -206,6 +217,9 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
         return json(res, 405, { erro: "método não permitido" });
       }
 
+      // Rotas do Modo Demonstração: só existem com DEMO=1 (em produção respondem 404)
+      if (/^\/(api\/)?demo(\/|$)/.test(url.pathname)) return demo ? await demo.tratar(req, res, url) : json(res, 404, { erro: "não encontrado" });
+
       if (url.pathname.startsWith("/api/")) return await tratarApi(req, res, url);
 
       if (req.method === "GET" && (await arquivoEstatico(url.pathname, res))) return;
@@ -230,7 +244,10 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
     eventos,
     cofre,
     cfg,
+    demo,
     fechar() {
+      demo?.parar();
+      destravarRede();
       central.parar();
       agendador.parar();
       atendimento.parar();
@@ -240,12 +257,20 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, clienteIA, f
   };
 }
 
+/** Na demonstração, só o próprio computador acessa (DEMO_PUBLICO=1 para a versão online atrás do Cloudflare Access) */
+export const hostDeEscuta = (cfg) => (cfg.demo && !cfg.demoPublico ? "127.0.0.1" : undefined);
+
 /* Inicia quando executado diretamente: node src/servidor.js */
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const app = montarAplicacao();
   app.agendador.iniciar();
   app.central.iniciar();
-  app.servidor.listen(app.cfg.porta, () => {
+  app.servidor.listen(app.cfg.porta, hostDeEscuta(app.cfg), () => {
+    if (app.cfg.demo) {
+      console.log(`Nexor Atende IA · MODO DEMONSTRAÇÃO (dados fictícios, IA ${app.demo.ia}, sem chamadas externas)`);
+      console.log(`Abra http://localhost:${app.cfg.porta}/demo/entrar?papel=dono  (papéis: dono, admin, atendente · senha ${"demo1234"})`);
+      return;
+    }
     console.log(`Nexor Atende IA no ar em http://localhost:${app.cfg.porta} · modelo ${app.cfg.ia.modelo}`);
     console.log(`Webhook: ${app.cfg.urlPublica || "https://SEU-SERVIDOR"}/webhook/whatsapp · token de verificação: ${app.cfg.meta.tokenVerificacao}`);
     if (!app.cfg.meta.segredoApp) console.warn("META_APP_SECRET vazio: só serão aceitos webhooks de números com segredo próprio cadastrado.");

@@ -109,6 +109,6 @@ export async function executarAprovado(pedido, { conectores, auditar, fetchFn, o
   const c = conectores.http.find((x) => x.nome === pedido.conector);
   if (!c) throw new Error("sistema não está mais conectado");
   const r = await chamarHttp(c, pedido, { fetchFn, ...opcoesHttp });
-  auditar({ evento: "aprovado_executado", id: pedido.id, dono: pedido.dono, conector: c.nome, metodo: pedido.metodo, caminho: pedido.caminho, status: r.status });
+  auditar({ evento: "aprovado_executado", id: pedido.id, dono: pedido.dono, conector: c.nome, metodo: pedido.metodo, caminho: pedido.caminho, resumo: pedido.resumo, status: r.status });
   return r;
 }

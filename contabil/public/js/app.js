@@ -9,6 +9,8 @@ const ROTAS = {
   clientes: { titulo: "Clientes", icone: "predio", carregar: () => import("./views/clientes.js") },
   documentos: { titulo: "Documentos", icone: "nota", carregar: () => import("./views/documentos.js"), selo: "documentos" },
   cobranca: { titulo: "Cobrança de documentos", icone: "sino", carregar: () => import("./views/cobranca.js"), modulo: "modulo.cobranca" },
+  // Só no Modo Demonstração (DEMO=1): honorários com o Asaas simulado
+  honorarios: { titulo: "Honorários", icone: "raio", carregar: () => import("./views/honorarios.js"), demo: true },
   obrigacoes: { titulo: "Obrigações e prazos", icone: "agenda", carregar: () => import("./views/obrigacoes.js"), modulo: "modulo.obrigacoes", selo: "tarefas" },
   lancamentos: { titulo: "Lançamentos", icone: "grafico", carregar: () => import("./views/lancamentos.js"), modulo: "modulo.leitura" },
   entregas: { titulo: "Guias e relatórios", icone: "upload", carregar: () => import("./views/entregas.js"), modulo: "modulo.portal" },
@@ -51,7 +53,7 @@ const ctx = {
     return Boolean(estado.eu?.usuario?.nexor);
   },
 };
-const disponivel = (r) => (!r.papeis || r.papeis.includes(estado.eu.usuario.papel)) && !(r.modulo && ctx.oculto(r.modulo));
+const disponivel = (r) => (!r.papeis || r.papeis.includes(estado.eu.usuario.papel)) && !(r.modulo && ctx.oculto(r.modulo)) && !(r.demo && !estado.eu.demo);
 const suspenso = () => estado.eu?.licenca?.situacao === "bloqueado" && !estado.eu.usuario.nexor;
 
 async function recarregarEu() {

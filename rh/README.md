@@ -44,12 +44,11 @@ npm start                 # http://localhost:8791
 
 O primeiro acesso cria a empresa e o administrador.
 
-Para ver o sistema funcionando com dados fictícios (Padaria Pão Dourado, 8 colaboradores, um mês de ponto):
+Para ver o sistema funcionando com dados fictícios (Padaria Pão Dourado), use o Modo Demonstração
+(só em 127.0.0.1, nenhuma chamada externa, faixa "Demonstração" no topo). Papéis, logins e roteiro em [DEMO.md](DEMO.md):
 
 ```bash
-DATA_DIR=./data npm run demo
-npm start
-# Painel: demo@nexorrh.com.br / demo12345
+npm run demo              # http://127.0.0.1:8791/demo/entrar?papel=admin
 ```
 
 Testes (fluxo completo + cálculos + biometria com autenticador simulado):
@@ -108,6 +107,7 @@ rh/
 │   ├── servicos/nucleo.js    # regras compartilhadas e geração automática de eventos
 │   └── http/                 # rotas: cadastros, ponto, folha, pessoas, eSocial, app
 ├── public/                   # painel, app/ (PWA), quiosque/, vagas/
-├── scripts/demo.js           # dados de demonstração
+├── scripts/demo.js           # semeia a demonstração num banco comum (DATA_DIR)
+├── src/demo/                # Modo Demonstração (DEMO=1): simuladores, rotas /demo, faixa e roteiro de dados
 └── test/                     # testes (node --test)
 ```

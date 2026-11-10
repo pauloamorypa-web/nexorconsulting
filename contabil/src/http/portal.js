@@ -74,6 +74,7 @@ export function rotasPortal({ r, repo, nucleo, cfg, agora, limitar, cookie }) {
     const n = (sql, ...p) => repo.um(sql, ...p).n;
     return {
       usuario: { nome: portal.nome, email: portal.email },
+      ...(cfg.demo ? { demo: true } : {}),
       empresa: { nome: c.nome_fantasia || c.razao_social, cnpj: c.cnpj },
       escritorio: { nome: e.nome_fantasia || e.razao_social, cor: e.config.portal.cor, boas_vindas: e.config.portal.boas_vindas },
       contagem: { pendencias: n("SELECT COUNT(*) n FROM pendencias WHERE cliente_id = ? AND status = 'pendente'", c.id), guias: n("SELECT COUNT(*) n FROM entregas WHERE cliente_id = ? AND status != 'paga' AND tipo = 'guia'", c.id), chamados: n("SELECT COUNT(*) n FROM chamados WHERE cliente_id = ? AND status = 'respondido'", c.id) },

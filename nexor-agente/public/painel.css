@@ -1,0 +1,174 @@
+:root {
+  --fundo: #f3f5f4;
+  --superficie: #ffffff;
+  --superficie-2: #eef2f0;
+  --texto: #17201c;
+  --texto-2: #5b6862;
+  --borda: #dde3e0;
+  --marca: #0f7a5c;
+  --marca-texto: #ffffff;
+  --balao-dono: #d9f5e6;
+  --balao-agente: #ffffff;
+  --alerta: #b45309;
+  --alerta-fundo: #fff4e0;
+  --perigo: #b42318;
+  --faixa: #1f2a44;
+  --faixa-texto: #ffffff;
+  --sombra: 0 1px 2px rgba(16, 24, 20, 0.06), 0 2px 8px rgba(16, 24, 20, 0.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fundo: #0f1412;
+    --superficie: #171e1b;
+    --superficie-2: #1e2723;
+    --texto: #e7eeea;
+    --texto-2: #9aa8a1;
+    --borda: #2a3530;
+    --marca: #2fb487;
+    --marca-texto: #08130e;
+    --balao-dono: #134734;
+    --balao-agente: #1e2723;
+    --alerta: #f5b454;
+    --alerta-fundo: #33270f;
+    --perigo: #f97066;
+    --faixa: #2b3a5e;
+    --sombra: none;
+  }
+}
+:root[data-theme="dark"] {
+  --fundo: #0f1412;
+  --superficie: #171e1b;
+  --superficie-2: #1e2723;
+  --texto: #e7eeea;
+  --texto-2: #9aa8a1;
+  --borda: #2a3530;
+  --marca: #2fb487;
+  --marca-texto: #08130e;
+  --balao-dono: #134734;
+  --balao-agente: #1e2723;
+  --alerta: #f5b454;
+  --alerta-fundo: #33270f;
+  --perigo: #f97066;
+  --faixa: #2b3a5e;
+  --sombra: none;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--fundo);
+  color: var(--texto);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+.oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+h1, h2, h3 { margin: 0; line-height: 1.25; }
+h2 { font-size: 15px; font-weight: 650; }
+h3 { font-size: 13px; font-weight: 600; color: var(--texto-2); margin: 14px 0 6px; }
+
+/* Faixa de demonstração */
+.faixa-demo {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+  padding: 7px 16px; background: var(--faixa); color: var(--faixa-texto); font-size: 13px;
+}
+.faixa-demo button {
+  background: transparent; color: inherit; border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px; padding: 2px 12px; font-size: 12px;
+}
+.faixa-demo button:hover { background: rgba(255, 255, 255, 0.12); }
+
+.topo {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px; background: var(--superficie); border-bottom: 1px solid var(--borda);
+}
+.marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.marca div { display: flex; flex-direction: column; min-width: 0; }
+.marca small { color: var(--texto-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex: none;
+  display: grid; place-items: center; background: var(--marca); color: var(--marca-texto); font-weight: 700;
+}
+.usuario { display: flex; align-items: center; gap: 10px; color: var(--texto-2); font-size: 14px; }
+.link { background: none; border: 0; color: var(--marca); padding: 4px; }
+
+.grade {
+  display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px;
+  max-width: 1280px; margin: 0 auto; padding: 16px;
+}
+.cartao {
+  background: var(--superficie); border: 1px solid var(--borda); border-radius: 12px;
+  padding: 14px; box-shadow: var(--sombra);
+}
+.lateral { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* Chat */
+.chat {
+  display: flex; flex-direction: column; min-width: 0;
+  background: var(--superficie); border: 1px solid var(--borda); border-radius: 12px; box-shadow: var(--sombra);
+  height: calc(100vh - 120px); min-height: 520px;
+}
+.chat-cabeca { padding: 12px 14px; border-bottom: 1px solid var(--borda); display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.chat-cabeca small { color: var(--texto-2); }
+.mensagens { list-style: none; margin: 0; padding: 14px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; background: var(--superficie-2); }
+.msg { max-width: min(78%, 560px); padding: 8px 11px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: var(--sombra); }
+.msg.agente { align-self: flex-start; background: var(--balao-agente); border-top-left-radius: 4px; }
+.msg.dono { align-self: flex-end; background: var(--balao-dono); border-top-right-radius: 4px; }
+.msg .meta { display: block; font-size: 11px; color: var(--texto-2); margin-top: 4px; text-align: right; }
+.msg.aprovacao { background: var(--alerta-fundo); border: 1px solid color-mix(in srgb, var(--alerta) 40%, transparent); }
+.msg.aprovacao strong { display: block; color: var(--alerta); margin-bottom: 4px; }
+.msg .acoes { display: flex; gap: 8px; margin-top: 8px; }
+.dia { align-self: center; font-size: 12px; color: var(--texto-2); background: var(--superficie); border-radius: 999px; padding: 2px 10px; }
+.digitando { align-self: flex-start; color: var(--texto-2); font-style: italic; font-size: 13px; padding: 4px 6px; }
+.sugestoes { display: flex; gap: 6px; overflow-x: auto; padding: 10px 14px 0; scrollbar-width: thin; }
+.sugestoes button {
+  flex: none; border: 1px solid var(--borda); background: var(--superficie); border-radius: 999px;
+  padding: 5px 12px; font-size: 13px; color: var(--texto);
+}
+.sugestoes button:hover { border-color: var(--marca); color: var(--marca); }
+.escrever { display: flex; gap: 8px; padding: 10px 14px 14px; }
+.escrever input, .receber input, .entrada input {
+  flex: 1; min-width: 0; border: 1px solid var(--borda); background: var(--superficie); border-radius: 10px; padding: 10px 12px;
+}
+input:focus-visible, button:focus-visible { outline: 2px solid var(--marca); outline-offset: 1px; }
+.primario { background: var(--marca); color: var(--marca-texto); border: 0; border-radius: 10px; padding: 9px 16px; font-weight: 600; }
+.primario:disabled { opacity: 0.6; cursor: progress; }
+.aprovar { background: var(--marca); color: var(--marca-texto); border: 0; border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
+.recusar { background: transparent; color: var(--perigo); border: 1px solid currentColor; border-radius: 8px; padding: 6px 12px; font-size: 13px; }
+
+/* Listas laterais */
+.lista { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.lista .vazio { color: var(--texto-2); font-size: 14px; }
+.contador { display: inline-block; min-width: 22px; text-align: center; background: var(--alerta); color: var(--superficie); border-radius: 999px; font-size: 12px; padding: 0 6px; margin-left: 4px; }
+.pendente { border: 1px solid var(--borda); border-radius: 10px; padding: 10px; }
+.pendente p { margin: 0 0 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pendente small, .historico small, .enviadas small { color: var(--texto-2); font-size: 12px; }
+.pendente .acoes { display: flex; gap: 8px; margin-top: 8px; }
+.historico li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; font-size: 14px; }
+.historico .icone { font-size: 14px; line-height: 1.45; }
+.enviadas { max-height: 320px; overflow-y: auto; }
+.enviadas li { border-left: 3px solid var(--marca); padding: 4px 0 4px 10px; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.enviadas li.email { border-left-color: var(--alerta); }
+.receber label { display: block; font-size: 13px; color: var(--texto-2); margin: 8px 0 6px; }
+.receber .linha { display: flex; gap: 8px; }
+.receber button { border: 1px solid var(--marca); color: var(--marca); background: transparent; border-radius: 10px; padding: 8px 12px; font-weight: 600; }
+
+/* Entrada */
+.entrada { display: grid; place-items: center; padding: 40px 16px; }
+.entrada .cartao { width: min(420px, 100%); display: flex; flex-direction: column; gap: 12px; }
+.entrada h1 { font-size: 20px; }
+.entrada form { display: flex; flex-direction: column; gap: 10px; }
+.entrada .erro { color: var(--perigo); min-height: 1em; margin: 0; font-size: 14px; }
+.papeis { display: flex; flex-direction: column; gap: 8px; }
+.papeis a { display: block; text-decoration: none; color: var(--texto); border: 1px solid var(--borda); border-radius: 10px; padding: 10px 12px; }
+.papeis a:hover { border-color: var(--marca); }
+.papeis a small { display: block; color: var(--texto-2); }
+
+@media (max-width: 900px) {
+  .grade { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
+  .chat { height: 72vh; min-height: 440px; }
+  .msg { max-width: 88%; }
+}

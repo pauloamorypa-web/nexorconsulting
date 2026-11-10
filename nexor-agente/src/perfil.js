@@ -17,11 +17,14 @@ const LIMITES = { nome: 40, empresa: 80, tom: 200, item: 400, itens: 60 };
 export function criarPerfil(pasta) {
   const arquivo = path.join(pasta, "perfil.json");
   let perfil;
-  try {
-    perfil = { ...PERFIL_PADRAO, ...JSON.parse(readFileSync(arquivo, "utf8")) };
-  } catch {
-    perfil = structuredClone(PERFIL_PADRAO);
-  }
+  const carregar = () => {
+    try {
+      perfil = { ...structuredClone(PERFIL_PADRAO), ...JSON.parse(readFileSync(arquivo, "utf8")) };
+    } catch {
+      perfil = structuredClone(PERFIL_PADRAO);
+    }
+  };
+  carregar();
   const salvar = () => {
     mkdirSync(pasta, { recursive: true });
     writeFileSync(arquivo + ".tmp", JSON.stringify(perfil, null, 2));
@@ -30,6 +33,8 @@ export function criarPerfil(pasta) {
 
   return {
     obter: () => structuredClone(perfil),
+    /** Relê o arquivo (usado ao reiniciar a demonstração). */
+    recarregar: () => carregar(),
     ajustar(campo, valor) {
       if (!["nome", "empresa", "tom"].includes(campo)) throw new Error("campo inválido");
       const v = String(valor ?? "").trim().slice(0, LIMITES[campo]);

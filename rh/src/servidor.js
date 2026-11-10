@@ -6,7 +6,7 @@
    /api/*       → API
    /health      → verificação de saúde */
 
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -21,6 +21,7 @@ import { criarCentralNexor, recusaPorTeste } from "./nexor/central.js";
 import { CATALOGO as CATALOGO_NEXOR, LIMITES_TESTE, bloqueadoPorAjuste, recusaPorLicenca } from "./nexor/politica.js";
 import { criarCofre } from "./seguranca.js";
 import { criarNucleo } from "./servicos/nucleo.js";
+import { criarCentralDemo, criarDemo, criarSimuladores, instalarTrava, prepararResposta } from "./demo/index.js";
 
 const PUBLICO = resolve(fileURLToPath(new URL("../public", import.meta.url)));
 const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".ico": "image/x-icon", ".json": "application/json", ".webmanifest": "application/manifest+json" };
@@ -122,8 +123,24 @@ function codigoDeInstalacao(pasta) {
   return codigo;
 }
 
+/** Endereço em que o servidor escuta: no Modo Demonstração, só a própria máquina (a menos que DEMO_PUBLICO=1) */
+export const hostDeEscuta = (cfg) => (cfg.demo && !cfg.demoPublico ? "127.0.0.1" : undefined);
+
 export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () => Date.now(), fetchSoap, fetchFn = fetch } = {}) {
   conferirEnderecoPublico(cfg);
+  // Modo Demonstração: trava de rede, simuladores no lugar dos serviços externos e banco próprio
+  let desfazerTrava = () => {};
+  let simuladores = null;
+  if (cfg.demo) {
+    if (cfg.demoReset && caminhoBanco !== ":memory:") {
+      if (resolve(cfg.pastaDados) === resolve("./data")) throw new Error("DEMO_RESET apagaria a pasta ./data: use DATA_DIR=./data-demo (padrão da demonstração).");
+      rmSync(cfg.pastaDados, { recursive: true, force: true });
+    }
+    desfazerTrava = instalarTrava({ iaReal: cfg.demoIaReal });
+    simuladores = criarSimuladores({ agora });
+    fetchSoap = simuladores.fetchSoap;
+    fetchFn = simuladores.fetchFn;
+  }
   const cofre = criarCofre(cfg);
   const repo = abrirBanco(caminhoBanco ?? join(cfg.pastaDados, "rh.db"));
   if (cfg.producao && !cfg.codigoInstalacao && repo.contarUsuarios() === 0) {
@@ -132,8 +149,11 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   }
   const nucleo = criarNucleo({ repo, cofre, cfg, agora });
   const eventos = criarEventos();
-  const central = criarCentralNexor({ cfg, agora, fetchFn, produto: "rh", versao: cfg.sistema.versao, saude: () => saudeDaInstalacao(repo, cfg, agora) });
+  // Na demonstração a licença é "Demonstração" e nada fala com a Nexor Central (central.js fica intocado)
+  const central = cfg.demo ? criarCentralDemo({ agora }) : criarCentralNexor({ cfg, agora, fetchFn, produto: "rh", versao: cfg.sistema.versao, saude: () => saudeDaInstalacao(repo, cfg, agora) });
   const api = criarApi({ repo, nucleo, cofre, cfg, eventos, central, agora, fetchSoap, fetchFn });
+  const demo = cfg.demo ? criarDemo({ repo, nucleo, cfg, agora, simuladores }) : null;
+  demo?.semearSeVazio();
 
   async function arquivoEstatico(caminho, res) {
     let relativo = decodeURIComponent(caminho).replace(/^\/+/, "");
@@ -251,6 +271,12 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     if (cfg.producao) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     try {
       if (url.pathname === "/health") return json(res, 200, { ok: true });
+      if (demo) {
+        prepararResposta(res);
+        if (await demo.tratar(req, res, url)) return;
+      }
+      // Rotas da demonstração não existem fora do Modo Demonstração
+      if (url.pathname === "/demo" || url.pathname.startsWith("/demo/") || url.pathname === "/api/demo" || url.pathname.startsWith("/api/demo/")) return json(res, 404, { erro: "não encontrado" });
       if (req.method === "GET" && url.pathname.startsWith("/.well-known/")) {
         const corpo = arquivosConhecidos(cfg, url.pathname);
         if (!corpo) return json(res, 404, { erro: "não encontrado" });
@@ -279,7 +305,10 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     nucleo,
     cfg,
     central,
+    demo,
+    simuladores,
     fechar() {
+      desfazerTrava();
       central.parar();
       eventos.fechar();
       servidor.close();
@@ -291,10 +320,16 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const app = montarAplicacao();
   app.central.iniciar();
-  app.servidor.listen(app.cfg.porta, () => {
-    console.log(`Nexor RH no ar em http://localhost:${app.cfg.porta}`);
+  const host = hostDeEscuta(app.cfg);
+  app.servidor.listen(app.cfg.porta, host, () => {
+    const porta = app.servidor.address().port;
+    console.log(`Nexor RH no ar em http://${host ?? "localhost"}:${porta}`);
+    if (app.cfg.demo) {
+      console.log(`MODO DEMONSTRAÇÃO · dados fictícios em ${app.cfg.pastaDados} · nenhuma chamada externa`);
+      for (const p of app.demo.info().papeis) console.log(`  ${p.papel.padEnd(12)} http://${host ?? "localhost"}:${porta}${p.url}  (${p.nome})`);
+    }
     console.log(`Painel: /   ·   App do trabalhador: /app/   ·   Quiosque: /quiosque/   ·   Vagas: /vagas/`);
-    if (!app.cfg.urlPublica) console.warn("PUBLIC_URL vazia: só aceitável em teste local. Em produção (NODE_ENV=production) ela é obrigatória.");
+    if (!app.cfg.urlPublica && !app.cfg.demo) console.warn("PUBLIC_URL vazia: só aceitável em teste local. Em produção (NODE_ENV=production) ela é obrigatória.");
   });
   const desligar = () => {
     app.fechar();

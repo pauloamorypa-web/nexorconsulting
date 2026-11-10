@@ -9,7 +9,8 @@ const numero = (v, padrao) => {
 };
 
 export function lerConfig(env = process.env) {
-  return {
+  const demo = env.DEMO === "1";
+  const cfg = {
     porta: numero(env.PORT, 8795),
     urlPublica: (env.PUBLIC_URL ?? "").replace(/\/$/, ""),
     producao: env.NODE_ENV === "production",
@@ -31,6 +32,22 @@ export function lerConfig(env = process.env) {
     rotinaMin: numero(env.ROTINA_MINUTOS, 5),
     nexor: configNexor(env),
     sistema: { nome: "Nexor Barber", versao: "1.0.0" },
+    // Modo Demonstração (DEMO=1): dados fictícios, provedores simulados, nada sai da máquina (ver DEMO.md)
+    demo,
+    demoPublico: demo && env.DEMO_PUBLICO === "1",
+    demoReiniciar: demo && env.DEMO_RESET === "1",
+  };
+  if (!demo) return cfg;
+  // Na demonstração: sem Central (licença "demonstração"), sem produção, chave e pasta próprias, endereço local
+  return {
+    ...cfg,
+    producao: false,
+    pastaDados: env.DATA_DIR ?? "./data-demo",
+    chaveMestra: env.MASTER_KEY || "chave-mestra-da-demonstracao-nexor-barber",
+    codigoInstalacao: "",
+    urlPublica: cfg.urlPublica || `http://localhost:${cfg.porta}`,
+    nexor: configNexor({}),
+    rotinaMin: 2,
   };
 }
 

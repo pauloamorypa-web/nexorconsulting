@@ -36,6 +36,9 @@ export function lerConfig(env = process.env) {
     tempoLimiteSistemaMs: 20_000,
     tamanhoMaximoResposta: 20_000,
 
+    // Painel web (chat e aprovações no navegador). Só liga com uma senha definida.
+    painelSenha: env.PAINEL_SENHA ?? "",
+
     // Nexor Central: licença (situação do contrato) e saúde da instalação
     nexor: configNexor(env),
   };

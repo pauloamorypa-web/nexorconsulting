@@ -14,15 +14,23 @@ const numero = (valor, padrao) => {
 };
 
 export function lerConfig(env = process.env) {
+  // Modo Demonstração (DEMO=1): dados fictícios, sem nenhuma chamada externa, só em 127.0.0.1 (ver DEMO.md)
+  const demo = env.DEMO === "1";
   return {
+    demo,
+    demoPublico: demo && env.DEMO_PUBLICO === "1",
+    demoReset: demo && env.DEMO_RESET === "1",
+    // IA real só se pedida e com chave da Anthropic no ambiente
+    demoIaReal: demo && env.DEMO_IA_REAL === "1" && Boolean(env.ANTHROPIC_API_KEY),
     porta: numero(env.PORT, 8790),
     // Endereço público do servidor (usado para montar a URL do webhook mostrada no painel)
     urlPublica: (env.PUBLIC_URL ?? "").replace(/\/$/, ""),
     producao: env.NODE_ENV === "production",
 
-    pastaDados: env.DATA_DIR ?? "./data",
+    pastaDados: env.DATA_DIR ?? (demo ? "./data-demo" : "./data"),
     // Chave usada para criptografar os tokens da Meta no banco. Em produção é obrigatória.
-    chaveMestra: env.MASTER_KEY ?? "",
+    // Na demonstração, sem MASTER_KEY, usa uma chave fixa (só protege tokens fictícios)
+    chaveMestra: env.MASTER_KEY || (demo ? "nexor-demonstracao-chave-fixa-nao-usar-em-producao" : ""),
     // Permite que novas empresas criem conta pelo painel (modo SaaS). Sem isso, só o primeiro acesso cria a conta.
     permitirCadastro: env.ALLOW_SIGNUP === "true",
 
