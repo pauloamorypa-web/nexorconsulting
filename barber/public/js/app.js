@@ -1,7 +1,7 @@
 /* Painel do Nexor Barber: login, menu por papel, rotas, faixa do contrato e acesso do Suporte Nexor. */
 
-import { definirAoDeslogar, get, post } from "./api.js";
-import { acao, aviso, avatar, h, icone, limpar } from "./ui.js";
+import { definirAoDeslogar, get, post, put } from "./api.js";
+import { acao, aviso, avatar, erro, h, icone, janela, limpar } from "./ui.js";
 import { formulario } from "./comum.js";
 
 const TODOS = ["dono", "admin", "recepcao", "barbeiro"];
@@ -16,7 +16,7 @@ const ROTAS = {
   comissoes: { titulo: "Comissões", icone: "grafico", carregar: () => import("./views/comissoes.js"), papeis: TODOS },
   folgas: { titulo: "Folgas e horários", icone: "relogio", carregar: () => import("./views/folgas.js"), papeis: TODOS },
   relatorios: { titulo: "Relatórios", icone: "raio", carregar: () => import("./views/relatorios.js"), papeis: ADM, modulo: "modulo.relatorios" },
-  config: { titulo: "Configurações", icone: "config", carregar: () => import("./views/config.js"), papeis: ADM },
+  config: { titulo: "Configurações", icone: "config", carregar: () => import("./views/config.js"), papeis: ADM, selo: "envios_erro" },
 };
 export const PAPEIS = { dono: "Dono", admin: "Administrador", recepcao: "Recepção", barbeiro: "Barbeiro" };
 
@@ -73,6 +73,13 @@ async function recarregarEu() {
   return estado.eu;
 }
 
+/* Reteste U-02: ação que falha fora de um acao() (ex.: "Agendar" sem rede) não fica muda: mostra o erro em português */
+window.addEventListener("unhandledrejection", (ev) => {
+  ev.preventDefault();
+  const e = ev.reason;
+  erro(e instanceof TypeError || !navigator.onLine ? new Error("Sem conexão com a internet. Confira a rede e tente de novo.") : e);
+});
+
 async function renderizarRota() {
   const [nome, ...resto] = location.hash.replace(/^#\/?/, "").split("?")[0].split("/");
   const rota = ROTAS[nome] ? nome : "hoje";
@@ -90,7 +97,18 @@ async function renderizarRota() {
     estado.limpeza = (await mod.render(area, ctx, resto)) ?? null;
   } catch (e) {
     console.error(e);
-    limpar(area, h("div", { class: "vazio" }, h("h3", {}, "Não foi possível abrir esta tela"), h("p", {}, e.message)));
+    // Reteste U-02: sem rede, o import() da tela falha com "Failed to fetch dynamically imported module"
+    const semRede = !navigator.onLine || e instanceof TypeError || e?.status === 0;
+    limpar(
+      area,
+      h(
+        "div",
+        { class: "vazio" },
+        h("h3", {}, semRede ? "Sem conexão com a internet" : "Não foi possível abrir esta tela"),
+        h("p", {}, semRede ? "Confira a rede e tente de novo." : e.message),
+        h("button", { class: "btn btn-primario", type: "button", onclick: () => renderizarRota() }, "Tentar de novo"),
+      ),
+    );
   }
 }
 
@@ -123,12 +141,21 @@ function faixa() {
   return null;
 }
 
+/** Avisos para dono e admin (reteste T-04 e T-05): token do webhook do Asaas trocado, pendência da atualização */
+function avisosAdm() {
+  return (estado.eu.avisos ?? []).map((a) =>
+    h("div", { class: "faixa faixa-aviso", role: "status" }, icone("alerta", 16), h("span", {}, a.texto), a.link ? h("a", { href: a.link, onclick: (e) => e.currentTarget.closest(".faixa")?.remove() }, "Abrir Canais") : null),
+  );
+}
+
 function layout() {
   const { usuario, barbearia } = estado.eu;
   const itens = suspenso() ? [] : Object.entries(ROTAS).filter(([, r]) => disponivel(r));
   return h(
     "div",
     { class: "casca" },
+    // Reteste U-05: quem usa teclado pula o menu e vai direto ao conteúdo (sem mexer na rota do endereço)
+    h("a", { class: "pular", href: "#conteudo", onclick: (e) => (e.preventDefault(), document.getElementById("conteudo")?.focus()) }, "Pular para o conteúdo"),
     h(
       "aside",
       { class: "lateral" },
@@ -143,6 +170,7 @@ function layout() {
           "div",
           { class: "lateral-acoes" },
           h("button", { class: "btn-icone", title: "Alternar tema", "aria-label": "Alternar tema", onclick: alternarTema }, icone("lua")),
+          usuario.nexor ? null : h("button", { class: "btn-icone", title: "Trocar minha senha", "aria-label": "Trocar minha senha", onclick: trocarSenha }, icone("escudo")),
           h("button", { class: "btn-icone", title: "Sair", "aria-label": "Sair", onclick: async () => (await post("/sair"), location.reload()) }, icone("sair")),
         ),
       ),
@@ -152,7 +180,8 @@ function layout() {
       { class: "principal" },
       h("header", { class: "topo-movel" }, h("button", { class: "btn-icone", "aria-label": "Abrir menu", onclick: () => document.body.classList.toggle("menu-aberto") }, icone("menu")), h("img", { src: "/img/logo-mark.webp", alt: "", width: 26, height: 26 }), h("strong", {}, barbearia.nome)),
       faixa(),
-      h("main", { id: "conteudo", class: "conteudo" }),
+      ...avisosAdm(),
+      h("main", { id: "conteudo", class: "conteudo", tabindex: "-1" }),
     ),
     h("div", { class: "veu", onclick: () => document.body.classList.remove("menu-aberto") }),
   );
@@ -177,7 +206,7 @@ function login(st) {
   const form = h(
     "form",
     { class: "login-form", onsubmit: (e) => (e.preventDefault(), acao(b, async () => (await post(cadastro ? "/cadastro" : "/entrar", f.ler()), location.reload()))) },
-    h("img", { src: "/img/logo-mark.webp", alt: "", width: 48, height: 48, class: "login-logo" }),
+    h("img", { src: "/img/logo-mark.webp", alt: "Nexor Barber", width: 48, height: 48, class: "login-logo" }),
     h("h1", {}, cadastro ? "Vamos abrir a sua barbearia" : "Entrar no Nexor Barber"),
     h("p", { class: "suave" }, cadastro ? "Já criamos 4 serviços de exemplo e o expediente padrão. Você muda tudo depois." : "Acesso do dono, da recepção e dos barbeiros."),
     f.el,
@@ -229,4 +258,15 @@ iniciar().catch((e) => {
   console.error(e);
   limpar(app, h("div", { class: "vazio" }, h("h3", {}, "Não foi possível carregar o painel"), h("p", {}, e.message)));
 });
+/** Troca da própria senha (pede a senha atual) */
+function trocarSenha() {
+  const f = formulario([
+    { nome: "atual", rotulo: "Senha atual", tipo: "senha", obrigatorio: true },
+    { nome: "nova", rotulo: "Nova senha (mínimo 8 caracteres)", tipo: "senha", obrigatorio: true },
+  ]);
+  const ok = h("button", { class: "btn btn-primario" }, "Trocar senha");
+  const j = janela({ titulo: "Trocar minha senha", conteudo: f.el, acoes: [ok] });
+  ok.onclick = () => acao(ok, async () => (await put("/eu/senha", f.ler()), aviso("Senha trocada. Os outros aparelhos vão pedir login de novo."), j.fechar()));
+}
+
 export { aviso };

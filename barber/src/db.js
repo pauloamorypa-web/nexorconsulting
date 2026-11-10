@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { hojeBR, somarDias, somarMeses } from "./regras/datas.js";
 
 const ESQUEMA = `
 CREATE TABLE IF NOT EXISTS barbearias (id TEXT PRIMARY KEY, nome TEXT NOT NULL, config TEXT NOT NULL DEFAULT '{}', criada_em INTEGER NOT NULL);
@@ -118,6 +119,17 @@ CREATE TABLE IF NOT EXISTS auditoria (id TEXT PRIMARY KEY, barbearia_id TEXT NOT
 CREATE INDEX IF NOT EXISTS auditoria_barbearia ON auditoria (barbearia_id, criado_em);
 `;
 
+/* Índices de desempenho (banca V-24). IF NOT EXISTS: rodam em bancos novos e nos que já existem. */
+const INDICES = `
+CREATE INDEX IF NOT EXISTS assinaturas_asaas ON assinaturas (asaas_assinatura) WHERE asaas_assinatura IS NOT NULL;
+CREATE INDEX IF NOT EXISTS agendamentos_status ON agendamentos (status, inicio);
+CREATE INDEX IF NOT EXISTS agendamentos_inicio ON agendamentos (inicio);
+CREATE INDEX IF NOT EXISTS reservas_agendamento ON reservas (agendamento_id);
+CREATE INDEX IF NOT EXISTS reservas_produto ON reservas (produto_id, status);
+CREATE INDEX IF NOT EXISTS usos_ciclo ON usos (assinatura_id, servico_id, ciclo_inicio);
+CREATE INDEX IF NOT EXISTS cobrancas_assinatura ON cobrancas (assinatura_id, status);
+`;
+
 const JSON_COLS = { barbearias: ["config"], barbeiros: ["horario", "servicos"], clientes: ["preferencias"], planos: ["itens", "dias_semana"], vendas: ["itens"], espera: ["oferta"], auditoria: ["detalhe"] };
 const BOOL_COLS = new Set(["ativo", "nexor", "aceita_mensagens", "vitrine"]);
 const LISTAS = new Set(["servicos", "itens", "dias_semana"]);
@@ -130,11 +142,124 @@ const lerJson = (v, padrao) => {
   }
 };
 
+/**
+ * Migrações de bancos já existentes. Rodam a cada abertura e são idempotentes: cada passo confere antes de mudar.
+ * Índices únicos que dados antigos duplicados impediriam não derrubam o sistema: ficam para a próxima abertura
+ * e a pendência vai para a auditoria (com os registros que precisam ser corrigidos pelo painel).
+ */
+/** Índices únicos que dependem de os dados antigos não terem duplicados (V-01 e V-05) */
+const UNICOS = [
+  {
+    // V-01: no máximo uma venda paga por atendimento
+    nome: "vendas_agendamento_paga",
+    o_que: "venda paga em dobro do mesmo atendimento",
+    como: "Cancele em Vendas a venda repetida de cada atendimento.",
+    criar: "CREATE UNIQUE INDEX vendas_agendamento_paga ON vendas (agendamento_id) WHERE status = 'paga' AND agendamento_id IS NOT NULL",
+    duplicados: "SELECT agendamento_id, group_concat(id) vendas FROM vendas WHERE status = 'paga' AND agendamento_id IS NOT NULL GROUP BY agendamento_id HAVING COUNT(*) > 1",
+  },
+  {
+    // V-05: no máximo uma assinatura vigente (pendente, ativa ou atrasada) por cliente
+    nome: "assinaturas_cliente_vigente",
+    o_que: "cliente com mais de uma assinatura do clube em vigor",
+    como: "Cancele no Clube a assinatura repetida de cada cliente.",
+    criar: "CREATE UNIQUE INDEX assinaturas_cliente_vigente ON assinaturas (cliente_id) WHERE status IN ('pendente','ativa','atrasada')",
+    duplicados: "SELECT cliente_id, group_concat(id) assinaturas FROM assinaturas WHERE status IN ('pendente','ativa','atrasada') GROUP BY cliente_id HAVING COUNT(*) > 1",
+  },
+];
+
+/**
+ * Reteste T-05: pendências da migração, calculadas na hora. O índice que ficou para trás por causa de duplicados é
+ * criado assim que o último duplicado é corrigido no painel (e isso é auditado). Barato quando não há pendência.
+ */
+export function pendenciasMigracao(db, agora = () => Date.now()) {
+  const lista = [];
+  for (const u of UNICOS) {
+    if (db.prepare("SELECT 1 FROM sqlite_master WHERE name = ?").get(u.nome)) continue;
+    const dup = db.prepare(u.duplicados).all();
+    if (dup.length) {
+      lista.push({ indice: u.nome, quantidade: dup.length, texto: `Há ${dup.length} ${u.o_que} vindos da versão anterior. ${u.como}` });
+      continue;
+    }
+    db.exec(u.criar);
+    const b = db.prepare("SELECT id FROM barbearias ORDER BY criada_em LIMIT 1").get();
+    if (b) db.prepare("INSERT INTO auditoria (id, barbearia_id, autor, acao, detalhe, criado_em) VALUES (?,?,?,?,?,?)").run(randomUUID(), b.id, "sistema", "migracao_resolvida", JSON.stringify({ indice: u.nome }), agora());
+  }
+  return lista;
+}
+
+function migrar(db, agora) {
+  const existe = (nome) => Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE name = ?").get(nome));
+  const pendencias = [];
+  const temColuna = (tabela, coluna) => db.prepare(`PRAGMA table_info(${tabela})`).all().some((c) => c.name === coluna);
+  const coluna = (tabela, nome, definicao) => {
+    if (!temColuna(tabela, nome)) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${nome} ${definicao}`);
+  };
+  const indiceUnico = (nome, criar, sqlDuplicados) => {
+    if (existe(nome)) return;
+    const dup = db.prepare(sqlDuplicados).all();
+    if (!dup.length) return db.exec(criar);
+    pendencias.push({ indice: nome, duplicados: dup.slice(0, 50) });
+  };
+
+  for (const u of UNICOS) indiceUnico(u.nome, u.criar, u.duplicados);
+
+  // V-02: quem registrou o pagamento ("Asaas" pelo webhook ou o nome de quem lançou no balcão)
+  coluna("cobrancas", "registrado_por", "TEXT");
+  // V-04: período que cada pagamento cobriu e estorno (o pagamento estornado continua "já processado")
+  coluna("cobrancas", "ciclo_inicio", "TEXT");
+  coluna("cobrancas", "ciclo_fim", "TEXT");
+  coluna("cobrancas", "estornada_em", "INTEGER");
+  // V-08: período pago separado do ciclo atual. Dados antigos: pago até o fim do ciclo guardado; quem renovou
+  // antes da hora (o ciclo saltou para o futuro e o cliente perdeu o resto do mês pago) volta para o ciclo de hoje.
+  coluna("assinaturas", "pago_ate", "TEXT");
+  const hoje = hojeBR(agora());
+  const adiantadas = db.prepare("SELECT id, ciclo_inicio, ciclo_fim FROM assinaturas WHERE pago_ate IS NULL AND ciclo_inicio IS NOT NULL AND status = 'ativa' AND ciclo_inicio > ?").all(hoje);
+  for (const a of adiantadas) {
+    const anterior = db.prepare("SELECT MAX(ciclo_inicio) c FROM usos WHERE assinatura_id = ? AND ciclo_inicio < ?").get(a.id, a.ciclo_inicio)?.c ?? somarMeses(a.ciclo_inicio, -1);
+    db.prepare("UPDATE assinaturas SET ciclo_inicio = ?, ciclo_fim = ?, pago_ate = ? WHERE id = ?").run(anterior, somarDias(a.ciclo_inicio, -1), a.ciclo_fim, a.id);
+  }
+  db.exec("UPDATE assinaturas SET pago_ate = ciclo_fim WHERE pago_ate IS NULL AND ciclo_fim IS NOT NULL");
+
+  // V-17: tentativas de envio do lembrete (o canal pode estar fora na primeira)
+  coluna("agendamentos", "lembrete_tentativas", "INTEGER NOT NULL DEFAULT 0");
+
+  // V-21: o estoque não baixa para negativo. Só barra a baixa: estoque já negativo de banco antigo pode ser corrigido subindo
+  db.exec("CREATE TRIGGER IF NOT EXISTS produtos_estoque_nao_negativo BEFORE UPDATE OF estoque ON produtos WHEN NEW.estoque < 0 AND NEW.estoque < OLD.estoque BEGIN SELECT RAISE(ABORT, 'estoque negativo'); END");
+
+  // V-45: estorno de comissão de mês fechado (aponta para a comissão original)
+  coluna("comissoes", "estorno_de", "TEXT");
+
+  // Reteste T-02: quando tentar de novo o lembrete que falhou (espera crescente)
+  coluna("agendamentos", "lembrete_proxima_em", "INTEGER");
+
+  // Reteste T-01: nome do cliente sem acentos e em minúsculas, com índice, para buscar e ordenar
+  coluna("clientes", "nome_busca", "TEXT");
+  db.exec("CREATE INDEX IF NOT EXISTS clientes_nome_busca ON clientes (nome_busca)");
+  for (const c of db.prepare("SELECT id, nome FROM clientes WHERE nome_busca IS NULL").all()) db.prepare("UPDATE clientes SET nome_busca = ? WHERE id = ?").run(semAcento(c.nome), c.id);
+
+  // V-06: cancelamento que falhou no Asaas (a rotina tenta de novo)
+  coluna("assinaturas", "cancelamento_pendente", "INTEGER NOT NULL DEFAULT 0");
+
+  if (pendencias.length) {
+    console.warn("[banco] migração pendente: há registros duplicados que precisam ser corrigidos no painel", JSON.stringify(pendencias));
+    const b = db.prepare("SELECT id FROM barbearias ORDER BY criada_em LIMIT 1").get();
+    const ja = b && db.prepare("SELECT detalhe FROM auditoria WHERE acao = 'migracao_pendente' ORDER BY criado_em DESC LIMIT 1").get();
+    if (b && ja?.detalhe !== JSON.stringify(pendencias)) db.prepare("INSERT INTO auditoria (id, barbearia_id, autor, acao, detalhe, criado_em) VALUES (?,?,?,?,?,?)").run(randomUUID(), b.id, "sistema", "migracao_pendente", JSON.stringify(pendencias), agora());
+  }
+}
+
+/** Minúsculas e sem acentos ("Zuléica" → "zuleica"), para buscar e ordenar nomes (reteste T-01) */
+export const semAcento = (v) => (v === null || v === undefined ? null : String(v).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase());
+
 export function abrirBanco(caminho, agora = () => Date.now()) {
   if (caminho !== ":memory:") mkdirSync(dirname(caminho), { recursive: true });
   const db = new DatabaseSync(caminho);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(ESQUEMA);
+  // Minúsculas sem acentos (o lower() do SQLite só trata A-Z): usado na busca de clientes
+  db.function("minusculas", { deterministic: true }, semAcento);
+  migrar(db, agora);
+  db.exec(INDICES);
   const cache = new Map();
   const q = (sql) => {
     let s = cache.get(sql);
@@ -157,6 +282,7 @@ export function abrirBanco(caminho, agora = () => Date.now()) {
       if (!colunas[tabela].has(k) || v === undefined) continue;
       r[k] = (JSON_COLS[tabela] ?? []).includes(k) && v !== null ? JSON.stringify(v) : typeof v === "boolean" ? (v ? 1 : 0) : v;
     }
+    if (tabela === "clientes" && typeof r.nome === "string") r.nome_busca = semAcento(r.nome);
     return r;
   };
 

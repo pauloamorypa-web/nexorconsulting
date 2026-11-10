@@ -14,7 +14,9 @@ export function lerConfig(env = process.env) {
     urlPublica: (env.PUBLIC_URL ?? "").replace(/\/$/, ""),
     producao: env.NODE_ENV === "production",
     pastaDados: env.DATA_DIR ?? "./data",
-    proxies: Math.max(0, Math.floor(numero(env.TRUST_PROXY, 1))),
+    // Quantos proxies confiáveis ficam na frente (Cloudflare Tunnel, Caddy). 0 = ignora o X-Forwarded-For.
+    // Padrão 0: com a porta exposta direto, o cabeçalho seria falsificável e furaria os limites por IP.
+    proxies: Math.max(0, Math.floor(numero(env.TRUST_PROXY, 0))),
     // Criptografa os tokens do WhatsApp, SMS e Asaas guardados no banco. Obrigatória em produção.
     chaveMestra: env.MASTER_KEY ?? "",
     codigoInstalacao: env.INSTALL_CODE ?? "",

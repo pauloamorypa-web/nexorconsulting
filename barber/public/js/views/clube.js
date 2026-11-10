@@ -70,13 +70,23 @@ export async function render(area, ctx) {
   async function pagar(a) {
     const forma = seletor(Object.entries(ctx.eu.formas).filter(([k]) => k !== "clube"), "pix");
     const ok = h("button", { class: "btn btn-sucesso" }, "Registrar pagamento");
-    const j = janela({ titulo: `Mensalidade de ${a.cliente.nome}`, conteudo: h("div", { class: "pilha" }, h("p", {}, `${a.plano.nome} · ${reais(a.plano.preco_centavos)}. O ciclo novo começa ${a.status === "ativa" && a.ciclo_fim ? `depois de ${dataBR(a.ciclo_fim)}` : "hoje"}.`), forma), acoes: [ok] });
-    ok.onclick = () => acao(ok, async () => (await post(`/assinaturas/${a.id}/pagamento`, { forma: forma.value }), aviso("Pagamento registrado."), j.fechar(), carregar()));
+    const j = janela({ titulo: `Mensalidade de ${a.cliente.nome}`, conteudo: h("div", { class: "pilha" }, h("p", {}, `${a.plano.nome} · ${reais(a.plano.preco_centavos)}. O mês novo começa ${["ativa", "atrasada"].includes(a.status) && (a.pago_ate ?? a.ciclo_fim) ? `depois de ${dataBR(a.pago_ate ?? a.ciclo_fim)}` : "hoje"}.`), forma), acoes: [ok] });
+    // Chave de idempotência por janela aberta: o mesmo pedido reenviado não registra duas vezes
+    const chave = Array.from(crypto.getRandomValues(new Uint8Array(16)), (x) => x.toString(16).padStart(2, "0")).join("");
+    ok.onclick = () => acao(ok, async () => (await post(`/assinaturas/${a.id}/pagamento`, { forma: forma.value, chave }), aviso("Pagamento registrado."), j.fechar(), carregar()));
   }
 
-  async function carregar() {
+  // A rota devolve 200 assinaturas por página; "Ver mais assinantes" busca a próxima e soma na lista
+  const POR_PAGINA = 200;
+  let pagina = 1;
+  let assinantes = [];
+  async function carregar({ mais = false } = {}) {
     [servicos, planos] = await Promise.all([get("/servicos"), get("/planos")]);
-    const a = await get("/assinaturas");
+    pagina = mais === true ? pagina + 1 : 1;
+    const a = await get(`/assinaturas?pagina=${pagina}`);
+    const novos = a.lista;
+    assinantes = mais === true ? [...assinantes, ...novos] : novos;
+    a.lista = assinantes;
     const nomeServ = (id) => servicos.find((s) => s.id === id)?.nome ?? "serviço";
     limpar(
       corpo,
@@ -106,7 +116,7 @@ export async function render(area, ctx) {
             { titulo: "Cliente", valor: (x) => x.cliente.nome },
             { titulo: "Plano", valor: (x) => x.plano.nome },
             { titulo: "Situação", valor: (x) => sit(x.status) },
-            { titulo: "Ciclo", valor: (x) => (x.ciclo_inicio ? `${dataBR(x.ciclo_inicio)} a ${dataBR(x.ciclo_fim)}` : "—") },
+            { titulo: "Ciclo", valor: (x) => (x.ciclo_inicio ? `${dataBR(x.ciclo_inicio)} a ${dataBR(x.ciclo_fim)}${x.pago_ate && x.pago_ate !== x.ciclo_fim ? ` · pago até ${dataBR(x.pago_ate)}` : ""}` : "—") },
             { titulo: "Usos no ciclo", valor: (x) => String(x.usos) },
             {
               titulo: "",
@@ -122,6 +132,7 @@ export async function render(area, ctx) {
           a.lista,
           { vazio: "Ninguém assinou ainda." },
         ),
+        novos.length === POR_PAGINA ? h("button", { class: "btn btn-fantasma btn-bloco", onclick: (e) => acao(e.currentTarget, () => carregar({ mais: true })) }, `Ver mais assinantes (mostrando ${a.lista.length})`) : null,
       ),
     );
   }

@@ -2,6 +2,7 @@
    APIs falsas (WhatsApp da Meta, SMS do Twilio, certificados do Google e Asaas). */
 import { generateKeyPairSync, sign } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
+import http from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { lerConfig } from "../src/config.js";
@@ -23,11 +24,20 @@ export function rede() {
   const whatsapp = [];
   const sms = [];
   const asaas = [];
+  /** Caminhos do Asaas falso que devem falhar (regex), para testar erros no meio do caminho */
+  const falhas = [];
+  /** Provedores fora do ar (hostname): WhatsApp "graph.facebook.com", SMS "api.twilio.com" */
+  const fora = new Set();
+  /** Provedores lentos (hostname → ms antes de responder) */
+  const atraso = new Map();
   let n = 0;
+  let assinaturas = 0;
   const resp = (status, dados, cab = {}) => new Response(JSON.stringify(dados), { status, headers: { "content-type": "application/json", ...cab } });
   const fetchFn = async (url, init = {}) => {
     const u = new URL(url);
     if (u.pathname.startsWith("/api/v1/")) return fetch(url, init);
+    if (atraso.has(u.hostname)) await new Promise((ok) => setTimeout(ok, atraso.get(u.hostname)));
+    if (fora.has(u.hostname)) return resp(500, { error: { message: `erro técnico do provedor ${u.hostname}` } });
     if (u.hostname === "graph.facebook.com") {
       whatsapp.push(JSON.parse(init.body));
       return resp(200, { messages: [{ id: `wamid.${++n}` }] });
@@ -40,9 +50,13 @@ export function rede() {
     if (u.hostname.includes("asaas.com")) {
       const corpo = init.body ? JSON.parse(init.body) : null;
       asaas.push({ metodo: init.method, caminho: u.pathname, corpo });
+      if (falhas.some((re) => re.test(`${init.method} ${u.pathname}`))) return resp(500, { errors: [{ description: "falha simulada" }] });
       if (u.pathname.endsWith("/customers")) return resp(200, { id: "cus_1" });
-      if (u.pathname.endsWith("/subscriptions") && init.method === "POST") return resp(200, { id: "sub_1" });
-      if (/\/subscriptions\/sub_1\/payments$/.test(u.pathname)) return resp(200, { data: [{ id: "pay_1", invoiceUrl: "https://asaas.com/i/pay_1", dueDate: corpo?.nextDueDate ?? "2026-11-10", value: 89.9 }] });
+      // Cada assinatura nova ganha um id (sub_1, sub_2…) e a primeira cobrança dela (pay_1, pay_2…)
+      if (u.pathname.endsWith("/subscriptions") && init.method === "POST") return resp(200, { id: `sub_${++assinaturas}` });
+      const pag = /\/subscriptions\/sub_(\d+)\/payments$/.exec(u.pathname);
+      if (pag) return resp(200, { data: [{ id: `pay_${pag[1]}`, invoiceUrl: `https://asaas.com/i/pay_${pag[1]}`, dueDate: corpo?.nextDueDate ?? "2026-11-10", value: 89.9 }] });
+      if (/\/payments\/[^/]+\/receiveInCash$/.test(u.pathname)) return resp(200, { id: u.pathname.split("/").at(-2), status: "RECEIVED_IN_CASH" });
       if (init.method === "DELETE") return resp(200, { deleted: true });
     }
     return resp(404, { erro: "não simulado" });
@@ -53,7 +67,7 @@ export function rede() {
     const texto = w?.template?.components?.[0]?.parameters?.[0]?.text ?? w?.text?.body ?? sms.at(-1)?.Body ?? "";
     return /\d{6}/.exec(texto)?.[0];
   };
-  return { fetchFn, whatsapp, sms, asaas, ultimoCodigo };
+  return { fetchFn, whatsapp, sms, asaas, falhas, fora, atraso, ultimoCodigo };
 }
 
 /** Relógio controlado: começa numa terça-feira, 10/11/2026 às 08:00 de Brasília */
@@ -101,7 +115,24 @@ export function criarCliente(url) {
     const tipo = r.headers.get("content-type") ?? "";
     return { status: r.status, dados: tipo.includes("json") ? await r.json() : await r.text(), cabecalhos: r.headers };
   }
+  /** Requisição com corpo lento: manda os cabeçalhos e o começo do corpo; o resto só quando chamar fim() */
+  function lenta(metodo, caminho, corpo) {
+    const txt = JSON.stringify(corpo);
+    let fim;
+    const p = new Promise((ok, falhou) => {
+      const req = http.request(url + caminho, { method: metodo, agent: false, headers: { "x-nexor": "1", "content-type": "application/json", "content-length": Buffer.byteLength(txt), cookie: [...cookies].map(([k, v]) => `${k}=${v}`).join("; ") } }, (r) => {
+        let b = "";
+        r.on("data", (d) => (b += d));
+        r.on("end", () => ok({ status: r.statusCode, dados: JSON.parse(b || "{}") }));
+      });
+      req.on("error", falhou);
+      req.write(txt.slice(0, 2));
+      fim = () => req.end(txt.slice(2));
+    });
+    return { p, fim: () => fim() };
+  }
   return {
+    lenta,
     get: (c) => chamar("GET", c),
     post: (c, b = {}, extra) => chamar("POST", c, b, extra),
     put: (c, b = {}) => chamar("PUT", c, b),

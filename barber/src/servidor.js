@@ -15,6 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { config as configPadrao } from "./config.js";
 import { abrirBanco } from "./db.js";
 import { criarApi } from "./http/api.js";
+import { semVinculo } from "./http/permissoes.js";
 import { ErroHttp, json, lerCookies, lerCorpo } from "./http/roteador.js";
 import { criarCentralNexor, recusaPorTeste } from "./nexor/central.js";
 import { CATALOGO as CATALOGO_NEXOR, LIMITES_TESTE, bloqueadoPorAjuste, recusaPorLicenca } from "./nexor/politica.js";
@@ -29,7 +30,7 @@ const CSP_PAINEL = "default-src 'self'; img-src 'self' data: blob:; style-src 's
 // O app do cliente carrega o botão "Entrar com Google" (Google Identity Services)
 const CSP_APP = "default-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src 'self' https://fonts.gstatic.com; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
-export function ipCliente(req, proxies = 1) {
+export function ipCliente(req, proxies = 0) {
   const direto = String(req.socket?.remoteAddress ?? "");
   if (!proxies) return direto;
   const lista = String(req.headers["x-forwarded-for"] ?? "").split(",").map((x) => x.trim()).filter(Boolean);
@@ -97,6 +98,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   if (cfg.producao && !cfg.codigoInstalacao && repo.contarUsuarios() === 0) cfg = { ...cfg, codigoInstalacao: codigoDeInstalacao(cfg.pastaDados) };
   const central = criarCentralNexor({ cfg, agora, fetchFn, produto: "barber", versao: cfg.sistema.versao, saude: () => saudeDaInstalacao(repo, cfg, agora) });
   const nucleo = criarNucleo({ repo, cofre, cfg, fetchFn, agora });
+  nucleo.migrarConfig();
   const google = criarGoogle({ url: cfg.google.certificados, fetchFn, agora });
   const api = criarApi({ repo, nucleo, cofre, cfg, central, agora, google });
   const pausado = () => central.estado().situacao === "bloqueado";
@@ -146,6 +148,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       usuario = api.sessaoPainel(cookies);
       if (!usuario) return json(res, 401, { erro: "Faça login para continuar." });
       if (rota.opcoes.papeis && !rota.opcoes.papeis.includes(usuario.papel)) return json(res, 403, { erro: "Seu perfil não tem permissão para esta ação." });
+      // Barbeiro sem barbeiro vinculado: sem o recorte, veria a agenda, as vendas e as comissões de todos (V-14)
+      if (semVinculo(usuario) && !["/api/eu", "/api/eu/senha"].includes(url.pathname)) return json(res, 403, { erro: "Este acesso de barbeiro não está ligado a nenhum barbeiro. Peça ao dono para corrigir em Configurações > Acessos." });
       barbearia = nucleo.barbearia();
     }
     if (rota.opcoes.nexor && !usuario?.nexor) return json(res, 403, { erro: "Área exclusiva do Suporte Nexor." });
@@ -226,7 +230,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   async function webhookAsaas(req, res) {
     if (req.method !== "POST") return json(res, 405, { erro: "método não permitido" });
     const b = repo.barbearia();
-    const token = b?.config.asaas?.token_webhook;
+    const token = nucleo.tokenWebhookAsaas(b);
     if (!token || !iguais(String(req.headers["asaas-access-token"] ?? ""), token)) return json(res, 401, { erro: "token inválido" });
     const corpo = await lerCorpo(req, 512 * 1024);
     let evento;
@@ -255,8 +259,13 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       json(res, 404, { erro: "não encontrado" });
     } catch (err) {
       const status = err instanceof ErroRegra || err instanceof ErroHttp ? err.status : (err.status ?? 500);
-      if (status >= 500 && status !== 502) console.error("[servidor]", err);
-      json(res, status, { erro: status < 500 || status === 502 ? err.message : "Erro interno." });
+      if (status >= 500 && status !== 502 && status !== 503) console.error("[servidor]", err);
+      // Corpo grande demais: responde 413 primeiro e só então fecha a conexão (o resto do envio é descartado)
+      if (err.fecharConexao) {
+        if (!res.headersSent) res.setHeader("Connection", "close");
+        res.once("finish", () => req.destroy());
+      }
+      json(res, status, { erro: status < 500 || status === 502 || status === 503 ? err.message : "Erro interno." }, err.retryAfter ? { "Retry-After": String(err.retryAfter) } : {});
     }
   });
 

@@ -21,6 +21,8 @@ export const REGRAS_PADRAO = {
   cancelamento_horas: 2, // o cliente cancela ou remarca sozinho até X horas antes
   lembrete_horas: 3, // lembrete antes do horário
   tolerancia_min: 15, // depois disso, o painel sugere marcar falta
+  desconto_teto_barbeiro: 20, // % máximo de desconto que o barbeiro pode dar numa venda (dono e admin: sem teto)
+  desconto_teto_recepcao: null, // idem para a recepção (null = sem teto)
 };
 
 /** Status que ocupam a agenda */

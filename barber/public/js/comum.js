@@ -57,10 +57,23 @@ export function situacao(chave, texto) {
   return h("span", { class: `chip ${cor ? `chip-${cor}` : ""}` }, texto ?? rotulo);
 }
 
-/** Converte "1.234,56" em centavos */
+/**
+ * Converte "1.234,56" (ou "45,90", "12.50", "R$ 10") em centavos. Texto que não é um valor válido devolve null:
+ * quem chama mostra "Preço inválido" em vez de gravar R$ 0,00.
+ */
 export const paraCentavos = (v) => {
-  const n = Number(String(v ?? "").replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."));
-  return Number.isFinite(n) ? Math.round(n * 100) : 0;
+  const t = String(v ?? "").replace(/R\$|\s/g, "");
+  let n = null;
+  if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(t) || /^\d+(,\d{1,2})?$/.test(t)) n = Number(t.replace(/\./g, "").replace(",", "."));
+  else if (/^\d+\.\d{1,2}$/.test(t)) n = Number(t);
+  return n !== null && Number.isFinite(n) ? Math.round(n * 100) : null;
+};
+/** Desconto digitado na comanda: vazio = 0; inválido = erro com mensagem */
+export const descontoCentavos = (v) => {
+  if (!String(v ?? "").trim()) return 0;
+  const c = paraCentavos(v);
+  if (c === null) throw new Error("Desconto inválido. Use o formato 10,00.");
+  return c;
 };
 export const deCentavos = (c) => (c === null || c === undefined ? "" : (c / 100).toFixed(2).replace(".", ","));
 
@@ -109,7 +122,13 @@ export function formulario(campos, valores = {}) {
         if (c.desativado) continue;
         let v;
         if (c.tipo === "check") v = el.checked;
-        else if (c.tipo === "reais") v = el.value.trim() === "" ? (c.obrigatorio ? 0 : null) : paraCentavos(el.value);
+        else if (c.tipo === "reais") {
+          v = el.value.trim() === "" ? (c.obrigatorio ? 0 : null) : paraCentavos(el.value);
+          if (el.value.trim() !== "" && v === null) {
+            el.focus();
+            throw new Error(`${c.rotulo}: valor inválido. Use o formato 45,90.`);
+          }
+        }
         else if (c.tipo === "numero") v = el.value === "" ? null : Number(el.value);
         else v = el.value.trim() === "" ? null : el.value.trim();
         if (c.obrigatorio && (v === null || v === "")) {

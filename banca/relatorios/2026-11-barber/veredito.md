@@ -1,6 +1,8 @@
 # Veredito da Banca · Nexor Barber (barber/) · 2026-11-10
 Nota geral: 5 de 10 · Pronto para produção: não
 
+> **Atualização de 10/11/2026, depois das correções:** nota **9 de 10** · **pronto para produção**. Os 45 itens foram aprovados e corrigidos, e os 11 achados do reteste também. A suíte foi de 25 para 79 testes, todos passando. Detalhes na seção "Resultado das correções" no fim deste arquivo.
+
 A base é boa. A disputa pelo mesmo horário é segura (100 e 500 clientes ao mesmo tempo, só 1 venceu). Senhas usam scrypt, os segredos ficam em AES-GCM, há proteção CSRF, o SQL é parametrizado, um cliente não acessa dados de outro e o dinheiro é tratado em centavos inteiros. O problema está no **dinheiro do clube e da comanda**: cobrança em dobro, pagamento forjado por funcionário, estorno que não tira o clube e assinaturas que continuam cobrando no Asaas depois de canceladas aqui. Também há uma tomada de conta do dono. Esses pontos impedem a venda e a implantação.
 
 Como conferi:
@@ -435,3 +437,17 @@ Com o lote 1 e o lote 2 feitos (cerca de 42 h, ou 44 h com V-18 e V-19), a recom
 
 ---
 **Quais itens o responsável aprova corrigir?** Responda com a lista, por exemplo: "aprovo o lote 1", "aprovo V-01, V-03 e V-07" ou "aprovo os lotes 1 e 2".
+
+
+## Resultado das correções (10/11/2026)
+- **Aprovação:** o responsável aprovou todos os lotes. Os 45 itens (V-01 a V-45) foram corrigidos, cada um com teste ou conferência no navegador. O registro item a item está em [correcoes.md](correcoes.md) e [correcoes-lote3-4a.md](correcoes-lote3-4a.md).
+- **Reteste da banca:**
+  - [Hacker](reteste-hacker.md): 11 de 11 itens seguram, nenhum achado novo explorável. O ponto informativo do token do Asaas foi corrigido.
+  - [Testador](reteste-testador.md): sem nenhum erro 500 e sem duplicidades sob carga. Exatamente 1 vencedor em 500 pedidos simultâneos, `/health` com p95 de 3 ms durante 100 logins, migração de banco antigo ok. Os achados T-01 a T-06 foram corrigidos.
+  - [Usuário Confuso](reteste-usuario-confuso.md): 15 de 16 ok e nenhuma regressão visual. O V-27 que restava e os achados U-01 a U-05 foram corrigidos.
+- **Suíte:** de 25 para 79 testes, todos passando.
+- **Nota: 9 de 10 · pronto para produção.** O ponto que falta para o 10 é operacional, não do código: medir em produção, nos primeiros clientes, o custo do scrypt no servidor real e o volume de lembretes.
+- **Ações do responsável ao atualizar uma barbearia já instalada:**
+  1. Na aba Canais, gerar um token novo do webhook e colar no Asaas. Se o token antigo era curto, o painel já mostra esse aviso.
+  2. Se o painel mostrar o aviso de duplicados da versão anterior, cancelar as vendas ou assinaturas repetidas indicadas.
+  3. Conferir `TRUST_PROXY=1` no `.env` quando o Barber estiver atrás do Cloudflare Tunnel. O `docker-compose` da implantação já traz esse valor.

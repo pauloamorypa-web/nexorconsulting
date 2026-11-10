@@ -2,7 +2,7 @@
 
 import { get, post, put } from "../api.js";
 import { acao, aviso, entrada, h, icone, janela, limpar, reais, seletor } from "../ui.js";
-import { formulario, indicador, paraCentavos, tabela, topo } from "../comum.js";
+import { descontoCentavos, formulario, indicador, paraCentavos, tabela, topo } from "../comum.js";
 import { escolherCliente } from "../base.js";
 
 export async function render(area, ctx) {
@@ -71,7 +71,7 @@ export async function render(area, ctx) {
     });
     const render = () => {
       limpar(lista, itens.length ? itens.map((i, n) => h("div", { class: "comanda-linha" }, h("span", {}, `${i.quantidade}× ${i.nome}`), h("span", {}, reais(i.preco_centavos * i.quantidade)), h("button", { class: "btn-icone", "aria-label": "Tirar", onclick: () => (itens.splice(n, 1), render()) }, icone("x", 14)))) : h("p", { class: "suave pequeno" }, "Adicione produtos ou serviços."));
-      totalEl.textContent = reais(Math.max(0, itens.reduce((s, i) => s + i.preco_centavos * i.quantidade, 0) - paraCentavos(desconto.value)));
+      totalEl.textContent = reais(Math.max(0, itens.reduce((s, i) => s + i.preco_centavos * i.quantidade, 0) - (paraCentavos(desconto.value) ?? 0)));
     };
     desconto.addEventListener("input", render);
     const ok = h("button", { class: "btn btn-sucesso" }, "Registrar venda");
@@ -80,7 +80,7 @@ export async function render(area, ctx) {
       acao(ok, async () => {
         if (!itens.length) throw new Error("Adicione pelo menos um item.");
         const c = cli.valor();
-        const v = await post("/vendas", { cliente_id: c?.cliente_id ?? null, barbeiro_id: selB.value || null, itens: itens.map(({ tipo, id, quantidade }) => ({ tipo, id, quantidade })), desconto_centavos: paraCentavos(desconto.value), forma: forma.value });
+        const v = await post("/vendas", { cliente_id: c?.cliente_id ?? null, barbeiro_id: selB.value || null, itens: itens.map(({ tipo, id, quantidade }) => ({ tipo, id, quantidade })), desconto_centavos: descontoCentavos(desconto.value), forma: forma.value });
         aviso(`Venda registrada: ${reais(v.total_centavos)}.`);
         j.fechar();
         carregar();

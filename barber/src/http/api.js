@@ -5,16 +5,20 @@
 import { z } from "zod";
 import { HORARIO_PADRAO, OCUPA, REGRAS_PADRAO, expediente, ocupacao } from "../regras/agenda.js";
 import { diasEntre, hojeBR, paraMs, somarDias } from "../regras/datas.js";
-import { conferirSenha, gerarHashSenha, gerarToken, iguais, precisaRefazerHash, sha256 } from "../seguranca.js";
+import { gerarHashSenha, gerarToken, hashSenha, iguais, precisaRefazerHash, senhaConfere, sha256 } from "../seguranca.js";
 import { CATALOGO, chaveValida } from "../nexor/politica.js";
+import { cicloNoDia } from "../regras/clube.js";
 import { FORMAS } from "../servicos/nucleo.js";
 import { normalizarFone } from "../servicos/canais.js";
 import { criarRoteador, falha } from "./roteador.js";
-import { COOKIE_PAINEL, centavos, clientePublico, configPublica, cor, dia, email, hora, id, op, pct, senha, t, tabelaHorario, usuarioPublico, validar } from "./validacao.js";
+import { pendenciasMigracao, semAcento } from "../db.js";
+import { COOKIE_PAINEL, centavos, clientePublico, configCanais, configPublica, cor, dia, email, hora, id, nascimento, op, pct, senha, t, tabelaHorario, usuarioPublico, validar } from "./validacao.js";
 import { rotasApp } from "./app.js";
+import { alcanca, camposBarbeiro, papeisCom, permissoes, pode, proprio, tetoDesconto as tetoDoPerfil } from "./permissoes.js";
 
-const ADM = { papeis: ["dono", "admin"] };
-const EQUIPE = { papeis: ["dono", "admin", "recepcao"] };
+// Quem acessa cada grupo de rotas vem da tabela de permissões (permissoes.js)
+const ADM = { papeis: papeisCom("administrar") };
+const EQUIPE = { papeis: papeisCom("equipe") };
 const SERVICOS_PADRAO = [
   { nome: "Corte", duracao_min: 40, preco_centavos: 5000, categoria: "Cabelo" },
   { nome: "Barba", duracao_min: 30, preco_centavos: 4000, categoria: "Barba" },
@@ -40,13 +44,21 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   const HASH_FALSO = gerarHashSenha(gerarToken());
   const hoje = () => hojeBR(agora());
 
-  function limitar(chave, maximo = cfg.limites.tentativasLogin, janela = 15 * 60_000) {
-    const t0 = agora();
-    const l = (tentativas.get(chave) ?? []).filter((x) => t0 - x < janela);
-    if (l.length >= maximo) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
-    l.push(t0);
+  const JANELA_LIMITE = 15 * 60_000;
+  const recentes = (chave, janela = JANELA_LIMITE) => (tentativas.get(chave) ?? []).filter((x) => agora() - x < janela);
+  /** Recusa com 429 se a chave já passou do máximo na janela (não conta esta tentativa) */
+  function conferirLimite(chave, maximo = cfg.limites.tentativasLogin, janela = JANELA_LIMITE) {
+    if (recentes(chave, janela).length >= maximo) falha(429, "Muitas tentativas. Aguarde alguns minutos.");
+  }
+  function contarTentativa(chave, janela = JANELA_LIMITE) {
+    const l = recentes(chave, janela);
+    l.push(agora());
     tentativas.set(chave, l);
     if (tentativas.size > 20_000) tentativas.delete(tentativas.keys().next().value);
+  }
+  function limitar(chave, maximo = cfg.limites.tentativasLogin, janela = JANELA_LIMITE) {
+    conferirLimite(chave, maximo, janela);
+    contarTentativa(chave, janela);
   }
   function cookie(res, nome, token, dias) {
     const a = [`${nome}=${token}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${Math.round(dias * 86400)}`];
@@ -67,11 +79,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   }
   const auditar = (ctx, acao, detalhe) => repo.auditar(ctx.barbearia.id, ctx.usuario?.nome ?? "sistema", acao, detalhe);
   const exigir = (tabela, idReg, rotulo) => repo.obter(tabela, idReg) ?? falha(404, `${rotulo} não encontrado.`);
-  const ehBarbeiro = (u) => u.papel === "barbeiro";
+
   /** Barbeiro só mexe no que é dele */
   function doBarbeiro(ctx, barbeiroId) {
-    if (ehBarbeiro(ctx.usuario) && barbeiroId !== ctx.usuario.barbeiro_id) falha(403, "Você só pode mexer na sua própria agenda.");
+    if (!alcanca(ctx.usuario, barbeiroId)) falha(403, "Você só pode mexer na sua própria agenda.");
   }
+
+  /** Teto de desconto (%) do perfil, pela configuração; null = sem teto (V-32) */
+  const tetoDesconto = (u, b) => tetoDoPerfil(u, b.config.regras ?? {}, REGRAS_PADRAO);
 
   /* ---------- Conta e login ---------- */
   const exigeCodigo = () => repo.contarUsuarios() === 0 && Boolean(cfg.codigoInstalacao);
@@ -83,11 +98,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const b = await corpo();
     if (exigeCodigo() && !iguais(String(b?.codigo_instalacao ?? "").trim(), cfg.codigoInstalacao)) falha(403, "Código de instalação incorreto. Ele está no arquivo codigo-instalacao.txt do servidor ou com a Nexor.");
     const d = validar(z.object({ barbearia: t(100), nome: t(120), email, senha, tambem_corta: z.boolean().optional() }), b);
+    const senhaHash = await hashSenha(d.senha);
     const u = repo.transacao(() => {
+      // Confere de novo dentro da transação: dois primeiros cadastros ao mesmo tempo criam uma barbearia só (V-34)
+      if (repo.contarUsuarios() > 0) falha(403, "Esta barbearia já foi criada. Peça um acesso ao dono.");
       const bb = repo.inserir("barbearias", { nome: d.barbearia, config: { horario: HORARIO_PADRAO, regras: REGRAS_PADRAO, retorno: { ativo: true, margem_dias: 2 }, marca: { cor: "#3b8dff" } } });
       SERVICOS_PADRAO.forEach((s, i) => repo.inserir("servicos", { barbearia_id: bb.id, ...s, ordem: i }));
       const barbeiro = d.tambem_corta !== false ? repo.inserir("barbeiros", { barbearia_id: bb.id, nome: d.nome.split(" ")[0], ordem: 0 }) : null;
-      return repo.inserir("usuarios", { barbearia_id: bb.id, nome: d.nome, email: d.email, senha_hash: gerarHashSenha(d.senha), papel: "dono", barbeiro_id: barbeiro?.id ?? null });
+      return repo.inserir("usuarios", { barbearia_id: bb.id, nome: d.nome, email: d.email, senha_hash: senhaHash, papel: "dono", barbeiro_id: barbeiro?.id ?? null });
     });
     repo.auditar(u.barbearia_id, u.nome, "conta_criada");
     iniciarSessao(res, u.id);
@@ -96,12 +114,21 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.post("/api/entrar", { publico: true }, async ({ corpo, res, ip }) => {
     const d = validar(z.object({ email, senha: z.string().min(1).max(200) }), await corpo());
-    limitar(`login:${ip}`);
-    limitar(`login:${d.email}`);
+    // Só os erros contam: por e-mail + IP (um terceiro não tranca o dono de outro lugar) e por IP, mais folgado
+    // (a equipe no mesmo Wi-Fi entra quantas vezes quiser). Um acerto zera o contador daquele e-mail nesse IP.
+    const chaveConta = `login:${d.email}:${ip}`;
+    const chaveIp = `login:${ip}`;
+    conferirLimite(chaveConta);
+    conferirLimite(chaveIp, cfg.limites.tentativasLogin * 3);
     const u = repo.usuarioPorEmail(d.email);
-    const ok = conferirSenha(d.senha, u?.senha_hash ?? HASH_FALSO);
-    if (!u || !ok) falha(401, "E-mail ou senha incorretos.");
-    if (precisaRefazerHash(u.senha_hash)) repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", gerarHashSenha(d.senha), u.id);
+    const ok = await senhaConfere(d.senha, u?.senha_hash ?? HASH_FALSO);
+    if (!u || !ok) {
+      contarTentativa(chaveConta);
+      contarTentativa(chaveIp);
+      falha(401, "E-mail ou senha incorretos.");
+    }
+    tentativas.delete(chaveConta);
+    if (precisaRefazerHash(u.senha_hash)) repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", await hashSenha(d.senha), u.id);
     iniciarSessao(res, u.id);
     repo.auditar(u.barbearia_id, u.nome, "login");
     return { ok: true };
@@ -111,6 +138,16 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     res.setHeader("Set-Cookie", `${COOKIE_PAINEL}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
     return { ok: true };
   });
+
+  /** Avisos do topo do painel para dono e admin (reteste T-04 e T-05) */
+  function avisosAdm(b) {
+    const avisos = [];
+    if (b.config.asaas?.aviso_token) avisos.push({ tipo: "token_asaas", texto: "Gere e cole o novo token do webhook no Asaas: o token antigo deixou de valer na atualização e o Asaas não consegue avisar os pagamentos.", link: "#/config?aba=canais" });
+    for (const p of pendenciasMigracao(repo.db, agora)) avisos.push({ tipo: "migracao", texto: p.texto, indice: p.indice });
+    return avisos;
+  }
+  /** Tira a marca do aviso do token (visto na aba Canais ou trocado) */
+  const tokenVisto = (b) => (b.config.asaas?.aviso_token ? repo.atualizar("barbearias", b.id, { config: { ...b.config, asaas: { ...b.config.asaas, aviso_token: undefined } } }) : b);
 
   r.get("/api/eu", ({ usuario, barbearia }) => {
     const lic = central.estado();
@@ -122,11 +159,13 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
       ocultos: repo.ocultos(barbearia.id),
       formas: FORMAS,
       link_app: nucleo.linkApp(),
+      avisos: papeisCom("administrar").includes(usuario.papel) ? avisosAdm(barbearia) : [],
       contagem: {
         chegaram: n("SELECT COUNT(*) n FROM agendamentos WHERE status = 'chegou' AND inicio >= ? AND inicio < ?", paraMs(hoje()), paraMs(hoje()) + 86400_000),
         estoque_baixo: n("SELECT COUNT(*) n FROM produtos WHERE ativo = 1 AND estoque <= estoque_minimo"),
         clube_atraso: n("SELECT COUNT(*) n FROM assinaturas WHERE status = 'atrasada'"),
         espera: n("SELECT COUNT(*) n FROM espera WHERE status IN ('aguardando','oferecida') AND dia >= ?", hoje()),
+        envios_erro: n("SELECT COUNT(*) n FROM envios WHERE status = 'erro' AND criado_em > ?", agora() - 86400_000),
       },
     };
   });
@@ -135,12 +174,12 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   const listarDia = (d, barbeiroId) => {
     const ini = paraMs(d);
     const ags = repo.lista("agendamentos", `WHERE inicio >= ? AND inicio < ? ${barbeiroId ? "AND barbeiro_id = ?" : ""} ORDER BY inicio`, ini, ini + 86400_000, ...(barbeiroId ? [barbeiroId] : []));
-    return ags.map(nucleo.detalhar);
+    return nucleo.detalharVarios(ags);
   };
 
   r.get("/api/hoje", ({ query, usuario, barbearia }) => {
-    const d = validar(dia.optional(), query.get("dia") || undefined) ?? hoje();
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : query.get("barbeiro") || null;
+    const d = validar(dia, query.get("dia") || hoje());
+    const filtro = proprio(usuario) ?? (query.get("barbeiro") || null);
     const barbeiros = repo.lista("barbeiros", "WHERE ativo = 1 ORDER BY ordem, nome").filter((x) => !filtro || x.id === filtro);
     const ags = listarDia(d, filtro);
     const ini = paraMs(d);
@@ -155,7 +194,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
         agendados: ags.filter((a) => OCUPA.has(a.status)).length,
         concluidos: ags.filter((a) => a.status === "concluido").length,
         faltas: ags.filter((a) => a.status === "faltou").length,
-        faturado_centavos: ehBarbeiro(usuario) ? null : vendas.reduce((s, v) => s + v.total_centavos, 0),
+        faturado_centavos: !pode(usuario, "ver_faturamento") ? null : vendas.reduce((s, v) => s + v.total_centavos, 0),
         ocupacao: Math.round(ocupacao(barbearia, barbeiros, d, ags) * 100),
       },
     };
@@ -164,8 +203,10 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.get("/api/agendamentos", ({ query, usuario }) => {
     const de = validar(dia, query.get("de") || hoje());
     const ate = validar(dia, query.get("ate") || somarDias(de, 6));
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : query.get("barbeiro") || null;
-    return repo.lista("agendamentos", `WHERE inicio >= ? AND inicio < ? ${filtro ? "AND barbeiro_id = ?" : ""} ORDER BY inicio`, paraMs(de), paraMs(ate) + 86400_000, ...(filtro ? [filtro] : [])).map(nucleo.detalhar);
+    if (ate < de) falha(400, "A data final precisa ser depois da inicial.");
+    if (diasEntre(de, ate) > 31) falha(400, "Consulte no máximo 31 dias de uma vez.");
+    const filtro = proprio(usuario) ?? (query.get("barbeiro") || null);
+    return nucleo.detalharVarios(repo.lista("agendamentos", `WHERE inicio >= ? AND inicio < ? ${filtro ? "AND barbeiro_id = ?" : ""} ORDER BY inicio`, paraMs(de), paraMs(ate) + 86400_000, ...(filtro ? [filtro] : [])));
   });
 
   r.get("/api/horarios", ({ query }) => {
@@ -185,48 +226,44 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.post("/api/agendamentos", async (ctx) => {
     const d = validar(z.object({ cliente_id: id.optional(), cliente: z.object({ nome: t(120), fone: foneOpc }).optional(), servico_id: id, barbeiro_id: id.optional().nullable(), dia, hora, encaixe: z.boolean().optional(), observacao: op(500) }), await ctx.corpo());
-    const barbeiroId = ehBarbeiro(ctx.usuario) ? ctx.usuario.barbeiro_id : (d.barbeiro_id ?? null);
+    const barbeiroId = proprio(ctx.usuario) ?? d.barbeiro_id ?? null;
     const cliente = clienteDoCorpo(ctx, d);
     return nucleo.agendar({ cliente, servicoId: d.servico_id, barbeiroId, dia: d.dia, hora: d.hora, origem: "painel", autor: ctx.usuario.nome, encaixe: Boolean(d.encaixe), observacao: d.observacao ?? null });
   });
 
+  // Lê o corpo antes do registro: com rede lenta, o agendamento lido antes do await já pode ter mudado (V-01)
   r.put("/api/agendamentos/:id", async (ctx) => {
+    const d = validar(z.object({ status: z.enum(["agendado", "chegou", "em_atendimento", "faltou", "cancelado"]).optional(), dia: dia.optional(), hora: hora.optional(), barbeiro_id: id.optional(), encaixe: z.boolean().optional(), observacao: op(500) }), await ctx.corpo());
     const a = exigir("agendamentos", ctx.params.id, "Agendamento");
     doBarbeiro(ctx, a.barbeiro_id);
-    const d = validar(z.object({ status: z.enum(["agendado", "chegou", "em_atendimento", "faltou", "cancelado"]).optional(), dia: dia.optional(), hora: hora.optional(), barbeiro_id: id.optional(), encaixe: z.boolean().optional(), observacao: op(500) }), await ctx.corpo());
     if (d.dia && d.hora) {
       if (d.barbeiro_id) doBarbeiro(ctx, d.barbeiro_id);
       return nucleo.remarcar(a, { dia: d.dia, hora: d.hora, barbeiroId: d.barbeiro_id, autor: ctx.usuario.nome, encaixe: Boolean(d.encaixe) });
     }
     if (d.status === "cancelado") return nucleo.cancelar(a, { por: ctx.usuario.nome, motivo: "barbearia" });
-    if (d.status) {
-      if (["concluido", "cancelado"].includes(a.status)) falha(409, "Este atendimento já foi encerrado.");
-      if (d.status === "faltou") repo.rodar("DELETE FROM usos WHERE agendamento_id = ?", a.id);
-      repo.atualizar("agendamentos", a.id, { status: d.status, chegou_em: d.status === "chegou" ? agora() : a.chegou_em });
-      auditar(ctx, "agendamento_status", { agendamento: a.id, status: d.status });
-    }
+    if (d.status) nucleo.mudarStatus(a.id, d.status, { autor: ctx.usuario.nome });
     if (d.observacao !== undefined) repo.atualizar("agendamentos", a.id, { observacao: d.observacao });
     return nucleo.detalhar(repo.obter("agendamentos", a.id));
   });
 
   const ESQ_PRODUTOS = z.array(z.object({ id, quantidade: z.number().int().min(1).max(100) })).max(30);
   r.post("/api/agendamentos/:id/concluir", async (ctx) => {
+    const d = validar(z.object({ produtos: ESQ_PRODUTOS.optional(), desconto_centavos: centavos.optional(), forma: z.enum(Object.keys(FORMAS)) }), await ctx.corpo());
     const a = exigir("agendamentos", ctx.params.id, "Agendamento");
     doBarbeiro(ctx, a.barbeiro_id);
-    const d = validar(z.object({ produtos: ESQ_PRODUTOS.optional(), desconto_centavos: centavos.optional(), forma: z.enum(Object.keys(FORMAS)) }), await ctx.corpo());
-    const r2 = nucleo.concluir(a, { produtos: d.produtos ?? [], descontoCentavos: d.desconto_centavos ?? 0, forma: d.forma, autor: ctx.usuario.nome });
+    const r2 = nucleo.concluir(a, { produtos: d.produtos ?? [], descontoCentavos: d.desconto_centavos ?? 0, forma: d.forma, autor: ctx.usuario.nome, descontoMaxPct: tetoDesconto(ctx.usuario, ctx.barbearia) });
     return r2;
   });
 
   /* ---------- Folgas e bloqueios ---------- */
   r.get("/api/bloqueios", ({ query, usuario }) => {
     const de = validar(dia, query.get("de") || hoje());
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : null;
+    const filtro = proprio(usuario);
     return repo.lista("bloqueios", `WHERE fim > ? ${filtro ? "AND (barbeiro_id = ? OR barbeiro_id IS NULL)" : ""} ORDER BY inicio LIMIT 200`, paraMs(de), ...(filtro ? [filtro] : []));
   });
   r.post("/api/bloqueios", async (ctx) => {
     const d = validar(z.object({ barbeiro_id: id.optional().nullable(), dia, de: hora, ate: hora, ate_dia: dia.optional(), motivo: op(120) }), await ctx.corpo());
-    const barbeiroId = ehBarbeiro(ctx.usuario) ? ctx.usuario.barbeiro_id : (d.barbeiro_id ?? null);
+    const barbeiroId = proprio(ctx.usuario) ?? d.barbeiro_id ?? null;
     const inicio = paraMs(d.dia, d.de);
     const fim = paraMs(d.ate_dia ?? d.dia, d.ate);
     if (fim <= inicio) falha(400, "O fim precisa ser depois do início.");
@@ -237,30 +274,40 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
   r.delete("/api/bloqueios/:id", (ctx) => {
     const b = exigir("bloqueios", ctx.params.id, "Bloqueio");
-    if (ehBarbeiro(ctx.usuario) && b.barbeiro_id !== ctx.usuario.barbeiro_id) falha(403, "Você só pode remover as suas folgas.");
+    if (!alcanca(ctx.usuario, b.barbeiro_id)) falha(403, "Você só pode remover as suas folgas.");
     repo.remover("bloqueios", b.id);
     auditar(ctx, "bloqueio_removido", { bloqueio: b.id });
     return { ok: true };
   });
 
   /* ---------- Clientes ---------- */
-  r.get("/api/clientes", ({ query }) => {
-    const busca = String(query.get("busca") ?? "").trim().toLowerCase().slice(0, 60);
+  r.get("/api/clientes", ({ query, usuario }) => {
+    // Filtra e pagina no banco: a busca alcança a base inteira, não só os 2.000 primeiros por nome
+    const busca = semAcento(String(query.get("busca") ?? "").trim()).slice(0, 60);
     const filtro = query.get("filtro");
-    let lista = repo.lista("clientes", "WHERE ativo = 1 ORDER BY nome LIMIT 2000");
+    const porPagina = 300;
+    const pagina = Math.min(1000, Math.max(1, Math.floor(Number(query.get("pagina")) || 1)));
+    const h = hoje();
+    const cond = ["c.ativo = 1"];
+    const p = [];
+    // Barbeiro vê só os próprios clientes: com horário ou atendimento com ele (V-32)
+    if (proprio(usuario)) (cond.push("c.id IN (SELECT cliente_id FROM agendamentos WHERE barbeiro_id = ?)"), p.push(proprio(usuario)));
     if (busca) {
       const dig = busca.replace(/\D/g, "");
-      lista = lista.filter((c) => c.nome.toLowerCase().includes(busca) || (dig.length >= 4 && c.fone?.includes(dig)) || c.email?.includes(busca));
+      const como = `%${busca.replace(/[\\%_]/g, (x) => `\\${x}`)}%`;
+      cond.push(`(c.nome_busca LIKE ? ESCAPE '\\' OR minusculas(c.email) LIKE ? ESCAPE '\\'${dig.length >= 4 ? " OR instr(c.fone, ?) > 0" : ""})`);
+      p.push(como, como, ...(dig.length >= 4 ? [dig] : []));
     }
-    const assinantes = new Set(repo.todos("SELECT cliente_id FROM assinaturas WHERE status = 'ativa'").map((x) => x.cliente_id));
-    const h = hoje();
+    const SUMIDO = "c.ciclo_dias IS NOT NULL AND c.ultima_visita IS NOT NULL AND CAST(round(julianday(?) - julianday(c.ultima_visita)) AS INTEGER) > c.ciclo_dias + 7";
+    if (filtro === "assinantes") cond.push("c.id IN (SELECT cliente_id FROM assinaturas WHERE status = 'ativa')");
+    if (filtro === "sumidos") (cond.push(SUMIDO), p.push(h));
+    if (filtro === "aniversario") (cond.push("substr(c.nascimento, 6, 2) = ?"), p.push(h.slice(5, 7)));
+    const sql = `SELECT c.*, EXISTS (SELECT 1 FROM assinaturas a WHERE a.cliente_id = c.id AND a.status = 'ativa') AS assinante_ativo FROM clientes c WHERE ${cond.join(" AND ")} ORDER BY c.nome_busca, c.nome LIMIT ? OFFSET ?`;
+    const lista = repo.todos(sql, ...p, porPagina, (pagina - 1) * porPagina).map((c) => repo.ler("clientes", c));
     const comRisco = (c) => Boolean(c.ciclo_dias && c.ultima_visita && diasEntre(c.ultima_visita, h) > c.ciclo_dias + 7);
-    if (filtro === "assinantes") lista = lista.filter((c) => assinantes.has(c.id));
-    if (filtro === "sumidos") lista = lista.filter(comRisco);
-    if (filtro === "aniversario") lista = lista.filter((c) => c.nascimento?.slice(5, 7) === h.slice(5, 7));
-    return lista.slice(0, 300).map((c) => ({ ...clientePublico(c), assinante: assinantes.has(c.id), sumido: comRisco(c), dias_desde: c.ultima_visita ? diasEntre(c.ultima_visita, h) : null }));
+    return lista.map(({ assinante_ativo, ...c }) => ({ ...clientePublico(c), assinante: Boolean(assinante_ativo), sumido: comRisco(c), dias_desde: c.ultima_visita ? diasEntre(c.ultima_visita, h) : null }));
   });
-  const ESQ_CLIENTE = z.object({ nome: t(120), fone: foneOpc, email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: dia.optional().nullable().or(z.literal("").transform(() => null)), observacoes: op(1000), aceita_mensagens: z.boolean().optional() });
+  const ESQ_CLIENTE = z.object({ nome: t(120), fone: foneOpc, email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: nascimento.optional().nullable().or(z.literal("").transform(() => null)), observacoes: op(1000), aceita_mensagens: z.boolean().optional() });
   r.post("/api/clientes", EQUIPE, async (ctx) => {
     const d = validar(ESQ_CLIENTE, await ctx.corpo());
     if (d.fone && repo.um("SELECT 1 FROM clientes WHERE fone = ?", d.fone)) falha(409, "Já existe um cliente com este celular.");
@@ -269,10 +316,12 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
   r.get("/api/clientes/:id", (ctx) => {
     const c = exigir("clientes", ctx.params.id, "Cliente");
-    const historico = repo.lista("agendamentos", "WHERE cliente_id = ? ORDER BY inicio DESC LIMIT 30", c.id).map(nucleo.detalhar);
+    const meu = proprio(ctx.usuario);
+    if (meu && !repo.um("SELECT 1 FROM agendamentos WHERE cliente_id = ? AND barbeiro_id = ?", c.id, meu)) falha(404, "Cliente não encontrado.");
+    const historico = nucleo.detalharVarios(repo.lista("agendamentos", `WHERE cliente_id = ? ${meu ? "AND barbeiro_id = ?" : ""} ORDER BY inicio DESC LIMIT 30`, c.id, ...(meu ? [meu] : [])));
     const a = nucleo.assinaturaAtual(c.id);
-    const vendas = ehBarbeiro(ctx.usuario) ? [] : repo.lista("vendas", "WHERE cliente_id = ? AND status = 'paga' ORDER BY criado_em DESC LIMIT 20", c.id);
-    return { cliente: clientePublico(c), historico, assinatura: a ? { ...a, plano: repo.obter("planos", a.plano_id) } : null, vendas, gasto_total_centavos: ehBarbeiro(ctx.usuario) ? null : repo.um("SELECT COALESCE(SUM(total_centavos),0) n FROM vendas WHERE cliente_id = ? AND status = 'paga'", c.id).n };
+    const vendas = !pode(ctx.usuario, "ver_faturamento") ? [] : repo.lista("vendas", "WHERE cliente_id = ? AND status = 'paga' ORDER BY criado_em DESC LIMIT 20", c.id);
+    return { cliente: clientePublico(c), historico, assinatura: a ? { ...a, plano: repo.obter("planos", a.plano_id) } : null, vendas, gasto_total_centavos: !pode(ctx.usuario, "ver_faturamento") ? null : repo.um("SELECT COALESCE(SUM(total_centavos),0) n FROM vendas WHERE cliente_id = ? AND status = 'paga'", c.id).n };
   });
   r.put("/api/clientes/:id", EQUIPE, async (ctx) => {
     const c = exigir("clientes", ctx.params.id, "Cliente");
@@ -297,7 +346,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     return repo.atualizar("servicos", s.id, d);
   });
 
-  r.get("/api/barbeiros", ({ usuario }) => repo.lista("barbeiros", "ORDER BY ativo DESC, ordem, nome").map((b) => (ehBarbeiro(usuario) && b.id !== usuario.barbeiro_id ? { id: b.id, nome: b.nome, cor: b.cor, ativo: b.ativo } : b)));
+  r.get("/api/barbeiros", ({ usuario }) => repo.lista("barbeiros", "ORDER BY ativo DESC, ordem, nome").map((b) => (!alcanca(usuario, b.id) ? { id: b.id, nome: b.nome, cor: b.cor, ativo: b.ativo } : b)));
   const ESQ_BARBEIRO = z.object({ nome: t(60), bio: op(300), cor: cor.optional(), comissao_servico: pct.optional(), comissao_produto: pct.optional(), horario: tabelaHorario.nullable().optional(), servicos: z.array(id).max(100).optional(), ordem: z.number().int().min(0).max(999).optional(), ativo: z.boolean().optional() });
   r.post("/api/barbeiros", ADM, async (ctx) => {
     const d = validar(ESQ_BARBEIRO, await ctx.corpo());
@@ -309,7 +358,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     doBarbeiro(ctx, b.id);
     let d = validar(ESQ_BARBEIRO.partial(), await ctx.corpo());
     // O barbeiro ajusta a própria apresentação, horário e serviços; comissão e status são do dono
-    if (!["dono", "admin"].includes(ctx.usuario.papel)) d = { bio: d.bio, cor: d.cor, horario: d.horario, servicos: d.servicos };
+    d = camposBarbeiro(ctx.usuario, d);
     auditar(ctx, "barbeiro_alterado", { barbeiro: b.id });
     return repo.atualizar("barbeiros", b.id, d);
   });
@@ -332,10 +381,15 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.get("/api/assinaturas", EQUIPE, ({ query }) => {
     const status = query.get("status");
-    const lista = repo.lista("assinaturas", status ? "WHERE status = ? ORDER BY atualizado_em DESC" : "WHERE status <> 'cancelada' ORDER BY atualizado_em DESC", ...(status ? [status] : []));
+    // Paginada (200 por página) e com cada plano lido uma vez só
+    const porPagina = 200;
+    const pagina = Math.min(1000, Math.max(1, Math.floor(Number(query.get("pagina")) || 1)));
+    const lista = repo.lista("assinaturas", `${status ? "WHERE status = ?" : "WHERE status <> 'cancelada'"} ORDER BY atualizado_em DESC LIMIT ? OFFSET ?`, ...(status ? [status] : []), porPagina, (pagina - 1) * porPagina);
     const ativas = repo.todos("SELECT p.preco_centavos FROM assinaturas a JOIN planos p ON p.id = a.plano_id WHERE a.status = 'ativa'");
+    const planos = new Map();
+    const plano = (pid) => (planos.has(pid) ? planos.get(pid) : (planos.set(pid, repo.obter("planos", pid)), planos.get(pid)));
     return {
-      lista: lista.map((a) => ({ ...a, cliente: clientePublico(repo.obter("clientes", a.cliente_id)), plano: repo.obter("planos", a.plano_id), usos: repo.um("SELECT COUNT(*) n FROM usos WHERE assinatura_id = ? AND ciclo_inicio = ?", a.id, a.ciclo_inicio ?? "").n })),
+      lista: lista.map((a) => ({ ...a, cliente: clientePublico(repo.obter("clientes", a.cliente_id)), plano: plano(a.plano_id), usos: repo.um("SELECT COUNT(*) n FROM usos WHERE assinatura_id = ? AND ciclo_inicio = ?", a.id, cicloNoDia(a, hoje())?.ciclo_inicio ?? "").n })),
       resumo: { ativas: ativas.length, receita_mensal_centavos: ativas.reduce((s, x) => s + x.preco_centavos, 0), atrasadas: repo.um("SELECT COUNT(*) n FROM assinaturas WHERE status = 'atrasada'").n, pendentes: repo.um("SELECT COUNT(*) n FROM assinaturas WHERE status = 'pendente'").n },
     };
   });
@@ -345,10 +399,9 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     return nucleo.assinar({ cliente, planoId: d.plano_id, cpf: d.cpf?.replace(/\D/g, "") || null, autor: ctx.usuario.nome, pagoAgora: d.pago_agora ?? null });
   });
   r.post("/api/assinaturas/:id/pagamento", EQUIPE, async (ctx) => {
+    const d = validar(z.object({ forma: z.enum(Object.keys(FORMAS)), chave: z.string().regex(/^[\w-]{16,64}$/).optional() }), await ctx.corpo());
     const a = exigir("assinaturas", ctx.params.id, "Assinatura");
-    if (a.status === "cancelada") falha(409, "Assinatura cancelada.");
-    const d = validar(z.object({ forma: z.enum(Object.keys(FORMAS)) }), await ctx.corpo());
-    return nucleo.registrarPagamento(a, { forma: d.forma, autor: ctx.usuario.nome });
+    return nucleo.pagamentoManual(a, { forma: d.forma, autor: ctx.usuario.nome, chave: d.chave ?? null });
   });
   r.post("/api/assinaturas/:id/cancelar", EQUIPE, async (ctx) => nucleo.cancelarAssinatura(exigir("assinaturas", ctx.params.id, "Assinatura"), { autor: ctx.usuario.nome }));
 
@@ -358,6 +411,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.post("/api/produtos", EQUIPE, async (ctx) => {
     const d = validar(ESQ_PRODUTO.extend({ estoque: z.number().int().min(0).max(100000).optional() }), await ctx.corpo());
     const { estoque = 0, ...resto } = d;
+    if (d.vitrine !== false && !(d.preco_centavos > 0)) falha(400, "Informe o preço para mostrar o produto na vitrine do app (ou tire da vitrine).");
     const p = repo.inserir("produtos", { ...resto, barbearia_id: ctx.barbearia.id });
     auditar(ctx, "produto_criado", { nome: d.nome });
     return estoque ? nucleo.movimentarEstoque(p, { tipo: "entrada", quantidade: estoque, motivo: "estoque inicial", autor: ctx.usuario.nome }) : p;
@@ -365,6 +419,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.put("/api/produtos/:id", EQUIPE, async (ctx) => {
     const p = exigir("produtos", ctx.params.id, "Produto");
     const d = validar(ESQ_PRODUTO.partial(), await ctx.corpo());
+    if ((d.vitrine ?? p.vitrine) && !((d.preco_centavos ?? p.preco_centavos) > 0)) falha(400, "Informe o preço para mostrar o produto na vitrine do app (ou tire da vitrine).");
     auditar(ctx, "produto_alterado", { produto: p.id });
     return repo.atualizar("produtos", p.id, d);
   });
@@ -378,14 +433,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.get("/api/vendas", ({ query, usuario }) => {
     const d = validar(dia, query.get("dia") || hoje());
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : null;
+    const filtro = proprio(usuario);
     return repo.lista("vendas", `WHERE dia = ? ${filtro ? "AND barbeiro_id = ?" : ""} ORDER BY criado_em DESC`, d, ...(filtro ? [filtro] : [])).map((v) => ({ ...v, cliente: v.cliente_id ? repo.obter("clientes", v.cliente_id)?.nome : null, barbeiro: v.barbeiro_id ? repo.obter("barbeiros", v.barbeiro_id)?.nome : null }));
   });
   r.post("/api/vendas", async (ctx) => {
     const d = validar(z.object({ cliente_id: id.optional().nullable(), barbeiro_id: id.optional().nullable(), itens: z.array(z.object({ tipo: z.enum(["servico", "produto"]), id, quantidade: z.number().int().min(1).max(100) })).min(1).max(40), desconto_centavos: centavos.optional(), forma: z.enum(Object.keys(FORMAS)) }), await ctx.corpo());
-    const barbeiroId = ehBarbeiro(ctx.usuario) ? ctx.usuario.barbeiro_id : (d.barbeiro_id ?? null);
+    const barbeiroId = proprio(ctx.usuario) ?? d.barbeiro_id ?? null;
     if (d.cliente_id) exigir("clientes", d.cliente_id, "Cliente");
-    return nucleo.vender({ clienteId: d.cliente_id ?? null, barbeiroId, itens: d.itens, descontoCentavos: d.desconto_centavos ?? 0, forma: d.forma, autor: ctx.usuario.nome });
+    return nucleo.vender({ clienteId: d.cliente_id ?? null, barbeiroId, itens: d.itens, descontoCentavos: d.desconto_centavos ?? 0, forma: d.forma, autor: ctx.usuario.nome, descontoMaxPct: tetoDesconto(ctx.usuario, ctx.barbearia) });
   });
   r.post("/api/vendas/:id/cancelar", EQUIPE, (ctx) => nucleo.cancelarVenda(exigir("vendas", ctx.params.id, "Venda"), { autor: ctx.usuario.nome }));
 
@@ -403,14 +458,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.get("/api/comissoes", ({ query, usuario }) => {
     const de = validar(dia, query.get("de") || `${hoje().slice(0, 7)}-01`);
     const ate = validar(dia, query.get("ate") || hoje());
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : query.get("barbeiro") || null;
+    const filtro = proprio(usuario) ?? (query.get("barbeiro") || null);
     const linhas = repo.lista("comissoes", `WHERE dia >= ? AND dia <= ? ${filtro ? "AND barbeiro_id = ?" : ""} ORDER BY criado_em DESC`, de, ate, ...(filtro ? [filtro] : []));
     const por = {};
     for (const l of linhas) {
       const p = (por[l.barbeiro_id] ??= { barbeiro_id: l.barbeiro_id, nome: repo.obter("barbeiros", l.barbeiro_id)?.nome, servicos_centavos: 0, produtos_centavos: 0, total_centavos: 0, atendimentos: 0 });
       p[l.tipo === "servico" ? "servicos_centavos" : "produtos_centavos"] += l.valor_centavos;
       p.total_centavos += l.valor_centavos;
-      if (l.tipo === "servico") p.atendimentos++;
+      if (l.tipo === "servico") p.atendimentos += l.estorno_de ? -1 : 1;
     }
     return { de, ate, por_barbeiro: Object.values(por), linhas: linhas.slice(0, 300) };
   });
@@ -453,8 +508,19 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
       de,
       ate,
       faturamento_centavos: vendas.reduce((s, v) => s + v.total_centavos, 0),
-      servicos_centavos: soma(itens.filter((i) => i.tipo === "servico")),
-      produtos_centavos: soma(itens.filter((i) => i.tipo === "produto")),
+      // O desconto manual é dividido entre serviços e produtos na proporção de cada venda: a soma fecha com o faturamento
+      ...(() => {
+        let servicos = 0;
+        let produtos = 0;
+        for (const v of vendas) {
+          const sv = soma(v.itens.filter((i) => i.tipo === "servico"));
+          const parteServ = v.subtotal_centavos ? Math.round((sv * v.total_centavos) / v.subtotal_centavos) : 0;
+          servicos += parteServ;
+          produtos += v.total_centavos - parteServ;
+        }
+        return { servicos_centavos: servicos, produtos_centavos: produtos };
+      })(),
+      descontos_centavos: vendas.reduce((s, v) => s + v.desconto_centavos, 0),
       clube_recebido_centavos: repo.um("SELECT COALESCE(SUM(valor_centavos),0) n FROM cobrancas WHERE status = 'paga' AND pago_em >= ? AND pago_em < ?", paraMs(de), paraMs(ate) + 86400_000).n,
       atendimentos: concluidos,
       ticket_medio_centavos: vendas.length ? Math.round(vendas.reduce((s, v) => s + v.total_centavos, 0) / vendas.length) : 0,
@@ -472,7 +538,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
 
   /* ---------- Configurações da barbearia ---------- */
-  const regras = z.object({ passo_min: z.number().int().refine((v) => [5, 10, 15, 20, 30, 60].includes(v), "5, 10, 15, 20, 30 ou 60"), antecedencia_min: z.number().int().min(0).max(2880), janela_dias: z.number().int().min(1).max(120), cancelamento_horas: z.number().min(0).max(72), lembrete_horas: z.number().min(0).max(48), tolerancia_min: z.number().int().min(0).max(120), lista_espera: z.boolean(), comissao_clube: z.enum(["preco", "nenhuma"]) }).partial();
+  const regras = z.object({ passo_min: z.number().int().refine((v) => [5, 10, 15, 20, 30, 60].includes(v), "5, 10, 15, 20, 30 ou 60"), antecedencia_min: z.number().int().min(0).max(2880), janela_dias: z.number().int().min(1).max(120), cancelamento_horas: z.number().min(0).max(72), lembrete_horas: z.number().min(0).max(48), tolerancia_min: z.number().int().min(0).max(120), lista_espera: z.boolean(), comissao_clube: z.enum(["preco", "nenhuma"]), desconto_teto_barbeiro: pct.nullable(), desconto_teto_recepcao: pct.nullable() }).partial();
   r.get("/api/config", ({ barbearia }) => ({ nome: barbearia.nome, config: configPublica(barbearia.config) }));
   r.put("/api/config", ADM, async (ctx) => {
     const d = validar(
@@ -494,6 +560,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
 
   /** Canais: WhatsApp, SMS, Google e Asaas. Campos secretos vazios mantêm o valor atual. */
+  const canaisAdm = (b) => configCanais(b.config, nucleo.tokenWebhookAsaas(b));
+  r.get("/api/canais", ADM, ({ barbearia }) => canaisAdm(tokenVisto(barbearia)));
   r.put("/api/canais", ADM, async (ctx) => {
     const sec = z.string().trim().max(500).optional().nullable();
     const d = validar(
@@ -501,7 +569,9 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
         whatsapp: z.object({ id_numero: op(40), token: sec, segredo: sec, verificacao: op(80), idioma: op(10), modelos: z.object({ codigo: op(80), confirmacao: op(80), lembrete: op(80), vaga: op(80), retorno: op(80), clube_atraso: op(80) }).partial().optional() }).partial().optional(),
         sms: z.object({ sid: op(60), token: sec, de: op(40), avisos: z.boolean().optional() }).partial().optional(),
         google: z.object({ client_id: z.string().trim().max(200).regex(/^$|\.apps\.googleusercontent\.com$/, "Client ID termina em .apps.googleusercontent.com").optional().nullable() }).partial().optional(),
-        asaas: z.object({ chave: sec, ambiente: z.enum(["sandbox", "producao"]).optional(), token_webhook: sec }).partial().optional(),
+        asaas: z.object({ chave: sec, ambiente: z.enum(["sandbox", "producao"]).optional(), novo_token_webhook: z.boolean().optional() }).partial().optional(),
+        // Apaga as credenciais guardadas de um canal (ex.: voltar a "pagar no balcão" sem o Asaas)
+        remover: z.array(z.enum(["whatsapp", "sms", "asaas"])).max(3).optional(),
       }),
       await ctx.corpo(),
     );
@@ -520,13 +590,22 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     }
     const a = { ...c.asaas };
     if (d.asaas) {
-      const { chave, token_webhook, ...resto } = d.asaas;
-      Object.assign(a, resto, { chave_cripto: novoSegredo(chave, a.chave_cripto), token_webhook: token_webhook && token_webhook !== "true" ? token_webhook : a.token_webhook || gerarToken(18) });
+      // O token do webhook só é gerado aqui no servidor (24 bytes aleatórios) e fica cifrado
+      const { chave, novo_token_webhook, ...resto } = d.asaas;
+      Object.assign(a, resto, { chave_cripto: novoSegredo(chave, a.chave_cripto), token_webhook_cripto: novo_token_webhook || !nucleo.tokenWebhookAsaas(ctx.barbearia) ? nucleo.novoTokenWebhook() : a.token_webhook_cripto });
+      delete a.token_webhook;
+      if (novo_token_webhook) auditar(ctx, "token_webhook_asaas_trocado", {});
+      if (novo_token_webhook) delete a.aviso_token;
     }
+    const remover = new Set(d.remover ?? []);
+    if (remover.has("whatsapp")) (delete w.token_cripto, delete w.segredo_cripto);
+    if (remover.has("sms")) delete s.token_cripto;
+    // Sem Asaas, o token do webhook também sai: o token antigo não autentica mais nada (um novo é gerado ao religar)
+    if (remover.has("asaas")) (delete a.chave_cripto, delete a.token_webhook_cripto);
     const config = { ...c, whatsapp: w, sms: s, google: { ...c.google, ...(d.google ?? {}) }, asaas: a };
-    auditar(ctx, "canais_alterados", { canais: Object.keys(d) });
+    auditar(ctx, "canais_alterados", { canais: Object.keys(d), ...(remover.size ? { removidos: [...remover] } : {}) });
     const b = repo.atualizar("barbearias", ctx.barbearia.id, { config });
-    return configPublica(b.config);
+    return canaisAdm(b);
   });
   r.post("/api/canais/testar", ADM, async (ctx) => {
     const d = validar(z.object({ canal: z.enum(["whatsapp", "sms"]), fone: z.string().max(30) }), await ctx.corpo());
@@ -542,7 +621,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
       }
     } catch (e) {
       if (e.status) throw e;
-      falha(502, `Falhou: ${e.message}`);
+      nucleo.registrarEnvio(null, d.canal, "teste", "erro", e.message);
+      falha(502, `${d.canal === "whatsapp" ? "O WhatsApp" : "O SMS"} não aceitou a mensagem de teste. Confira os dados do canal; o detalhe técnico está em Configurações > Auditoria, em "Mensagens enviadas".`);
     }
     return { ok: true };
   });
@@ -553,22 +633,41 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.post("/api/usuarios", ADM, async (ctx) => {
     const d = validar(z.object({ nome: t(120), email, senha, papel: z.enum(["admin", "recepcao", "barbeiro"]), barbeiro_id: id.optional().nullable() }), await ctx.corpo());
     if (repo.um("SELECT 1 FROM usuarios WHERE email = ?", d.email)) falha(409, "Já existe um acesso com este e-mail.");
-    if (d.papel === "barbeiro" && !d.barbeiro_id) falha(400, "Escolha qual barbeiro é este acesso.");
+    if (permissoes({ papel: d.papel }).so_o_proprio && !d.barbeiro_id) falha(400, "Escolha qual barbeiro é este acesso.");
     if (d.barbeiro_id) exigir("barbeiros", d.barbeiro_id, "Barbeiro");
     const { senha: s, ...resto } = d;
     auditar(ctx, "usuario_criado", { email: d.email, papel: d.papel });
-    return usuarioPublico(repo.inserir("usuarios", { ...resto, barbearia_id: ctx.barbearia.id, senha_hash: gerarHashSenha(s) }));
+    return usuarioPublico(repo.inserir("usuarios", { ...resto, barbearia_id: ctx.barbearia.id, senha_hash: await hashSenha(s) }));
   });
   r.put("/api/usuarios/:id", ADM, async (ctx) => {
     const u = repo.obter("usuarios", ctx.params.id);
     if (!u || u.nexor) falha(404, "Acesso não encontrado.");
     const d = validar(z.object({ nome: op(120), papel: z.enum(["admin", "recepcao", "barbeiro"]).optional(), barbeiro_id: id.optional().nullable(), ativo: z.boolean().optional(), senha: senha.optional() }), await ctx.corpo());
+    // Só o próprio dono mexe na conta do dono (um admin não troca a senha nem o e-mail dele)
+    if (u.papel === "dono" && u.id !== ctx.usuario.id) falha(403, "Só o dono pode alterar a própria conta.");
     if (u.papel === "dono" && (d.papel || d.ativo === false)) falha(400, "O dono da conta não pode ser alterado.");
     if (u.id === ctx.usuario.id && (d.papel || d.ativo === false)) falha(400, "Você não pode mudar o próprio perfil.");
-    const novo = repo.atualizar("usuarios", u.id, { ...d, senha: undefined, senha_hash: d.senha ? gerarHashSenha(d.senha) : undefined });
+    const papelFinal = d.papel ?? u.papel;
+    const vinculo = d.barbeiro_id !== undefined ? d.barbeiro_id : u.barbeiro_id;
+    if (permissoes({ papel: papelFinal }).so_o_proprio && !vinculo) falha(400, "Escolha qual barbeiro é este acesso.");
+    if (d.barbeiro_id) exigir("barbeiros", d.barbeiro_id, "Barbeiro");
+    if (u.id === ctx.usuario.id && d.senha) falha(400, "Para trocar a sua senha, use \"Trocar minha senha\" (pede a senha atual).");
+    const novoHash = d.senha ? await hashSenha(d.senha) : undefined;
+    const novo = repo.atualizar("usuarios", u.id, { ...d, senha: undefined, senha_hash: novoHash });
     if (d.ativo === false || d.senha) repo.rodar("DELETE FROM sessoes WHERE usuario_id = ?", u.id);
     auditar(ctx, "usuario_alterado", { email: u.email });
     return usuarioPublico(novo);
+  });
+  /** Troca da própria senha: pede a senha atual e encerra as outras sessões */
+  r.put("/api/eu/senha", async (ctx) => {
+    const d = validar(z.object({ atual: z.string().min(1).max(200), nova: senha }), await ctx.corpo());
+    limitar(`senha:${ctx.usuario.id}`);
+    const u = repo.obter("usuarios", ctx.usuario.id);
+    if (!(await senhaConfere(d.atual, u.senha_hash))) falha(400, "A senha atual não confere.");
+    repo.rodar("UPDATE usuarios SET senha_hash = ? WHERE id = ?", await hashSenha(d.nova), u.id);
+    repo.rodar("DELETE FROM sessoes WHERE usuario_id = ? AND token_hash <> ?", u.id, sha256(ctx.cookies[COOKIE_PAINEL] ?? ""));
+    auditar(ctx, "senha_trocada", { email: u.email });
+    return { ok: true };
   });
   r.get("/api/auditoria", ADM, () => repo.lista("auditoria", "ORDER BY criado_em DESC LIMIT 300"));
   r.get("/api/envios", ADM, () => repo.lista("envios", "ORDER BY criado_em DESC LIMIT 200"));

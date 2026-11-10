@@ -2,7 +2,7 @@
 
 export class ErroApi extends Error {
   constructor(status, dados) {
-    super(dados?.erro ?? `Erro ${status}`);
+    super(dados?.erro ?? (status === 429 ? "Muitas tentativas de entrar agora. Tente de novo em alguns segundos." : `Erro ${status}`));
     this.status = status;
     this.codigo = dados?.codigo;
   }
@@ -21,12 +21,18 @@ export const cabecalhosApi = (extra = {}) => ({ "x-nexor": "1", ...(TOKEN ? { Au
 export const definirAoDeslogar = (fn) => (aoDeslogar = fn);
 
 export async function api(caminho, { metodo = "GET", corpo, bruto, tipo, cabecalhos = {} } = {}) {
-  const r = await fetch(urlApi(caminho), {
-    method: metodo,
-    credentials: BASE ? "omit" : "same-origin",
-    headers: cabecalhosApi({ ...(bruto ? { "Content-Type": tipo } : corpo !== undefined ? { "Content-Type": "application/json" } : {}), ...cabecalhos }),
-    body: bruto ?? (corpo !== undefined ? JSON.stringify(corpo) : undefined),
-  });
+  let r;
+  try {
+    r = await fetch(urlApi(caminho), {
+      method: metodo,
+      credentials: BASE ? "omit" : "same-origin",
+      headers: cabecalhosApi({ ...(bruto ? { "Content-Type": tipo } : corpo !== undefined ? { "Content-Type": "application/json" } : {}), ...cabecalhos }),
+      body: bruto ?? (corpo !== undefined ? JSON.stringify(corpo) : undefined),
+    });
+  } catch {
+    // Rede fora: o navegador diz "Failed to fetch"; a equipe lê isto
+    throw new ErroApi(0, { erro: "Sem conexão com a internet. Confira a rede e tente de novo." });
+  }
   const ehJson = (r.headers.get("content-type") ?? "").includes("json");
   const dados = ehJson ? await r.json() : await r.text();
   if (r.status === 401 && !caminho.startsWith("/entrar") && !caminho.startsWith("/estado")) aoDeslogar();

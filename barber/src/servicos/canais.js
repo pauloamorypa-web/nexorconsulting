@@ -24,16 +24,18 @@ export function assinaturaMetaValida(corpo, assinatura, segredo) {
   return esperado.length === recebido.length && timingSafeEqual(esperado, recebido);
 }
 
-async function pedir(fetchFn, url, init, rotulo) {
-  const r = await fetchFn(url, { ...init, signal: AbortSignal.timeout(20_000) });
+/** Mensagens (WhatsApp e SMS) esperam no máximo 5 s; pagamentos (Asaas) até 20 s */
+const TEMPO_MENSAGEM = 5_000;
+async function pedir(fetchFn, url, init, rotulo, tempo = 20_000) {
+  const r = await fetchFn(url, { ...init, signal: AbortSignal.timeout(tempo) });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d?.error?.message ?? d?.message ?? d?.errors?.map?.((e) => e.description).join("; ") ?? `${rotulo} respondeu ${r.status}`);
+  if (!r.ok) throw Object.assign(new Error(d?.error?.message ?? d?.message ?? d?.errors?.map?.((e) => e.description).join("; ") ?? `${rotulo} respondeu ${r.status}`), { statusExterno: r.status });
   return d;
 }
 
 export function criarWhatsApp({ token, idNumero, versao = "v23.0", idioma = "pt_BR", fetchFn = fetch }) {
   const base = `https://graph.facebook.com/${versao}/${idNumero}/messages`;
-  const enviar = (corpo) => pedir(fetchFn, base, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ messaging_product: "whatsapp", ...corpo }) }, "WhatsApp");
+  const enviar = (corpo) => pedir(fetchFn, base, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ messaging_product: "whatsapp", ...corpo }) }, "WhatsApp", TEMPO_MENSAGEM);
   return {
     ativo: Boolean(token && idNumero),
     texto: (para, texto) => enviar({ to: normalizarFone(para), type: "text", text: { body: texto.slice(0, 4000), preview_url: true } }),
@@ -52,7 +54,7 @@ export function criarSms({ sid, token, de, url = "https://api.twilio.com", fetch
     ativo: Boolean(sid && token && de),
     async enviar(para, texto) {
       const corpo = new URLSearchParams({ To: `+${normalizarFone(para)}`, Body: texto.slice(0, 600), ...(de.startsWith("MG") ? { MessagingServiceSid: de } : { From: de }) });
-      return pedir(fetchFn, `${url}/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`, { method: "POST", headers: { Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`, "Content-Type": "application/x-www-form-urlencoded" }, body: corpo.toString() }, "SMS");
+      return pedir(fetchFn, `${url}/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`, { method: "POST", headers: { Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`, "Content-Type": "application/x-www-form-urlencoded" }, body: corpo.toString() }, "SMS", TEMPO_MENSAGEM);
     },
   };
 }
@@ -99,14 +101,23 @@ export function criarAsaas({ chave, url, fetchFn = fetch }) {
   const chamar = (metodo, caminho, corpo) => pedir(fetchFn, `${url}${caminho}`, { method: metodo, headers: { "Content-Type": "application/json", access_token: chave, "User-Agent": "nexor-barber" }, body: corpo ? JSON.stringify(corpo) : undefined }, "Asaas");
   return {
     ativo: Boolean(chave),
-    async assinar({ cliente, cpf, plano, assinaturaId, vencimento }) {
+    /* Passos separados: quem chama guarda cada id assim que ele existe (se um passo seguinte falhar, dá para desfazer) */
+    async criarCliente({ cliente, cpf }) {
       const c = await chamar("POST", "/customers", { name: cliente.nome, cpfCnpj: cpf, email: cliente.email || undefined, mobilePhone: cliente.fone ? cliente.fone.slice(2) : undefined, externalReference: cliente.id });
-      const s = await chamar("POST", "/subscriptions", { customer: c.id, billingType: "UNDEFINED", value: plano.preco_centavos / 100, nextDueDate: vencimento, cycle: "MONTHLY", description: `Clube ${plano.nome}`, externalReference: assinaturaId });
-      const pagamentos = await chamar("GET", `/subscriptions/${encodeURIComponent(s.id)}/payments`);
+      return c.id;
+    },
+    async criarAssinatura({ clienteAsaas, plano, assinaturaId, vencimento }) {
+      const s = await chamar("POST", "/subscriptions", { customer: clienteAsaas, billingType: "UNDEFINED", value: plano.preco_centavos / 100, nextDueDate: vencimento, cycle: "MONTHLY", description: `Clube ${plano.nome}`, externalReference: assinaturaId });
+      return s.id;
+    },
+    async primeiroPagamento(assinaturaAsaas) {
+      const pagamentos = await chamar("GET", `/subscriptions/${encodeURIComponent(assinaturaAsaas)}/payments`);
       const p = pagamentos.data?.[0] ?? null;
-      return { cliente: c.id, assinatura: s.id, pagamento: p ? { id: p.id, link: p.invoiceUrl ?? null, vencimento: p.dueDate, valor: Math.round(Number(p.value) * 100) } : null };
+      return p ? { id: p.id, link: p.invoiceUrl ?? null, vencimento: p.dueDate, valor: Math.round(Number(p.value) * 100) } : null;
     },
     cancelar: (id) => chamar("DELETE", `/subscriptions/${encodeURIComponent(id)}`),
+    /** Baixa manual de uma cobrança paga no balcão (o Asaas para de cobrar o cliente) */
+    receberEmDinheiro: (id, { data, valorCentavos }) => chamar("POST", `/payments/${encodeURIComponent(id)}/receiveInCash`, { paymentDate: data, value: valorCentavos / 100, notifyCustomer: false }),
   };
 }
 
@@ -114,7 +125,9 @@ export function criarAsaas({ chave, url, fetchFn = fetch }) {
 export function acaoAsaas(evento) {
   if (["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED_IN_CASH"].includes(evento)) return "paga";
   if (evento === "PAYMENT_OVERDUE") return "atrasada";
-  if (["PAYMENT_DELETED", "PAYMENT_REFUNDED"].includes(evento)) return "cancelada";
+  // Estorno e contestação do cartão: o dinheiro volta para o cliente, então o clube sai
+  if (["PAYMENT_REFUNDED", "PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_CHARGEBACK_DISPUTE"].includes(evento)) return "estornada";
+  if (evento === "PAYMENT_DELETED") return "cancelada";
   if (evento === "PAYMENT_CREATED") return "nova";
   return null;
 }

@@ -6,7 +6,7 @@ import { deSempre, proximosDias } from "../regras/clube.js";
 import { diasEntre, hojeBR, paraMs, somarDias } from "../regras/datas.js";
 import { gerarToken, sha256 } from "../seguranca.js";
 import { falha } from "./roteador.js";
-import { COOKIE_CLIENTE, barbeiroPublico, clientePublico, cpf, dia, email, hora, id, op, t, validar } from "./validacao.js";
+import { COOKIE_CLIENTE, barbeiroPublico, clientePublico, cpf, dia, email, hora, id, nascimento, op, t, validar } from "./validacao.js";
 
 const APP = { cliente: true };
 
@@ -39,11 +39,14 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
       nome: b.nome,
       marca: { cor: m.cor ?? "#3b8dff", slogan: m.slogan ?? null, endereco: m.endereco ?? null, telefone: m.telefone ?? null, instagram: m.instagram ?? null, mapa: m.mapa || null },
       entrar: { google: b.config.google?.client_id || null, whatsapp: c.whatsapp.ativo, sms: c.sms.ativo },
+      // Por onde saem confirmação e lembrete, e se a mensalidade do clube é cobrada online (Asaas) ou no balcão
+      avisos: { whatsapp: c.whatsapp.ativo, sms: c.sms.ativo && (b.config.sms?.avisos ?? true) },
+      cobranca_online: c.asaas.ativo,
       regras: { cancelamento_horas: b.config.regras.cancelamento_horas, janela_dias: b.config.regras.janela_dias, lista_espera: b.config.regras.lista_espera !== false && !repo.ocultos(b.id).includes("modulo.espera") },
       servicos: repo.lista("servicos", "WHERE ativo = 1 ORDER BY ordem, nome").map((s) => ({ id: s.id, nome: s.nome, descricao: s.descricao, categoria: s.categoria, duracao_min: s.duracao_min, preco_centavos: s.preco_centavos })),
       barbeiros: repo.lista("barbeiros", "WHERE ativo = 1 ORDER BY ordem, nome").map(barbeiroPublico),
       planos: repo.ocultos(b.id).includes("modulo.clube") ? [] : repo.lista("planos", "WHERE ativo = 1 ORDER BY preco_centavos").map((p) => ({ id: p.id, nome: p.nome, descricao: p.descricao, preco_centavos: p.preco_centavos, itens: p.itens, dias_semana: p.dias_semana, desconto_produtos: p.desconto_produtos })),
-      vitrine: repo.ocultos(b.id).includes("modulo.produtos") ? [] : repo.lista("produtos", "WHERE ativo = 1 AND vitrine = 1 ORDER BY nome").map((p) => ({ id: p.id, nome: p.nome, descricao: p.descricao, categoria: p.categoria, preco_centavos: p.preco_centavos, disponivel: Math.max(0, nucleo.disponivel(p)) })),
+      vitrine: repo.ocultos(b.id).includes("modulo.produtos") ? [] : repo.lista("produtos", "WHERE ativo = 1 AND vitrine = 1 AND preco_centavos > 0 ORDER BY nome").map((p) => ({ id: p.id, nome: p.nome, descricao: p.descricao, categoria: p.categoria, preco_centavos: p.preco_centavos, disponivel: Math.max(0, nucleo.disponivel(p)) })),
     };
   });
 
@@ -56,7 +59,10 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
       return { ok: true, fone: `•••• ${r2.fone.slice(-4)}`, canal: r2.canal };
     } catch (e) {
       if (e.status) throw e;
-      falha(502, d.canal === "whatsapp" ? "Não conseguimos mandar o código pelo WhatsApp. Tente por SMS." : "Não conseguimos mandar o SMS agora. Tente pelo WhatsApp.");
+      // Sugere o outro canal só se ele estiver ativo nesta barbearia (V-37)
+      const c = nucleo.canais();
+      const outro = d.canal === "whatsapp" ? c.sms.ativo && "por SMS" : c.whatsapp.ativo && "pelo WhatsApp";
+      falha(502, `${d.canal === "whatsapp" ? "Não conseguimos mandar o código pelo WhatsApp agora." : "Não conseguimos mandar o SMS agora."} ${outro ? `Tente ${outro}.` : "Tente de novo em alguns minutos."}`);
     }
   });
 
@@ -125,7 +131,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
     if (!a) return null;
     const plano = repo.obter("planos", a.plano_id);
     const usos = (plano.itens ?? []).map((i) => ({ servico_id: i.servico_id, nome: repo.obter("servicos", i.servico_id)?.nome, quantidade: i.quantidade, usados: nucleo.usosNoCiclo(a, i.servico_id) }));
-    return { id: a.id, status: a.status, ciclo_inicio: a.ciclo_inicio, ciclo_fim: a.ciclo_fim, link: a.status !== "ativa" ? a.link : null, plano: { id: plano.id, nome: plano.nome, preco_centavos: plano.preco_centavos, dias_semana: plano.dias_semana, desconto_produtos: plano.desconto_produtos }, usos };
+    return { id: a.id, status: a.status, ciclo_inicio: a.ciclo_inicio, ciclo_fim: a.ciclo_fim, pago_ate: a.pago_ate ?? a.ciclo_fim, link: a.status !== "ativa" ? a.link : null, plano: { id: plano.id, nome: plano.nome, preco_centavos: plano.preco_centavos, dias_semana: plano.dias_semana, desconto_produtos: plano.desconto_produtos }, usos };
   }
 
   r.get("/api/app/eu", APP, ({ cliente }) => {
@@ -146,7 +152,7 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
   });
 
   r.put("/api/app/eu", APP, async (ctx) => {
-    const d = validar(z.object({ nome: t(120).refine((v) => v.toLowerCase() !== "cliente", "digite o seu nome").optional(), email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: dia.optional().nullable().or(z.literal("").transform(() => null)), aceita_mensagens: z.boolean().optional(), preferencias: op(300) }), await ctx.corpo());
+    const d = validar(z.object({ nome: t(120).refine((v) => v.toLowerCase() !== "cliente", "digite o seu nome").optional(), email: email.optional().nullable().or(z.literal("").transform(() => null)), nascimento: nascimento.optional().nullable().or(z.literal("").transform(() => null)), aceita_mensagens: z.boolean().optional(), preferencias: op(300) }), await ctx.corpo());
     return clientePublico(repo.atualizar("clientes", ctx.cliente.id, d));
   });
 
@@ -192,6 +198,9 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
 
   r.post("/api/app/agendar", APP, async (ctx) => {
     const d = validar(z.object({ servico_id: id, barbeiro_id: id.optional().nullable(), dia, hora, observacao: op(300), reservas: z.array(z.object({ produto_id: id, quantidade: z.number().int().min(1).max(5) })).max(5).optional() }), await ctx.corpo());
+    // O mesmo cliente confirmando o mesmo horário de novo (outra aba, toque repetido): devolve o que já está marcado
+    const jaMarcado = repo.um(`SELECT id FROM agendamentos WHERE cliente_id = ? AND servico_id = ? AND inicio = ? AND status IN ('agendado','chegou') ${d.barbeiro_id ? "AND barbeiro_id = ?" : ""} LIMIT 1`, ctx.cliente.id, d.servico_id, paraMs(d.dia, d.hora), ...(d.barbeiro_id ? [d.barbeiro_id] : []));
+    if (jaMarcado) return { ...nucleo.detalhar(repo.obter("agendamentos", jaMarcado.id)), ja_marcado: true };
     limitar(`agendar:${ctx.cliente.id}`, 12, 3600_000);
     const futuros = repo.um("SELECT COUNT(*) n FROM agendamentos WHERE cliente_id = ? AND status = 'agendado' AND inicio > ?", ctx.cliente.id, agora()).n;
     if (futuros >= 3) falha(409, "Você já tem 3 horários marcados. Para mais, fale com a barbearia.");
@@ -218,6 +227,11 @@ export function rotasApp({ r, repo, nucleo, cfg, agora, limitar, cookie, google 
     const d = validar(z.object({ produto_id: id, quantidade: z.number().int().min(1).max(5) }), await ctx.corpo());
     nucleo.reservar(a, d.produto_id, d.quantidade);
     return nucleo.detalhar(repo.obter("agendamentos", a.id));
+  });
+  r.put("/api/app/reservas/:id", APP, async (ctx) => {
+    const d = validar(z.object({ quantidade: z.number().int().min(1).max(5) }), await ctx.corpo());
+    const x = meu(ctx, "reservas", ctx.params.id, "Reserva");
+    return nucleo.mudarReserva(x, d.quantidade);
   });
   r.delete("/api/app/reservas/:id", APP, (ctx) => {
     const x = meu(ctx, "reservas", ctx.params.id, "Reserva");

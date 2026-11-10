@@ -17,7 +17,7 @@ export async function render(area, ctx) {
       ["assinantes", "Clube"],
       ["sumidos", "Sumidos"],
       ["aniversario", "Aniversariantes do mês"],
-    ].map(([k, t]) => h("button", { class: k === filtro ? "ativa" : "", onclick: (e) => ((filtro = k), filtros.querySelectorAll("button").forEach((b) => b.classList.toggle("ativa", b === e.currentTarget)), carregar()) }, t)),
+    ].map(([k, t]) => h("button", { type: "button", class: k === filtro ? "ativo" : "", "aria-pressed": String(k === filtro), onclick: (e) => ((filtro = k), filtros.querySelectorAll("button").forEach((b) => (b.classList.toggle("ativo", b === e.currentTarget), b.setAttribute("aria-pressed", String(b === e.currentTarget)))), carregar()) }, t)),
   );
   const pode = ctx.pode("dono", "admin", "recepcao");
   limpar(
@@ -68,7 +68,7 @@ export async function render(area, ctx) {
             ["Entrou com", k.google ? "Google" : k.fone ? "Celular" : "Balcão"],
           ].map(([r, v]) => h("div", { class: "dado" }, h("small", {}, r), h("strong", {}, v))),
         ),
-        d.assinatura ? h("div", { class: "aviso-cartao" }, icone("coroa", 16), h("span", {}, `Clube ${d.assinatura.plano.nome} · `, sit(d.assinatura.status), d.assinatura.ciclo_fim ? ` · ciclo até ${dataBR(d.assinatura.ciclo_fim)}` : "")) : null,
+        d.assinatura ? h("div", { class: "aviso-cartao" }, icone("coroa", 16), h("span", {}, `Clube ${d.assinatura.plano.nome} · `, sit(d.assinatura.status), (d.assinatura.pago_ate ?? d.assinatura.ciclo_fim) ? ` · pago até ${dataBR(d.assinatura.pago_ate ?? d.assinatura.ciclo_fim)}` : "")) : null,
         k.observacoes ? h("p", { class: "citacao" }, k.observacoes) : null,
         h("h3", {}, "Histórico"),
         tabela(
@@ -90,9 +90,17 @@ export async function render(area, ctx) {
     });
   }
 
-  async function carregar() {
-    const q = new URLSearchParams({ ...(busca ? { busca } : {}), ...(filtro ? { filtro } : {}) });
-    const r = await get(`/clientes?${q}`);
+  // A rota devolve 300 por página; "Ver mais clientes" busca a próxima e soma na lista
+  const POR_PAGINA = 300;
+  let pagina = 1;
+  let todos = [];
+  const verMais = (e) => acao(e.currentTarget, () => carregar({ mais: true }));
+  async function carregar({ mais = false } = {}) {
+    pagina = mais === true ? pagina + 1 : 1;
+    const q = new URLSearchParams({ ...(busca ? { busca } : {}), ...(filtro ? { filtro } : {}), pagina: String(pagina) });
+    const pag = await get(`/clientes?${q}`);
+    todos = mais === true ? [...todos, ...pag] : pag;
+    const r = todos;
     limpar(
       lista,
       tabela(
@@ -105,6 +113,7 @@ export async function render(area, ctx) {
         r,
         { aoClicar: ficha, vazio: busca || filtro ? "Nenhum cliente com esse filtro." : "Nenhum cliente ainda. Divulgue o link do app." },
       ),
+      pag.length === POR_PAGINA ? h("button", { class: "btn btn-fantasma btn-bloco", onclick: verMais }, `Ver mais clientes (mostrando ${r.length})`) : null,
     );
   }
   await carregar();

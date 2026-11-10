@@ -2,6 +2,8 @@
    Entrar com Google, WhatsApp ou SMS · "o de sempre" em um toque · agendar em 4 passos · lista de espera ·
    clube de assinatura · loja com reserva · "estou chegando" · vaga relâmpago (#vaga-…). */
 
+import { confirmarNoBotao } from "./confirmar.js";
+
 /* ---------- Utilidades ---------- */
 function h(tag, at = {}, ...filhos) {
   const el = document.createElement(tag);
@@ -66,10 +68,15 @@ function aviso(texto, erro = false) {
   setTimeout(() => t.remove(), erro ? 6000 : 3600);
 }
 async function api(caminho, { metodo = "GET", corpo } = {}) {
-  const r = await fetch(`/api/app${caminho}`, { method: metodo, credentials: "same-origin", headers: { "x-nexor": "1", ...(corpo !== undefined ? { "content-type": "application/json" } : {}) }, body: corpo !== undefined ? JSON.stringify(corpo) : undefined });
+  let r;
+  try {
+    r = await fetch(`/api/app${caminho}`, { method: metodo, credentials: "same-origin", headers: { "x-nexor": "1", ...(corpo !== undefined ? { "content-type": "application/json" } : {}) }, body: corpo !== undefined ? JSON.stringify(corpo) : undefined });
+  } catch {
+    throw new Error("Sem conexão com a internet. Confira a conexão e toque de novo.");
+  }
   const d = (r.headers.get("content-type") ?? "").includes("json") ? await r.json() : await r.text();
   if (!r.ok) {
-    const e = new Error(d?.erro ?? `Erro ${r.status}`);
+    const e = new Error(d?.erro ?? (r.status === 429 ? "Muitas tentativas agora. Tente de novo em alguns segundos." : `Erro ${r.status}`));
     e.status = r.status;
     throw e;
   }
@@ -82,14 +89,15 @@ async function acao(botao, fn) {
   try {
     return await fn();
   } catch (e) {
+    if (sessaoVenceu(e)) return;
     aviso(e.message, true);
   } finally {
     botao.disabled = false;
     botao.classList.remove("carregando");
   }
 }
-const botao = (texto, fn, cls = "btn-cor btn-bloco", icone) => {
-  const b = h("button", { class: `btn ${cls}`, type: "button" }, icone ? ic(icone, 18) : null, texto);
+const botao = (texto, fn, cls = "btn-cor btn-bloco", icone, rotulo) => {
+  const b = h("button", { class: `btn ${cls}`, type: "button", ...(rotulo ? { "aria-label": rotulo } : {}) }, icone ? ic(icone, 18) : null, texto);
   b.onclick = () => acao(b, () => fn(b));
   return b;
 };
@@ -98,6 +106,34 @@ const botao = (texto, fn, cls = "btn-cor btn-bloco", icone) => {
 const app = document.getElementById("app");
 const S = { info: null, eu: null, fluxo: null };
 const rota = () => location.hash.replace(/^#\/?/, "") || "inicio";
+/* O agendamento em andamento fica guardado na aba (banca V-40/V-41): recarregar, voltar ou entrar de novo retoma o passo */
+const CHAVE_FLUXO = "nx_barber_fluxo";
+function guardarFluxo() {
+  try {
+    if (S.fluxo) sessionStorage.setItem(CHAVE_FLUXO, JSON.stringify(S.fluxo));
+    else sessionStorage.removeItem(CHAVE_FLUXO);
+  } catch {
+    /* sem armazenamento */
+  }
+}
+function fluxoGuardado() {
+  try {
+    return JSON.parse(sessionStorage.getItem(CHAVE_FLUXO) ?? "null");
+  } catch {
+    return null;
+  }
+}
+/** Sessão venceu no meio do uso: mostra a tela de entrar e, depois do código, volta para onde estava */
+function sessaoVenceu(e) {
+  if (e?.status !== 401 || !S.eu) return false;
+  S.eu = null;
+  guardarFluxo();
+  aviso("Sua sessão terminou. Entre de novo para continuar de onde parou.");
+  desenhar();
+  return true;
+}
+/** Por onde saem confirmação e lembrete, conforme os canais ligados (banca V-42) */
+const canalAvisos = () => (S.info.avisos?.whatsapp ? "pelo WhatsApp" : S.info.avisos?.sms ? "por SMS" : null);
 const ir = (r) => (location.hash === `#${r}` ? desenhar() : (location.hash = r));
 async function recarregarEu() {
   try {
@@ -249,11 +285,7 @@ function ticket(a) {
         ? botao(
             "Cancelar",
             async (b) => {
-              if (b.dataset.certeza !== "1") {
-                b.dataset.certeza = "1";
-                b.lastChild.textContent = "Toque de novo para cancelar";
-                return;
-              }
+              if (!confirmarNoBotao(b, "Toque de novo para cancelar")) return;
               await post(`/agendamentos/${a.id}/cancelar`);
               aviso("Horário cancelado.");
               await recarregarEu();
@@ -272,7 +304,7 @@ function inicio(area) {
   if (!S.eu) {
     limpar(
       area,
-      h("section", { class: "cartao destaque" }, h("span", { class: "rotulo" }, "Agende em segundos"), h("div", { class: "grande" }, "Seu horário, sem ligar e sem esperar resposta."), h("p", { class: "suave" }, "Escolha o serviço, o barbeiro e o horário livre. Lembrete no WhatsApp antes de cada corte.")),
+      h("section", { class: "cartao destaque" }, h("span", { class: "rotulo" }, "Agende em segundos"), h("div", { class: "grande" }, "Seu horário, sem ligar e sem esperar resposta."), h("p", { class: "suave" }, `Escolha o serviço, o barbeiro e o horário livre.${canalAvisos() ? ` Lembrete ${canalAvisos()} antes de cada corte.` : ""}`)),
       h("div", { class: "secao" }, telaEntrar(() => desenhar())),
       h("div", { class: "secao" }, h("h2", {}, "Serviços"), h("div", { class: "opcoes" }, S.info.servicos.map((s) => h("div", { class: "opcao" }, ic("tesoura", 20), h("div", { class: "meio" }, h("strong", {}, s.nome), h("small", {}, `${s.duracao_min} min`)), h("span", { class: "preco" }, reais(s.preco_centavos)))))),
       info(),
@@ -302,7 +334,7 @@ function inicio(area) {
         )
       : null,
     !e.proximos.length && !sempre ? h("section", { class: "cartao destaque" }, h("span", { class: "rotulo" }, "Primeira vez por aqui?"), h("div", { class: "grande" }, "Escolha seu horário"), botao("Agendar agora", () => ((S.fluxo = null), ir("agendar")))) : e.proximos.length ? h("button", { class: "btn btn-fantasma btn-bloco", onclick: () => ((S.fluxo = null), ir("agendar")) }, ic("mais", 18), "Marcar outro horário") : null,
-    e.espera.length ? h("div", { class: "secao" }, h("h2", {}, "Lista de espera"), e.espera.map((x) => h("section", { class: "cartao" }, h("div", { class: "linha" }, h("strong", {}, `${x.servico} · ${nomeDia(x.dia)}`), h("span", { class: "chip chip-alerta" }, "na fila")), h("small", { class: "suave" }, `Entre ${x.de} e ${x.ate}. Se abrir uma vaga, avisamos pelo WhatsApp na hora.`), botao("Sair da fila", async () => (await api(`/espera/${x.id}`, { metodo: "DELETE" }), await recarregarEu(), desenhar()), "btn-fantasma btn-peq")))) : null,
+    e.espera.length ? h("div", { class: "secao" }, h("h2", {}, "Lista de espera"), e.espera.map((x) => h("section", { class: "cartao" }, h("div", { class: "linha" }, h("strong", {}, `${x.servico} · ${nomeDia(x.dia)}`), h("span", { class: "chip chip-alerta" }, "na fila")), h("small", { class: "suave" }, `Entre ${x.de} e ${x.ate}. Se abrir uma vaga, avisamos ${canalAvisos() ?? "por mensagem"} na hora.`), botao("Sair da fila", async () => (await api(`/espera/${x.id}`, { metodo: "DELETE" }), await recarregarEu(), desenhar()), "btn-fantasma btn-peq")))) : null,
     e.clube ? cartaoClube(e.clube) : S.info.planos.length ? h("section", { class: "cartao" }, h("div", { class: "linha" }, h("strong", {}, ic("coroa", 16), " Clube de assinatura"), h("span", { class: "chip chip-cor" }, `a partir de ${reais(Math.min(...S.info.planos.map((p) => p.preco_centavos)))}/mês`)), h("small", { class: "suave" }, "Corte quando quiser, pagando um valor fixo por mês."), h("button", { class: "btn btn-fantasma btn-peq", onclick: () => ir("clube") }, "Conhecer os planos")) : null,
     info(),
   );
@@ -319,7 +351,7 @@ function cartaoClube(c) {
     "section",
     { class: "cartao destaque" },
     h("div", { class: "linha" }, h("span", { class: "rotulo" }, ic("coroa", 14), ` ${/^clube/i.test(c.plano.nome) ? "" : "Clube "}${c.plano.nome}`), h("span", { class: `chip ${c.status === "ativa" ? "chip-ok" : "chip-alerta"}` }, { ativa: "ativo", pendente: "aguardando pagamento", atrasada: "pagamento em atraso" }[c.status] ?? c.status)),
-    c.ciclo_fim ? h("small", { class: "suave" }, `Ciclo até ${c.ciclo_fim.slice(8)}/${c.ciclo_fim.slice(5, 7)}`) : null,
+    c.ciclo_fim ? h("small", { class: "suave" }, `Ciclo até ${c.ciclo_fim.slice(8)}/${c.ciclo_fim.slice(5, 7)}${c.pago_ate && c.pago_ate !== c.ciclo_fim ? ` · pago até ${c.pago_ate.slice(8)}/${c.pago_ate.slice(5, 7)}` : ""}`) : null,
     c.usos.map((u) => h("div", { class: "uso" }, h("div", { class: "linha" }, h("span", {}, u.nome), h("small", { class: "suave" }, u.quantidade ? `${u.usados} de ${u.quantidade}` : `${u.usados} · ilimitado`)), h("div", { class: "trilho" }, h("i", { style: { width: u.quantidade ? `${Math.min(100, (u.usados / u.quantidade) * 100)}%` : "100%" } })))),
     c.link ? h("a", { class: "btn btn-cor btn-bloco", href: c.link, target: "_blank", rel: "noopener" }, "Pagar mensalidade") : null,
     c.status === "pendente" && !c.link ? h("small", { class: "suave" }, "Pague a primeira mensalidade na barbearia para ativar.") : null,
@@ -335,14 +367,30 @@ function faixaAssinante() {
 }
 
 /* ----- Agendar em 4 passos ----- */
+/* Cada passo tem o seu endereço (#agendar/2…): o Voltar do celular volta um passo e recarregar mantém as escolhas */
+function irPasso(f, n, substituir = false) {
+  f.passo = n;
+  guardarFluxo();
+  history[substituir ? "replaceState" : "pushState"]({ nxPasso: n }, "", `#agendar/${n}`);
+  desenhar();
+}
+const voltarPasso = (f) => (history.state?.nxPasso === f.passo ? history.back() : irPasso(f, f.passo - 1, true));
+
 async function agendar(area) {
   if (!S.eu) return limpar(area, telaEntrar(() => desenhar()));
   if (S.eu.precisa_celular) return confirmarCelular(() => desenhar());
+  const pedido = Number(/^agendar\/([1-4])$/.exec(rota())?.[1]) || null;
+  if (!S.fluxo && pedido) S.fluxo = fluxoGuardado();
   const f = (S.fluxo ??= { passo: 1, reservas: {} });
   f.reservas ??= {};
+  // Só deixa ir até o passo que já tem as escolhas anteriores (voltar/avançar do navegador, link guardado)
+  const maximo = !f.servico ? 1 : f.barbeiro === undefined ? 2 : !f.dia || !f.hora ? 3 : 4;
+  if (pedido) f.passo = Math.min(pedido, maximo);
+  if (pedido !== f.passo) history.replaceState(null, "", `#agendar/${f.passo}`);
+  guardarFluxo();
   const ultimo = S.eu.historico.find((x) => x.status === "concluido");
   const passos = h("div", { class: "passos" }, [1, 2, 3, 4].map((n) => h("i", { class: n <= f.passo ? "feito" : "" })));
-  const voltar = f.passo > 1 ? h("button", { class: "voltar", onclick: () => ((f.passo -= 1), desenhar()) }, ic("voltar", 16), "Voltar") : null;
+  const voltar = f.passo > 1 ? h("button", { class: "voltar", onclick: () => voltarPasso(f) }, ic("voltar", 16), "Voltar") : null;
   const corpo = h("div", { class: "pilha" });
   limpar(area, passos, voltar, faixaAssinante(), corpo);
   // Remarcação: no último passo troca o horário em vez de criar outro
@@ -370,7 +418,7 @@ async function agendar(area) {
         { class: "opcoes" },
         S.info.servicos.map((sv) => {
           const c = cob?.servicos?.[sv.id];
-          return h("button", { class: `opcao ${f.servico === sv.id ? "ativa" : ""} ${c?.coberto ? "opcao-clube" : ""}`, onclick: () => ((f.servico = sv.id), (f.passo = 2), desenhar()) }, ic(c?.coberto ? "coroa" : "tesoura", 20), h("div", { class: "meio" }, h("strong", {}, sv.nome), h("small", {}, [`${sv.duracao_min} min`, sv.descricao ? ` · ${sv.descricao}` : ""]), c && !c.coberto && c.motivo && cob.status === "ativa" ? h("small", { class: "aviso-clube" }, c.motivo) : null), h("span", { class: "preco" }, etiqueta(sv)));
+          return h("button", { class: `opcao ${f.servico === sv.id ? "ativa" : ""} ${c?.coberto ? "opcao-clube" : ""}`, onclick: () => ((f.servico = sv.id), irPasso(f, 2)) }, ic(c?.coberto ? "coroa" : "tesoura", 20), h("div", { class: "meio" }, h("strong", {}, sv.nome), h("small", {}, [`${sv.duracao_min} min`, sv.descricao ? ` · ${sv.descricao}` : ""]), c && !c.coberto && c.motivo && cob.status === "ativa" ? h("small", { class: "aviso-clube" }, c.motivo) : null), h("span", { class: "preco" }, etiqueta(sv)));
         }),
       ),
     );
@@ -383,8 +431,8 @@ async function agendar(area) {
       h(
         "div",
         { class: "opcoes" },
-        ordem.map((b) => h("button", { class: `opcao ${f.barbeiro === b.id ? "ativa" : ""}`, onclick: () => ((f.barbeiro = b.id), (f.passo = 3), (f.dia = null), desenhar()) }, avatarBarbeiro(b), h("div", { class: "meio" }, h("strong", {}, b.nome), b.bio ? h("small", {}, b.bio) : null), ultimo?.barbeiro.id === b.id ? h("span", { class: "chip chip-cor" }, "seu barbeiro") : null)),
-        quem.length > 1 ? h("button", { class: `opcao ${f.barbeiro === null ? "ativa" : ""}`, onclick: () => ((f.barbeiro = null), (f.passo = 3), (f.dia = null), desenhar()) }, avatarBarbeiro(null), h("div", { class: "meio" }, h("strong", {}, "Quem estiver livre"), h("small", {}, "Mais horários para escolher"))) : null,
+        ordem.map((b) => h("button", { class: `opcao ${f.barbeiro === b.id ? "ativa" : ""}`, onclick: () => ((f.barbeiro = b.id), (f.dia = null), irPasso(f, 3)) }, avatarBarbeiro(b), h("div", { class: "meio" }, h("strong", {}, b.nome), b.bio ? h("small", {}, b.bio) : null), ultimo?.barbeiro.id === b.id ? h("span", { class: "chip chip-cor" }, "seu barbeiro") : null)),
+        quem.length > 1 ? h("button", { class: `opcao ${f.barbeiro === null ? "ativa" : ""}`, onclick: () => ((f.barbeiro = null), (f.dia = null), irPasso(f, 3)) }, avatarBarbeiro(null), h("div", { class: "meio" }, h("strong", {}, "Quem estiver livre"), h("small", {}, "Mais horários para escolher"))) : null,
       ),
     );
   } else if (f.passo === 3) {
@@ -405,12 +453,12 @@ async function agendar(area) {
       faixa,
       horas.clube.assinante ? (horas.clube.coberto ? h("span", { class: "chip chip-ok" }, ic("coroa", 13), `Neste dia sai pelo seu ${horas.clube.plano.nome}${horas.clube.restante !== null ? ` · restam ${horas.clube.restante + 1} no ciclo` : ""}`) : horas.clube.motivo ? h("small", { class: "aviso-clube" }, ic("coroa", 13), ` ${horas.clube.motivo} Este horário será cobrado normalmente.`) : null) : null,
       grupos.length
-        ? grupos.map(([t, l]) => [h("div", { class: "periodo" }, t), h("div", { class: "horas" }, l.map((x) => h("button", { class: `hora ${x === f.hora ? "ativa" : ""}`, onclick: () => ((f.hora = x), (f.clube = horas.clube.coberto), (f.infoClube = horas.clube), (f.passo = 4), desenhar()) }, x)))])
+        ? grupos.map(([t, l]) => [h("div", { class: "periodo" }, t), h("div", { class: "horas" }, l.map((x) => h("button", { class: `hora ${x === f.hora ? "ativa" : ""}`, onclick: () => ((f.hora = x), (f.clube = horas.clube.coberto), (f.infoClube = horas.clube), irPasso(f, 4)) }, x)))])
         : h(
             "section",
             { class: "cartao" },
             h("strong", {}, "Sem horários livres neste dia"),
-            S.info.regras.lista_espera ? [h("p", { class: "suave pequeno" }, "Entre na lista de espera: se alguém cancelar, você recebe a vaga na hora pelo WhatsApp."), espera(f)] : h("p", { class: "suave pequeno" }, "Escolha outro dia."),
+            S.info.regras.lista_espera ? [h("p", { class: "suave pequeno" }, `Entre na lista de espera: se alguém cancelar, você recebe a vaga na hora ${canalAvisos() ?? "por mensagem"}.`), espera(f)] : h("p", { class: "suave pequeno" }, "Escolha outro dia."),
           ),
     );
     corpo.querySelector(".dia.ativo")?.scrollIntoView({ inline: "center", block: "nearest" });
@@ -439,6 +487,7 @@ async function agendar(area) {
                 if (v) f.reservas[p.id] = v;
                 else delete f.reservas[p.id];
                 n.textContent = String(v);
+                guardarFluxo();
                 atualizarTotal();
               };
               return h("div", { class: "produto-linha" }, h("div", {}, h("div", {}, p.nome), h("small", { class: "suave" }, reais(p.preco_centavos))), h("div", { class: "qtd" }, h("button", { type: "button", "aria-label": "Menos", onclick: () => mudar(-1) }, "−"), n, h("button", { type: "button", "aria-label": "Mais", onclick: () => mudar(1) }, "+")));
@@ -463,7 +512,7 @@ function espera(f) {
   const ate = h("input", { class: "entrada", type: "time", value: "20:00" });
   return h("div", { class: "pilha" }, h("div", { class: "btns" }, h("label", { class: "campo" }, "A partir de", de), h("label", { class: "campo" }, "Até", ate)), botao("Entrar na lista de espera", async () => {
     await post("/espera", { servico_id: f.servico, barbeiro_id: f.barbeiro, dia: f.dia, de: de.value, ate: ate.value });
-    aviso("Você está na fila. Avisamos pelo WhatsApp se abrir vaga.");
+    aviso(`Você está na fila. Avisamos ${canalAvisos() ?? "por mensagem"} se abrir vaga.`);
     S.fluxo = null;
     await recarregarEu();
     ir("inicio");
@@ -476,6 +525,12 @@ async function remarcar(a) {
 }
 
 function sucesso(a) {
+  S.fluxo = null;
+  guardarFluxo();
+  if (a.ja_marcado) {
+    aviso(`Você já tinha marcado este horário: ${a.servico.nome}, ${nomeDia(a.dia)} às ${a.hora}. Ele está no Início.`);
+    return recarregarEu().then(() => ir("inicio"), () => ir("inicio"));
+  }
   recarregarEu().catch(() => {});
   limpar(
     app,
@@ -490,7 +545,7 @@ function sucesso(a) {
         h("h2", {}, "Horário marcado!"),
         h("p", { class: "suave" }, `${a.servico.nome} com ${a.barbeiro.nome}, ${nomeDia(a.dia)} às ${a.hora}.`),
         a.clube ? h("span", { class: "chip chip-ok" }, ic("coroa", 13), `Incluído no seu ${a.assinante?.plano.nome ?? "clube"}${a.assinante?.restante !== null && a.assinante?.restante !== undefined ? ` · restam ${a.assinante.restante} no ciclo` : ""}`) : a.assinante ? h("small", { class: "suave" }, "Este horário não entrou no clube e será cobrado na barbearia.") : null,
-        h("p", { class: "suave pequeno" }, "Você recebe a confirmação e um lembrete no WhatsApp."),
+        canalAvisos() ? h("p", { class: "suave pequeno" }, `Você recebe a confirmação e um lembrete ${canalAvisos()}.`) : null,
         h("a", { class: "btn btn-fantasma btn-bloco", href: `/api/app/agendamentos/${a.id}/ics` }, ic("calendario", 18), "Pôr na agenda do celular"),
         h("button", { class: "btn btn-cor btn-bloco", onclick: () => ir("inicio") }, "Pronto"),
       ),
@@ -521,7 +576,7 @@ function clube(area) {
       ? botao(
           "Cancelar assinatura",
           async (b) => {
-            if (b.dataset.certeza !== "1") return ((b.dataset.certeza = "1"), (b.lastChild.textContent = "Toque de novo para confirmar"));
+            if (!confirmarNoBotao(b, "Toque de novo para confirmar")) return;
             await post("/assinatura/cancelar");
             aviso("Assinatura cancelada.");
             await recarregarEu();
@@ -535,9 +590,11 @@ function clube(area) {
 function assinar(p) {
   if (!S.eu) return ir("perfil");
   const area = h("div", { class: "pilha" });
-  const cpf = h("input", { class: "entrada", inputmode: "numeric", placeholder: "CPF (para a cobrança)" });
-  limpar(area, h("button", { class: "voltar", onclick: () => desenhar() }, ic("voltar", 16), "Voltar"), h("h2", {}, `Assinar ${p.nome}`), h("p", { class: "suave" }, `${reais(p.preco_centavos)} por mês. Pague por Pix, boleto ou cartão.`), cpf, botao("Continuar para o pagamento", async () => {
-    const r = await post("/assinar", { plano_id: p.id, cpf: cpf.value || null });
+  // CPF só quando a cobrança é online (Asaas); no balcão ele não é usado (banca V-42)
+  const online = S.info.cobranca_online;
+  const cpf = online ? h("input", { class: "entrada", inputmode: "numeric", placeholder: "CPF (para a cobrança)" }) : null;
+  limpar(area, h("button", { class: "voltar", onclick: () => desenhar() }, ic("voltar", 16), "Voltar"), h("h2", {}, `Assinar ${p.nome}`), h("p", { class: "suave" }, `${reais(p.preco_centavos)} por mês. ${online ? "Pague por Pix, boleto ou cartão." : "A primeira mensalidade é paga na barbearia, e o clube começa a valer depois do pagamento."}`), cpf, botao(online ? "Continuar para o pagamento" : "Assinar", async () => {
+    const r = await post("/assinar", { plano_id: p.id, cpf: cpf?.value || null });
     await recarregarEu();
     if (r.link) location.href = r.link;
     else {
@@ -549,6 +606,23 @@ function assinar(p) {
 }
 
 /* ----- Loja ----- */
+/** Reservado no próximo horário: "Reservar" ou − quantidade + (somam na mesma reserva; − no 1 desfaz) */
+function controleReserva(p, proximo) {
+  const minha = proximo?.reservas.find((r) => r.produto_id === p.id && r.status === "reservado");
+  const atualizar = async (fn, msg) => (await fn(), msg && aviso(msg), await carregarInfo(), await recarregarEu(), desenhar());
+  if (minha)
+    return h(
+      "div",
+      { class: "linha-esq" },
+      botao("−", () => atualizar(() => (minha.quantidade > 1 ? api(`/reservas/${minha.id}`, { metodo: "PUT", corpo: { quantidade: minha.quantidade - 1 } }) : api(`/reservas/${minha.id}`, { metodo: "DELETE" })), minha.quantidade > 1 ? null : "Reserva desfeita."), "btn-fantasma btn-peq", null, `Tirar um ${p.nome}`),
+      h("strong", { "aria-label": "Quantidade reservada" }, String(minha.quantidade)),
+      p.disponivel && minha.quantidade < 5 ? botao("+", () => atualizar(() => post(`/agendamentos/${proximo.id}/reservas`, { produto_id: p.id, quantidade: 1 })), "btn-fantasma btn-peq", null, `Reservar mais um ${p.nome}`) : null,
+      h("small", { class: "suave" }, "reservado"),
+    );
+  if (!p.disponivel) return h("small", { class: "suave" }, "Esgotado");
+  return proximo ? botao("Reservar", () => atualizar(() => post(`/agendamentos/${proximo.id}/reservas`, { produto_id: p.id, quantidade: 1 }), `${p.nome} reservado para o seu horário.`), "btn-fantasma btn-peq") : null;
+}
+
 function loja(area) {
   const proximo = S.eu?.proximos.find((a) => a.status === "agendado");
   const desconto = S.eu?.clube?.status === "ativa" ? S.eu.clube.plano.desconto_produtos : 0;
@@ -567,7 +641,7 @@ function loja(area) {
           h("strong", {}, p.nome),
           p.descricao ? h("small", { class: "suave" }, p.descricao) : null,
           h("span", {}, reais(p.preco_centavos)),
-          p.disponivel ? (proximo ? botao("Reservar", async () => (await post(`/agendamentos/${proximo.id}/reservas`, { produto_id: p.id, quantidade: 1 }), aviso(`${p.nome} reservado para o seu horário.`), await carregarInfo(), await recarregarEu(), desenhar()), "btn-fantasma btn-peq") : null) : h("small", { class: "suave" }, "Esgotado"),
+          controleReserva(p, proximo),
         ),
       ),
     ),
@@ -586,7 +660,7 @@ function perfil(area) {
   limpar(
     area,
     h("h2", { class: "ola" }, "Seu perfil"),
-    h("section", { class: "cartao" }, h("label", { class: "campo" }, "Nome", nome), h("label", { class: "campo" }, "E-mail", email), h("label", { class: "campo" }, "Aniversário (tem surpresa?)", nasc), h("label", { class: "linha-esq" }, msgs, h("span", {}, "Receber lembretes e avisos de vaga no WhatsApp")), h("small", { class: "suave" }, c.fone ? `Celular: ${c.fone.slice(2, 4)} ${c.fone.slice(4, -4)}-${c.fone.slice(-4)}` : "Celular ainda não confirmado."), botao("Salvar", async () => (await api("/eu", { metodo: "PUT", corpo: { nome: nome.value.trim(), email: email.value.trim(), nascimento: nasc.value, aceita_mensagens: msgs.checked } }), aviso("Perfil salvo."), await recarregarEu()))),
+    h("section", { class: "cartao" }, h("label", { class: "campo" }, "Nome", nome), h("label", { class: "campo" }, "E-mail", email), h("label", { class: "campo" }, "Aniversário (tem surpresa?)", nasc), h("label", { class: "linha-esq" }, msgs, h("span", {}, `Receber lembretes e avisos de vaga ${canalAvisos() ?? "por mensagem"}`)), h("small", { class: "suave" }, c.fone ? `Celular: ${c.fone.slice(2, 4)} ${c.fone.slice(4, -4)}-${c.fone.slice(-4)}` : "Celular ainda não confirmado."), botao("Salvar", async () => (await api("/eu", { metodo: "PUT", corpo: { nome: nome.value.trim(), email: email.value.trim(), nascimento: nasc.value, aceita_mensagens: msgs.checked } }), aviso("Perfil salvo."), await recarregarEu()))),
     !c.fone ? h("button", { class: "btn btn-fantasma btn-bloco", onclick: () => confirmarCelular(() => desenhar()) }, ic("celular", 18), "Confirmar celular") : null,
     S.eu.historico.length ? h("div", { class: "secao" }, h("h2", {}, "Seus últimos horários"), S.eu.historico.map((a) => h("section", { class: "cartao" }, h("div", { class: "linha" }, h("strong", {}, `${a.dia.slice(8)}/${a.dia.slice(5, 7)} · ${a.servico.nome}`), h("span", { class: "chip" }, { concluido: "atendido", cancelado: "cancelado", faltou: "faltou" }[a.status])), h("small", { class: "suave" }, `com ${a.barbeiro.nome}`), a.status === "concluido" ? h("button", { class: "btn btn-fantasma btn-peq", onclick: () => ((S.fluxo = { servico: a.servico.id, barbeiro: a.barbeiro.id, passo: 3 }), ir("agendar")) }, "Repetir") : null))) : null,
     h("div", { class: "secao" }, botao("Sair", async () => (await post("/sair"), (S.eu = null), ir("inicio")), "btn-fantasma btn-bloco", "sair")),
@@ -623,17 +697,18 @@ async function carregarInfo() {
 async function desenhar() {
   const r = rota();
   const area = h("main", { id: "tela", class: "pilha" });
-  const ativa = r.startsWith("vaga-") ? "inicio" : r;
+  const ativa = r.startsWith("vaga-") ? "inicio" : r.split("/")[0];
   limpar(app, h("div", { class: "casca" }, cabecalho(), area), nav(ativa));
   scrollTo(0, 0);
   try {
     if (r.startsWith("vaga-")) await vaga(area, r.slice(5));
-    else if (r === "agendar") await agendar(area);
+    else if (r === "agendar" || r.startsWith("agendar/")) await agendar(area);
     else if (r === "clube") clube(area);
     else if (r === "loja") loja(area);
     else if (r === "perfil") perfil(area);
     else inicio(area);
   } catch (e) {
+    if (sessaoVenceu(e)) return;
     limpar(area, h("div", { class: "vazio" }, h("h2", {}, "Algo deu errado"), h("p", {}, e.message), h("button", { class: "btn btn-cor", onclick: () => location.reload() }, "Tentar de novo")));
   }
 }

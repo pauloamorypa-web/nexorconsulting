@@ -2,7 +2,7 @@
 
 import { get, post } from "./api.js";
 import { acao, aviso, campo, debounce, entrada, h, icone, janela, limpar, reais, seletor } from "./ui.js";
-import { paraCentavos } from "./comum.js";
+import { descontoCentavos, paraCentavos } from "./comum.js";
 
 export const hojeISO = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
 export const somarDias = (d, n) => new Date(Date.parse(`${d}T12:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
@@ -109,22 +109,48 @@ export async function novoAgendamento(ctx, { dia = hojeISO(), barbeiroId = null,
   atualizar();
 }
 
+/** Lê o desconto da comanda: em reais ("5,00", "1.234,56") ou em % do subtotal ("10%"). Nunca negativo nem maior que a conta. */
+export function lerDesconto(texto, subtotal) {
+  const t = String(texto ?? "").trim().replace(/^R\$\s*/i, "");
+  if (!t) return { centavos: 0 };
+  if (t.startsWith("-")) return { erro: "O desconto não pode ser negativo." };
+  const pct = /^(\d{1,3}(?:[.,]\d{1,2})?)\s*%$/.exec(t);
+  if (pct) {
+    const p = Number(pct[1].replace(",", "."));
+    if (p > 100) return { erro: "O desconto não pode passar de 100%." };
+    return { centavos: Math.round((subtotal * p) / 100), pct: p };
+  }
+  if (!/^(\d{1,3}(\.\d{3})+|\d+)([.,]\d{1,2})?$/.test(t)) return { erro: "Desconto inválido. Use números, por exemplo 5,00 ou 10%." };
+  const centavos = Math.round(Number(t.replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".")) * 100);
+  if (centavos > subtotal) return { erro: `O desconto é maior que o total da comanda (${reais(subtotal)}).` };
+  return { centavos };
+}
+
 /** Comanda: fecha o atendimento com o serviço, produtos reservados e extras, desconto e forma de pagamento */
 export async function comanda(ctx, ag, aoSalvar) {
   const produtos = ctx.oculto("modulo.produtos") ? [] : (await get("/produtos").catch(() => [])).filter((p) => p.ativo && p.estoque > 0);
   const extras = [];
   const lista = h("div", { class: "comanda-itens" });
   const totalEl = h("strong", { class: "comanda-total" });
-  const desconto = entrada({ placeholder: "0,00", inputmode: "decimal", class: "entrada entrada-pequena" });
+  const desconto = entrada({ placeholder: "0,00 ou 10%", inputmode: "decimal", class: "entrada entrada-pequena", "aria-describedby": "comanda-desconto-aviso" });
+  const avisoDesconto = h("small", { class: "campo-erro", id: "comanda-desconto-aviso", role: "alert" });
+  let subtotalAtual = 0;
   const formas = Object.entries(ctx.eu.formas).filter(([k]) => k !== "clube");
-  let forma = "pix";
-  const botoesForma = h("div", { class: "segmentado" }, formas.map(([k, t]) => h("button", { type: "button", class: k === forma ? "ativa" : "", onclick: (e) => ((forma = k), botoesForma.querySelectorAll("button").forEach((b) => b.classList.toggle("ativa", b === e.currentTarget))) }, t)));
+  // Reteste U-01: nenhuma forma vem marcada; a recepção escolhe e a escolhida aparece destacada
+  let forma = null;
+  const botoesForma = h("div", { class: "segmentado", role: "group", "aria-label": "Forma de pagamento" }, formas.map(([k, t]) => h("button", { type: "button", "aria-pressed": "false", onclick: (e) => ((forma = k), botoesForma.querySelectorAll("button").forEach((b) => (b.classList.toggle("ativo", b === e.currentTarget), b.setAttribute("aria-pressed", String(b === e.currentTarget))))) }, t)));
   const linha = (nome, valor, extra) => h("div", { class: "comanda-linha" }, h("span", {}, nome), h("span", {}, valor), extra ?? null);
   function render() {
     const servico = ag.clube ? 0 : ag.servico.preco_centavos;
     const reservados = ag.reservas.filter((r) => r.status === "reservado").reduce((s, r) => s + r.preco_centavos * r.quantidade, 0);
     const ext = extras.reduce((s, e) => s + e.preco_centavos * e.quantidade, 0);
-    const desc = paraCentavos(desconto.value);
+    subtotalAtual = servico + reservados + ext;
+    const d = lerDesconto(desconto.value, subtotalAtual);
+    const desc = d.erro ? 0 : d.centavos;
+    avisoDesconto.textContent = d.erro ?? (d.pct ? `${d.pct}% = ${reais(d.centavos)}` : "");
+    avisoDesconto.className = d.erro ? "campo-erro" : "campo-ajuda";
+    fechar.disabled = Boolean(d.erro);
+    desconto.setAttribute("aria-invalid", d.erro ? "true" : "false");
     limpar(
       lista,
       linha(ag.servico.nome, ag.clube ? h("span", { class: "chip chip-ok" }, "pelo clube") : reais(servico)),
@@ -146,16 +172,24 @@ export async function comanda(ctx, ag, aoSalvar) {
     },
   });
   desconto.addEventListener("input", render);
+  // "10%" vira o valor em reais ao sair do campo (o que vai para o servidor é sempre em reais)
+  desconto.addEventListener("blur", () => {
+    const d = lerDesconto(desconto.value, subtotalAtual);
+    if (!d.erro && d.pct) desconto.value = (d.centavos / 100).toFixed(2).replace(".", ",");
+    render();
+  });
   const fechar = h("button", { class: "btn btn-sucesso" }, icone("check", 16), "Fechar comanda");
   const j = janela({
     titulo: `Comanda · ${ag.cliente.nome}`,
     largura: 560,
-    conteudo: h("div", { class: "pilha" }, h("p", { class: "suave" }, `${ag.servico.nome} com ${ag.barbeiro.nome} · ${ag.hora}`), lista, produtos.length ? selP : null, h("div", { class: "grade-2" }, campo("Desconto (R$)", desconto), campo("Total", totalEl)), campo("Forma de pagamento", botoesForma), ag.clube ? h("p", { class: "suave pequeno" }, "O serviço já está coberto pelo clube. Se a comanda tiver só o serviço, ela fecha com valor zero.") : null),
+    conteudo: h("div", { class: "pilha" }, h("p", { class: "suave" }, `${ag.servico.nome} com ${ag.barbeiro.nome} · ${ag.hora}`), lista, produtos.length ? selP : null, h("div", { class: "grade-2" }, campo("Desconto (R$ ou %)", h("div", { class: "pilha", style: { gap: "4px" } }, desconto, avisoDesconto)), campo("Total", totalEl)), campo("Forma de pagamento", botoesForma), ag.clube ? h("p", { class: "suave pequeno" }, "O serviço já está coberto pelo clube. Se a comanda tiver só o serviço, ela fecha com valor zero.") : null),
     acoes: [fechar],
   });
   fechar.onclick = () =>
     acao(fechar, async () => {
-      const r = await post(`/agendamentos/${ag.id}/concluir`, { forma, desconto_centavos: paraCentavos(desconto.value), produtos: extras.map((e) => ({ id: e.id, quantidade: e.quantidade })) });
+      // Comanda de valor zero (só o serviço do clube) não precisa de forma de pagamento
+      if (!forma && subtotalAtual > 0) throw new Error("Escolha a forma de pagamento.");
+      const r = await post(`/agendamentos/${ag.id}/concluir`, { forma: forma ?? "pix", desconto_centavos: descontoCentavos(desconto.value), produtos: extras.map((e) => ({ id: e.id, quantidade: e.quantidade })) });
       aviso(`Comanda fechada: ${reais(r.venda.total_centavos)}.`);
       j.fechar();
       aoSalvar?.(r);
