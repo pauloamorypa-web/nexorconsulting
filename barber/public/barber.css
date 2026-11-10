@@ -181,3 +181,14 @@
 .horas-grade > p { grid-column: 1 / -1; }
 .linha-tempo-coluna:focus-visible { outline: 2px solid var(--azul); outline-offset: -2px; }
 .campo-erro { color: var(--vermelho); font-size: 12px; }
+
+/* Reteste U-03: no celular, os botões do rodapé da janela quebram linha em vez de alargar a janela (e cortar o X) */
+.modal-rodape { flex-wrap: wrap; }
+.modal { min-width: 0; max-width: 100%; }
+.modal-topo { gap: 8px; min-width: 0; }
+.modal-topo h2 { min-width: 0; overflow-wrap: anywhere; }
+
+/* Reteste U-05: link "Pular para o conteúdo", visível só ao receber foco pelo teclado */
+.pular { position: absolute; left: 8px; top: -60px; z-index: 200; padding: 10px 14px; border-radius: 10px; background: var(--azul); color: #fff; font-weight: 600; text-decoration: none; }
+.pular:focus { top: 8px; }
+#conteudo:focus { outline: none; }

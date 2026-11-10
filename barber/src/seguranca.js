@@ -2,6 +2,7 @@
 
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, scrypt, scryptSync, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { availableParallelism } from "node:os";
 import { join } from "node:path";
 
 // scrypt com N = 2^17 (recomendação OWASP). Senhas antigas (N menor) são refeitas no próximo login.
@@ -26,26 +27,44 @@ export function conferirSenha(senha, guardado) {
 
 /*
  * Versões assíncronas (V-10): o scrypt roda no pool de threads e o servidor continua respondendo durante o login.
- * Fila com no máximo 2 cálculos ao mesmo tempo (cada um usa ~128 MB) e até 64 esperando; além disso, 503.
+ * Reteste T-03: o custo continua N = 2^17 (OWASP). Cálculos simultâneos acompanham o servidor
+ * (availableParallelism, entre 2 e 4; cada um usa ~128 MB). Quem espera mais que o prazo da fila (ou encontra a
+ * fila cheia) recebe 429 com Retry-After e uma mensagem em português, em vez de um 503 genérico.
  */
-const MAX_SIMULTANEOS = 2;
-const MAX_FILA = 64;
+const FILA = { simultaneos: Math.min(4, Math.max(2, availableParallelism())), prazoMs: 4_000, maxFila: 64, tentarEmS: 5 };
+/** Só para os testes: ajusta a fila (simultâneos, prazo e tamanho) */
+export const configurarFilaSenhas = (o) => Object.assign(FILA, o);
+export const filaSenhas = () => ({ ...FILA });
+const MSG_OCUPADO = "Muitas tentativas de entrar agora. Tente de novo em alguns segundos.";
+const ocupado = () => Object.assign(new Error(MSG_OCUPADO), { status: 429, retryAfter: FILA.tentarEmS });
 let emCalculo = 0;
 const espera = [];
+function proximo() {
+  while (espera.length && emCalculo < FILA.simultaneos) espera.shift().iniciar();
+}
 function scryptNaFila(senha, sal, tamanho, opc) {
-  if (espera.length >= MAX_FILA) return Promise.reject(Object.assign(new Error("Servidor ocupado. Tente entrar de novo em instantes."), { status: 503 }));
+  if (espera.length >= FILA.maxFila) return Promise.reject(ocupado());
   return new Promise((ok, falhou) => {
-    const calcular = () => {
-      emCalculo += 1;
-      scrypt(senha, sal, tamanho, opc, (err, chave) => {
-        emCalculo -= 1;
-        espera.shift()?.();
-        if (err) falhou(err);
-        else ok(chave);
-      });
+    const item = {
+      iniciar() {
+        clearTimeout(item.prazo);
+        emCalculo += 1;
+        scrypt(senha, sal, tamanho, opc, (err, chave) => {
+          emCalculo -= 1;
+          proximo();
+          if (err) falhou(err);
+          else ok(chave);
+        });
+      },
     };
-    if (emCalculo < MAX_SIMULTANEOS) calcular();
-    else espera.push(calcular);
+    if (emCalculo < FILA.simultaneos) return item.iniciar();
+    // Prazo de espera na fila: quem não começou a tempo sai com 429
+    item.prazo = setTimeout(() => {
+      const i = espera.indexOf(item);
+      if (i >= 0) espera.splice(i, 1);
+      falhou(ocupado());
+    }, FILA.prazoMs);
+    espera.push(item);
   });
 }
 

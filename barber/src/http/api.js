@@ -11,6 +11,7 @@ import { cicloNoDia } from "../regras/clube.js";
 import { FORMAS } from "../servicos/nucleo.js";
 import { normalizarFone } from "../servicos/canais.js";
 import { criarRoteador, falha } from "./roteador.js";
+import { pendenciasMigracao, semAcento } from "../db.js";
 import { COOKIE_PAINEL, centavos, clientePublico, configCanais, configPublica, cor, dia, email, hora, id, nascimento, op, pct, senha, t, tabelaHorario, usuarioPublico, validar } from "./validacao.js";
 import { rotasApp } from "./app.js";
 import { alcanca, camposBarbeiro, papeisCom, permissoes, pode, proprio, tetoDesconto as tetoDoPerfil } from "./permissoes.js";
@@ -138,6 +139,16 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     return { ok: true };
   });
 
+  /** Avisos do topo do painel para dono e admin (reteste T-04 e T-05) */
+  function avisosAdm(b) {
+    const avisos = [];
+    if (b.config.asaas?.aviso_token) avisos.push({ tipo: "token_asaas", texto: "Gere e cole o novo token do webhook no Asaas: o token antigo deixou de valer na atualização e o Asaas não consegue avisar os pagamentos.", link: "#/config?aba=canais" });
+    for (const p of pendenciasMigracao(repo.db, agora)) avisos.push({ tipo: "migracao", texto: p.texto, indice: p.indice });
+    return avisos;
+  }
+  /** Tira a marca do aviso do token (visto na aba Canais ou trocado) */
+  const tokenVisto = (b) => (b.config.asaas?.aviso_token ? repo.atualizar("barbearias", b.id, { config: { ...b.config, asaas: { ...b.config.asaas, aviso_token: undefined } } }) : b);
+
   r.get("/api/eu", ({ usuario, barbearia }) => {
     const lic = central.estado();
     const n = (sql, ...p) => repo.um(sql, ...p).n;
@@ -148,6 +159,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
       ocultos: repo.ocultos(barbearia.id),
       formas: FORMAS,
       link_app: nucleo.linkApp(),
+      avisos: papeisCom("administrar").includes(usuario.papel) ? avisosAdm(barbearia) : [],
       contagem: {
         chegaram: n("SELECT COUNT(*) n FROM agendamentos WHERE status = 'chegou' AND inicio >= ? AND inicio < ?", paraMs(hoje()), paraMs(hoje()) + 86400_000),
         estoque_baixo: n("SELECT COUNT(*) n FROM produtos WHERE ativo = 1 AND estoque <= estoque_minimo"),
@@ -271,7 +283,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   /* ---------- Clientes ---------- */
   r.get("/api/clientes", ({ query, usuario }) => {
     // Filtra e pagina no banco: a busca alcança a base inteira, não só os 2.000 primeiros por nome
-    const busca = String(query.get("busca") ?? "").trim().toLowerCase().slice(0, 60);
+    const busca = semAcento(String(query.get("busca") ?? "").trim()).slice(0, 60);
     const filtro = query.get("filtro");
     const porPagina = 300;
     const pagina = Math.min(1000, Math.max(1, Math.floor(Number(query.get("pagina")) || 1)));
@@ -283,14 +295,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     if (busca) {
       const dig = busca.replace(/\D/g, "");
       const como = `%${busca.replace(/[\\%_]/g, (x) => `\\${x}`)}%`;
-      cond.push(`(minusculas(c.nome) LIKE ? ESCAPE '\\' OR minusculas(c.email) LIKE ? ESCAPE '\\'${dig.length >= 4 ? " OR instr(c.fone, ?) > 0" : ""})`);
+      cond.push(`(c.nome_busca LIKE ? ESCAPE '\\' OR minusculas(c.email) LIKE ? ESCAPE '\\'${dig.length >= 4 ? " OR instr(c.fone, ?) > 0" : ""})`);
       p.push(como, como, ...(dig.length >= 4 ? [dig] : []));
     }
     const SUMIDO = "c.ciclo_dias IS NOT NULL AND c.ultima_visita IS NOT NULL AND CAST(round(julianday(?) - julianday(c.ultima_visita)) AS INTEGER) > c.ciclo_dias + 7";
     if (filtro === "assinantes") cond.push("c.id IN (SELECT cliente_id FROM assinaturas WHERE status = 'ativa')");
     if (filtro === "sumidos") (cond.push(SUMIDO), p.push(h));
     if (filtro === "aniversario") (cond.push("substr(c.nascimento, 6, 2) = ?"), p.push(h.slice(5, 7)));
-    const sql = `SELECT c.*, EXISTS (SELECT 1 FROM assinaturas a WHERE a.cliente_id = c.id AND a.status = 'ativa') AS assinante_ativo FROM clientes c WHERE ${cond.join(" AND ")} ORDER BY c.nome LIMIT ? OFFSET ?`;
+    const sql = `SELECT c.*, EXISTS (SELECT 1 FROM assinaturas a WHERE a.cliente_id = c.id AND a.status = 'ativa') AS assinante_ativo FROM clientes c WHERE ${cond.join(" AND ")} ORDER BY c.nome_busca, c.nome LIMIT ? OFFSET ?`;
     const lista = repo.todos(sql, ...p, porPagina, (pagina - 1) * porPagina).map((c) => repo.ler("clientes", c));
     const comRisco = (c) => Boolean(c.ciclo_dias && c.ultima_visita && diasEntre(c.ultima_visita, h) > c.ciclo_dias + 7);
     return lista.map(({ assinante_ativo, ...c }) => ({ ...clientePublico(c), assinante: Boolean(assinante_ativo), sumido: comRisco(c), dias_desde: c.ultima_visita ? diasEntre(c.ultima_visita, h) : null }));
@@ -549,7 +561,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   /** Canais: WhatsApp, SMS, Google e Asaas. Campos secretos vazios mantêm o valor atual. */
   const canaisAdm = (b) => configCanais(b.config, nucleo.tokenWebhookAsaas(b));
-  r.get("/api/canais", ADM, ({ barbearia }) => canaisAdm(barbearia));
+  r.get("/api/canais", ADM, ({ barbearia }) => canaisAdm(tokenVisto(barbearia)));
   r.put("/api/canais", ADM, async (ctx) => {
     const sec = z.string().trim().max(500).optional().nullable();
     const d = validar(
@@ -583,6 +595,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
       Object.assign(a, resto, { chave_cripto: novoSegredo(chave, a.chave_cripto), token_webhook_cripto: novo_token_webhook || !nucleo.tokenWebhookAsaas(ctx.barbearia) ? nucleo.novoTokenWebhook() : a.token_webhook_cripto });
       delete a.token_webhook;
       if (novo_token_webhook) auditar(ctx, "token_webhook_asaas_trocado", {});
+      if (novo_token_webhook) delete a.aviso_token;
     }
     const remover = new Set(d.remover ?? []);
     if (remover.has("whatsapp")) (delete w.token_cripto, delete w.segredo_cripto);

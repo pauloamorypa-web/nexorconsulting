@@ -265,7 +265,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
         if (!res.headersSent) res.setHeader("Connection", "close");
         res.once("finish", () => req.destroy());
       }
-      json(res, status, { erro: status < 500 || status === 502 || status === 503 ? err.message : "Erro interno." });
+      json(res, status, { erro: status < 500 || status === 502 || status === 503 ? err.message : "Erro interno." }, err.retryAfter ? { "Retry-After": String(err.retryAfter) } : {});
     }
   });
 

@@ -76,7 +76,7 @@ async function api(caminho, { metodo = "GET", corpo } = {}) {
   }
   const d = (r.headers.get("content-type") ?? "").includes("json") ? await r.json() : await r.text();
   if (!r.ok) {
-    const e = new Error(d?.erro ?? `Erro ${r.status}`);
+    const e = new Error(d?.erro ?? (r.status === 429 ? "Muitas tentativas agora. Tente de novo em alguns segundos." : `Erro ${r.status}`));
     e.status = r.status;
     throw e;
   }
@@ -96,8 +96,8 @@ async function acao(botao, fn) {
     botao.classList.remove("carregando");
   }
 }
-const botao = (texto, fn, cls = "btn-cor btn-bloco", icone) => {
-  const b = h("button", { class: `btn ${cls}`, type: "button" }, icone ? ic(icone, 18) : null, texto);
+const botao = (texto, fn, cls = "btn-cor btn-bloco", icone, rotulo) => {
+  const b = h("button", { class: `btn ${cls}`, type: "button", ...(rotulo ? { "aria-label": rotulo } : {}) }, icone ? ic(icone, 18) : null, texto);
   b.onclick = () => acao(b, () => fn(b));
   return b;
 };
@@ -614,9 +614,9 @@ function controleReserva(p, proximo) {
     return h(
       "div",
       { class: "linha-esq" },
-      botao("−", () => atualizar(() => (minha.quantidade > 1 ? api(`/reservas/${minha.id}`, { metodo: "PUT", corpo: { quantidade: minha.quantidade - 1 } }) : api(`/reservas/${minha.id}`, { metodo: "DELETE" })), minha.quantidade > 1 ? null : "Reserva desfeita."), "btn-fantasma btn-peq"),
+      botao("−", () => atualizar(() => (minha.quantidade > 1 ? api(`/reservas/${minha.id}`, { metodo: "PUT", corpo: { quantidade: minha.quantidade - 1 } }) : api(`/reservas/${minha.id}`, { metodo: "DELETE" })), minha.quantidade > 1 ? null : "Reserva desfeita."), "btn-fantasma btn-peq", null, `Tirar um ${p.nome}`),
       h("strong", { "aria-label": "Quantidade reservada" }, String(minha.quantidade)),
-      p.disponivel && minha.quantidade < 5 ? botao("+", () => atualizar(() => post(`/agendamentos/${proximo.id}/reservas`, { produto_id: p.id, quantidade: 1 })), "btn-fantasma btn-peq") : null,
+      p.disponivel && minha.quantidade < 5 ? botao("+", () => atualizar(() => post(`/agendamentos/${proximo.id}/reservas`, { produto_id: p.id, quantidade: 1 })), "btn-fantasma btn-peq", null, `Reservar mais um ${p.nome}`) : null,
       h("small", { class: "suave" }, "reservado"),
     );
   if (!p.disponivel) return h("small", { class: "suave" }, "Esgotado");

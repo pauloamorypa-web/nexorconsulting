@@ -136,8 +136,9 @@ export async function comanda(ctx, ag, aoSalvar) {
   const avisoDesconto = h("small", { class: "campo-erro", id: "comanda-desconto-aviso", role: "alert" });
   let subtotalAtual = 0;
   const formas = Object.entries(ctx.eu.formas).filter(([k]) => k !== "clube");
-  let forma = "pix";
-  const botoesForma = h("div", { class: "segmentado" }, formas.map(([k, t]) => h("button", { type: "button", class: k === forma ? "ativa" : "", onclick: (e) => ((forma = k), botoesForma.querySelectorAll("button").forEach((b) => b.classList.toggle("ativa", b === e.currentTarget))) }, t)));
+  // Reteste U-01: nenhuma forma vem marcada; a recepção escolhe e a escolhida aparece destacada
+  let forma = null;
+  const botoesForma = h("div", { class: "segmentado", role: "group", "aria-label": "Forma de pagamento" }, formas.map(([k, t]) => h("button", { type: "button", "aria-pressed": "false", onclick: (e) => ((forma = k), botoesForma.querySelectorAll("button").forEach((b) => (b.classList.toggle("ativo", b === e.currentTarget), b.setAttribute("aria-pressed", String(b === e.currentTarget))))) }, t)));
   const linha = (nome, valor, extra) => h("div", { class: "comanda-linha" }, h("span", {}, nome), h("span", {}, valor), extra ?? null);
   function render() {
     const servico = ag.clube ? 0 : ag.servico.preco_centavos;
@@ -186,7 +187,9 @@ export async function comanda(ctx, ag, aoSalvar) {
   });
   fechar.onclick = () =>
     acao(fechar, async () => {
-      const r = await post(`/agendamentos/${ag.id}/concluir`, { forma, desconto_centavos: descontoCentavos(desconto.value), produtos: extras.map((e) => ({ id: e.id, quantidade: e.quantidade })) });
+      // Comanda de valor zero (só o serviço do clube) não precisa de forma de pagamento
+      if (!forma && subtotalAtual > 0) throw new Error("Escolha a forma de pagamento.");
+      const r = await post(`/agendamentos/${ag.id}/concluir`, { forma: forma ?? "pix", desconto_centavos: descontoCentavos(desconto.value), produtos: extras.map((e) => ({ id: e.id, quantidade: e.quantidade })) });
       aviso(`Comanda fechada: ${reais(r.venda.total_centavos)}.`);
       j.fechar();
       aoSalvar?.(r);

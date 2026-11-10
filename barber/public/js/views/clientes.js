@@ -17,7 +17,7 @@ export async function render(area, ctx) {
       ["assinantes", "Clube"],
       ["sumidos", "Sumidos"],
       ["aniversario", "Aniversariantes do mês"],
-    ].map(([k, t]) => h("button", { class: k === filtro ? "ativa" : "", onclick: (e) => ((filtro = k), filtros.querySelectorAll("button").forEach((b) => b.classList.toggle("ativa", b === e.currentTarget)), carregar()) }, t)),
+    ].map(([k, t]) => h("button", { type: "button", class: k === filtro ? "ativo" : "", "aria-pressed": String(k === filtro), onclick: (e) => ((filtro = k), filtros.querySelectorAll("button").forEach((b) => (b.classList.toggle("ativo", b === e.currentTarget), b.setAttribute("aria-pressed", String(b === e.currentTarget)))), carregar()) }, t)),
   );
   const pode = ctx.pode("dono", "admin", "recepcao");
   limpar(

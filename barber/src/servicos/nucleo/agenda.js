@@ -246,7 +246,7 @@ export function criarAgenda(nx) {
       if (!r.ok) recusar(409, r.motivo);
       const conflito = repo.um("SELECT 1 FROM agendamentos WHERE cliente_id = ? AND id <> ? AND status IN ('agendado','chegou','em_atendimento') AND inicio < ? AND fim > ?", a.cliente_id, a.id, r.fim, r.inicio);
       if (conflito) recusar(409, "O cliente já tem um horário marcado nesse momento.");
-      repo.atualizar("agendamentos", a.id, { inicio: r.inicio, fim: r.fim, barbeiro_id: barbeiro.id, lembrete_em: null, lembrete_tentativas: 0 });
+      repo.atualizar("agendamentos", a.id, { inicio: r.inicio, fim: r.fim, barbeiro_id: barbeiro.id, lembrete_em: null, lembrete_tentativas: 0, lembrete_proxima_em: null });
       recalcularCobertura(a.id);
       repo.auditar(b.id, autor, "agendamento_remarcado", { agendamento: a.id, de: a.inicio, para: r.inicio });
       if (a.inicio > agora()) setImmediate(() => oferecerVaga(a).catch(() => {}));

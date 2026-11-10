@@ -2,7 +2,7 @@
 
 export class ErroApi extends Error {
   constructor(status, dados) {
-    super(dados?.erro ?? `Erro ${status}`);
+    super(dados?.erro ?? (status === 429 ? "Muitas tentativas de entrar agora. Tente de novo em alguns segundos." : `Erro ${status}`));
     this.status = status;
     this.codigo = dados?.codigo;
   }

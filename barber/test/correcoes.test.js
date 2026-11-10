@@ -639,17 +639,20 @@ test("V-17: lembrete com o canal fora é tentado de novo (até 3 vezes), rotina 
     assert.equal(repo.obter("agendamentos", a.id).lembrete_em, null, "volta para a fila");
     assert.equal(repo.obter("agendamentos", a.id).lembrete_tentativas, 1);
     s.rede.fora.clear();
+    s.agora.avancar(2 * 60_000); // reteste T-02: a 2ª tentativa espera 2 min
     assert.equal((await s.app.rotina()).lembretes, 1, "tenta de novo quando o canal volta");
     assert.match(s.rede.whatsapp.at(-1).text.body, /hoje às 10:00/);
     assert.equal((await s.app.rotina()).lembretes, 0, "um lembrete só");
-    // Três falhas: desiste (não fica tentando para sempre)
+    // Reteste T-02: rotinas seguidas não gastam tentativas; só desiste quando o horário passa
     const b = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-10", hora: "11:00" })).dados;
     s.rede.fora.add("graph.facebook.com");
     s.rede.fora.add("api.twilio.com");
     s.agora.ir("2026-11-10T08:30:00-03:00");
     for (let i = 0; i < 4; i++) await s.app.rotina();
-    assert.equal(repo.obter("agendamentos", b.id).lembrete_tentativas, 3);
-    assert.ok(repo.obter("agendamentos", b.id).lembrete_em, "desistiu depois de 3");
+    assert.equal(repo.obter("agendamentos", b.id).lembrete_tentativas, 1);
+    s.agora.ir("2026-11-10T11:00:00-03:00");
+    await s.app.rotina();
+    assert.equal(repo.obter("agendamentos", b.id).lembrete_tentativas, 1, "o horário passou: não tenta mais");
     s.rede.fora.clear();
     // Duas rotinas ao mesmo tempo: uma só envia
     await dono.put("/api/config", { regras: { lembrete_horas: 24 } });
@@ -987,4 +990,196 @@ test("V-45: relatório fecha com desconto (serviços + produtos = faturamento)",
   } finally {
     s.fechar();
   }
+});
+
+test("Reteste T-02: queda curta do canal não gasta as tentativas; espera 2, 10 e 30 min", async () => {
+  const s = await subir();
+  try {
+    const { corte, rafael } = await barbeariaPronta(s);
+    const lucas = await clienteApp(s);
+    const a = (await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-10", hora: "13:00" })).dados;
+    const repo = s.app.repo;
+    const ag = () => repo.obter("agendamentos", a.id);
+    s.agora.ir("2026-11-10T10:30:00-03:00");
+    s.rede.fora.add("graph.facebook.com");
+    s.rede.fora.add("api.twilio.com");
+    for (let i = 0; i < 4; i++) await s.app.rotina(); // 4 cliques seguidos em "Rodar rotina"
+    assert.equal(ag().lembrete_tentativas, 1, "uma tentativa só");
+    assert.equal(ag().lembrete_proxima_em, s.agora() + 2 * 60_000);
+    s.agora.avancar(2 * 60_000);
+    await s.app.rotina();
+    assert.equal(ag().lembrete_tentativas, 2);
+    assert.equal(ag().lembrete_proxima_em, s.agora() + 10 * 60_000);
+    s.agora.avancar(10 * 60_000);
+    await s.app.rotina();
+    assert.equal(ag().lembrete_proxima_em, s.agora() + 30 * 60_000);
+    s.agora.avancar(30 * 60_000);
+    await s.app.rotina();
+    assert.equal(ag().lembrete_tentativas, 4, "continua tentando, a cada 30 min");
+    // O canal volta depois de 45 min de queda: o lembrete sai
+    s.rede.fora.clear();
+    s.agora.avancar(30 * 60_000);
+    assert.equal((await s.app.rotina()).lembretes, 1);
+    assert.ok(ag().lembrete_em);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("Reteste T-06: a rodada de lembretes tem prazo; o que não coube fica para a próxima sem gastar tentativa", async () => {
+  const s = await subir({ cfg: { prazoLembretesMs: 150 } });
+  try {
+    const { dono, corte } = await barbeariaPronta(s);
+    await dono.put("/api/config", { regras: { lembrete_horas: 24 } });
+    for (let i = 0; i < 9; i++) {
+      const c = await clienteApp(s, `3499999${String(1000 + i)}`, `Cliente ${i}`);
+      const ag = await c.post("/api/app/agendar", { servico_id: corte.id, dia: "2026-11-11", hora: ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"][i] });
+      assert.equal(ag.status, 200, JSON.stringify(ag.dados));
+    }
+    s.agora.ir("2026-11-11T07:00:00-03:00");
+    s.rede.atraso.set("graph.facebook.com", 250); // provedor lento
+    const r1 = await s.app.rotina();
+    assert.equal(r1.lembretes, 6, "a primeira leva (6 simultâneos) termina");
+    assert.equal(r1.lembretes_adiados, 3);
+    assert.equal(s.app.repo.um("SELECT COUNT(*) n FROM agendamentos WHERE lembrete_tentativas > 0").n, 0, "adiado não conta tentativa");
+    const r2 = await s.app.rotina();
+    assert.equal(r2.lembretes, 3, "o resto sai na rodada seguinte");
+  } finally {
+    s.fechar();
+  }
+});
+
+test("Reteste T-01: busca de clientes ignora acentos e a ordem por nome põe os acentuados no lugar certo", async () => {
+  const s = await subir();
+  try {
+    const { dono } = await barbeariaPronta(s);
+    for (const nome of ["Zuléica Souza", "João Pedro", "Ágata Lima", "Bruno Alves", "Érica Dias", "Carlos"]) assert.equal((await dono.post("/api/clientes", { nome })).status, 200);
+    const busca = async (t) => (await dono.get(`/api/clientes?busca=${encodeURIComponent(t)}`)).dados.map((c) => c.nome);
+    assert.deepEqual(await busca("zuleica"), ["Zuléica Souza"]);
+    assert.deepEqual(await busca("ZULÉICA"), ["Zuléica Souza"]);
+    assert.deepEqual(await busca("joao"), ["João Pedro"]);
+    assert.deepEqual(await busca("agata"), ["Ágata Lima"]);
+    const ordem = (await dono.get("/api/clientes")).dados.map((c) => c.nome);
+    assert.deepEqual(ordem, ["Ágata Lima", "Bruno Alves", "Carlos", "Érica Dias", "João Pedro", "Zuléica Souza"]);
+    // Renomear atualiza a busca
+    const z = (await dono.get("/api/clientes?busca=zuleica")).dados[0];
+    await dono.put(`/api/clientes/${z.id}`, { nome: "Zélia Souza" });
+    assert.deepEqual(await busca("zelia"), ["Zélia Souza"]);
+    // Coluna com índice, sem função JS por linha na ordenação
+    assert.ok(s.app.repo.um("SELECT 1 FROM sqlite_master WHERE name = 'clientes_nome_busca'"));
+  } finally {
+    s.fechar();
+  }
+  // Banco antigo: a migração preenche a coluna de busca
+  const pasta = mkdtempSync(join(tmpdir(), "nexor-barber-mig-"));
+  try {
+    const arq = join(pasta, "barber.db");
+    let repo = abrirBanco(arq);
+    const b = repo.inserir("barbearias", { nome: "B", config: {} });
+    const c = repo.inserir("clientes", { barbearia_id: b.id, nome: "Zuléica" });
+    repo.rodar("UPDATE clientes SET nome_busca = NULL");
+    repo.fechar();
+    repo = abrirBanco(arq);
+    assert.equal(repo.obter("clientes", c.id).nome_busca, "zuleica");
+    repo.fechar();
+  } finally {
+    rmSync(pasta, { recursive: true, force: true });
+  }
+});
+
+test("Reteste T-03: rajada de logins acima da fila recebe 429 com Retry-After e mensagem em português (não 503)", async () => {
+  const seg = await import("../src/seguranca.js");
+  const padrao = seg.filaSenhas();
+  assert.ok(padrao.simultaneos >= 2 && padrao.simultaneos <= 4, "acompanha o servidor, de 2 a 4");
+  const s = await subir();
+  try {
+    await barbeariaPronta(s);
+    seg.configurarFilaSenhas({ simultaneos: 1, prazoMs: 150 });
+    const r = await Promise.all(Array.from({ length: 12 }, (_, i) => fetch(`${s.url}/api/entrar`, { method: "POST", headers: { "x-nexor": "1", "content-type": "application/json", "x-forwarded-for": `10.0.0.${i}` }, body: JSON.stringify({ email: `x${i}@t.test`, senha: "qualquer-1" }) }).then(async (x) => ({ status: x.status, retry: x.headers.get("retry-after"), dados: await x.json() }))));
+    const st = r.map((x) => x.status);
+    assert.ok(!st.includes(503), JSON.stringify(st));
+    assert.ok(st.includes(401), "os primeiros são atendidos");
+    const recusado = r.find((x) => x.status === 429);
+    assert.ok(recusado, "quem passou do prazo da fila recebe 429");
+    assert.equal(recusado.retry, "5");
+    assert.equal(recusado.dados.erro, "Muitas tentativas de entrar agora. Tente de novo em alguns segundos.");
+  } finally {
+    seg.configurarFilaSenhas(padrao);
+    s.fechar();
+  }
+  const { readFileSync } = await import("node:fs");
+  assert.match(readFileSync(new URL("../public/js/api.js", import.meta.url), "utf8"), /status === 429 \? "Muitas tentativas de entrar agora/);
+  assert.match(readFileSync(new URL("../public/app/app.js", import.meta.url), "utf8"), /status === 429 \? "Muitas tentativas agora/);
+});
+
+test("Reteste T-04: token curto trocado na migração vira aviso no painel até ser visto ou trocado", async () => {
+  const s = await subir();
+  try {
+    const { dono } = await barbeariaPronta(s);
+    const { c: rec } = await acesso(s, dono, { nome: "Rec", email: "rec@t.test", papel: "recepcao" });
+    const { c: adm } = await acesso(s, dono, { nome: "Adm", email: "adm@t.test", papel: "admin" });
+    const b = s.app.repo.barbearia();
+    s.app.repo.atualizar("barbearias", b.id, { config: { ...b.config, asaas: { token_webhook: "abc123" } } });
+    s.app.nucleo.migrarConfig();
+    const aviso = async (c) => ((await c.get("/api/eu")).dados.avisos ?? []).find((x) => x.tipo === "token_asaas");
+    const a = await aviso(dono);
+    assert.ok(a, "o dono vê o aviso");
+    assert.match(a.texto, /Gere e cole o novo token do webhook no Asaas/);
+    assert.equal(a.link, "#/config?aba=canais");
+    assert.ok(await aviso(adm), "o admin também");
+    assert.equal(await aviso(rec), undefined, "a recepção não");
+    // Visto na aba Canais: some
+    await adm.get("/api/canais");
+    assert.equal(await aviso(dono), undefined);
+    // Trocado: some também
+    s.app.repo.atualizar("barbearias", b.id, { config: { ...s.app.repo.barbearia().config, asaas: { token_webhook: "false" } } });
+    s.app.nucleo.migrarConfig();
+    assert.ok(await aviso(dono));
+    await dono.put("/api/canais", { asaas: { novo_token_webhook: true } });
+    assert.equal(await aviso(dono), undefined);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("Reteste T-05: pendência da migração (duplicados) vira aviso no painel e some quando corrigida", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte } = await barbeariaPronta(s);
+    const { c: rec } = await acesso(s, dono, { nome: "Rec", email: "rec@t.test", papel: "recepcao" });
+    const repo = s.app.repo;
+    // Banco antigo: venda paga em dobro do mesmo atendimento, sem o índice
+    repo.db.exec("DROP INDEX vendas_agendamento_paga");
+    const v1 = (await dono.post("/api/vendas", { itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix" })).dados;
+    const v2 = (await dono.post("/api/vendas", { itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix" })).dados;
+    repo.rodar("UPDATE vendas SET agendamento_id = 'ag-antigo' WHERE id IN (?, ?)", v1.id, v2.id);
+    const aviso = async (c) => ((await c.get("/api/eu")).dados.avisos ?? []).find((x) => x.tipo === "migracao");
+    const a = await aviso(dono);
+    assert.ok(a, "o dono vê");
+    assert.match(a.texto, /venda/i);
+    assert.match(a.texto, /Cancele/);
+    assert.equal(await aviso(rec), undefined, "só dono e admin");
+    // Corrigido pelo painel: o aviso some, o índice é criado na hora e a correção é auditada
+    assert.equal((await dono.post(`/api/vendas/${v2.id}/cancelar`)).status, 200);
+    assert.equal(await aviso(dono), undefined);
+    assert.ok(repo.um("SELECT 1 FROM sqlite_master WHERE name = 'vendas_agendamento_paga'"));
+    assert.ok(repo.um("SELECT 1 FROM auditoria WHERE acao = 'migracao_resolvida'"));
+  } finally {
+    s.fechar();
+  }
+});
+
+test("Reteste U-04: toques impacientes seguidos (a cada 300 ms) não confirmam; só confirma depois de uma pausa", async () => {
+  const { confirmarNoBotao } = await import("../public/app/confirmar.js");
+  const botao = { dataset: {}, lastChild: { textContent: "Cancelar" } };
+  assert.equal(confirmarNoBotao(botao, "Toque de novo para cancelar", 10_000), false, "1º toque arma");
+  for (const t of [10_300, 10_600, 10_900, 11_200]) assert.equal(confirmarNoBotao(botao, "Toque de novo para cancelar", t), false, `toque em ${t} ignorado`);
+  assert.equal(confirmarNoBotao(botao, "Toque de novo para cancelar", 12_100), true, "depois de 900 ms parado, confirma");
+});
+
+test("Reteste U-05: a mensagem não repete o nome do campo (\"CPF inválido\") e a troca de senha usa \"Nova senha\"", async () => {
+  const { validar, cpf } = await import("../src/http/validacao.js");
+  const { z } = await import("zod");
+  assert.throws(() => validar(z.object({ cpf }), { cpf: "111.111.111-11" }), (e) => e.message === "CPF inválido");
+  assert.throws(() => validar(z.object({ nova: z.string().min(8) }), { nova: "123" }), (e) => /^Nova senha: /.test(e.message));
 });

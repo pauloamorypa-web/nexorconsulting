@@ -59,6 +59,7 @@ const ROTULOS = {
   id_numero: "ID do número", token: "Token", segredo: "Chave secreta", verificacao: "Token de verificação", sid: "Conta (SID)", chave: "Chave da API",
   token_webhook: "Token do webhook", ambiente: "Ambiente", tipo: "Tipo", canal: "Canal", passo_min: "Intervalo da agenda", antecedencia_min: "Antecedência mínima",
   janela_dias: "Janela de agendamento", cancelamento_horas: "Prazo para cancelar", lembrete_horas: "Lembrete", tolerancia_min: "Tolerância de atraso",
+  atual: "Senha atual", nova: "Nova senha", senha_atual: "Senha atual", nova_senha: "Nova senha",
   margem_dias: "Margem do retorno", ocultos: "Itens ocultos", pago_agora: "Forma de pagamento", remover: "Remover",
 };
 const rotulo = (caminho) => {
@@ -96,7 +97,12 @@ function mensagemPt(i) {
 
 export function validar(esquema, dados) {
   const r = esquema.safeParse(dados ?? {}, { error: mensagemPt });
-  if (!r.success) falha(400, r.error.issues.map((i) => `${rotulo(i.path)}: ${i.message}`).join("; "));
+  // Reteste U-05: não repete o nome do campo quando a mensagem já o traz ("CPF inválido", não "CPF: CPF inválido")
+  const frase = (i) => {
+    const r = rotulo(i.path);
+    return i.message.startsWith(`${r} `) ? i.message : `${r}: ${i.message}`;
+  };
+  if (!r.success) falha(400, r.error.issues.map(frase).join("; "));
   return r.data;
 }
 

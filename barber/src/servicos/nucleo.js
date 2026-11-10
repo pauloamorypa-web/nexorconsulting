@@ -52,6 +52,8 @@ export function criarNucleo({ repo, cofre, cfg, fetchFn = fetch, agora = () => D
     const { token_webhook: antigo, ...resto } = a;
     const valido = typeof antigo === "string" && antigo.length >= TOKEN_WEBHOOK_MIN && antigo !== "true" && antigo !== "false";
     const asaas = { ...resto, token_webhook_cripto: resto.token_webhook_cripto || (valido ? cofre.cifrar(antigo) : antigo ? novoTokenWebhook() : undefined) };
+    // Reteste T-04: o token antigo deixou de valer; o dono e o admin precisam colar o novo no Asaas
+    if (antigo && !valido && !resto.token_webhook_cripto) asaas.aviso_token = true;
     if (!asaas.token_webhook_cripto) delete asaas.token_webhook_cripto;
     repo.atualizar("barbearias", b.id, { config: { ...b.config, asaas } });
     if (antigo && !valido) repo.auditar(b.id, "sistema", "token_webhook_asaas_trocado", { motivo: "token antigo curto demais; cole o novo no painel do Asaas" });

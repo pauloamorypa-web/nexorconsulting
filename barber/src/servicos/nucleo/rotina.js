@@ -30,7 +30,12 @@ export function criarRotina(nx) {
     if (d === somarDias(hoje(), 1)) return `amanhã às ${horaBR(ms)}`;
     return quando(ms);
   };
-  const MAX_TENTATIVAS_LEMBRETE = 3;
+  /* Reteste T-02 e T-06: a falha espera 2, 10 e depois 30 min para tentar de novo (rotinas seguidas não gastam
+     tentativas) e só desiste quando o horário passa. A rodada de lembretes tem um prazo total (15 s): o que não
+     começar dentro dele fica para a próxima rodada, sem contar tentativa. */
+  const ESPERAS_LEMBRETE_MIN = [2, 10, 30];
+  const PRAZO_LEMBRETES_MS = nx.cfg.prazoLembretesMs ?? 15_000;
+  const ENVIOS_SIMULTANEOS = 6;
 
   /** Trava: duas rotinas ao mesmo tempo (relógio + botão do painel) não mandam mensagens em dobro */
   let rotinaRodando = false;
@@ -58,17 +63,24 @@ export function criarRotina(nx) {
     for (const a of repo.lista("assinaturas", "WHERE cancelamento_pendente = 1 AND status = 'cancelada' LIMIT 20")) if (await cancelarNoAsaas(a)) res.cancelamentos_asaas++;
 
     // Lembrete X horas antes. Marca antes de enviar (nunca manda em dobro); se o canal falhar, volta para a fila
-    // e é tentado de novo na próxima rodada, até 3 vezes. Envio em paralelo, até 4 de cada vez.
-    const prox = repo.lista("agendamentos", "WHERE status = 'agendado' AND lembrete_em IS NULL AND lembrete_tentativas < ? AND inicio > ? AND inicio <= ?", MAX_TENTATIVAS_LEMBRETE, t, t + r.lembrete_horas * 3600_000);
+    // com hora marcada para a próxima tentativa. Envio em paralelo, até 6 de cada vez, dentro do prazo da rodada.
+    const prox = repo.lista("agendamentos", "WHERE status = 'agendado' AND lembrete_em IS NULL AND (lembrete_proxima_em IS NULL OR lembrete_proxima_em <= ?) AND inicio > ? AND inicio <= ? ORDER BY inicio", t, t, t + r.lembrete_horas * 3600_000);
     for (const a of prox) repo.atualizar("agendamentos", a.id, { lembrete_em: t });
-    await emParalelo(prox, 4, async (a) => {
+    const comeco = performance.now();
+    await emParalelo(prox, ENVIOS_SIMULTANEOS, async (a) => {
+      if (performance.now() - comeco > PRAZO_LEMBRETES_MS) {
+        repo.atualizar("agendamentos", a.id, { lembrete_em: null }); // não coube na rodada: volta sem gastar tentativa
+        res.lembretes_adiados = (res.lembretes_adiados ?? 0) + 1;
+        return;
+      }
       const d = detalhar(a);
       const c = repo.obter("clientes", a.cliente_id);
       const envio = await notificar(c, "lembrete", { texto: `⏰ ${c.nome.split(" ")[0]}, lembrete: ${d.servico.nome} com ${d.barbeiro.nome} ${quandoRelativo(a.inicio)}. Chegando, toque em "Estou chegando" no app: ${linkApp()}`, parametros: [c.nome.split(" ")[0], d.servico.nome, quando(a.inicio), d.barbeiro.nome] });
       if (envio.enviado) res.lembretes++;
       else if (envio.falhou) {
         const tentativas = (a.lembrete_tentativas ?? 0) + 1;
-        repo.atualizar("agendamentos", a.id, { lembrete_tentativas: tentativas, lembrete_em: tentativas < MAX_TENTATIVAS_LEMBRETE ? null : t });
+        const espera = ESPERAS_LEMBRETE_MIN[Math.min(tentativas, ESPERAS_LEMBRETE_MIN.length) - 1] * 60_000;
+        repo.atualizar("agendamentos", a.id, { lembrete_tentativas: tentativas, lembrete_em: null, lembrete_proxima_em: t + espera });
       }
     });
 
