@@ -7,7 +7,7 @@
 | Indicador | Resultado |
 |---|---|
 | Testes automáticos que já existiam | 25 de 25 passando: pela suíte, o produto estava "pronto" |
-| O que a banca achou | Cerca de 60 apontamentos brutos nos 4 relatórios; o número de itens únicos e confirmados está no [veredito](relatorios/2026-11-barber/veredito.md) |
+| O que a banca achou | 74 apontamentos brutos, que viraram 45 itens confirmados no [veredito](relatorios/2026-11-barber/veredito.md): 7 graves, 7 altos, 18 médios e 13 básicos, cerca de 110 h de correção. Nota 5 de 10, ainda não pronto para produção |
 | Tipos de falha que nenhum teste existente pegava | Venda e comissão em dobro com internet lenta, cliente que paga adiantado e perde o clube, admin que toma a conta do dono, servidor que congela com 100 logins, aviso de retorno que para depois de 40 clientes |
 | Tempo | Cerca de 15 minutos com os 4 agentes em paralelo, mais o veredito |
 | Escopo coberto | Invasão, uso real no celular, revisão do código inteiro (cerca de 6.500 linhas), 83 rotas, carga de 100 e 500 usuários simultâneos, falhas de serviços externos |
