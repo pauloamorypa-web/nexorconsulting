@@ -130,6 +130,15 @@ export async function render(area, ctx) {
         {
           class: "linha-tempo-coluna",
           style: { height: `${altura}px` },
+          // Teclado (banca V-43): Tab chega na coluna e Enter abre o agendamento com este barbeiro
+          tabindex: "0",
+          role: "button",
+          "aria-label": `Agendar com ${b.nome} neste dia`,
+          onkeydown: (e) => {
+            if (e.target !== col || (e.key !== "Enter" && e.key !== " ")) return;
+            e.preventDefault();
+            novoAgendamento(ctx, { dia, barbeiroId: b.id }, carregar);
+          },
           onclick: (e) => {
             if (e.target !== col) return;
             const m = comeco + Math.floor((e.offsetY / PX) / 15) * 15;

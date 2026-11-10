@@ -167,3 +167,17 @@
   .indicador { min-width: 0; }
   .acoes-topo { width: 100%; }
 }
+
+/* Celular (banca V-26): nada estica a página além da tela; só a fileira de abas rola para o lado */
+.pagina { grid-template-columns: minmax(0, 1fr); }
+.pagina > *, .pagina-topo > * { min-width: 0; }
+.abas { max-width: 100%; }
+@media (max-width: 640px) {
+  .pagina { padding: 18px 14px 60px; }
+  .acoes-topo .entrada[type="date"] { flex: 1 1 130px; }
+}
+
+/* Acessibilidade (banca V-43): mensagem ocupa a grade inteira; coluna da agenda com foco visível pelo teclado */
+.horas-grade > p { grid-column: 1 / -1; }
+.linha-tempo-coluna:focus-visible { outline: 2px solid var(--azul); outline-offset: -2px; }
+.campo-erro { color: var(--vermelho); font-size: 12px; }

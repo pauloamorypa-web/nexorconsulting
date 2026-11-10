@@ -178,7 +178,7 @@ function login(st) {
   const form = h(
     "form",
     { class: "login-form", onsubmit: (e) => (e.preventDefault(), acao(b, async () => (await post(cadastro ? "/cadastro" : "/entrar", f.ler()), location.reload()))) },
-    h("img", { src: "/img/logo-mark.webp", alt: "", width: 48, height: 48, class: "login-logo" }),
+    h("img", { src: "/img/logo-mark.webp", alt: "Nexor Barber", width: 48, height: 48, class: "login-logo" }),
     h("h1", {}, cadastro ? "Vamos abrir a sua barbearia" : "Entrar no Nexor Barber"),
     h("p", { class: "suave" }, cadastro ? "Já criamos 4 serviços de exemplo e o expediente padrão. Você muda tudo depois." : "Acesso do dono, da recepção e dos barbeiros."),
     f.el,
