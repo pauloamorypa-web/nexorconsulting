@@ -845,3 +845,146 @@ test("V-39: encaixe só no próprio dia ou em datas futuras", async () => {
     s.fechar();
   }
 });
+
+test("V-32: barbeiro vê só os próprios clientes e vendas e tem teto de desconto (padrão 20%)", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte, rafael, bruno } = await barbeariaPronta(s);
+    const { c: br } = await acesso(s, dono, { nome: "Bruno", email: "bruno@t.test", papel: "barbeiro", barbeiro_id: bruno.id });
+    const lucas = await clienteApp(s);
+    const pedro = await clienteApp(s, "34999990002", "Pedro");
+    await lucas.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: bruno.id, dia: "2026-11-11", hora: "10:00" });
+    const doRafael = (await pedro.post("/api/app/agendar", { servico_id: corte.id, barbeiro_id: rafael.id, dia: "2026-11-11", hora: "10:00" })).dados;
+    await dono.post("/api/clientes", { nome: "Sem horário", fone: "34977770000" });
+    const nomes = (await br.get("/api/clientes")).dados.map((c) => c.nome);
+    assert.deepEqual(nomes, ["Lucas Cliente"], "só quem tem horário com ele");
+    assert.equal((await dono.get("/api/clientes")).dados.length, 3, "o dono vê todos");
+    assert.equal((await br.get(`/api/clientes/${doRafael.cliente.id}`)).status, 404, "cliente de outro barbeiro");
+    // Vendas: só as dele
+    await dono.post("/api/vendas", { barbeiro_id: rafael.id, itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix" });
+    const v = await br.post("/api/vendas", { itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix", desconto_centavos: 1000 });
+    assert.equal(v.status, 200, "20% de 50,00 = 10,00 pode");
+    assert.equal((await br.get("/api/vendas")).dados.length, 1);
+    // Teto de desconto do barbeiro
+    const muito = await br.post("/api/vendas", { itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix", desconto_centavos: 5000 });
+    assert.equal(muito.status, 403);
+    assert.match(muito.dados.erro, /20%/);
+    assert.equal((await dono.post("/api/vendas", { itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix", desconto_centavos: 5000 })).status, 200, "dono sem teto");
+    // Configurável
+    assert.equal((await dono.put("/api/config", { regras: { desconto_teto_barbeiro: 50 } })).status, 200);
+    assert.equal((await br.post("/api/vendas", { itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix", desconto_centavos: 2500 })).status, 200);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("Paginação nas telas: Clientes e Clube pedem a próxima página com 'Ver mais'", async () => {
+  const { readFileSync } = await import("node:fs");
+  const ler = (f) => readFileSync(new URL(`../public/js/views/${f}`, import.meta.url), "utf8");
+  const clientes = ler("clientes.js");
+  assert.match(clientes, /pagina: String\(pagina\)/);
+  assert.match(clientes, /Ver mais clientes/);
+  assert.match(clientes, /POR_PAGINA = 300/);
+  const clube = ler("clube.js");
+  assert.match(clube, /\/assinaturas\?pagina=\$\{pagina\}/);
+  assert.match(clube, /Ver mais assinantes/);
+  assert.match(clube, /POR_PAGINA = 200/);
+  // As páginas da API não se repetem
+  const s = await subir();
+  try {
+    const { dono } = await barbeariaPronta(s);
+    const b = s.app.repo.barbearia();
+    for (let i = 0; i < 305; i++) s.app.repo.inserir("clientes", { barbearia_id: b.id, nome: `C${String(i).padStart(3, "0")}` });
+    const p1 = (await dono.get("/api/clientes?pagina=1")).dados;
+    const p2 = (await dono.get("/api/clientes?pagina=2")).dados;
+    assert.equal(p1.length, 300);
+    assert.equal(p2.length, 5);
+    assert.equal(new Set([...p1, ...p2].map((c) => c.id)).size, 305);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-45: núcleo dividido em módulos com a mesma interface pública de criarNucleo", async () => {
+  const { readFileSync, existsSync } = await import("node:fs");
+  for (const m of ["agenda", "caixa", "clube", "espera", "rotina", "comum"]) assert.ok(existsSync(new URL(`../src/servicos/nucleo/${m}.js`, import.meta.url)), m);
+  const s = await subir();
+  try {
+    const esperado = "barbearia exigirBarbearia tokenWebhookAsaas novoTokenWebhook migrarConfig canais segredo notificar registrarEnvio enviarCodigo conferirCodigo livres diasDisponiveis ocupados agendar detalhar detalharVarios podeMudar cancelar remarcar mudarStatus recalcularCobertura vender concluir cancelarVenda movimentarEstoque disponivel reservar mudarReserva liberarReservas atualizarRetorno assinaturaAtual usosNoCiclo coberturaDoCliente identificarAssinante assinar registrarPagamento pagamentoManual cancelarAssinatura eventoAsaas entrarNaEspera oferecerVaga vagaPorToken aceitarVaga rotina ics linkApp".split(" ");
+    const n = s.app.nucleo;
+    for (const k of esperado) assert.equal(typeof n[k], "function", k);
+    assert.deepEqual(Object.keys(n).sort(), [...esperado].sort(), "nem mais nem menos");
+    const { ErroRegra, FORMAS } = await import("../src/servicos/nucleo.js");
+    assert.equal(typeof ErroRegra, "function");
+    assert.equal(FORMAS.pix, "Pix");
+  } finally {
+    s.fechar();
+  }
+  assert.ok(readFileSync(new URL("../src/servicos/nucleo.js", import.meta.url), "utf8").split("\n").length < 400, "nucleo.js ficou só com a base");
+});
+
+test("V-45: tabela de permissões por papel no lugar dos ifs espalhados", async () => {
+  const P = await import("../src/http/permissoes.js");
+  const chaves = Object.keys(P.PERMISSOES.dono).sort();
+  for (const papel of ["dono", "admin", "recepcao", "barbeiro"]) assert.deepEqual(Object.keys(P.PERMISSOES[papel]).sort(), chaves, papel);
+  assert.deepEqual(P.papeisCom("administrar"), ["dono", "admin"]);
+  assert.deepEqual(P.papeisCom("equipe"), ["dono", "admin", "recepcao"]);
+  const barbeiro = { papel: "barbeiro", barbeiro_id: "b1" };
+  assert.equal(P.proprio(barbeiro), "b1");
+  assert.equal(P.proprio({ papel: "recepcao" }), null);
+  assert.equal(P.alcanca(barbeiro, "b2"), false);
+  assert.equal(P.alcanca({ papel: "admin" }, "b2"), true);
+  assert.equal(P.semVinculo({ papel: "barbeiro" }), true);
+  assert.equal(P.tetoDesconto(barbeiro, {}, { desconto_teto_barbeiro: 20 }), 20);
+  assert.equal(P.tetoDesconto(barbeiro, { desconto_teto_barbeiro: 35 }, { desconto_teto_barbeiro: 20 }), 35);
+  assert.equal(P.tetoDesconto({ papel: "dono" }, { desconto_teto_barbeiro: 35 }), null);
+  assert.deepEqual(P.camposBarbeiro(barbeiro, { bio: "x", comissao_servico: 100 }), { bio: "x", cor: undefined, horario: undefined, servicos: undefined });
+  assert.equal(P.pode({ papel: "desconhecido" }, "equipe"), false, "papel desconhecido não pode nada");
+  const { readFileSync } = await import("node:fs");
+  const api = readFileSync(new URL("../src/http/api.js", import.meta.url), "utf8");
+  assert.doesNotMatch(api, /papel === "barbeiro"|ehBarbeiro|\["dono", "admin"\]/);
+});
+
+test("V-45: cancelar venda de mês fechado não apaga a comissão; lança estorno no mês atual", async () => {
+  const s = await subir({ cfg: { sessaoDias: 365 } });
+  try {
+    const { dono, corte, bruno } = await barbeariaPronta(s);
+    s.agora.ir("2026-11-28T10:00:00-03:00");
+    const v = (await dono.post("/api/vendas", { barbeiro_id: bruno.id, itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix" })).dados;
+    const nov = async () => (await dono.get("/api/comissoes?de=2026-11-01&ate=2026-11-30")).dados.por_barbeiro.find((x) => x.nome === "Bruno");
+    assert.equal((await nov()).total_centavos, 2500);
+    // Mesmo mês: cancela e apaga, como antes
+    const v2 = (await dono.post("/api/vendas", { barbeiro_id: bruno.id, itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix" })).dados;
+    await dono.post(`/api/vendas/${v2.id}/cancelar`);
+    assert.equal((await nov()).total_centavos, 2500);
+    // Em dezembro, cancelar a venda de novembro
+    s.agora.ir("2026-12-03T10:00:00-03:00");
+    assert.equal((await dono.post(`/api/vendas/${v.id}/cancelar`)).status, 200);
+    const n = await nov();
+    assert.equal(n.total_centavos, 2500, "novembro (fechado) fica como estava");
+    assert.equal(n.atendimentos, 1);
+    const dez = (await dono.get("/api/comissoes?de=2026-12-01&ate=2026-12-31")).dados;
+    const db = dez.por_barbeiro.find((x) => x.nome === "Bruno");
+    assert.equal(db.total_centavos, -2500, "estorno lançado em dezembro");
+    assert.equal(db.atendimentos, -1);
+    assert.match(dez.linhas[0].descricao, /^Estorno/);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("V-45: relatório fecha com desconto (serviços + produtos = faturamento)", async () => {
+  const s = await subir();
+  try {
+    const { dono, corte } = await barbeariaPronta(s);
+    const p = (await dono.post("/api/produtos", { nome: "Pomada", preco_centavos: 3000, estoque: 5 })).dados;
+    await dono.post("/api/vendas", { itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }, { tipo: "produto", id: p.id, quantidade: 1 }], forma: "pix", desconto_centavos: 1001 });
+    await dono.post("/api/vendas", { itens: [{ tipo: "servico", id: corte.id, quantidade: 1 }], forma: "pix" });
+    const r = (await dono.get("/api/relatorios?de=2026-11-10&ate=2026-11-10")).dados;
+    assert.equal(r.faturamento_centavos, 8000 - 1001 + 5000);
+    assert.equal(r.servicos_centavos + r.produtos_centavos, r.faturamento_centavos);
+    assert.equal(r.descontos_centavos, 1001);
+  } finally {
+    s.fechar();
+  }
+});

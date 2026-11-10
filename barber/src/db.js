@@ -198,6 +198,9 @@ function migrar(db, agora) {
   // V-21: o estoque não baixa para negativo. Só barra a baixa: estoque já negativo de banco antigo pode ser corrigido subindo
   db.exec("CREATE TRIGGER IF NOT EXISTS produtos_estoque_nao_negativo BEFORE UPDATE OF estoque ON produtos WHEN NEW.estoque < 0 AND NEW.estoque < OLD.estoque BEGIN SELECT RAISE(ABORT, 'estoque negativo'); END");
 
+  // V-45: estorno de comissão de mês fechado (aponta para a comissão original)
+  coluna("comissoes", "estorno_de", "TEXT");
+
   // V-06: cancelamento que falhou no Asaas (a rotina tenta de novo)
   coluna("assinaturas", "cancelamento_pendente", "INTEGER NOT NULL DEFAULT 0");
 

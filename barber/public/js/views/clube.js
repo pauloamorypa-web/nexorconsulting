@@ -76,9 +76,17 @@ export async function render(area, ctx) {
     ok.onclick = () => acao(ok, async () => (await post(`/assinaturas/${a.id}/pagamento`, { forma: forma.value, chave }), aviso("Pagamento registrado."), j.fechar(), carregar()));
   }
 
-  async function carregar() {
+  // A rota devolve 200 assinaturas por página; "Ver mais assinantes" busca a próxima e soma na lista
+  const POR_PAGINA = 200;
+  let pagina = 1;
+  let assinantes = [];
+  async function carregar({ mais = false } = {}) {
     [servicos, planos] = await Promise.all([get("/servicos"), get("/planos")]);
-    const a = await get("/assinaturas");
+    pagina = mais === true ? pagina + 1 : 1;
+    const a = await get(`/assinaturas?pagina=${pagina}`);
+    const novos = a.lista;
+    assinantes = mais === true ? [...assinantes, ...novos] : novos;
+    a.lista = assinantes;
     const nomeServ = (id) => servicos.find((s) => s.id === id)?.nome ?? "serviço";
     limpar(
       corpo,
@@ -124,6 +132,7 @@ export async function render(area, ctx) {
           a.lista,
           { vazio: "Ninguém assinou ainda." },
         ),
+        novos.length === POR_PAGINA ? h("button", { class: "btn btn-fantasma btn-bloco", onclick: (e) => acao(e.currentTarget, () => carregar({ mais: true })) }, `Ver mais assinantes (mostrando ${a.lista.length})`) : null,
       ),
     );
   }

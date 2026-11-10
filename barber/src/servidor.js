@@ -15,6 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { config as configPadrao } from "./config.js";
 import { abrirBanco } from "./db.js";
 import { criarApi } from "./http/api.js";
+import { semVinculo } from "./http/permissoes.js";
 import { ErroHttp, json, lerCookies, lerCorpo } from "./http/roteador.js";
 import { criarCentralNexor, recusaPorTeste } from "./nexor/central.js";
 import { CATALOGO as CATALOGO_NEXOR, LIMITES_TESTE, bloqueadoPorAjuste, recusaPorLicenca } from "./nexor/politica.js";
@@ -148,7 +149,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       if (!usuario) return json(res, 401, { erro: "Faça login para continuar." });
       if (rota.opcoes.papeis && !rota.opcoes.papeis.includes(usuario.papel)) return json(res, 403, { erro: "Seu perfil não tem permissão para esta ação." });
       // Barbeiro sem barbeiro vinculado: sem o recorte, veria a agenda, as vendas e as comissões de todos (V-14)
-      if (usuario.papel === "barbeiro" && !usuario.barbeiro_id && !["/api/eu", "/api/eu/senha"].includes(url.pathname)) return json(res, 403, { erro: "Este acesso de barbeiro não está ligado a nenhum barbeiro. Peça ao dono para corrigir em Configurações > Acessos." });
+      if (semVinculo(usuario) && !["/api/eu", "/api/eu/senha"].includes(url.pathname)) return json(res, 403, { erro: "Este acesso de barbeiro não está ligado a nenhum barbeiro. Peça ao dono para corrigir em Configurações > Acessos." });
       barbearia = nucleo.barbearia();
     }
     if (rota.opcoes.nexor && !usuario?.nexor) return json(res, 403, { erro: "Área exclusiva do Suporte Nexor." });

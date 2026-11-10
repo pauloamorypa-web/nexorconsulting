@@ -90,9 +90,17 @@ export async function render(area, ctx) {
     });
   }
 
-  async function carregar() {
-    const q = new URLSearchParams({ ...(busca ? { busca } : {}), ...(filtro ? { filtro } : {}) });
-    const r = await get(`/clientes?${q}`);
+  // A rota devolve 300 por página; "Ver mais clientes" busca a próxima e soma na lista
+  const POR_PAGINA = 300;
+  let pagina = 1;
+  let todos = [];
+  const verMais = (e) => acao(e.currentTarget, () => carregar({ mais: true }));
+  async function carregar({ mais = false } = {}) {
+    pagina = mais === true ? pagina + 1 : 1;
+    const q = new URLSearchParams({ ...(busca ? { busca } : {}), ...(filtro ? { filtro } : {}), pagina: String(pagina) });
+    const pag = await get(`/clientes?${q}`);
+    todos = mais === true ? [...todos, ...pag] : pag;
+    const r = todos;
     limpar(
       lista,
       tabela(
@@ -105,6 +113,7 @@ export async function render(area, ctx) {
         r,
         { aoClicar: ficha, vazio: busca || filtro ? "Nenhum cliente com esse filtro." : "Nenhum cliente ainda. Divulgue o link do app." },
       ),
+      pag.length === POR_PAGINA ? h("button", { class: "btn btn-fantasma btn-bloco", onclick: verMais }, `Ver mais clientes (mostrando ${r.length})`) : null,
     );
   }
   await carregar();

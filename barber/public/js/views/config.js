@@ -51,6 +51,8 @@ export async function render(area, ctx) {
         { nome: "regras.lembrete_horas", rotulo: "Lembrete pelo WhatsApp (horas antes)", tipo: "numero", min: 0, passo: 0.5 },
         { nome: "regras.lista_espera", rotulo: "Lista de espera relâmpago ligada", tipo: "check" },
         { nome: "regras.comissao_clube", rotulo: "Comissão em serviço do clube", tipo: "select", opcoes: [["preco", "Sobre o preço do serviço"], ["nenhuma", "Sem comissão"]] },
+        { nome: "regras.desconto_teto_barbeiro", rotulo: "Desconto máximo que o barbeiro pode dar (%)", tipo: "numero", min: 0, max: 100 },
+        { nome: "regras.desconto_teto_recepcao", rotulo: "Desconto máximo da recepção (%, vazio = sem teto)", tipo: "numero", min: 0, max: 100, enviarNulo: true },
         { titulo: "Retorno no tempo certo" },
         { nome: "retorno.ativo", rotulo: "Avisar o cliente quando passar do ciclo de corte dele", tipo: "check", largura: 2 },
         { nome: "retorno.margem_dias", rotulo: "Dias de folga antes de avisar", tipo: "numero", min: 0, max: 30 },

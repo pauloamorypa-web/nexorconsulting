@@ -13,9 +13,11 @@ import { normalizarFone } from "../servicos/canais.js";
 import { criarRoteador, falha } from "./roteador.js";
 import { COOKIE_PAINEL, centavos, clientePublico, configCanais, configPublica, cor, dia, email, hora, id, nascimento, op, pct, senha, t, tabelaHorario, usuarioPublico, validar } from "./validacao.js";
 import { rotasApp } from "./app.js";
+import { alcanca, camposBarbeiro, papeisCom, permissoes, pode, proprio, tetoDesconto as tetoDoPerfil } from "./permissoes.js";
 
-const ADM = { papeis: ["dono", "admin"] };
-const EQUIPE = { papeis: ["dono", "admin", "recepcao"] };
+// Quem acessa cada grupo de rotas vem da tabela de permissões (permissoes.js)
+const ADM = { papeis: papeisCom("administrar") };
+const EQUIPE = { papeis: papeisCom("equipe") };
 const SERVICOS_PADRAO = [
   { nome: "Corte", duracao_min: 40, preco_centavos: 5000, categoria: "Cabelo" },
   { nome: "Barba", duracao_min: 30, preco_centavos: 4000, categoria: "Barba" },
@@ -76,11 +78,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   }
   const auditar = (ctx, acao, detalhe) => repo.auditar(ctx.barbearia.id, ctx.usuario?.nome ?? "sistema", acao, detalhe);
   const exigir = (tabela, idReg, rotulo) => repo.obter(tabela, idReg) ?? falha(404, `${rotulo} não encontrado.`);
-  const ehBarbeiro = (u) => u.papel === "barbeiro";
+
   /** Barbeiro só mexe no que é dele */
   function doBarbeiro(ctx, barbeiroId) {
-    if (ehBarbeiro(ctx.usuario) && barbeiroId !== ctx.usuario.barbeiro_id) falha(403, "Você só pode mexer na sua própria agenda.");
+    if (!alcanca(ctx.usuario, barbeiroId)) falha(403, "Você só pode mexer na sua própria agenda.");
   }
+
+  /** Teto de desconto (%) do perfil, pela configuração; null = sem teto (V-32) */
+  const tetoDesconto = (u, b) => tetoDoPerfil(u, b.config.regras ?? {}, REGRAS_PADRAO);
 
   /* ---------- Conta e login ---------- */
   const exigeCodigo = () => repo.contarUsuarios() === 0 && Boolean(cfg.codigoInstalacao);
@@ -162,7 +167,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.get("/api/hoje", ({ query, usuario, barbearia }) => {
     const d = validar(dia, query.get("dia") || hoje());
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : query.get("barbeiro") || null;
+    const filtro = proprio(usuario) ?? (query.get("barbeiro") || null);
     const barbeiros = repo.lista("barbeiros", "WHERE ativo = 1 ORDER BY ordem, nome").filter((x) => !filtro || x.id === filtro);
     const ags = listarDia(d, filtro);
     const ini = paraMs(d);
@@ -177,7 +182,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
         agendados: ags.filter((a) => OCUPA.has(a.status)).length,
         concluidos: ags.filter((a) => a.status === "concluido").length,
         faltas: ags.filter((a) => a.status === "faltou").length,
-        faturado_centavos: ehBarbeiro(usuario) ? null : vendas.reduce((s, v) => s + v.total_centavos, 0),
+        faturado_centavos: !pode(usuario, "ver_faturamento") ? null : vendas.reduce((s, v) => s + v.total_centavos, 0),
         ocupacao: Math.round(ocupacao(barbearia, barbeiros, d, ags) * 100),
       },
     };
@@ -188,7 +193,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const ate = validar(dia, query.get("ate") || somarDias(de, 6));
     if (ate < de) falha(400, "A data final precisa ser depois da inicial.");
     if (diasEntre(de, ate) > 31) falha(400, "Consulte no máximo 31 dias de uma vez.");
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : query.get("barbeiro") || null;
+    const filtro = proprio(usuario) ?? (query.get("barbeiro") || null);
     return nucleo.detalharVarios(repo.lista("agendamentos", `WHERE inicio >= ? AND inicio < ? ${filtro ? "AND barbeiro_id = ?" : ""} ORDER BY inicio`, paraMs(de), paraMs(ate) + 86400_000, ...(filtro ? [filtro] : [])));
   });
 
@@ -209,7 +214,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.post("/api/agendamentos", async (ctx) => {
     const d = validar(z.object({ cliente_id: id.optional(), cliente: z.object({ nome: t(120), fone: foneOpc }).optional(), servico_id: id, barbeiro_id: id.optional().nullable(), dia, hora, encaixe: z.boolean().optional(), observacao: op(500) }), await ctx.corpo());
-    const barbeiroId = ehBarbeiro(ctx.usuario) ? ctx.usuario.barbeiro_id : (d.barbeiro_id ?? null);
+    const barbeiroId = proprio(ctx.usuario) ?? d.barbeiro_id ?? null;
     const cliente = clienteDoCorpo(ctx, d);
     return nucleo.agendar({ cliente, servicoId: d.servico_id, barbeiroId, dia: d.dia, hora: d.hora, origem: "painel", autor: ctx.usuario.nome, encaixe: Boolean(d.encaixe), observacao: d.observacao ?? null });
   });
@@ -234,19 +239,19 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const d = validar(z.object({ produtos: ESQ_PRODUTOS.optional(), desconto_centavos: centavos.optional(), forma: z.enum(Object.keys(FORMAS)) }), await ctx.corpo());
     const a = exigir("agendamentos", ctx.params.id, "Agendamento");
     doBarbeiro(ctx, a.barbeiro_id);
-    const r2 = nucleo.concluir(a, { produtos: d.produtos ?? [], descontoCentavos: d.desconto_centavos ?? 0, forma: d.forma, autor: ctx.usuario.nome });
+    const r2 = nucleo.concluir(a, { produtos: d.produtos ?? [], descontoCentavos: d.desconto_centavos ?? 0, forma: d.forma, autor: ctx.usuario.nome, descontoMaxPct: tetoDesconto(ctx.usuario, ctx.barbearia) });
     return r2;
   });
 
   /* ---------- Folgas e bloqueios ---------- */
   r.get("/api/bloqueios", ({ query, usuario }) => {
     const de = validar(dia, query.get("de") || hoje());
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : null;
+    const filtro = proprio(usuario);
     return repo.lista("bloqueios", `WHERE fim > ? ${filtro ? "AND (barbeiro_id = ? OR barbeiro_id IS NULL)" : ""} ORDER BY inicio LIMIT 200`, paraMs(de), ...(filtro ? [filtro] : []));
   });
   r.post("/api/bloqueios", async (ctx) => {
     const d = validar(z.object({ barbeiro_id: id.optional().nullable(), dia, de: hora, ate: hora, ate_dia: dia.optional(), motivo: op(120) }), await ctx.corpo());
-    const barbeiroId = ehBarbeiro(ctx.usuario) ? ctx.usuario.barbeiro_id : (d.barbeiro_id ?? null);
+    const barbeiroId = proprio(ctx.usuario) ?? d.barbeiro_id ?? null;
     const inicio = paraMs(d.dia, d.de);
     const fim = paraMs(d.ate_dia ?? d.dia, d.ate);
     if (fim <= inicio) falha(400, "O fim precisa ser depois do início.");
@@ -257,14 +262,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
   r.delete("/api/bloqueios/:id", (ctx) => {
     const b = exigir("bloqueios", ctx.params.id, "Bloqueio");
-    if (ehBarbeiro(ctx.usuario) && b.barbeiro_id !== ctx.usuario.barbeiro_id) falha(403, "Você só pode remover as suas folgas.");
+    if (!alcanca(ctx.usuario, b.barbeiro_id)) falha(403, "Você só pode remover as suas folgas.");
     repo.remover("bloqueios", b.id);
     auditar(ctx, "bloqueio_removido", { bloqueio: b.id });
     return { ok: true };
   });
 
   /* ---------- Clientes ---------- */
-  r.get("/api/clientes", ({ query }) => {
+  r.get("/api/clientes", ({ query, usuario }) => {
     // Filtra e pagina no banco: a busca alcança a base inteira, não só os 2.000 primeiros por nome
     const busca = String(query.get("busca") ?? "").trim().toLowerCase().slice(0, 60);
     const filtro = query.get("filtro");
@@ -273,6 +278,8 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     const h = hoje();
     const cond = ["c.ativo = 1"];
     const p = [];
+    // Barbeiro vê só os próprios clientes: com horário ou atendimento com ele (V-32)
+    if (proprio(usuario)) (cond.push("c.id IN (SELECT cliente_id FROM agendamentos WHERE barbeiro_id = ?)"), p.push(proprio(usuario)));
     if (busca) {
       const dig = busca.replace(/\D/g, "");
       const como = `%${busca.replace(/[\\%_]/g, (x) => `\\${x}`)}%`;
@@ -297,10 +304,12 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
   r.get("/api/clientes/:id", (ctx) => {
     const c = exigir("clientes", ctx.params.id, "Cliente");
-    const historico = nucleo.detalharVarios(repo.lista("agendamentos", "WHERE cliente_id = ? ORDER BY inicio DESC LIMIT 30", c.id));
+    const meu = proprio(ctx.usuario);
+    if (meu && !repo.um("SELECT 1 FROM agendamentos WHERE cliente_id = ? AND barbeiro_id = ?", c.id, meu)) falha(404, "Cliente não encontrado.");
+    const historico = nucleo.detalharVarios(repo.lista("agendamentos", `WHERE cliente_id = ? ${meu ? "AND barbeiro_id = ?" : ""} ORDER BY inicio DESC LIMIT 30`, c.id, ...(meu ? [meu] : [])));
     const a = nucleo.assinaturaAtual(c.id);
-    const vendas = ehBarbeiro(ctx.usuario) ? [] : repo.lista("vendas", "WHERE cliente_id = ? AND status = 'paga' ORDER BY criado_em DESC LIMIT 20", c.id);
-    return { cliente: clientePublico(c), historico, assinatura: a ? { ...a, plano: repo.obter("planos", a.plano_id) } : null, vendas, gasto_total_centavos: ehBarbeiro(ctx.usuario) ? null : repo.um("SELECT COALESCE(SUM(total_centavos),0) n FROM vendas WHERE cliente_id = ? AND status = 'paga'", c.id).n };
+    const vendas = !pode(ctx.usuario, "ver_faturamento") ? [] : repo.lista("vendas", "WHERE cliente_id = ? AND status = 'paga' ORDER BY criado_em DESC LIMIT 20", c.id);
+    return { cliente: clientePublico(c), historico, assinatura: a ? { ...a, plano: repo.obter("planos", a.plano_id) } : null, vendas, gasto_total_centavos: !pode(ctx.usuario, "ver_faturamento") ? null : repo.um("SELECT COALESCE(SUM(total_centavos),0) n FROM vendas WHERE cliente_id = ? AND status = 'paga'", c.id).n };
   });
   r.put("/api/clientes/:id", EQUIPE, async (ctx) => {
     const c = exigir("clientes", ctx.params.id, "Cliente");
@@ -325,7 +334,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     return repo.atualizar("servicos", s.id, d);
   });
 
-  r.get("/api/barbeiros", ({ usuario }) => repo.lista("barbeiros", "ORDER BY ativo DESC, ordem, nome").map((b) => (ehBarbeiro(usuario) && b.id !== usuario.barbeiro_id ? { id: b.id, nome: b.nome, cor: b.cor, ativo: b.ativo } : b)));
+  r.get("/api/barbeiros", ({ usuario }) => repo.lista("barbeiros", "ORDER BY ativo DESC, ordem, nome").map((b) => (!alcanca(usuario, b.id) ? { id: b.id, nome: b.nome, cor: b.cor, ativo: b.ativo } : b)));
   const ESQ_BARBEIRO = z.object({ nome: t(60), bio: op(300), cor: cor.optional(), comissao_servico: pct.optional(), comissao_produto: pct.optional(), horario: tabelaHorario.nullable().optional(), servicos: z.array(id).max(100).optional(), ordem: z.number().int().min(0).max(999).optional(), ativo: z.boolean().optional() });
   r.post("/api/barbeiros", ADM, async (ctx) => {
     const d = validar(ESQ_BARBEIRO, await ctx.corpo());
@@ -337,7 +346,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     doBarbeiro(ctx, b.id);
     let d = validar(ESQ_BARBEIRO.partial(), await ctx.corpo());
     // O barbeiro ajusta a própria apresentação, horário e serviços; comissão e status são do dono
-    if (!["dono", "admin"].includes(ctx.usuario.papel)) d = { bio: d.bio, cor: d.cor, horario: d.horario, servicos: d.servicos };
+    d = camposBarbeiro(ctx.usuario, d);
     auditar(ctx, "barbeiro_alterado", { barbeiro: b.id });
     return repo.atualizar("barbeiros", b.id, d);
   });
@@ -412,14 +421,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   r.get("/api/vendas", ({ query, usuario }) => {
     const d = validar(dia, query.get("dia") || hoje());
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : null;
+    const filtro = proprio(usuario);
     return repo.lista("vendas", `WHERE dia = ? ${filtro ? "AND barbeiro_id = ?" : ""} ORDER BY criado_em DESC`, d, ...(filtro ? [filtro] : [])).map((v) => ({ ...v, cliente: v.cliente_id ? repo.obter("clientes", v.cliente_id)?.nome : null, barbeiro: v.barbeiro_id ? repo.obter("barbeiros", v.barbeiro_id)?.nome : null }));
   });
   r.post("/api/vendas", async (ctx) => {
     const d = validar(z.object({ cliente_id: id.optional().nullable(), barbeiro_id: id.optional().nullable(), itens: z.array(z.object({ tipo: z.enum(["servico", "produto"]), id, quantidade: z.number().int().min(1).max(100) })).min(1).max(40), desconto_centavos: centavos.optional(), forma: z.enum(Object.keys(FORMAS)) }), await ctx.corpo());
-    const barbeiroId = ehBarbeiro(ctx.usuario) ? ctx.usuario.barbeiro_id : (d.barbeiro_id ?? null);
+    const barbeiroId = proprio(ctx.usuario) ?? d.barbeiro_id ?? null;
     if (d.cliente_id) exigir("clientes", d.cliente_id, "Cliente");
-    return nucleo.vender({ clienteId: d.cliente_id ?? null, barbeiroId, itens: d.itens, descontoCentavos: d.desconto_centavos ?? 0, forma: d.forma, autor: ctx.usuario.nome });
+    return nucleo.vender({ clienteId: d.cliente_id ?? null, barbeiroId, itens: d.itens, descontoCentavos: d.desconto_centavos ?? 0, forma: d.forma, autor: ctx.usuario.nome, descontoMaxPct: tetoDesconto(ctx.usuario, ctx.barbearia) });
   });
   r.post("/api/vendas/:id/cancelar", EQUIPE, (ctx) => nucleo.cancelarVenda(exigir("vendas", ctx.params.id, "Venda"), { autor: ctx.usuario.nome }));
 
@@ -437,14 +446,14 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.get("/api/comissoes", ({ query, usuario }) => {
     const de = validar(dia, query.get("de") || `${hoje().slice(0, 7)}-01`);
     const ate = validar(dia, query.get("ate") || hoje());
-    const filtro = ehBarbeiro(usuario) ? usuario.barbeiro_id : query.get("barbeiro") || null;
+    const filtro = proprio(usuario) ?? (query.get("barbeiro") || null);
     const linhas = repo.lista("comissoes", `WHERE dia >= ? AND dia <= ? ${filtro ? "AND barbeiro_id = ?" : ""} ORDER BY criado_em DESC`, de, ate, ...(filtro ? [filtro] : []));
     const por = {};
     for (const l of linhas) {
       const p = (por[l.barbeiro_id] ??= { barbeiro_id: l.barbeiro_id, nome: repo.obter("barbeiros", l.barbeiro_id)?.nome, servicos_centavos: 0, produtos_centavos: 0, total_centavos: 0, atendimentos: 0 });
       p[l.tipo === "servico" ? "servicos_centavos" : "produtos_centavos"] += l.valor_centavos;
       p.total_centavos += l.valor_centavos;
-      if (l.tipo === "servico") p.atendimentos++;
+      if (l.tipo === "servico") p.atendimentos += l.estorno_de ? -1 : 1;
     }
     return { de, ate, por_barbeiro: Object.values(por), linhas: linhas.slice(0, 300) };
   });
@@ -487,8 +496,19 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
       de,
       ate,
       faturamento_centavos: vendas.reduce((s, v) => s + v.total_centavos, 0),
-      servicos_centavos: soma(itens.filter((i) => i.tipo === "servico")),
-      produtos_centavos: soma(itens.filter((i) => i.tipo === "produto")),
+      // O desconto manual é dividido entre serviços e produtos na proporção de cada venda: a soma fecha com o faturamento
+      ...(() => {
+        let servicos = 0;
+        let produtos = 0;
+        for (const v of vendas) {
+          const sv = soma(v.itens.filter((i) => i.tipo === "servico"));
+          const parteServ = v.subtotal_centavos ? Math.round((sv * v.total_centavos) / v.subtotal_centavos) : 0;
+          servicos += parteServ;
+          produtos += v.total_centavos - parteServ;
+        }
+        return { servicos_centavos: servicos, produtos_centavos: produtos };
+      })(),
+      descontos_centavos: vendas.reduce((s, v) => s + v.desconto_centavos, 0),
       clube_recebido_centavos: repo.um("SELECT COALESCE(SUM(valor_centavos),0) n FROM cobrancas WHERE status = 'paga' AND pago_em >= ? AND pago_em < ?", paraMs(de), paraMs(ate) + 86400_000).n,
       atendimentos: concluidos,
       ticket_medio_centavos: vendas.length ? Math.round(vendas.reduce((s, v) => s + v.total_centavos, 0) / vendas.length) : 0,
@@ -506,7 +526,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   });
 
   /* ---------- Configurações da barbearia ---------- */
-  const regras = z.object({ passo_min: z.number().int().refine((v) => [5, 10, 15, 20, 30, 60].includes(v), "5, 10, 15, 20, 30 ou 60"), antecedencia_min: z.number().int().min(0).max(2880), janela_dias: z.number().int().min(1).max(120), cancelamento_horas: z.number().min(0).max(72), lembrete_horas: z.number().min(0).max(48), tolerancia_min: z.number().int().min(0).max(120), lista_espera: z.boolean(), comissao_clube: z.enum(["preco", "nenhuma"]) }).partial();
+  const regras = z.object({ passo_min: z.number().int().refine((v) => [5, 10, 15, 20, 30, 60].includes(v), "5, 10, 15, 20, 30 ou 60"), antecedencia_min: z.number().int().min(0).max(2880), janela_dias: z.number().int().min(1).max(120), cancelamento_horas: z.number().min(0).max(72), lembrete_horas: z.number().min(0).max(48), tolerancia_min: z.number().int().min(0).max(120), lista_espera: z.boolean(), comissao_clube: z.enum(["preco", "nenhuma"]), desconto_teto_barbeiro: pct.nullable(), desconto_teto_recepcao: pct.nullable() }).partial();
   r.get("/api/config", ({ barbearia }) => ({ nome: barbearia.nome, config: configPublica(barbearia.config) }));
   r.put("/api/config", ADM, async (ctx) => {
     const d = validar(
@@ -599,7 +619,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
   r.post("/api/usuarios", ADM, async (ctx) => {
     const d = validar(z.object({ nome: t(120), email, senha, papel: z.enum(["admin", "recepcao", "barbeiro"]), barbeiro_id: id.optional().nullable() }), await ctx.corpo());
     if (repo.um("SELECT 1 FROM usuarios WHERE email = ?", d.email)) falha(409, "Já existe um acesso com este e-mail.");
-    if (d.papel === "barbeiro" && !d.barbeiro_id) falha(400, "Escolha qual barbeiro é este acesso.");
+    if (permissoes({ papel: d.papel }).so_o_proprio && !d.barbeiro_id) falha(400, "Escolha qual barbeiro é este acesso.");
     if (d.barbeiro_id) exigir("barbeiros", d.barbeiro_id, "Barbeiro");
     const { senha: s, ...resto } = d;
     auditar(ctx, "usuario_criado", { email: d.email, papel: d.papel });
@@ -615,7 +635,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
     if (u.id === ctx.usuario.id && (d.papel || d.ativo === false)) falha(400, "Você não pode mudar o próprio perfil.");
     const papelFinal = d.papel ?? u.papel;
     const vinculo = d.barbeiro_id !== undefined ? d.barbeiro_id : u.barbeiro_id;
-    if (papelFinal === "barbeiro" && !vinculo) falha(400, "Escolha qual barbeiro é este acesso.");
+    if (permissoes({ papel: papelFinal }).so_o_proprio && !vinculo) falha(400, "Escolha qual barbeiro é este acesso.");
     if (d.barbeiro_id) exigir("barbeiros", d.barbeiro_id, "Barbeiro");
     if (u.id === ctx.usuario.id && d.senha) falha(400, "Para trocar a sua senha, use \"Trocar minha senha\" (pede a senha atual).");
     const novoHash = d.senha ? await hashSenha(d.senha) : undefined;
