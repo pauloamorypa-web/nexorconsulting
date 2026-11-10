@@ -8,17 +8,23 @@ const numero = (v, padrao) => {
 };
 
 export function lerConfig(env = process.env) {
+  // Modo Demonstração (DEMO=1): dados fictícios, só em 127.0.0.1, nenhuma chamada externa (ver src/demo/ e DEMO.md)
+  const demo = env.DEMO === "1" || env.DEMO === "true";
   return {
+    demo,
+    demoPublico: demo && env.DEMO_PUBLICO === "1",
+    demoReset: demo && env.DEMO_RESET === "1",
+    demoIaReal: demo && env.DEMO_IA_REAL === "1" && Boolean(env.ANTHROPIC_API_KEY),
     porta: numero(env.PORT, 8791),
     urlPublica: (env.PUBLIC_URL ?? "").replace(/\/$/, ""),
     producao: env.NODE_ENV === "production",
-    pastaDados: env.DATA_DIR ?? "./data",
+    pastaDados: env.DATA_DIR ?? (demo ? "./data-demo" : "./data"),
     // Quantos proxies reversos (Render, nginx, balanceador) ficam na frente do servidor. O IP do cliente é lido do
     // X-Forwarded-For contando a partir da direita (o que o proxy acrescentou), nunca do começo (que o cliente forja).
     // 0 = sem proxy: usa o IP da conexão e ignora o cabeçalho.
     proxies: Math.max(0, Math.floor(numero(env.TRUST_PROXY, 1))),
     // Criptografa o certificado digital e outros segredos no banco. Obrigatória em produção.
-    chaveMestra: env.MASTER_KEY ?? "",
+    chaveMestra: env.MASTER_KEY || (demo ? "nexor-rh-demonstracao-chave-fixa-nao-use-em-producao" : ""),
     permitirCadastro: env.ALLOW_SIGNUP === "true",
     // Código pedido na criação da primeira conta (instalação nova). Em produção, se ficar vazio,
     // o servidor gera um e grava em DATA_DIR/codigo-instalacao.txt: só quem tem acesso ao servidor cria o administrador.
