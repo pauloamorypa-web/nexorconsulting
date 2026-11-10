@@ -32,6 +32,10 @@ body.modo-demo .login, body.modo-demo .carregando-tela { min-height: calc(100vh 
   .demo-faixa .demo-texto-longo, .demo-faixa .demo-papeis span { display: none; }
   .demo-faixa a, .demo-faixa button { padding: 3px 8px; }
 }
-@media (max-width: 480px) {
-  .demo-faixa .demo-papeis a:not([aria-current="true"]) { display: none; }
+@media (max-width: 600px) {
+  .demo-faixa .demo-papeis, .demo-faixa .demo-rotulo { display: none; }
+  .demo-faixa .demo-simular { margin-left: auto; }
+  .demo-faixa strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+  .demo-faixa.demo-sem-sessao .demo-papeis { display: flex; }
+  .demo-faixa.demo-sem-sessao .demo-texto-longo, .demo-faixa.demo-sem-sessao strong + * { display: none; }
 }

@@ -29,17 +29,19 @@ async function iniciar() {
   const painel = criarPainel(info);
   const faixa = el(
     "div",
-    { class: "demo-faixa", role: "region", "aria-label": "Modo demonstração" },
+    { class: info.papel_atual ? "demo-faixa" : "demo-faixa demo-sem-sessao", role: "region", "aria-label": "Modo demonstração" },
     el("span", { class: "demo-ponto", "aria-hidden": "true" }),
     el("strong", {}, "Demonstração · dados fictícios"),
     el("span", { class: "demo-texto-longo" }, `Clínica Sorriso · IA ${info.ia}`),
     papeis,
-    info.papel_atual ? el("button", { type: "button", class: "demo-simular", onclick: () => painel.alternar() }, "💬 Cliente chegando") : null,
+    info.papel_atual ? el("button", { type: "button", class: "demo-simular", title: "Simular um cliente mandando mensagem", onclick: () => painel.alternar() }, "💬", el("span", { class: "demo-rotulo" }, " Cliente chegando")) : null,
     el(
       "button",
       {
         type: "button",
         class: "demo-reiniciar",
+        title: "Reiniciar demonstração",
+        "aria-label": "Reiniciar demonstração",
         onclick: async (e) => {
           if (!confirm("Reiniciar a demonstração? Todos os dados voltam ao estado original.")) return;
           e.currentTarget.disabled = true;
@@ -47,7 +49,8 @@ async function iniciar() {
           location.href = info.papel_atual ? `/demo/entrar?papel=${info.papel_atual}` : "/";
         },
       },
-      "Reiniciar demonstração",
+      "↺",
+      el("span", { class: "demo-rotulo" }, " Reiniciar demonstração"),
     ),
   );
   document.body.prepend(faixa);

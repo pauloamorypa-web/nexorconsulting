@@ -13,7 +13,7 @@ export const EMPRESA_ID = "demo-clinica-sorriso";
 export const CANAL = { id: "demo-canal", phone_number_id: "100000000000001", waba_id: "200000000000001", numero: "+55 34 99999-0000" };
 
 export const USUARIOS = [
-  { id: "demo-u-dono", papel: "dono", nome: "Dra. Helena Prado", email: "helena@clinicasorriso.demo", descricao: "Dona da clínica: painel completo, métricas, campanhas, IA e configurações." },
+  { id: "demo-u-dono", papel: "dono", nome: "Helena Prado", email: "helena@clinicasorriso.demo", descricao: "Dona da clínica: painel completo, métricas, campanhas, IA e configurações." },
   { id: "demo-u-admin", papel: "admin", nome: "Rafael Couto", email: "rafael@clinicasorriso.demo", descricao: "Gerente: tudo do dono, exceto remover o número do WhatsApp." },
   { id: "demo-u-atendente", papel: "atendente", nome: "Juliana Reis", email: "juliana@clinicasorriso.demo", descricao: "Recepção: fila de atendimento, conversas, agenda e contatos." },
   { id: "demo-u-atendente2", papel: "atendente", nome: "Bruno Matos", email: "bruno@clinicasorriso.demo", descricao: null },
@@ -182,7 +182,7 @@ export function semear(repo, { agora = Date.now(), hashSenha, cofre } = {}) {
     const valores = { proposta: 65000, negociacao: 320000, cliente: 18000, qualificado: 18000 };
     for (const c of contatos) c.valor_estimado = valores[c.etapa] ?? null;
     // Alguns contatos novos nesta semana
-    for (const i of [44, 51, 57, 60, 62]) contatos[i].criado_em = agora - (1 + (i % 5)) * DIA;
+    for (const [k, i] of [59, 60, 61, 62, 63].entries()) contatos[i].criado_em = agora - (k + 1) * DIA + 3600_000;
     const contatoDe = (i) => contatos[i];
     // Entram já (as conversas dependem deles); os campos finais são gravados no fim do roteiro
     for (const c of contatos) ins("contatos", c);
@@ -198,7 +198,7 @@ export function semear(repo, { agora = Date.now(), hashSenha, cofre } = {}) {
       for (let k = 0; k < n; k++) {
         const cen = CENARIOS[pesos[Math.floor(rand() * pesos.length)]];
         const [intencao, sentimento, resolvidaPor, tagsCen, falas] = cen;
-        const ci = 11 + Math.floor(rand() * (contatos.length - 11));
+        const ci = 11 + Math.floor(rand() * (contatos.length - 16)); // os 5 últimos são contatos novos desta semana
         const contato = contatoDe(ci);
         const hora = ds === 6 ? 8 + rand() * 4 : 7.5 + rand() * 13;
         let t = instanteDe(diaIso, "00:00") + Math.floor(hora * 60) * MIN;
