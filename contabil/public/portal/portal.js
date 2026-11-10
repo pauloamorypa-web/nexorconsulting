@@ -87,7 +87,36 @@ async function inicio() {
     boas ? h("section", { class: "cartao" }, h("p", { style: { margin: 0 } }, boas)) : null,
     h("section", { class: "cartao" }, h("h2", {}, pend.length ? `Faltam ${pend.length} documento(s)` : "Tudo enviado ✅"), pend.length ? pend.map((p) => h("div", { class: "p-item" }, h("div", {}, h("strong", {}, p.nome), h("small", {}, mesBR(p.competencia), " · até ", prazo(p.prazo))), enviarPara(p))) : h("p", { class: "suave" }, "Nada pendente por enquanto. Quando o escritório precisar de algo, aparece aqui.")),
     guias.length ? h("section", { class: "cartao" }, h("h2", {}, "Guias para pagar"), guias.map(itemGuia)) : null,
+    estado.eu.demo ? await honorariosDemo() : null,
   ];
+}
+
+/** Só no Modo Demonstração: honorários do escritório com Pix pelo Asaas simulado (baixa automática) */
+let esperaPagamento = null;
+async function honorariosDemo() {
+  const lista = await get("/demo/portal/honorarios");
+  const abertos = lista.filter((x) => x.status !== "pago");
+  clearTimeout(esperaPagamento);
+  if (abertos.some((x) => x.asaas_id)) esperaPagamento = setTimeout(() => location.hash.startsWith("#/inicio") && rota(), 3000);
+  const ultimoPago = lista.find((x) => x.status === "pago");
+  return h(
+    "section",
+    { class: "cartao" },
+    h("h2", {}, "Honorários do escritório"),
+    abertos.length
+      ? abertos.map((x) =>
+          h(
+            "div",
+            { class: "p-item" },
+            h("div", {}, h("strong", {}, `Honorários ${mesBR(x.competencia)}`), h("small", {}, `vence ${dataBR(x.vencimento)} · ${reais(x.valor_centavos)}`)),
+            sit(x.situacao === "atrasado" ? "erro" : "disponivel", x.situacao === "atrasado" ? "Atrasado" : "A vencer"),
+            x.asaas_id
+              ? h("a", { class: "btn btn-primario btn-pequeno", href: x.link, target: "_blank", rel: "noopener" }, "Abrir Pix")
+              : h("button", { class: "btn btn-primario btn-pequeno", onclick: (e) => acao(e.currentTarget, async () => (await post(`/demo/portal/honorarios/${x.id}/pagar`), aviso("Pix gerado! Abra o link para pagar."), rota())) }, "Pagar com Pix"),
+          ),
+        )
+      : h("p", { class: "suave" }, ultimoPago ? `Tudo em dia ✅ Último pagamento: ${mesBR(ultimoPago.competencia)} (${ultimoPago.forma ?? "pago"}).` : "Tudo em dia ✅"),
+  );
 }
 
 function itemGuia(g) {

@@ -115,6 +115,7 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
       licenca: { situacao: lic.situacao, mensagem: lic.mensagem, link: lic.link, contato: lic.contato, vinculado: central.configurada },
       ocultos: repo.ocultos(empresa.id),
       ia: Boolean(nucleo.temIA),
+      ...(cfg.demo ? { demo: true } : {}),
       catalogos: { departamentos: DEPARTAMENTOS, regimes: REGIMES, tipos: TIPOS_DOCUMENTO },
       contagem: {
         documentos: n("SELECT COUNT(*) n FROM documentos WHERE empresa_id = ? AND status = 'novo'", empresa.id),

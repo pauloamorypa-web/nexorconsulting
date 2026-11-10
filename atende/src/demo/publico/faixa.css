@@ -1,0 +1,37 @@
+/* Faixa do Modo Demonstração (só é carregada com DEMO=1) */
+:root { --demo-h: 40px; }
+body.modo-demo { padding-top: var(--demo-h); }
+body.modo-demo .casca { height: calc(100vh - var(--demo-h)); height: calc(100dvh - var(--demo-h)); }
+body.modo-demo .login, body.modo-demo .carregando-tela { min-height: calc(100vh - var(--demo-h)); height: auto; }
+@media (max-width: 900px) { body.modo-demo .lateral { top: var(--demo-h); } }
+
+.demo-faixa { position: fixed; top: 0; left: 0; right: 0; height: var(--demo-h); z-index: 1000; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: linear-gradient(90deg, #7c3aed, #0066ff); color: #fff; font: 500 13px/1.2 var(--fonte, system-ui, sans-serif); box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25); }
+.demo-faixa strong { font-weight: 700; white-space: nowrap; }
+.demo-faixa .demo-ponto { width: 8px; height: 8px; border-radius: 50%; background: #fde047; box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.35); flex: none; }
+.demo-faixa .demo-papeis { display: flex; gap: 4px; align-items: center; margin-left: auto; }
+.demo-faixa .demo-papeis span { opacity: 0.85; white-space: nowrap; }
+.demo-faixa a, .demo-faixa button { font: inherit; color: #fff; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px; padding: 4px 10px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.demo-faixa a:hover, .demo-faixa button:hover { background: rgba(255, 255, 255, 0.28); }
+.demo-faixa a[aria-current="true"] { background: #fff; color: #4c1d95; border-color: #fff; }
+.demo-faixa .demo-reiniciar { background: rgba(15, 23, 42, 0.25); }
+
+.demo-painel { position: fixed; top: calc(var(--demo-h) + 8px); right: 12px; z-index: 1001; width: min(380px, calc(100vw - 24px)); background: var(--superficie, #fff); color: var(--texto, #0f172a); border: 1px solid var(--linha, #e3e8f1); border-radius: 14px; box-shadow: 0 12px 40px rgba(15, 23, 42, 0.25); padding: 14px; display: grid; gap: 10px; font: 14px/1.4 var(--fonte, system-ui, sans-serif); }
+.demo-painel[hidden] { display: none; }
+.demo-painel h3 { margin: 0; font-size: 15px; }
+.demo-painel p { margin: 0; color: var(--texto-2, #475569); font-size: 12.5px; }
+.demo-painel .demo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.demo-painel .demo-chips button { font: inherit; font-size: 12.5px; border: 1px solid var(--linha-forte, #cbd5e1); background: var(--fundo, #f4f6fb); color: inherit; border-radius: 999px; padding: 4px 10px; cursor: pointer; text-align: left; }
+.demo-painel .demo-chips.demo-opcoes button { border-color: #25d366; background: rgba(37, 211, 102, 0.12); }
+.demo-painel .demo-linha { display: flex; gap: 6px; }
+.demo-painel input { flex: 1; min-width: 0; font: inherit; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--linha-forte, #cbd5e1); background: var(--superficie, #fff); color: inherit; }
+.demo-painel .demo-enviar { font: inherit; border: 0; border-radius: 9px; padding: 7px 12px; background: #0066ff; color: #fff; cursor: pointer; }
+.demo-painel small { color: var(--texto-3, #64748b); font-size: 11.5px; }
+
+@media (max-width: 760px) {
+  .demo-faixa { gap: 6px; padding: 0 8px; font-size: 12px; }
+  .demo-faixa .demo-texto-longo, .demo-faixa .demo-papeis span { display: none; }
+  .demo-faixa a, .demo-faixa button { padding: 3px 8px; }
+}
+@media (max-width: 480px) {
+  .demo-faixa .demo-papeis a:not([aria-current="true"]) { display: none; }
+}

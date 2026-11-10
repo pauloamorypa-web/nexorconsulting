@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning src/servidor.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch src/servidor.js",
+    "demo": "node src/demo/iniciar.js",
     "test": "node --disable-warning=ExperimentalWarning --test"
   },
   "dependencies": {

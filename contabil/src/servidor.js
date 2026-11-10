@@ -3,7 +3,8 @@
    /portal/              → portal do cliente do escritório
    /api/*                → API (painel e /api/portal/*)
    /webhook/whatsapp     → WhatsApp do escritório (API oficial da Meta)
-   /health               → verificação de saúde */
+   /health               → verificação de saúde
+   /demo/*, /api/demo*   → Modo Demonstração, só com DEMO=1 (ver DEMO.md e src/demo/) */
 
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
@@ -21,6 +22,7 @@ import { hojeBR } from "./regras/datas.js";
 import { criarCofre, iguais } from "./seguranca.js";
 import { assinaturaMetaValida } from "./servicos/canais.js";
 import { criarNucleo } from "./servicos/nucleo.js";
+import { centralDemo, criarDemo, pecasDemo, prepararDemo } from "./demo/index.js";
 
 const PUBLICO = resolve(fileURLToPath(new URL("../public", import.meta.url)));
 const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".ico": "image/x-icon", ".json": "application/json", ".webmanifest": "application/manifest+json" };
@@ -87,14 +89,27 @@ function saudeDaInstalacao(repo, cfg, agora) {
 }
 
 /** Monta todas as peças. Os testes trocam o relógio, o cliente da IA e o fetch (Meta, e-mail, Central). */
+/** Com DEMO=1 o servidor só escuta no próprio computador (a menos que DEMO_PUBLICO=1) */
+export const enderecoEscuta = (cfg) => (cfg.demo && !cfg.demoPublico ? "127.0.0.1" : undefined);
+
 export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () => Date.now(), clienteIA, fetchFn = fetch } = {}) {
   conferirEnderecoPublico(cfg);
+  // Modo Demonstração: rede travada, provedores simulados e IA roteirizada antes de qualquer outra peça
+  const preparo = cfg.demo ? prepararDemo(cfg) : null;
+  const pecas = cfg.demo ? pecasDemo({ cfg, agora, clienteIA }) : null;
+  if (pecas) {
+    fetchFn = pecas.simulador.fetchFn;
+    clienteIA = pecas.clienteIA;
+  }
   const cofre = criarCofre(cfg);
   const repo = abrirBanco(caminhoBanco ?? join(cfg.pastaDados, "contabil.db"), agora);
   if (cfg.producao && !cfg.codigoInstalacao && repo.contarUsuarios() === 0) cfg = { ...cfg, codigoInstalacao: codigoDeInstalacao(cfg.pastaDados) };
-  const central = criarCentralNexor({ cfg, agora, fetchFn, produto: "contabil", versao: cfg.sistema.versao, saude: () => saudeDaInstalacao(repo, cfg, agora) });
+  const central = pecas ? centralDemo() : criarCentralNexor({ cfg, agora, fetchFn, produto: "contabil", versao: cfg.sistema.versao, saude: () => saudeDaInstalacao(repo, cfg, agora) });
   const nucleo = criarNucleo({ repo, cofre, cfg, clienteIA, fetchFn, agora, licenca: () => central.estado() });
   const api = criarApi({ repo, nucleo, cofre, cfg, central, agora });
+  const demo = pecas ? criarDemo({ repo, nucleo, cofre, cfg, api, agora, pecas }) : null;
+  const pronto = demo ? demo.semearSeVazio() : Promise.resolve(false);
+  pronto.catch((e) => console.error("[demo] semeadura:", e));
   const escritorio = () => {
     const e = repo.um("SELECT id FROM empresas ORDER BY criada_em LIMIT 1");
     return e ? nucleo.empresa(e.id) : null;
@@ -123,8 +138,18 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     }
     if (!info?.isFile()) return false;
     const html = alvo.endsWith(".html");
+    let conteudo = await readFile(alvo);
+    // Em demonstração, a faixa "Demonstração · dados fictícios" entra em todas as telas
+    // (e as fontes do Google saem: a demonstração roda sem internet, com as fontes do sistema)
+    if (html && demo)
+      conteudo = Buffer.from(
+        conteudo
+          .toString("utf8")
+          .replace(/^[ \t]*<link[^>]+fonts\.(googleapis|gstatic)\.com[^>]*>\n/gm, "")
+          .replace("</body>", '  <script type="module" src="/js/demo.js"></script>\n  </body>'),
+      );
     res.writeHead(200, { "Content-Type": TIPOS[extname(alvo)] ?? "application/octet-stream", "Cache-Control": html ? "no-cache" : "public, max-age=3600", "Permissions-Policy": "camera=(self), geolocation=(), microphone=()" });
-    res.end(await readFile(alvo));
+    res.end(conteudo);
     return true;
   }
 
@@ -217,6 +242,10 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     if (cfg.producao) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     try {
       if (url.pathname === "/health") return json(res, 200, { ok: true });
+      if (demo) {
+        await pronto;
+        if (await demo.tratar(req, res, url)) return;
+      } else if (url.pathname === "/demo" || url.pathname.startsWith("/demo/")) return json(res, 404, { erro: "não encontrado" });
       if (url.pathname === "/webhook/whatsapp") return await webhook(req, res, url);
       if (url.pathname.startsWith("/api/")) return await tratarApi(req, res, url);
       if (req.method === "GET" && (await arquivoEstatico(url.pathname, res))) return;
@@ -232,6 +261,9 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   return {
     servidor,
     repo,
+    demo,
+    /** Semeadura da demonstração concluída (resolve na hora fora do modo demo) */
+    pronto,
     nucleo,
     central,
     cfg,
@@ -247,7 +279,19 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       relogio = setInterval(rodar, 15 * 60_000);
       relogio.unref();
     },
+    /** Escuta na porta (em demo, só em 127.0.0.1) */
+    escutar(porta = cfg.porta) {
+      const host = enderecoEscuta(cfg);
+      return new Promise((ok, falhou) => {
+        servidor.once("error", falhou);
+        const pronto = () => (servidor.off("error", falhou), ok(servidor.address()));
+        if (host) servidor.listen(porta, host, pronto);
+        else servidor.listen(porta, pronto);
+      });
+    },
     fechar() {
+      demo?.simulador.limpar();
+      preparo?.destravar();
       clearInterval(relogio);
       central.parar();
       servidor.close();
@@ -258,14 +302,25 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const { default: Anthropic } = await import("@anthropic-ai/sdk");
-  const clienteIA = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN ? new Anthropic() : null;
+  const temChave = Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+  // Em demonstração só usa a IA de verdade com DEMO_IA_REAL=1 (senão, a roteirizada)
+  const clienteIA = temChave && (!configPadrao.demo || configPadrao.demoIaReal) ? new Anthropic() : null;
   const app = montarAplicacao({ clienteIA });
   app.iniciar();
-  app.servidor.listen(app.cfg.porta, () => {
+  await app.pronto;
+  await app.escutar();
+  if (app.cfg.demo) {
+    const base = `http://127.0.0.1:${app.cfg.porta}`;
+    console.log(`\nNexor Contábil · MODO DEMONSTRAÇÃO (dados fictícios, sem internet) em ${base}`);
+    console.log(`  IA: ${app.cfg.demoIaReal ? "real (Anthropic)" : "roteirizada"} · dados em ${app.cfg.pastaDados}${app.cfg.demoPublico ? " · ATENÇÃO: DEMO_PUBLICO=1 (escuta em todas as interfaces)" : ""}`);
+    console.log(`  Contador dono:  ${base}/demo/entrar?papel=dono`);
+    console.log(`  Colaborador:    ${base}/demo/entrar?papel=colaborador`);
+    console.log(`  Cliente portal: ${base}/demo/entrar?papel=cliente\n`);
+  } else {
     console.log(`Nexor Contábil no ar em http://localhost:${app.cfg.porta}   ·   portal do cliente: /portal/`);
     if (!clienteIA) console.warn("ANTHROPIC_API_KEY vazia: a leitura de documentos e o assistente do WhatsApp ficam desligados.");
     if (!app.cfg.urlPublica) console.warn("PUBLIC_URL vazia: só aceitável em teste local.");
-  });
+  }
   const desligar = () => (app.fechar(), process.exit(0));
   process.on("SIGINT", desligar);
   process.on("SIGTERM", desligar);
