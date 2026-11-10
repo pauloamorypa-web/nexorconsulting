@@ -37,3 +37,6 @@ Cinco agentes especialistas que testam aplicações, sites, sistemas e APIs como
 
 ## Relatórios
 - [Novembro de 2026 · Nexor Barber](relatorios/2026-11-barber/)
+
+## Como produto
+- [Avaliação: vender a Banca como serviço do Nexor Shield](AVALIACAO-PRODUTO.md)
