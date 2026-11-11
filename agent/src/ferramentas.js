@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { UMBRELLA } from "./campanhas.js";
 import { config } from "./config.js";
-import { pontuarLead } from "./qualificacao.js";
+import { perguntasRespondidas, pontuarLead } from "./qualificacao.js";
 
 const OFFSET_BRASILIA = "-03:00";
 const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
@@ -385,7 +385,9 @@ export function criarExecutor({ armazenamento, notificar, agora, conversao = asy
       if (qualificacoes.size > 20_000) qualificacoes.delete(qualificacoes.keys().next().value);
       await armazenamento.salvarLead(lead);
 
-      if ((lead.telefone || lead.email) && !DESCARTES_SEM_EVENTO.has(r.descarte)) emitir("Lead", lead, q);
+      // "Lead" sai uma vez, quando já há contato e alguma qualificação (não só o "oi" da primeira mensagem)
+      const qualificado = r.classe !== "frio" || perguntasRespondidas(sinais, campanha) > 0;
+      if ((lead.telefone || lead.email) && qualificado && !DESCARTES_SEM_EVENTO.has(r.descarte)) emitir("Lead", lead, q);
       if (r.classe === "quente" && !anterior.eventos.has("LeadQualificado")) {
         emitir("LeadQualificado", lead, q);
         await notificar(
@@ -394,7 +396,7 @@ export function criarExecutor({ armazenamento, notificar, agora, conversao = asy
             `Contato: ${lead.telefone ?? lead.email ?? "não informado"} · canal: ${ctx.canal}\n` +
             `Por quê: ${r.motivos.join("; ")}\n` +
             `Próximo passo: chamar agora. A Blue está oferecendo horários de demonstração.`,
-          { tipo: "lead_quente", ...lead },
+          { ...lead, tipo: "lead_quente", tipo_registro: lead.tipo },
         );
       }
       return {

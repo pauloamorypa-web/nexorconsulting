@@ -339,7 +339,7 @@ export const CAMPANHAS = [
     nome: "Nexor atende qualquer cenário (diagnóstico)",
     produto: "Diagnóstico Nexor (indica o produto certo)",
     umbrella: true,
-    utm: ["qualquer-cenario", "nexor-atende-qualquer-cenario", "institucional", "marca", "nexor-geral", "diagnostico"],
+    utm: ["qualquer-cenario", "nexor-qualquer-cenario", "nexor-atende-qualquer-cenario", "institucional", "marca", "nexor-geral", "diagnostico"],
     paginas: [],
     gatilhos: { forte: /qualquer cenario/, fraco: /diagnostico gratuito|sistema sob medida|automatizar a empresa/ },
     publico:

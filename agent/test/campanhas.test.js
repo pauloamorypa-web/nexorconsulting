@@ -53,6 +53,9 @@ test("detecção pela utm_campaign, utm_content e utm_source, nessa ordem", () =
   const porConteudo = detectarCampanha({ origem: { utm_campaign: "black-friday", utm_content: "video-elo-instaladores" } });
   assert.deepEqual([porConteudo.id, porConteudo.via], ["elo", "utm_content"]);
   assert.equal(detectarCampanha({ origem: { utm_source: "service-desk-parceiro" } }).via, "utm_source");
+  // utm_campaign usadas nos links de marketing/campanhas/ (utm_content d0/d2/d7 é o passo da cadência, não a campanha)
+  const plano = { agente: "agente", atende: "atende-ia", barber: "barber", contabil: "contabil", elo: "elo", "nexor-qualquer-cenario": "qualquer-cenario", "rh-ponto": "rh-ponto", ti: "ti" };
+  for (const [utm, id] of Object.entries(plano)) assert.equal(detectarCampanha({ origem: { utm_source: "meta", utm_campaign: utm, utm_content: "d2" } }).id, id, utm);
   // "ti" só vale como palavra inteira
   assert.equal(detectarCampanha({ origem: { utm_campaign: "retirada" } }).id, "qualquer-cenario");
 });
@@ -171,7 +174,7 @@ async function executorDeTeste() {
 test("qualificar_lead soma os sinais, avisa a equipe uma vez quando fica quente e manda Lead, LeadQualificado e AgendouDemo", async () => {
   const { avisos, conversoes, executar, ctx, armazenamento } = await executorDeTeste();
   const passo = async (input) => JSON.parse((await executar({ id: "q", name: "qualificar_lead", input }, ctx)).content);
-  const r1 = await passo({ segmento: "barbearia", porte_numero: 4, porte_unidade: "barbeiros" });
+  const r1 = await passo({ segmento: "barbearia", porte_numero: 4, porte_unidade: "barbeiros", cargo: "dono" });
   assert.equal(r1.classe, "morno");
   assert.equal(avisos.length, 0, "morno não avisa a equipe na hora");
   assert.deepEqual(conversoes.map((c) => c.evento), ["Lead"]);

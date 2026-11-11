@@ -10,7 +10,7 @@
       "Usamos o Omie e um CRM. Queria pedir pelo WhatsApp o faturamento do dia e aprovar pedidos sem abrir o sistema",
       "Tenho verba pra isso e quero começar já. Pode me chamar no (34) 90000-0501"
     ],
-    "esperado": { "campanha": "agente", "classe": "quente", "nota_min": 70, "nota_max": 100, "motivos": ["decisor: socio"] }
+    "esperado": { "campanha": "agente", "classe": "quente", "nota_min": 70, "nota_max": 100, "motivos": ["decisor: sócio"] }
   },
   {
     "id": "agente-2-academia",
