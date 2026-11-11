@@ -41,7 +41,10 @@ test("Demo: semeia, trava a rede, escuta só em loopback, entra por papel, simul
     assert.equal(info.sistema, "elo");
     assert.deepEqual(info.papeis.map((p) => p.papel), ["fornecedor_dono", "fornecedor_comercial", "fornecedor_financeiro", "fornecedor2_dono", "instalador_dono", "instalador_tecnico", "nexor", "cliente"]);
     assert.ok(!JSON.stringify(info).includes("@"), "não expõe e-mails");
-    assert.equal((await fetch(`${url}/demo`)).status, 200);
+    const paginaDemo = await fetch(`${url}/demo`);
+    assert.equal(paginaDemo.status, 200);
+    const links = [...(await paginaDemo.text()).matchAll(/href="([^"]+)"/g)].map((m) => m[1].replaceAll("&amp;", "&"));
+    assert.deepEqual(links, info.papeis.map((p) => `/demo/entrar?papel=${p.papel}`), "cada papel da página /demo leva ao /demo/entrar dele");
 
     const entrar = async (papel) => {
       const r = await fetch(`${url}/demo/entrar?papel=${papel}`, { redirect: "manual" });

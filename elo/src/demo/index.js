@@ -37,7 +37,7 @@ export function restaurar(repo, pasta) {
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 function paginaPapeis() {
-  const itens = PAPEIS.map((p) => `<a class="p" href="${esc(p.url)}"><strong>${esc(p.nome)}</strong><span>${esc(p.descricao)}</span></a>`).join("");
+  const itens = PAPEIS.map((p) => `<a class="p" href="${esc(`/demo/entrar?papel=${encodeURIComponent(p.papel)}`)}"><strong>${esc(p.nome)}</strong><span>${esc(p.descricao)}</span></a>`).join("");
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Demonstração · Nexor Elo</title>
 <style>body{margin:0;font-family:system-ui,sans-serif;background:#0b1220;color:#e5e7eb;display:grid;place-items:center;min-height:100vh;padding:16px}main{max-width:560px;width:100%}h1{font-size:22px;margin:0 0 4px}p{color:#94a3b8;margin:0 0 18px}.p{display:block;background:#111a2e;border:1px solid #1f2a44;border-radius:14px;padding:14px 16px;margin:0 0 10px;color:inherit;text-decoration:none}.p:hover{border-color:#3b8dff}.p strong{display:block;font-size:16px}.p span{color:#94a3b8;font-size:14px}small{color:#64748b}</style></head>
 <body><main><h1>Nexor Elo · Demonstração</h1><p>Distribuidora Vigia Forte e Instala Seg Araguari (fictícias). Escolha como quer entrar:</p>${itens}<small>Dados fictícios. Nada sai deste computador: Receita, Asaas, notas, WhatsApp e e-mail são simulados.</small></main></body></html>`;
