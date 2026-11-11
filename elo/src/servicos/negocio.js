@@ -193,6 +193,9 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
     if (p.status !== "rascunho") falha(409, "Só uma proposta em rascunho pode ser enviada.");
     if (!p.cliente_id) falha(400, "Escolha o cliente da proposta.");
     if (p.validade_dia && p.validade_dia < hoje()) falha(400, "A validade da proposta já passou.");
+    // Todo serviço precisa do custo (mão de obra, deslocamento): sem ele, a margem e o lucro da proposta ficam errados
+    const semCusto = itensDa(p.id).filter((i) => i.tipo === "servico" && !(i.custo_unit_centavos > 0));
+    if (semCusto.length) falha(400, `Informe o seu custo ${semCusto.length === 1 ? "no serviço" : "nos serviços"} ${semCusto.map((i) => `"${i.descricao}"`).join(", ")} (mão de obra, deslocamento, material de consumo) para calcular a margem.`, { codigo: "custo_servico" });
     const token = gerarToken(24);
     const r = repo.transacao(() => {
       const atual = repo.obter("propostas", p.id);

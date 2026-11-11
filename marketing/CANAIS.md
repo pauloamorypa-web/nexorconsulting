@@ -226,7 +226,7 @@ O Elo liga **fornecedores** (lojas e distribuidores de segurança eletrônica, m
 
 ### WhatsApp: fornecedor
 **Primeira mensagem (depois de uma indicação ou visita):**
-> Oi, [nome]! Aqui é o [seu nome], da Nexor, de Uberlândia. Estamos lançando no Triângulo o Nexor Elo: o instalador monta o orçamento no celular com o **estoque da sua loja**, o cliente final paga no link e o dinheiro **já cai dividido**: a parte dos produtos vai direto para vocês, sem prazo e sem calote. E vocês não veem o cliente do instalador, o que faz ele trazer as vendas para cá. Posso passar aí 20 minutos esta semana para mostrar no celular?
+> Oi, [nome]! Aqui é o [seu nome], da Nexor, aqui do Triângulo. Estamos lançando no Triângulo o Nexor Elo: o instalador monta o orçamento no celular com o **estoque da sua loja**, o cliente final paga no link e o dinheiro **já cai dividido**: a parte dos produtos vai direto para vocês, sem prazo e sem calote. E vocês não veem o cliente do instalador, o que faz ele trazer as vendas para cá. Posso passar aí 20 minutos esta semana para mostrar no celular?
 
 **Primeira mensagem (sem contato anterior):**
 > Bom dia! Sou o [seu nome], da Nexor Consulting. Uma pergunta rápida: dos orçamentos que os instaladores levam do balcão de vocês, quantos voltam como pedido? Criamos um sistema em que o orçamento já sai com o estoque da loja e o pagamento do cliente final já chega dividido entre a loja e o instalador. Se fizer sentido, te mostro em 20 minutos. Se não for o momento, é só me falar.

@@ -34,7 +34,7 @@ test("Fluxo: cadastro, vínculo, catálogo, proposta, reserva, aceite, pagamento
       { tipo: "fornecedor", produto_id: pb["CAM-1"].id, quantidade: 2, preco_unit_centavos: 25000 },
       { tipo: "fornecedor", produto_id: pa["DVR-4"].id, quantidade: 1, preco_unit_centavos: 50000 },
       { tipo: "fornecedor", produto_id: pa["HD-1"].id, quantidade: 1, preco_unit_centavos: 40000 },
-      { tipo: "servico", descricao: "Instalação e configuração", quantidade: 1, preco_unit_centavos: 50000 },
+      { tipo: "servico", descricao: "Instalação e configuração", quantidade: 1, custo_unit_centavos: 20000, preco_unit_centavos: 50000 },
     ];
     const { p, r, token } = await enviarProposta(c, itens, { desconto_centavos: 10000, garantia: "12 meses" });
     assert.equal(r.status, 200, JSON.stringify(r.dados));

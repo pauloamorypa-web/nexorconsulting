@@ -186,3 +186,21 @@ test("Banca P-06: renovar a reserva respeita o bloqueio por título vencido", as
     s.fechar();
   }
 });
+
+test("Regra: proposta com serviço sem custo não é enviada (a margem precisa do custo da mão de obra)", async () => {
+  const s = await subir();
+  try {
+    const c = await cenario(s);
+    const servico = (custo) => ({ tipo: "servico", descricao: "Instalação", quantidade: 1, ...(custo !== undefined ? { custo_unit_centavos: custo } : {}), preco_unit_centavos: 40000 });
+    const sem = await enviarProposta(c, [...itemA(c), servico()]);
+    assert.equal(sem.r.status, 400);
+    assert.equal(sem.r.dados.codigo, "custo_servico");
+    assert.match(sem.r.dados.erro, /Informe o seu custo no serviço "Instalação"/);
+    const zero = await enviarProposta(c, [...itemA(c), servico(0)]);
+    assert.equal(zero.r.status, 400, "custo zero também não vale");
+    const com = await enviarProposta(c, [...itemA(c), servico(15000)]);
+    assert.equal(com.r.status, 200);
+  } finally {
+    s.fechar();
+  }
+});

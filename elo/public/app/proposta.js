@@ -151,7 +151,9 @@ export async function telaEditor(el, id) {
         i._desc = d;
         return d;
       })());
-    const custoProprio = i.tipo !== "fornecedor" ? campo(i.tipo === "servico" ? "Seu custo (opcional)" : "Custo unitário", entradaDinheiro(i.custo_unit_centavos || 0, (c) => ((i.custo_unit_centavos = c), atualizarLinha(), mudou()))) : null;
+    // Serviço sem custo fica marcado: o envio é recusado até o instalador informar (mão de obra, deslocamento)
+    const faltaCusto = i.tipo === "servico" ? h("small", { class: "falta-custo", role: "status", hidden: i.custo_unit_centavos > 0 }, "Informe quanto este serviço custa para você.") : null;
+    const custoProprio = i.tipo !== "fornecedor" ? campo(i.tipo === "servico" ? "Seu custo (obrigatório)" : "Custo unitário", entradaDinheiro(i.custo_unit_centavos || 0, (c) => ((i.custo_unit_centavos = c), faltaCusto && (faltaCusto.hidden = c > 0), atualizarLinha(), mudou())), faltaCusto) : null;
     atualizarLinha();
     return h(
       "div",
@@ -271,7 +273,7 @@ export async function telaEditor(el, id) {
           "div",
           { class: "cartao destaque", style: { boxShadow: "none" } },
           h("div", { class: "linha" }, h("div", { class: "kpi" }, h("small", {}, `Preço que cobre os custos com ${pct(base.margem_pct)} de lucro líquido`), h("strong", {}, reais(sug.preco_sugerido_centavos))), sug.markup ? chip(`markup ${String(sug.markup).replace(".", ",")}×`) : null),
-          h("small", { class: "fraco" }, "Aplicar põe o mesmo markup nos itens com custo; serviços sem custo informado mantêm o preço e somam por cima."),
+          h("small", { class: "fraco" }, "Aplicar põe o mesmo markup em todos os itens. Todo serviço precisa do seu custo (mão de obra, deslocamento) para a margem fechar."),
           h("button", { type: "button", class: "btn btn-cor btn-peq", onclick: aplicarSugerido }, ic("check", 16), "Aplicar margem sugerida"),
         ),
         [...new Set([...(sug.avisos ?? []), ...(real?.avisos ?? [])])].map((a) => h("div", { class: `aviso-faixa pequeno ${a.startsWith("Atenção") ? "" : "info"}` }, ic("alerta", 16), h("span", {}, a))),
@@ -280,10 +282,12 @@ export async function telaEditor(el, id) {
       limpar(saidaCalc, h("div", { class: "aviso-faixa pequeno" }, ic("alerta", 16), h("span", {}, e.message)));
     }
   }, 350);
-  /** Aplica a margem sugerida: cada item com custo recebe o mesmo markup; o custo extra (mão de obra e
-      deslocamento informados na calculadora) entra no primeiro serviço sem custo, se houver. Itens sem custo mantêm o preço. */
+  /** Aplica a margem sugerida: todos os itens têm custo (serviço sem custo não pode ser enviado), então cada um recebe o
+      mesmo markup e o total bate com o preço sugerido. Custos extras da calculadora entram no primeiro serviço. */
   function aplicarSugerido() {
     if (!ultimoSugerido || !ultimoCustos || !E.itens.length) return;
+    const semCusto = E.itens.filter((i) => i.tipo === "servico" && !(i.custo_unit_centavos > 0));
+    if (semCusto.length) return aviso(`Informe primeiro o seu custo ${semCusto.length === 1 ? "no serviço" : "nos serviços"} ${semCusto.map((i) => `"${i.descricao || "serviço"}"`).join(", ")}.`, true);
     const comCusto = E.itens.filter((i) => (i.custo_unit_centavos || 0) > 0);
     if (!comCusto.length) return aviso("Informe o custo de algum item primeiro.", true);
     const custoItens = comCusto.reduce((s, i) => s + i.custo_unit_centavos * i.quantidade, 0);
@@ -294,7 +298,7 @@ export async function telaEditor(el, id) {
     if (servico && extra > 0) servico.preco_unit_centavos += Math.ceil((extra * k) / servico.quantidade);
     desenharItens();
     mudou();
-    aviso("Margem sugerida aplicada aos itens com custo.");
+    aviso("Margem sugerida aplicada a todos os itens.");
   }
 
   /* Barra de total + salvar/enviar */
@@ -332,6 +336,8 @@ export async function telaEditor(el, id) {
   }, "btn-fantasma", "check");
   const btEnviar = botaoConfirma("Enviar", "Confirmar envio", async () => {
     if (!E.cliente_id) throw new Error("Escolha o cliente antes de enviar.");
+    const semCusto = E.itens.filter((i) => i.tipo === "servico" && !(i.custo_unit_centavos > 0));
+    if (semCusto.length) throw new Error(`Informe o seu custo ${semCusto.length === 1 ? "no serviço" : "nos serviços"} ${semCusto.map((i) => `"${i.descricao || "serviço"}"`).join(", ")} (mão de obra, deslocamento, material de consumo) para calcular a margem.`);
     if (!E.itens.length) throw new Error("Adicione pelo menos um item.");
     const p = await salvar();
     const enviada = await post(`/propostas/${p.id}/enviar`, { avisar_cliente: avisar.checked });
