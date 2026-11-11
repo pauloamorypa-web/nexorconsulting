@@ -26,6 +26,9 @@ export const config = {
 
   // Relatório de campanhas (GET /api/relatorio). Sem token, o relatório fica desligado.
   tokenRelatorio: process.env.REPORT_TOKEN ?? "",
+  // Conversão offline vinda da Nexor Central (POST /api/conversao): teste ativado e contrato fechado.
+  // Sem CONVERSAO_TOKEN, usa o REPORT_TOKEN (o mesmo valor vai em CONVERSAO_TOKEN da Central).
+  tokenConversao: process.env.CONVERSAO_TOKEN || process.env.REPORT_TOKEN || "",
 
   // API de Conversões da Meta: devolve os leads (e os leads quentes) para a Meta otimizar os anúncios
   meta: {
@@ -48,6 +51,8 @@ export const config = {
     conversaoLead: process.env.GOOGLE_CONVERSAO_LEAD ?? "Lead",
     conversaoQualificado: process.env.GOOGLE_CONVERSAO_QUALIFICADO ?? "LeadQualificado",
     conversaoDemo: process.env.GOOGLE_CONVERSAO_DEMO ?? "AgendouDemo",
+    conversaoTeste: process.env.GOOGLE_CONVERSAO_TESTE ?? "TesteAtivado",
+    conversaoContrato: process.env.GOOGLE_CONVERSAO_CONTRATO ?? "Contrato",
   },
 
   // Campanhas: a Blue pode citar o preço de entrada do produto (tabela comercial em validação)

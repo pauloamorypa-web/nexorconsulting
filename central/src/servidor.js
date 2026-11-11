@@ -17,6 +17,7 @@ import { config as configPadrao } from "./config.js";
 import { abrirBanco, normalizarCodigo, novoCodigo } from "./db.js";
 import { conferirSenha, conferirTotp, criarAssinador, criarCofre, gerarHashSenha, gerarToken, iguais, novoSegredoTotp, sha256 } from "./seguranca.js";
 import { registrarComercial } from "./comercial.js";
+import { criarConversao, mensalidadeEfetiva, valorReferencia } from "./conversao.js";
 import { TESTE } from "./planos.js";
 import { conteudoLicenca, hojeBR, mensalidadesDevidas, situacaoCliente, somarDias } from "./regras.js";
 
@@ -137,6 +138,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   const repo = abrirBanco(caminhoBanco ?? join(cfg.pastaDados, "central.db"), agora);
   if (cfg.producao && !cfg.codigoInstalacao && repo.contarUsuarios() === 0) cfg = { ...cfg, codigoInstalacao: codigoDeInstalacao(cfg.pastaDados) };
   const asaas = criarAsaas({ cfg, fetchFn });
+  const conversao = criarConversao({ repo, cfg, fetchFn, agora });
   const tentativas = new Map();
   const HASH_FALSO = gerarHashSenha(gerarToken());
 
@@ -192,7 +194,18 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
         }
       }
     }
+    // Conversões offline pendentes (Blue fora do ar na última tentativa): não segura a resposta
+    conversao.processar().catch((e) => console.error("[conversao]", e.message ?? e));
     return criadas;
+  }
+
+  /* Primeiro pagamento de um cliente em contrato: conta como contrato fechado (se a contratação já não contou) */
+  function aoPagar(fatura) {
+    const c = repo.obter("clientes", fatura.cliente_id);
+    if (!c || c.fase !== "contrato") return;
+    if (repo.um("SELECT COUNT(*) n FROM faturas WHERE cliente_id = ? AND status = 'paga'", c.id).n !== 1) return;
+    const implantacao = repo.um("SELECT COALESCE(SUM(valor_centavos), 0) s FROM faturas WHERE cliente_id = ? AND tipo = 'implantacao' AND status != 'cancelada'", c.id).s;
+    conversao.registrar(c, "contrato_fechado", { mensal_centavos: mensalidadeEfetiva(c), implantacao_centavos: implantacao });
   }
 
   /* ---------- Sessão ---------- */
@@ -386,6 +399,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     const teste = b.teste_produto ? (TESTE.produtos[b.teste_produto] ? { fase: "teste", produto: b.teste_produto, teste_ate: somarDias(hoje(), TESTE.dias - 1) } : falha(400, "Produto do teste inválido.")) : {};
     const c = repo.inserir("clientes", { ...d, ...teste, inicio_cobranca: d.inicio_cobranca ?? hoje(), regras: d.regras ?? {}, codigo: novoCodigo() });
     auditar(ctx, "cliente_criado", c.id, { razao_social: c.razao_social, teste: teste.produto ?? null });
+    if (teste.produto) conversao.registrar(c, "teste_ativado", { mensal_centavos: valorReferencia(teste.produto) });
     await rotina();
     return clientePublico(repo.obter("clientes", c.id));
   });
@@ -469,6 +483,7 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     auditar(ctx, "fatura_paga", f.cliente_id, { fatura: f.id, forma: b.forma ?? "manual" });
     const paga = repo.atualizar("faturas", f.id, { status: "paga", pago_em: data, forma: V.texto(b.forma, 40) ?? "manual" });
     comercial.comissionar(paga);
+    aoPagar(paga);
     return paga;
   });
   rota("POST", "/api/faturas/:id/reabrir", FIN, (ctx) => {
@@ -600,8 +615,11 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
     const f = (p.id && repo.um("SELECT id FROM faturas WHERE externo_id = ?", String(p.id))) || (p.externalReference && repo.um("SELECT id FROM faturas WHERE id = ?", String(p.externalReference)));
     if (!f) return { ok: true, ignorado: true };
     const fat = repo.obter("faturas", f.id);
-    if (acao === "paga") comercial.comissionar(repo.atualizar("faturas", fat.id, { status: "paga", pago_em: /^\d{4}-\d{2}-\d{2}$/.test(p.paymentDate ?? "") ? p.paymentDate : hoje(), forma: String(p.billingType ?? "asaas").toLowerCase().slice(0, 40), externo_id: fat.externo_id ?? String(p.id ?? "") }));
-    else if (acao === "aberta") repo.atualizar("faturas", fat.id, { status: "aberta", pago_em: null, forma: null }), comercial.estornarFatura(fat.id);
+    if (acao === "paga") {
+      const paga = repo.atualizar("faturas", fat.id, { status: "paga", pago_em: /^\d{4}-\d{2}-\d{2}$/.test(p.paymentDate ?? "") ? p.paymentDate : hoje(), forma: String(p.billingType ?? "asaas").toLowerCase().slice(0, 40), externo_id: fat.externo_id ?? String(p.id ?? "") });
+      comercial.comissionar(paga);
+      if (fat.status !== "paga") aoPagar(paga);
+    } else if (acao === "aberta") repo.atualizar("faturas", fat.id, { status: "aberta", pago_em: null, forma: null }), comercial.estornarFatura(fat.id);
     else if (fat.status !== "paga") repo.atualizar("faturas", fat.id, { status: "cancelada" });
     repo.auditar("Asaas", `webhook_${acao}`, fat.cliente_id, { fatura: fat.id, evento: b.event });
     return { ok: true };
@@ -641,7 +659,16 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   rota("GET", "/api/auditoria", TODOS, ({ query }) => repo.todos("SELECT a.*, COALESCE(c.nome_fantasia, c.razao_social) cliente FROM auditoria a LEFT JOIN clientes c ON c.id = a.cliente_id ORDER BY a.criado_em DESC LIMIT ?", Math.min(500, Number(query.get("limite")) || 200)).map((r) => repo.ler("auditoria", r)));
 
   /* ---------- Comercial: catálogo, teste, contratação, parceiros, comissões, portal do parceiro ---------- */
-  comercial = registrarComercial({ rota, repo, cfg, V, falha, hoje, auditar, rotina, limitar, PRODUTOS, papeis: { FIN, TODOS, DONO } });
+  comercial = registrarComercial({ rota, repo, cfg, V, falha, hoje, auditar, rotina, limitar, PRODUTOS, conversao, papeis: { FIN, TODOS, DONO } });
+
+  /* ---------- Conversão offline (fila para a Blue / Meta / Google) ---------- */
+  rota("GET", "/api/conversoes", FIN, () => ({ ativo: conversao.ativo, eventos: conversao.listar() }));
+  rota("POST", "/api/conversoes/:id/reenviar", FIN, async (ctx) => {
+    if (!conversao.reenviar(ctx.params.id)) falha(409, "Só um evento que falhou pode ser reenviado.");
+    auditar(ctx, "conversao_reenviada", null, { conversao: ctx.params.id });
+    await conversao.processar();
+    return { ok: true };
+  });
 
   /* ---------- HTTP ---------- */
   async function tratarApi(req, res, url) {
@@ -731,20 +758,26 @@ export function montarCentral({ cfg = configPadrao, caminhoBanco, agora = () => 
   });
 
   let relogio = null;
+  let relogioConversao = null;
   return {
     servidor,
     repo,
     cfg,
     assinador,
     rotina,
+    conversao,
     situacaoDe,
     iniciarRotina() {
       setTimeout(() => rotina().catch((e) => console.error("[rotina]", e)), 5_000).unref();
       relogio = setInterval(() => rotina().catch((e) => console.error("[rotina]", e)), 3600_000);
       relogio.unref();
+      // Fila de conversões: nova tentativa a cada minuto (a espera crescente fica em conversao.js)
+      relogioConversao = setInterval(() => conversao.processar().catch((e) => console.error("[conversao]", e)), 60_000);
+      relogioConversao.unref();
     },
     fechar() {
       clearInterval(relogio);
+      clearInterval(relogioConversao);
       servidor.close();
       repo.fechar();
     },

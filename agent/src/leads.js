@@ -37,12 +37,15 @@ export function rotuloOrigem(o = {}) {
   return "direto";
 }
 
+/** Registros do arquivo de leads que não são leads: contato da equipe e conversões offline vindas da Central. */
+export const NAO_SAO_LEADS = new Set(["contato_equipe", "conversao_offline"]);
+
 /** Junta os registros de um mesmo lead (a Blue grava de novo a cada qualificação): fica um por conversa,
-    com os dados mais recentes e a data do primeiro registro. Registros de contato da equipe ficam de fora. */
+    com os dados mais recentes e a data do primeiro registro. Contatos da equipe e conversões offline ficam de fora. */
 export function consolidarLeads(leads) {
   const porChave = new Map();
   for (const l of leads) {
-    if (l.tipo === "contato_equipe") continue;
+    if (NAO_SAO_LEADS.has(l.tipo)) continue;
     const chave = l.conversa ?? l.id ?? Symbol("lead"); // sem conversa nem id: registro único
     const anterior = porChave.get(chave);
     porChave.set(chave, anterior ? { ...anterior, ...l, primeiro_registro: anterior.primeiro_registro } : { ...l, primeiro_registro: l.registrado_em });

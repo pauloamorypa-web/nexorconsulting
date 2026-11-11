@@ -17,7 +17,7 @@ Textos prontos para copiar e colar, atualizados em novembro de 2026 (teste grát
 | Site | https://nexorconsultingit.com.br |
 | WhatsApp | (34) 99733-7499 · link: https://wa.me/5534997337499 |
 | E-mail | contato@nexorconsultingit.com.br |
-| Cidade | Uberlândia (MG). Atende o Triângulo Mineiro (Uberlândia, Araguari, Uberaba e região) presencialmente e o Brasil todo online |
+| Cidade | Araguari (MG). Atende o Triângulo Mineiro (Araguari, Uberlândia, Uberaba e região) presencialmente e o Brasil todo online |
 | Endereço | **[preencher]**. Se não houver atendimento no local, cadastre como empresa que atende na área do cliente e esconda o endereço |
 | Horário | **[preencher]**. Sugestão: seg. a sex. das 8h às 18h; a Blue atende 24h no site |
 | Frase da marca | IA que trabalha. Gente que cuida. |
@@ -28,7 +28,7 @@ Textos prontos para copiar e colar, atualizados em novembro de 2026 (teste grát
 
 **Categoria principal:** Empresa de software
 **Categorias adicionais:** Consultor de informática · Serviço de desenvolvimento de sites · Desenvolvedor de aplicativos · Serviço de suporte de informática
-**Área atendida:** Uberlândia, Araguari, Uberaba, Patos de Minas, Ituiutaba, Triângulo Mineiro
+**Área atendida:** Araguari, Uberlândia, Uberaba, Patos de Minas, Ituiutaba, Triângulo Mineiro
 **Atributos:** atende on-line · agendamento on-line · consulta gratuita
 
 ### Descrição (até 750 caracteres)
@@ -65,13 +65,13 @@ Cadastre um produto por imagem. Preço: deixe em branco ("Consulte"). Botão: **
 1. **Novidade · `ia-gente-cuida.png`:** "IA que trabalha, gente que cuida. A inteligência artificial faz o trabalho pesado e o nosso time implanta junto, treina a sua equipe e acompanha os resultados. Teste grátis por 30 dias." Botão: Saiba mais.
 2. **Oferta · `teste-30-dias.png`:** "30 dias grátis para testar a IA na sua empresa, sem cartão de crédito: RH e Ponto, Atende IA, Contábil, Barber e Agente." Botão: Inscrever-se, com o link do site.
 3. **Oferta · `fundadores.png`:** "Vagas de fundador abertas no Nexor Contábil, Barber e Agente: 40% de desconto por 12 meses, 50% na implantação e preço travado por 24 meses. São 10 vagas por produto." Botão: Ligar.
-4. **Novidade · `cat-barber.png`:** "Barbearias de Uberlândia e Araguari: o cliente agenda o de sempre pelo app, o assinante do clube é reconhecido e ainda reserva a pomada para pagar junto com o corte." Botão: Saiba mais.
+4. **Novidade · `cat-barber.png`:** "Barbearias de Araguari e Uberlândia: o cliente agenda o de sempre pelo app, o assinante do clube é reconhecido e ainda reserva a pomada para pagar junto com o corte." Botão: Saiba mais.
 5. **Novidade · `cat-contabil.png`:** "Contador, a régua cobra os documentos do mês por WhatsApp e e-mail e a IA lê e confere cada nota. Teste no seu escritório por 30 dias." Botão: Saiba mais.
 6. **Novidade · `cat-rh.png`:** "Ponto pelo celular com digital, rosto e QR Code, dentro da Portaria 671, com folha e eSocial no mesmo sistema." Botão: Saiba mais.
 
 ### Perguntas e respostas (publique você mesmo, com a conta da empresa)
 - **Vocês têm teste grátis?** Sim, de 30 dias. A demonstração abre na hora no site; para testar com os dados da sua empresa, o nosso time ativa o sistema com algumas funções limitadas.
-- **Atendem em Araguari?** Sim. Atendemos Uberlândia, Araguari, Uberaba e toda a região presencialmente, e o Brasil todo on-line.
+- **Atendem em Araguari?** Sim, a Nexor é de Araguari. Atendemos Araguari, Uberlândia, Uberaba e toda a região presencialmente, e o Brasil todo on-line.
 - **Os dados ficam com a Nexor?** Não. Instalamos no servidor ou na nuvem da sua empresa, e os dados ficam com você.
 - **Preciso trocar meu sistema atual?** Na maioria dos casos, não: integramos com o que você já usa. Confirmamos no diagnóstico gratuito.
 - **O ponto pelo celular é legal?** Sim. O Nexor RH segue a Portaria 671 (REP-P), com comprovante, AFD e AEJ.
@@ -108,13 +108,13 @@ Cadastre um produto por imagem. Preço: deixe em branco ("Consulte"). Botão: **
   > Os sistemas são instalados no servidor ou na nuvem da sua empresa: os dados ficam com você.
   >
   > Teste grátis por 30 dias: nexorconsultingit.com.br
-  > Uberlândia (MG), atendendo o Triângulo Mineiro e o Brasil.
+  > Araguari (MG), atendendo o Triângulo Mineiro e o Brasil.
 - **Especialidades:** Inteligência artificial · Chatbot para WhatsApp · Ponto eletrônico · Software para RH · eSocial · Software para contabilidade · Sistema para barbearia · Agentes de IA · Desenvolvimento de software · ERP · CRM · Criação de sites · Loja virtual · Automação de processos · LGPD · Service Desk · Gestão de TI
 
 ### Perfil pessoal do fundador
 - **Capa:** `pecas/linkedin-capa.png`.
 - **Título (até 220 caracteres):**
-  > Fundador da Nexor Consulting · IA que trabalha, gente que cuida · Sistemas com IA para RH e ponto, contabilidade, barbearias e atendimento no WhatsApp · Uberlândia e Araguari
+  > Fundador da Nexor Consulting · IA que trabalha, gente que cuida · Sistemas com IA para RH e ponto, contabilidade, barbearias e atendimento no WhatsApp · Araguari (MG) e todo o Brasil
 - **Sobre:**
   > Ajudo empresas do Triângulo Mineiro e do Brasil a colocar a inteligência artificial para trabalhar sem perder o atendimento humano. Na Nexor, a IA faz o trabalho pesado e o nosso time implanta junto e acompanha cada cliente. Se a sua equipe perde horas no WhatsApp, cobrando documento ou controlando ponto em papel, me chama: o teste é grátis por 30 dias.
 - **Em destaque:** o link do site, a página do programa de fundadores (`/#fundadores`) e um post com o vídeo de um produto (`assets/video/nexor-*.mp4`).
@@ -140,7 +140,7 @@ Cadastre um produto por imagem. Preço: deixe em branco ("Consulte"). Botão: **
 - **Categoria:** Serviço de TI / Software.
 - **Site:** https://nexorconsultingit.com.br. **E-mail:** contato@nexorconsultingit.com.br.
 - **Descrição (até 512 caracteres):**
-  > IA que trabalha, gente que cuida. Sistemas com inteligência artificial para a sua empresa: Nexor RH e Ponto, Atende IA no WhatsApp, Contábil, Barber e Agente, além de sites, lojas virtuais e sistemas sob medida. Implantamos junto com você e acompanhamos de perto. Teste grátis por 30 dias. Uberlândia, Araguari e todo o Brasil.
+  > IA que trabalha, gente que cuida. Sistemas com inteligência artificial para a sua empresa: Nexor RH e Ponto, Atende IA no WhatsApp, Contábil, Barber e Agente, além de sites, lojas virtuais e sistemas sob medida. Implantamos junto com você e acompanhamos de perto. Teste grátis por 30 dias. De Araguari (MG) para todo o Brasil.
 
 ### Mensagem de saudação (envia para quem chama pela primeira vez ou depois de 14 dias)
 > Oi! Aqui é a Nexor Consulting 💙 Me conta o que você quer melhorar na sua empresa (atendimento, ponto e RH, contabilidade, agenda ou outro) que eu te mostro a solução certa. Se preferir, já te mando o link do teste grátis de 30 dias.

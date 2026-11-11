@@ -86,17 +86,26 @@ P = [
   faq=[("Quais tarefas dá para automatizar?", "Tarefas repetitivas com regras claras: ler e lançar documentos, conferir dados, gerar relatórios, enviar lembretes e cobranças, triar e-mails e leads. No diagnóstico gratuito apontamos as de maior retorno."),
        ("A IA erra?", "Por isso desenhamos cada automação com conferências e aprovação humana nos pontos críticos, e com registro de tudo o que foi feito."),
        ("Como sei se vale a pena?", "Use a calculadora de retorno no nosso site: em 30 segundos você vê a economia estimada por mês e por ano.")]),
- dict(slug="sistema-de-chamados", id="chamados", nome="Nexor Service Desk", icone="i-headset",
-  title="Sistema de chamados e service desk para TI | Nexor",
-  desc="Sistema de chamados (service desk / help desk) com SLA, filas por equipe, painel da gerência e LGPD. Teste grátis por 30 dias, sem cartão.",
-  h1="Sistema de <em>chamados</em> com prazo, dono e histórico",
-  sub="Service desk para a sua TI e outros setores: abertura guiada, prioridade por impacto, SLA e painel da gerência para ninguém ficar sem resposta.",
-  dores=["Pedidos chegando por WhatsApp, e-mail e corredor, sem controle", "Chamado urgente esperando atrás de pedido simples", "Gerência sem saber quanto tempo a equipe leva para resolver"],
-  recursos=["Abertura guiada que já direciona para o setor certo", "Prioridade pelo impacto, com prazos de 4 h a 72 h", "Filas por equipe, notas internas e anexos", "Painel da gerência, modo TV e exportação em planilha", "Perfis e permissões por equipe", "LGPD e auditoria"],
-  publico=["Equipes de TI internas", "Prestadores de serviço de TI", "Facilities e manutenção", "RH e departamento pessoal", "Escolas e faculdades", "Redes com várias unidades"],
-  faq=[("Serve só para a TI?", "Não. O Nexor Service Desk pode atender TI, manutenção, RH, financeiro e qualquer setor que receba pedidos internos."),
-       ("Tem controle de SLA?", "Sim. Cada chamado recebe prioridade pelo impacto e um prazo, com alertas antes de vencer."),
-       ("Integra com o inventário de máquinas?", "Sim. Com a Nexor IT Platform, um alerta de máquina vira chamado em um clique.")]),
+ dict(slug="sistema-de-chamados", id="chamados", nome="Nexor Service Desk", icone="i-headset", lastmod="2026-11-11",
+  title="Sistema de chamados com SLA e inventário de TI | Nexor Service Desk",
+  desc="Nexor Service Desk: chamados com SLA por prioridade, triagem e histórico, painel com indicadores, painel de TV, inventário de PCs Windows e Linux e ações remotas auditadas. Roda no seu servidor ou com Docker. Teste grátis por 30 dias.",
+  h1="Sistema de <em>chamados</em> com SLA, inventário de TI e ações remotas",
+  sub="O Nexor Service Desk organiza os pedidos de suporte da empresa com prazo por prioridade, triagem e histórico, e mostra cada computador pelo agente de inventário. Roda no seu servidor, com os dados sob o seu controle.",
+  dores=["Pedidos chegando por WhatsApp, e-mail e corredor, sem controle", "Chamado urgente esperando atrás de pedido simples", "Prazo estourado porque o usuário não respondeu, e a conta cai na TI", "Ninguém sabe ao certo quantas máquinas e programas a empresa tem", "Técnico indo de mesa em mesa para reiniciar ou instalar um programa", "Gerência sem números para mostrar o trabalho da equipe"],
+  recursos=["Abertura de chamados pelo computador ou pelo celular, com anexos, categorias e prioridade", "SLA por prioridade que pausa enquanto o chamado aguarda o usuário", "Triagem completa: assumir, pedir informação, resolver e o usuário confirma o fechamento", "Reabertura, histórico de cada chamado e avisos por e-mail", "Painel com indicadores, exportação em CSV e painel de TV por link", "Inventário de PCs Windows e Linux: hardware, programas e rede", "Ações remotas com permissão do gestor: instalar o Radmin, desligar, reiniciar e instalar programas", "Permissões por perfil (gestor e técnico) e trilha de auditoria com IP"],
+  telas=[("/assets/img/servicedesk/chamados.webp", "Fila de chamados com prioridade, SLA e técnico responsável"), ("/assets/img/servicedesk/chamado.webp", "Chamado com o SLA pausado enquanto aguarda o usuário, e todo o histórico"), ("/assets/img/servicedesk/painel.webp", "Painel com indicadores do mês e exportação em CSV"), ("/assets/img/servicedesk/inventario.webp", "Inventário de PCs Windows e Linux, com ações remotas do gestor"), ("/assets/img/servicedesk/tv.webp", "Painel de TV por link com token, só com números e categorias")],
+  telas_titulo="Como é o sistema", telas_nota="Telas ilustrativas com dados fictícios de demonstração (Empresa Exemplo).",
+  blocos_titulo="Segurança, LGPD e implantação",
+  blocos=[("Segurança desde a base", ["Senhas guardadas com scrypt e sessões assinadas com HMAC", "Proteção contra CSRF, política de conteúdo (CSP) e limite de tentativas", "Comandos remotos assinados ou vinculados à máquina, com validade curta e registro na auditoria", "Trava do último gestor: a equipe nunca fica sem um administrador"]),
+          ("LGPD no dia a dia", ["Aviso de privacidade para quem usa o sistema", "Anonimização dos dados pessoais quando o titular pede", "Backups do banco de dados", "Painel de TV só com dados mínimos, sem nomes nem dados pessoais"]),
+          ("Acesso e implantação", ["Autocadastro com aprovação do gestor e \"esqueci a senha\" com senha temporária", "Solicitação de acesso com busca de CEP e CNPJ", "No servidor da sua empresa ou com Docker, com Node 22 e SQLite", "Sem depender de serviço de nuvem com mensalidade", "Rastreamento de frota (opcional)"])],
+  publico=["Empresas com 20 a 300 computadores", "Equipes de TI de 1 a 5 pessoas", "Prestadores de serviço de TI (MSP)", "Escolas e faculdades", "Clínicas e escritórios", "Indústrias e redes com várias unidades"],
+  faq=[("Serve só para a TI?", "Não. O Nexor Service Desk pode atender TI, manutenção, RH, financeiro e qualquer setor que receba pedidos internos, cada um com as suas categorias."),
+       ("Como funciona o SLA?", "Cada prioridade tem o seu prazo. Quando o técnico pede uma informação ao usuário, o relógio pausa até a resposta, para o indicador mostrar o tempo real da equipe. Resolvido, o usuário confirma e o chamado fecha; se o problema voltar, ele reabre."),
+       ("O inventário precisa de agente nas máquinas?", "Sim. Um agente leve, para Windows e Linux, envia hardware, programas e rede. Cada máquina se cadastra e só entra no inventário depois da aprovação."),
+       ("As ações remotas são seguras?", "Só quem tem permissão de gestor dispara instalar o Radmin, desligar, reiniciar ou instalar um programa. Cada comando é assinado ou vinculado à máquina, vence em pouco tempo e fica na auditoria com o usuário e o IP."),
+       ("Preciso contratar nuvem?", "Não. O sistema roda no servidor da sua empresa ou com Docker, com Node 22 e SQLite, sem depender de serviço de nuvem com mensalidade."),
+       ("O painel de TV mostra dados pessoais?", "Não. Ele abre por um link com token e mostra só números, categorias e prazos, sem nomes de usuários.")]),
  dict(slug="cofre-de-senhas", id="cofre", nome="Nexor Cofre", icone="i-shield",
   title="Cofre de senhas corporativo com auditoria | Nexor",
   desc="Cofre de senhas para empresas: criptografia, pastas por equipe, permissões, gerador de senhas fortes e histórico de acessos para a LGPD. Teste grátis.",
@@ -108,7 +117,8 @@ P = [
   faq=[("As senhas ficam seguras?", "As senhas são guardadas com criptografia e cada pessoa só vê o que a permissão dela libera. Todo acesso fica registrado."),
        ("Quando alguém sai da empresa, o que acontece?", "Você remove o acesso da pessoa e vê quais senhas ela usou, para trocar só as necessárias."),
        ("Ajuda na LGPD?", "Sim. Controle de acesso e trilha de auditoria são parte importante das medidas de segurança que a LGPD pede.")]),
- dict(slug="inventario-de-ti", id="ti", nome="Nexor IT Platform", icone="i-monitor",
+ dict(slug="inventario-de-ti", id="ti", nome="Nexor IT Platform", icone="i-monitor", lastmod="2026-11-11",
+  destaque=("Faz parte do Nexor Service Desk", "O inventário de PCs Windows e Linux e as ações remotas com permissão do gestor (instalar o Radmin, desligar, reiniciar e instalar programas) também vêm no Nexor Service Desk, junto com os chamados com SLA. Assim, a máquina e o chamado ficam no mesmo sistema.", "/solucoes/sistema-de-chamados/", "Conhecer o Nexor Service Desk"),
   title="Inventário de TI e gestão de computadores | Nexor",
   desc="Inventário automático de computadores, programas e rede, alertas, instalação remota de programas, acesso remoto e auditoria. Teste grátis por 30 dias.",
   h1="Inventário de TI e <em>gestão de computadores</em> num só painel",
@@ -118,7 +128,8 @@ P = [
   publico=["Equipes de TI internas", "Empresas de suporte de TI", "Escritórios com muitas estações", "Indústrias", "Escolas", "Empresas com várias unidades"],
   faq=[("Precisa instalar algo nas máquinas?", "Sim, um agente leve em cada computador, que envia o inventário e permite instalar programas e executar comandos com segurança."),
        ("Consigo instalar um programa em todas as máquinas de uma vez?", "Sim. Você escolhe uma máquina, um grupo ou todas e acompanha o resultado no painel."),
-       ("Por quanto tempo a auditoria fica guardada?", "O histórico de ações fica registrado por 2 anos.")]),
+       ("Por quanto tempo a auditoria fica guardada?", "O histórico de ações fica registrado por 2 anos."),
+       ("Qual a diferença para o Nexor Service Desk?", "O Nexor Service Desk já traz os chamados com SLA, o inventário de PCs e as ações remotas com permissão do gestor. A IT Platform é para quem quer a gestão de computadores mais completa: status em tempo real, descoberta de aparelhos na rede e alertas que viram chamado.")]),
  dict(slug="sistema-para-escritorio-de-contabilidade", id="contabil", nome="Nexor Contábil", icone="i-chart", dores_titulo="Isso acontece no seu escritório?",
   title="Sistema com IA para escritório de contabilidade | Nexor Contábil",
   desc="Nexor Contábil: cobra os documentos dos clientes por WhatsApp e e-mail, lê notas e extratos com IA, sugere os lançamentos para o seu sistema contábil e controla obrigações e prazos. Teste grátis.",
@@ -233,11 +244,20 @@ def pagina(p):
                    f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Testar 30 dias grátis <svg class="ic"><use href="#i-arrow"/></svg></a></div>'
                    f'<video controls playsinline preload="none" poster="{poster}" width="720" height="1280" aria-label="Vídeo de apresentação do {esc(p["nome"])}"><source src="{mp4}" type="video/mp4"></video></div></section>')
     if p.get("telas"):
-        nota_telas = "Telas ilustrativas de produto em desenvolvimento, com dados fictícios." if breve else "Telas reais do sistema, com dados de demonstração de empresas fictícias."
-        titulo_telas = "Prévia do produto" if breve else "Telas reais do sistema"
+        nota_telas = p.get("telas_nota") or ("Telas ilustrativas de produto em desenvolvimento, com dados fictícios." if breve else "Telas reais do sistema, com dados de demonstração de empresas fictícias.")
+        titulo_telas = p.get("telas_titulo") or ("Prévia do produto" if breve else "Telas reais do sistema")
         previa += (f'<section class="sp-bloco"><div class="container"><h2>{titulo_telas}</h2><div class="sp-previa">'
                   + "".join(f'<figure><img src="{src}" alt="{esc(alt)}" width="1600" height="1000" loading="lazy" decoding="async"><figcaption>{esc(alt)}</figcaption></figure>' for src, alt in p["telas"])
                   + f'</div><p class="sp-nota">{nota_telas}</p></div></section>')
+    if p.get("blocos"):
+        previa += (f'<section class="sp-bloco"><div class="container"><h2>{esc(p.get("blocos_titulo", "Mais recursos"))}</h2><div class="sp-duas">'
+                   + "".join(f'<div class="sp-card"><h2>{esc(t)}</h2><ul class="sp-check">{"".join(f"<li>{esc(i)}</li>" for i in itens)}</ul></div>' for t, itens in p["blocos"])
+                   + '</div></div></section>')
+    destaque = ""
+    if p.get("destaque"):
+        t, txt, href, botao = p["destaque"]
+        destaque = (f'<section class="sp-bloco"><div class="container"><div class="sp-card"><h2>{esc(t)}</h2><p class="sp-sub">{esc(txt)}</p>'
+                    f'<div class="sp-ctas"><a class="btn btn-lg btn-ghost" href="{href}">{esc(botao)} <svg class="ic"><use href="#i-arrow"/></svg></a></div></div></div></section>')
     outras = "".join(f'<a href="/solucoes/{o["slug"]}/"><svg class="ic"><use href="#{o["icone"]}"/></svg>{esc(o["nome"])}</a>' for o in P if o is not p)
     return f'''<!doctype html>
 <html lang="pt-BR">
@@ -314,7 +334,7 @@ def pagina(p):
     </div>
   </section>
 
-  {previa}
+  {destaque}{previa}
   <section class="sp-bloco">
     <div class="container">
       <h2>Como funciona</h2>
@@ -385,8 +405,9 @@ if __name__ == "__main__":
         open(os.path.join(d, "index.html"), "w", encoding="utf-8").write(pagina(p))
     # sitemap
     urls = [f"{DOM}/"] + [f"{DOM}/solucoes/{p['slug']}/" for p in P] + [f"{DOM}/privacidade.html"]
+    mod = {f"{DOM}/": "2026-11-11", **{f"{DOM}/solucoes/{p['slug']}/": p.get("lastmod", "2026-11-04") for p in P}}
     pri = {f"{DOM}/": "1.0", f"{DOM}/privacidade.html": "0.3"}
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "".join(
-        f'  <url><loc>{u}</loc><lastmod>2026-11-04</lastmod><priority>{pri.get(u, "0.8")}</priority></url>\n' for u in urls) + "</urlset>\n"
+        f'  <url><loc>{u}</loc><lastmod>{mod.get(u, "2026-11-04")}</lastmod><priority>{pri.get(u, "0.8")}</priority></url>\n' for u in urls) + "</urlset>\n"
     open(os.path.join(raiz, "sitemap.xml"), "w").write(sm)
     print(len(P), "páginas")

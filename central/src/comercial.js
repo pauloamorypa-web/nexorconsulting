@@ -7,8 +7,9 @@
 import { ANUAL, COMISSOES, FUNDADORES, PLANOS, PROJETOS, REGRAS_COMISSAO, SOB_DEMANDA, TESTE, TIPOS_PARCEIRO, comDesconto, mensalidadeDe, planoPorId } from "./planos.js";
 import { dataBR, somarDias, somarMeses } from "./regras.js";
 import { gerarToken, sha256 } from "./seguranca.js";
+import { mensalidadeEfetiva, valorReferencia } from "./conversao.js";
 
-export function registrarComercial({ rota, repo, cfg, V, falha, hoje, auditar, rotina, limitar, PRODUTOS, papeis }) {
+export function registrarComercial({ rota, repo, cfg, V, falha, hoje, auditar, rotina, limitar, PRODUTOS, papeis, conversao = { registrar: () => false } }) {
   const { FIN, TODOS, DONO } = papeis;
   const nomeCliente = (c) => c?.nome_fantasia || c?.razao_social || "";
   const exigirCliente = (id) => repo.obter("clientes", id) ?? falha(404, "Cliente não encontrado.");
@@ -41,7 +42,10 @@ export function registrarComercial({ rota, repo, cfg, V, falha, hoje, auditar, r
     const base = c.fase === "teste" && c.teste_ate && c.teste_ate >= hoje() ? c.teste_ate : hoje();
     const teste_ate = somarDias(base, c.fase === "teste" ? dias : dias - 1);
     auditar(ctx, c.fase === "teste" ? "teste_prorrogado" : "teste_iniciado", c.id, { produto, ate: teste_ate });
-    return repo.atualizar("clientes", c.id, { fase: "teste", produto, teste_ate, bloqueio_manual: null });
+    const novo = repo.atualizar("clientes", c.id, { fase: "teste", produto, teste_ate, bloqueio_manual: null });
+    // Conversão offline: só a ativação conta (prorrogação não); a fila também não repete o mesmo cliente
+    if (c.fase !== "teste") conversao.registrar(novo, "teste_ativado", { mensal_centavos: valorReferencia(produto) });
+    return novo;
   });
 
   /* ---------- Contratação ---------- */
@@ -87,6 +91,7 @@ export function registrarComercial({ rota, repo, cfg, V, falha, hoje, auditar, r
     if (implantacao > 0 && b.cobrar_implantacao !== false)
       repo.inserir("faturas", { cliente_id: c.id, tipo: "implantacao", descricao: `Implantação · ${PRODUTOS[plano.produto]} ${plano.nome}${fundador ? ` · fundador ${FUNDADORES.desconto_implantacao}%` : ""}`, valor_centavos: implantacao, vencimento: somarDias(hoje(), 3) });
     auditar(ctx, "plano_contratado", c.id, { plano: plano.id, mensal, fundador, desconto, implantacao });
+    conversao.registrar(novo, "contrato_fechado", { mensal_centavos: mensalidadeEfetiva(novo), implantacao_centavos: implantacao > 0 && b.cobrar_implantacao !== false ? implantacao : 0 });
     await rotina();
     return repo.obter("clientes", novo.id);
   });
