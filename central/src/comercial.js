@@ -4,7 +4,7 @@
    - vendedores e parceiros, comissões geradas quando a fatura é paga, indicações
    - portal do parceiro (/parceiro/), que entra por um link com token de uso contínuo, trocável pela Nexor */
 
-import { ANUAL, COMISSOES, FUNDADORES, PLANOS, PROJETOS, REGRAS_COMISSAO, SOB_DEMANDA, TESTE, TIPOS_PARCEIRO, comDesconto, mensalidadeDe, planoPorId } from "./planos.js";
+import { ANUAL, COMISSOES, FUNDADORES, PLANOS, PROJETOS, REGRAS_COMISSAO, SOB_DEMANDA, TESTE, TIPOS_PARCEIRO, comDesconto, mensalidadeDe, planoPorId, plural } from "./planos.js";
 import { dataBR, somarDias, somarMeses } from "./regras.js";
 import { gerarToken, sha256 } from "./seguranca.js";
 import { mensalidadeEfetiva, valorReferencia } from "./conversao.js";
@@ -53,7 +53,7 @@ export function registrarComercial({ rota, repo, cfg, V, falha, hoje, auditar, r
     const c = exigirCliente(ctx.params.id);
     const b = await ctx.corpo();
     const plano = planoPorId(b.plano_id) ?? falha(400, "Escolha o plano.");
-    const quantidade = plano.por_unidade ? V.inteiro(b.quantidade, 1, 100000, `quantidade de ${plano.unidade}es`) ?? falha(400, `Informe a quantidade de ${plano.unidade}es.`) : null;
+    const quantidade = plano.por_unidade ? V.inteiro(b.quantidade, 1, 100000, `quantidade de ${plural(plano.unidade)}`) ?? falha(400, `Informe a quantidade de ${plural(plano.unidade)}.`) : null;
     const mensal = V.inteiro(b.valor_centavos, 0, 100_000_000, "mensalidade") ?? mensalidadeDe(plano, quantidade);
     const fundador = Boolean(b.fundador);
     if (fundador) {

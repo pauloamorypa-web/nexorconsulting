@@ -42,6 +42,12 @@ export const PLANOS = {
       { id: "agente-empresarial", nome: "Empresarial", mensal: R(1997), implantacao: R(8000), inclui: "Equipe e sistemas sem limite, conectores sob medida" },
     ],
   },
+  servicedesk: {
+    unidade: "técnico",
+    planos: [
+      { id: "servicedesk-equipe", nome: "Equipe", por_unidade: R(49), minimo: R(299), franquia: 5, implantacao: R(990), inclui: "Até 5 técnicos (técnico extra R$ 49/mês): chamados com SLA, inventário com agente, painel, painel da TV e LGPD" },
+    ],
+  },
   one: {
     planos: [{ id: "one-sob-consulta", nome: "Sob consulta", mensal: 0, implantacao: 0, inclui: "Montado por segmento, com proposta própria" }],
   },
@@ -49,7 +55,6 @@ export const PLANOS = {
 
 /** Serviços e produtos por projeto (referência para propostas; não entram na contratação automática) */
 export const PROJETOS = [
-  { nome: "Nexor Service Desk", preco: "R$ 299/mês até 5 técnicos (+ R$ 49 por técnico)", implantacao: "R$ 990" },
   { nome: "Nexor Cofre", preco: "R$ 199/mês até 20 usuários (+ R$ 7 por usuário)", implantacao: "R$ 690" },
   { nome: "Nexor IT Platform", preco: "R$ 9,90 por máquina (mínimo R$ 299/mês)", implantacao: "R$ 1.490" },
   { nome: "Nexor Site Pro", preco: "R$ 149/mês (hospedagem, ajustes e segurança)", implantacao: "R$ 2.900 a R$ 6.900 por projeto" },
@@ -87,6 +92,7 @@ export const TESTE = {
     atende: { limites: { conversas_hoje: 30 }, travados: ["modulo.campanhas"], resumo: "até 30 conversas com a IA por dia, sem campanhas" },
     contabil: { limites: { carteira: 5, documentos_mes: 100 }, travados: [], resumo: "até 5 empresas na carteira e 100 documentos no mês" },
     barber: { limites: { barbeiros: 2, agendamentos_mes: 150 }, travados: ["modulo.relatorios"], resumo: "até 2 barbeiros e 150 agendamentos no mês, sem relatórios" },
+    servicedesk: { limites: {}, travados: [], resumo: "todas as funções, com até 5 técnicos" },
     agente: { limites: { acoes_dia: 10 }, travados: [], resumo: "até 10 ações aprovadas por dia" },
     one: { limites: {}, travados: [], resumo: "sob consulta" },
   },
@@ -94,7 +100,7 @@ export const TESTE = {
 
 /** Programa de fundadores: os primeiros clientes de alguns produtos, com desconto em troca de feedback e depoimento */
 export const FUNDADORES = {
-  produtos: ["contabil", "barber", "agente"],
+  produtos: ["contabil", "barber", "agente", "servicedesk"],
   vagas: 10,
   desconto_mensal: 40, // %
   meses: 12,
@@ -126,8 +132,12 @@ export function planoPorId(id) {
   return null;
 }
 
+/** Plural simples da unidade (colaborador → colaboradores, técnico → técnicos) */
+export const plural = (u) => (/[aeiou]$/.test(u) ? `${u}s` : `${u}es`);
+
 /** Mensalidade cheia do plano (para os planos por unidade, usa a quantidade com o mínimo) */
 export function mensalidadeDe(plano, quantidade = 0) {
+  if (plano.por_unidade && plano.franquia) return (plano.minimo ?? 0) + Math.round(plano.por_unidade * Math.max(0, quantidade - plano.franquia));
   if (plano.por_unidade) return Math.max(plano.minimo ?? 0, Math.round(plano.por_unidade * Math.max(0, quantidade)));
   return plano.mensal;
 }

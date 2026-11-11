@@ -313,11 +313,11 @@ export const CAMPANHAS = [
       { sinal: "ferramenta_atual", texto: "Vocês usam alguma ferramenta hoje, como GLPI, planilha ou outro sistema?" },
       { sinal: "cargo", texto: "Você é da equipe de TI ou da gestão da empresa?" },
     ],
-    sinais_compra: ["20 ou mais computadores", "chamados por WhatsApp ou e-mail sem SLA", "técnico indo de mesa em mesa", "senhas em planilha", "auditoria, LGPD ou inventário pedido pela diretoria", "MSP que atende várias empresas"],
+    sinais_compra: ["20 ou mais computadores", "chamados por WhatsApp ou e-mail sem SLA", "técnico indo de mesa em mesa", "senhas em planilha", "auditoria, LGPD ou inventário pedido pela diretoria", "MSP que atende várias empresas", "interesse no programa de fundadores"],
     sinais_descarte: ["uso doméstico (um computador em casa)", "estudante", "vende software de chamados ou RMM (concorrente)"],
     dores: /chamado (perdido|sem controle)|sem sla|senha (em planilha|espalhad|no post-it)|planilha de senha|nao sei o que tem|inventario|auditoria|antivirus|disco cheio|acesso remoto|perda de controle|whatsapp do suporte/,
     palavras: /chamado|help ?desk|service desk|sla|senha|inventario|computadores|maquinas|ti\b|suporte tecnico|acesso remoto/,
-    preco: "Service Desk a partir de R$ 299 por mês (até 5 técnicos), Cofre a partir de R$ 199 e IT Platform a partir de R$ 299 por mês, mais a implantação",
+    preco: "Service Desk a partir de R$ 299 por mês (até 5 técnicos; fundadores têm 40% de desconto por 12 meses), Cofre a partir de R$ 199 e IT Platform a partir de R$ 299 por mês, mais a implantação",
     material: "resumo do Nexor Service Desk (com Cofre e IT Platform) e os preços de entrada",
     cadencia: {
       d0: {

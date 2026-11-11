@@ -25,7 +25,7 @@ const PUBLICO = resolve(fileURLToPath(new URL("../public", import.meta.url)));
 const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".ico": "image/x-icon", ".json": "application/json" };
 const CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 const COOKIE = "nx_central";
-export const PRODUTOS = { rh: "Nexor RH e Ponto", atende: "Atende IA", agente: "Nexor Agente", one: "Nexor One", contabil: "Nexor Contábil", barber: "Nexor Barber" };
+export const PRODUTOS = { rh: "Nexor RH e Ponto", atende: "Atende IA", agente: "Nexor Agente", one: "Nexor One", contabil: "Nexor Contábil", barber: "Nexor Barber", servicedesk: "Nexor Service Desk" };
 const PAPEIS = ["dono", "financeiro", "suporte"];
 const ONLINE_MS = 15 * 60_000;
 // Produtos com painel em que o Suporte Nexor entra pelo link assinado
