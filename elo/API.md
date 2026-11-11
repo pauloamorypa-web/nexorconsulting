@@ -13,6 +13,7 @@ Servidor: `npm start` (porta **8796**). Demonstração: `npm run demo` → `http
 | Datas | Dia `AAAA-MM-DD` (horário de Brasília). Instantes (`*_em`, `agendada_para`, `reserva_expira_em`) em **milissegundos UTC**. |
 | Erros comuns | `400` validação (mensagem com o nome do campo, ex.: "CNPJ: CNPJ inválido") · `401` sem login · `403` perfil sem permissão / conta suspensa · `404` não existe **ou é de outra conta** · `409` regra de negócio · `413` corpo grande · `422` CNAE incompatível · `429` muitas tentativas (`Retry-After`) · `502/503` provedor externo fora. |
 | Corpo | Limite padrão 256 KB (fotos de OS 4 MB, assinatura 1 MB, CSV 2 MB). |
+| Listas (paginação) | As listas continuam respondendo um **array**. Aceitam `?limite=` (até o máximo da rota) e `?pagina=` (1, 2, ...). Cabeçalhos: `X-Pagina`, `X-Limite` e, se houver mais itens, `X-Proxima-Pagina`. Sem parâmetros, vem a primeira página no tamanho padrão (500 na maioria; reservas e repasses do fornecedor, 1000). Vale para: fornecedor `/vinculos`, `/propostas`, `/reservas`, `/repasses` (a lista; o `resumo` soma tudo), `/titulos`; instalador `/fornecedores`, `/vinculos`, `/fornecedores/:id/catalogo`, `/titulos`, `/propostas`, `/contratos`. |
 | Perfis | Fornecedor: `dono`, `admin`, `comercial`, `financeiro`. Instalador: `dono`, `tecnico`. Nexor: `operador`. |
 
 **Permissões (coluna "Quem")**
@@ -83,13 +84,13 @@ Servidor: `npm start` (porta **8796**). Demonstração: `npm run demo` → `http
 | GET | `/painel` | F·ver | — | `{ conta, propostas: {enviada,vista,aceita,paga,expirada}, reservas_ativas, itens_reservados, vinculos_pendentes, instaladores, estoque_baixo, financeiro: {recebido_split_30d_centavos, a_receber_titulos_centavos, titulos_vencidos} \| null (sem permissão), nao_lidas }` |
 | GET | `/produtos?busca=&categoria=&inativos=1` | F·ver | — | `[produto + disponivel]` |
 | POST | `/produtos` | F·catalogo | `{ codigo, nome, marca?, categoria?, foto_url?, preco_centavos, estoque?, unidade?, prazo_dias?, visibilidade?: "todos"\|"tabelas", tabelas?: [tabela_id], ativo? }` | produto (`409` código repetido) |
-| PUT | `/produtos/:id` | F·catalogo | campos parciais | produto (`409` estoque abaixo do reservado, ou desativar com reserva) |
+| PUT | `/produtos/:id` | F·catalogo | campos parciais | produto (`409` estoque abaixo do reservado, ou desativar com reserva; também quando uma reserva entra enquanto a edição chega: `codigo: "estoque_reservado"`) |
 | DELETE | `/produtos/:id` | F·catalogo | — | produto inativo |
 | POST | `/produtos/importar` | F·catalogo | `{ csv }` — cabeçalho `codigo;nome;marca;categoria;preco;estoque;unidade;prazo_dias;foto_url` (`;` ou `,`; preço `1.234,56` ou `1234.56`) | `{ criados, atualizados, erros: [{ linha, erro }] }` (cria ou atualiza pelo código) |
 | GET | `/tabelas` | F·ver | — | `[{ id, nome, tipo, desconto_pct, precos, ativo, vinculos }]` |
 | POST | `/tabelas` | F·catalogo | `{ nome, tipo: "desconto"\|"lista", desconto_pct?, precos?: { produto_id: centavos } }` | tabela |
 | PUT / DELETE | `/tabelas/:id` | F·catalogo | parcial / — | tabela (DELETE desativa: vale o preço base) |
-| GET | `/vinculos?status=` · `/vinculos/:id` | F·ver | — | `{ id, status, instalador (+cnaes), cnaes_compativeis, tabela, credito: { limite_centavos, em_aberto_centavos, disponivel_centavos, vencidos, vencidos_centavos, bloqueio_manual, bloqueio_inadimplencia, bloqueado, motivo }, score, ... }` |
+| GET | `/vinculos?status=` · `/vinculos/:id` | F·ver | — | `{ id, status, instalador (+cnaes), cnaes_compativeis, tabela, credito: { limite_centavos, em_aberto_centavos (títulos), comprometido_centavos (fornecedor sem walletId: itens em reservas ativas e em propostas aceitas com cobrança aberta), disponivel_centavos (limite − em aberto − comprometido), vencidos, vencidos_centavos, bloqueio_manual, bloqueio_inadimplencia, bloqueado, motivo }, score, ... }` |
 | POST | `/vinculos/:id/aprovar` | F·vinculos | `{ tabela_id?, limite_credito_centavos? (exige F·credito) }` | vínculo |
 | POST | `/vinculos/:id/recusar` | F·vinculos | `{ motivo? }` | vínculo (`409` se houver reserva ativa: use bloquear) |
 | PUT | `/vinculos/:id/tabela` | F·vinculos | `{ tabela_id \| null }` | vínculo |
@@ -115,11 +116,11 @@ Servidor: `npm start` (porta **8796**). Demonstração: `npm run demo` → `http
 | PUT | `/conta` | I·configurar | `{ nome_fantasia?, telefone?, email?, cidade?, uf?, wallet_id?, focus_token?, asaas_chave?, inscricao_municipal?, codigo_municipio?, item_lista_servico?, aliquota_iss_pct? }` | conta pública + `webhook_contratos: { url, token } \| null` (para colar no Asaas do instalador) |
 | GET | `/painel` | I·ver | — | dono: propostas por status, vendido/recebido 30d, reservas vencendo, OS abertas, títulos, contratos, `wallet` (bool). Técnico: `{ os_hoje, os_abertas }` |
 | GET | `/fornecedores` | I·comercial | — | fornecedores ativos `{ id, razao_social, cidade, uf, cnaes_aceitos, compativel, prazo_reserva_dias, vinculo: {id,status}\|null }` |
-| GET | `/vinculos` | I·comercial | — | `[{ id, status, motivo, fornecedor, tabela, credito: { limite, disponivel, em_aberto, bloqueado, motivo } }]` |
+| GET | `/vinculos` | I·comercial | — | `[{ id, status, motivo, fornecedor, tabela, credito: { limite_centavos, disponivel_centavos, em_aberto_centavos, comprometido_centavos, bloqueado, motivo } }]` |
 | POST | `/vinculos` | I·comercial | `{ fornecedor_id }` | vínculo pendente. `422 { codigo: "cnae" }` se nenhum CNAE do instalador estiver na lista do fornecedor. |
 | GET | `/fornecedores/:id/catalogo?busca=&categoria=` | I·comercial | — | `[{ id, fornecedor_id, fornecedor, codigo, nome, marca, categoria, foto_url, unidade, preco_centavos (da tabela do instalador), preco_base_centavos, disponivel, prazo_dias }]` (`403` sem vínculo aprovado) |
 | GET | `/comparar?codigo=\|termo=&quantidade=` | I·comercial | — | ofertas de todos os fornecedores vinculados, a melhor primeiro (`atende_quantidade`, `melhor`, `total_centavos`) |
-| POST | `/comparar` | I·comercial | `{ itens: [{ codigo?, termo?, quantidade }] }` | `{ itens: [{ pedido, melhor, alternativas }], total_centavos, fornecedores, faltando }` (combinação mais barata; pode dividir entre fornecedores) |
+| POST | `/comparar` | I·comercial | `{ itens: [{ codigo?, termo?, quantidade }] }` (cada item com `codigo` ou `termo` de 2+ letras; senão `400`) | `{ itens: [{ pedido, melhor, alternativas }], total_centavos, fornecedores, faltando }` (combinação mais barata; pode dividir entre fornecedores) |
 | GET | `/titulos` | I·comercial | — | títulos do instalador com cada fornecedor |
 | GET | `/kits` | I·comercial | — | modelos (`id: "modelo:cftv-4"`, `modelo: true`) + kits próprios |
 | POST / PUT / DELETE | `/kits` · `/kits/:id` | I·comercial | `{ nome, segmento?, descricao?, itens: [{ codigo? \| termo?, quantidade, descricao? }] }` | kit |
@@ -134,8 +135,8 @@ Servidor: `npm start` (porta **8796**). Demonstração: `npm run demo` → `http
 | POST | `/propostas/:id/renovar` | I·comercial | — | proposta (uma vez; se expirada, reserva de novo). `409` na segunda. |
 | POST | `/propostas/:id/reabrir` | I·comercial | — | volta a rascunho, libera reservas, invalida o link |
 | POST | `/propostas/:id/cancelar` · `/duplicar` | I·comercial | — | proposta |
-| POST | `/propostas/:id/nfse` | I·comercial | — | nota NFS-e (serviços da proposta paga, tomador = cliente). Simulada sem token fora de produção. |
-| POST | `/calculadora` | I·comercial | `{ custos: { produtos_centavos?, mao_obra_centavos?, deslocamento_centavos?, outros_centavos? }, margem_pct (0–90), regime: { tipo: "mei" } \| { tipo: "simples", anexo: "I".."V", aliquota_pct } \| { tipo: "presumido" }, iss_pct?, taxa_meio_pct?, taxa_meio_fixa_centavos?, preco_centavos? (simular um preço) }` | `{ preco_sugerido_centavos, custos_centavos, custos, impostos: { total_centavos, aliquota_efetiva_pct, detalhamento: [{ nome, aliquota_pct, centavos }] }, taxa_meio_centavos, taxa_plataforma_centavos, taxa_plataforma_pct, lucro_liquido_centavos, margem_real_pct, markup, avisos }` · `400` se margem+taxas ≥ 99% |
+| POST | `/propostas/:id/nfse` | I·comercial | — | nota NFS-e (serviços da proposta paga, tomador = cliente). O desconto da proposta é rateado entre os itens pelo valor; a parte dos serviços vai em `desconto_incondicionado` (e `base_calculo` = serviços − desconto). Simulada sem token fora de produção. |
+| POST | `/calculadora` | I·comercial | `{ custos: { produtos_centavos?, mao_obra_centavos?, deslocamento_centavos?, outros_centavos? }, margem_pct (0–90), regime: { tipo: "mei" } \| { tipo: "simples", anexo: "I".."V", aliquota_pct? \| rbt12_centavos? } \| { tipo: "presumido" }, iss_pct?, taxa_meio_pct?, taxa_meio_fixa_centavos?, preco_centavos? (simular um preço) }` | `{ preco_sugerido_centavos, custos_centavos, custos, impostos: { total_centavos, aliquota_efetiva_pct, detalhamento: [{ nome, aliquota_pct, centavos }] }, taxa_meio_centavos, taxa_plataforma_centavos, taxa_plataforma_pct, lucro_liquido_centavos, margem_real_pct, markup, avisos }` · Simples com `rbt12_centavos` (receita bruta dos últimos 12 meses): alíquota efetiva = (RBT12 × nominal − parcela a deduzir) / RBT12 pela faixa do anexo, e `impostos.simples: { anexo, faixa, nominal_pct, aliquota_pct }`; sem RBT12 vale `aliquota_pct` (à mão). `400` se margem+taxas ≥ 99%, sem alíquota nem RBT12, ou RBT12 acima de R$ 4,8 milhões |
 | GET | `/os?status=` | I·os | — | OS (técnico: só as dele) |
 | POST | `/os` | I·comercial | `{ proposta_id? (paga), cliente_id? (avulsa), tecnico_id?, titulo?, descricao?, agendada_dia?, agendada_hora?, checklist?: [texto] }` | OS (da proposta: checklist e números de série pré-preenchidos) |
 | GET | `/os/:id` | I·os | — | `{ id, numero, titulo, status, agendada_para, checklist: [{item, feito}], series: [{produto, codigo, serie, garantia_meses, garantia_ate}], fotos: [{id, legenda}], assinado, historico, tecnico, cliente, link }` |
@@ -145,7 +146,7 @@ Servidor: `npm start` (porta **8796**). Demonstração: `npm run demo` → `http
 | PUT | `/os/:id/series` | I·os | `{ series: [{ produto, codigo?, serie?, garantia_meses? }] }` | OS (calcula `garantia_ate`) |
 | POST | `/os/:id/fotos` | I·os | `{ imagem: "data:image/jpeg;base64,...", legenda? }` (JPEG/PNG/WebP, até 600 KB, 30 por OS; bytes conferidos) | OS · `413` grande · `400` não é imagem |
 | GET | `/os/:id/fotos/:foto` · `/os/:id/assinatura` | I·os | — | a imagem |
-| POST | `/os/:id/assinatura` | I·os | `{ imagem (base64, até 200 KB), nome }` | OS |
+| POST | `/os/:id/assinatura` | I·os | `{ imagem (base64, até 200 KB), nome }` | OS. `400 { codigo: "assinatura_vazia" }` se o PNG estiver quase em branco (um toque só); `409` se já assinada. |
 | GET / POST | `/contratos` | I·comercial | `{ cliente_id, descricao, valor_centavos (≥ 500), dia_vencimento (1–28), inicio? }` | contrato (assinatura mensal no Asaas **do instalador**, sem split; `409` sem chave Asaas; `400` cliente sem documento) |
 | POST | `/contratos/:id/cancelar` | I·comercial | — | contrato |
 | GET | `/notificacoes` · POST `/notificacoes/lidas` · GET `/envios` · GET `/auditoria` | I·comercial / I·auditoria | — | listas |
@@ -164,7 +165,7 @@ Totais: `subtotal = Σ quantidade × preço`, `total = subtotal − desconto`, `
 | GET | `/p/:token` · `/os/:token` | — | página (`index.html`) com `Referrer-Policy: no-referrer` e `noindex` |
 | GET | `/api/publico/propostas/:token` | — | `{ numero, titulo, status, empresa: { nome, cnpj, cidade, uf, telefone }, cliente: { nome, documento (mascarado), endereco_obra: { cidade, uf, bairro } }, itens: [{ tipo: "produto"\|"servico", descricao, unidade, foto_url, quantidade, preco_unit_centavos, total_centavos }], subtotal_centavos, desconto_centavos, total_centavos, validade_dia, condicoes, garantia, observacoes, reserva_expira_em, aceite, pagamento: { status, forma, parcelas, link, pago_em }, pode_aceitar, pode_pagar, formas }`. Sem custo nem fornecedor. A primeira abertura marca `vista` e avisa instalador e fornecedores. |
 | POST | `/api/publico/propostas/:token/aceitar` | `{ nome, documento?, concordo: true }` | proposta pública (registra nome, data e IP). `409` expirada/fora da validade/já aceita. |
-| POST | `/api/publico/propostas/:token/pagar` | `{ forma: "PIX"\|"BOLETO"\|"CREDIT_CARD", parcelas? (cartão 1–12), documento? (se o cliente não tem), email? }` | `{ link, forma, parcelas, valor_centavos, status }` (link de pagamento do Asaas; repetir devolve a mesma cobrança). `409` sem aceite, reserva vencida ou instalador sem walletId. |
+| POST | `/api/publico/propostas/:token/pagar` | `{ forma: "PIX"\|"BOLETO"\|"CREDIT_CARD", parcelas? (cartão 1–12), documento? (se o cliente não tem), email? }` | `{ link, forma, parcelas, valor_centavos, status }` (link de pagamento do Asaas; repetir devolve a mesma cobrança). `409` sem aceite, reserva vencida ou instalador sem walletId. `503 { codigo: "wallet_ilegivel" }` se um walletId cadastrado não puder ser decifrado (o operador Nexor é avisado; nada é cobrado). |
 | GET | `/api/publico/os/:token` | — | `{ numero, titulo, status, agendada_para, checklist, series, fotos, assinado, historico: [{ status, nota, em }], tecnico (primeiro nome), empresa, cliente (primeiro nome) }` |
 | GET | `/api/publico/os/:token/fotos/:foto` | — | imagem |
 

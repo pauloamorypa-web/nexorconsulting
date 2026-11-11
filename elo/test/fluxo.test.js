@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CNPJ_BAIXADO, CNPJ_SEM_CNAE, SENHA, cenario, enviarProposta, subir, webhookPago } from "./ajuda.js";
 import { gerarCnpj } from "../src/regras/documentos.js";
+import { assinaturaExemplo } from "../src/regras/imagem.js";
 
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAwS2OUAAAAABJRU5ErkJggg==";
 
@@ -143,7 +144,7 @@ test("Fluxo: cadastro, vínculo, catálogo, proposta, reserva, aceite, pagamento
     assert.equal((await tecnico.post(`/api/instalador/os/${os.id}/fotos`, { imagem: "data:image/png;base64,AAAAAAAA" })).status, 400, "não é imagem");
     const grande = `data:image/png;base64,${Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47]), Buffer.alloc(700 * 1024)]).toString("base64")}`;
     assert.equal((await tecnico.post(`/api/instalador/os/${os.id}/fotos`, { imagem: grande })).status, 413);
-    await tecnico.ok.post(`/api/instalador/os/${os.id}/assinatura`, { imagem: PNG, nome: "Zuleika P. Amarantes" });
+    await tecnico.ok.post(`/api/instalador/os/${os.id}/assinatura`, { imagem: assinaturaExemplo(), nome: "Zuleika P. Amarantes" });
     await tecnico.ok.post(`/api/instalador/os/${os.id}/status`, { status: "concluida" });
     const link = (await inst.ok.get(`/api/instalador/os/${os.id}`)).link;
     const osPub = await s.cliente().ok.get(`/api/publico/os/${link.split("/").at(-1)}`);

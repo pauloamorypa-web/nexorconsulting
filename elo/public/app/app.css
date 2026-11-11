@@ -34,6 +34,8 @@
 }
 
 * { box-sizing: border-box; }
+/* O atributo hidden vence o display das classes (.campo, .btn): campos da calculadora e o "Tentar de novo" do checklist */
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 html, body { margin: 0; background: var(--fundo); color: var(--texto); font: 15px/1.5 var(--fonte); -webkit-tap-highlight-color: transparent; }
 body { min-height: 100dvh; overflow-x: hidden; }

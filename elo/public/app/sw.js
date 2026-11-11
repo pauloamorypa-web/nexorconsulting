@@ -1,6 +1,6 @@
 /* Service worker do app do instalador: guarda as telas para abrir rápido e sem rede.
    A API (/api/*) NUNCA é guardada: dados sempre frescos e nada sensível fica no cache. */
-const VERSAO = "elo-app-v1";
+const VERSAO = "elo-app-v2";
 const TELAS = ["/app/", "/app/app.css", "/app/app.js", "/app/nucleo.js", "/app/estado.js", "/app/proposta.js", "/app/os.js", "/app/telas.js", "/app/confirmar.js", "/publico/demo-faixa.js", "/app/manifest.webmanifest", "/app/icone.svg", "/app/icone-192.png"];
 
 self.addEventListener("install", (e) => {

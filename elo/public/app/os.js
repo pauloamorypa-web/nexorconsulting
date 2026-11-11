@@ -100,7 +100,12 @@ export async function reduzirFoto(arquivo) {
 function quadroAssinatura() {
   const canvas = h("canvas", { class: "assinatura", role: "img", "aria-label": "Área para o cliente assinar com o dedo" });
   let g;
-  let riscou = false;
+  // Banca U-05: um toque só não é assinatura. Mede o comprimento do traço (px) e os pontos desenhados.
+  const TRACO_MINIMO_PX = 80;
+  const PONTOS_MINIMOS = 8;
+  let comprimento = 0;
+  let pontos = 0;
+  let ultimo = null;
   let desenhando = false;
   const preparar = () => {
     const r = canvas.getBoundingClientRect();
@@ -115,7 +120,9 @@ function quadroAssinatura() {
     g.strokeStyle = "#0d1526";
     g.fillStyle = "#fff";
     g.fillRect(0, 0, r.width, r.height);
-    riscou = false;
+    comprimento = 0;
+    pontos = 0;
+    ultimo = null;
   };
   const ponto = (e) => {
     const r = canvas.getBoundingClientRect();
@@ -130,7 +137,8 @@ function quadroAssinatura() {
     g.moveTo(x, y);
     g.lineTo(x + 0.1, y + 0.1);
     g.stroke();
-    riscou = true;
+    ultimo = [x, y];
+    pontos += 1;
     e.preventDefault();
   });
   canvas.addEventListener("pointermove", (e) => {
@@ -138,6 +146,9 @@ function quadroAssinatura() {
     const [x, y] = ponto(e);
     g.lineTo(x, y);
     g.stroke();
+    if (ultimo) comprimento += Math.hypot(x - ultimo[0], y - ultimo[1]);
+    ultimo = [x, y];
+    pontos += 1;
     e.preventDefault();
   });
   const parar = () => (desenhando = false);
@@ -147,7 +158,8 @@ function quadroAssinatura() {
   return {
     canvas,
     limpar: preparar,
-    vazio: () => !riscou,
+    vazio: () => pontos === 0,
+    curta: () => comprimento < TRACO_MINIMO_PX || pontos < PONTOS_MINIMOS,
     imagem: () => {
       let d = canvas.toDataURL("image/png");
       if (tamanhoBase64(d) > LIMITE_ASSINATURA) d = canvas.toDataURL("image/jpeg", 0.7);
@@ -182,21 +194,43 @@ export async function telaOs(el, id) {
 
   /* Checklist */
   const lista = o.checklist.map((c) => ({ ...c }));
-  const estadoCheck = h("small", { class: "fraco", "aria-live": "polite" });
+  const textoCheck = h("span", {});
+  const tentarCheck = h("button", { type: "button", class: "btn btn-fantasma btn-peq", hidden: true, onclick: () => salvarCheck() }, "Tentar de novo");
+  const estadoCheck = h("small", { class: "fraco", "aria-live": "polite" }, textoCheck, " ", tentarCheck);
   const caixaCheck = h("div", {});
-  const salvarCheck = async () => {
-    estadoCheck.textContent = "Salvando…";
+  /* Banca U-04: uma gravação por vez, sempre com a lista inteira mais recente. "salvo" só aparece depois que o servidor
+     confirmou exatamente o que está na tela; se algo mudou enquanto a gravação ia, manda de novo. Sem rede, a tela mostra
+     "Não salvo" (fica até dar certo) e a próxima marcação ou o botão tentam de novo. */
+  let versaoCheck = 0;
+  let confirmadaCheck = 0;
+  let gravandoCheck = false;
+  const contagem = () => `${lista.filter((c) => c.feito).length} de ${lista.length} feitos`;
+  const salvarCheck = async (mudou = true) => {
+    if (mudou) versaoCheck++;
+    tentarCheck.hidden = true;
+    estadoCheck.classList.remove("perigo");
+    textoCheck.textContent = `${contagem()} · salvando…`;
+    if (gravandoCheck) return;
+    gravandoCheck = true;
     try {
-      await put(`/os/${o.id}/checklist`, { checklist: lista });
-      estadoCheck.textContent = `${lista.filter((c) => c.feito).length} de ${lista.length} feitos · salvo`;
+      while (confirmadaCheck < versaoCheck) {
+        const versao = versaoCheck;
+        await put(`/os/${o.id}/checklist`, { checklist: lista.map((c) => ({ item: c.item, feito: c.feito })) });
+        confirmadaCheck = versao;
+      }
+      textoCheck.textContent = `${contagem()} · salvo`;
     } catch (e) {
-      estadoCheck.textContent = "";
-      aviso(e.message, true);
+      textoCheck.textContent = `${contagem()} · Não salvo`;
+      estadoCheck.classList.add("perigo");
+      tentarCheck.hidden = false;
+      aviso(`Checklist não foi salvo: ${e.message}`, true);
+    } finally {
+      gravandoCheck = false;
     }
   };
   const desenharCheck = () => limpar(caixaCheck, lista.map((c) => h("label", { class: "marcar" }, h("input", { type: "checkbox", checked: c.feito, disabled: encerrada, onchange: (e) => ((c.feito = e.target.checked), salvarCheck()) }), h("span", { class: c.feito ? "suave" : "" }, c.item))));
   desenharCheck();
-  estadoCheck.textContent = `${lista.filter((c) => c.feito).length} de ${lista.length} feitos`;
+  textoCheck.textContent = contagem();
   const novoItem = entrada({ placeholder: "Novo item do checklist", maxlength: 200, "aria-label": "Novo item do checklist" });
   const addItem = h("button", { type: "button", class: "btn btn-fantasma btn-peq", onclick: () => {
     if (!novoItem.value.trim()) return;
@@ -268,6 +302,7 @@ export async function telaOs(el, id) {
     const nome = entrada({ value: o.cliente?.nome ?? "", maxlength: 160, autocomplete: "off" });
     const salvarAss = botao("Salvar assinatura", async () => {
       if (q.vazio()) throw new Error("Peça para o cliente assinar no quadro.");
+      if (q.curta()) throw new Error("A assinatura ficou curta demais (parece um toque só). Toque em Limpar e peça para o cliente assinar por inteiro.");
       if (nome.value.trim().length < 2) throw new Error("Informe o nome de quem assinou.");
       await post(`/os/${o.id}/assinatura`, { imagem: q.imagem(), nome: nome.value.trim() });
       aviso("Assinatura registrada.");

@@ -6,11 +6,12 @@ import { z } from "zod";
 import { calcularPreco } from "../regras/calculadora.js";
 import { hojeBR, paraMs, somarMeses } from "../regras/datas.js";
 import { cnaesCompativeis } from "../regras/documentos.js";
+import { assinaturaTemTraco, tintaPng } from "../regras/imagem.js";
 import { criarAsaas } from "../servicos/adaptadores.js";
 import { FORMAS } from "../servicos/negocio.js";
 import { gerarToken, mascarar, sha256 } from "../seguranca.js";
 import { falha } from "./roteador.js";
-import { centavos, dia, documento, email, endereco, id, op, pct, qtd, t, telefone, uf, validar } from "./validacao.js";
+import { centavos, dia, documento, email, endereco, id, op, paginar, pct, qtd, t, telefone, uf, validar } from "./validacao.js";
 
 /** Modelos de kit por segmento (o sistema procura cada item no catálogo dos fornecedores vinculados) */
 export const MODELOS_KIT = [
@@ -58,18 +59,32 @@ export function rotasInstalador(h) {
   });
 
   /* ---------- Fornecedores e vínculos ---------- */
-  r.get("/api/instalador/fornecedores", I("comercial"), ({ conta }) =>
-    repo.lista("contas", "WHERE tipo = 'fornecedor' AND status = 'ativo' ORDER BY razao_social").map((f) => {
-      const v = negocio.vinculo(f.id, conta.id);
+  r.get("/api/instalador/fornecedores", I("comercial"), (ctx) => {
+    const { conta } = ctx;
+    const pg = paginar(ctx, { padrao: 500, maximo: 500 });
+    // Banca P-13: os vínculos do instalador numa consulta só (antes, uma por fornecedor)
+    const meus = new Map(repo.lista("vinculos", "WHERE instalador_id = ?", conta.id).map((v) => [v.fornecedor_id, v]));
+    return pg.cortar(repo.lista("contas", "WHERE tipo = 'fornecedor' AND status = 'ativo' ORDER BY razao_social, id LIMIT ? OFFSET ?", ...pg.sql)).map((f) => {
+      const v = meus.get(f.id);
       return { id: f.id, razao_social: f.razao_social, nome_fantasia: f.nome_fantasia, cidade: f.cidade, uf: f.uf, cnaes_aceitos: f.cnaes, compativel: cnaesCompativeis(conta.cnaes, f.cnaes).length > 0, prazo_reserva_dias: f.config.prazo_reserva_dias ?? 7, vinculo: v ? { id: v.id, status: v.status } : null };
-    }),
-  );
-  const vinculoParaInstalador = (v) => {
-    const f = repo.obter("contas", v.fornecedor_id);
-    const c = negocio.credito(v);
-    return { id: v.id, status: v.status, motivo: v.status === "recusado" ? v.motivo : null, fornecedor: { id: f.id, razao_social: f.razao_social, nome_fantasia: f.nome_fantasia, cidade: f.cidade, uf: f.uf }, tabela: negocio.tabelaDo(v)?.nome ?? null, credito: { limite_centavos: c.limite_centavos, disponivel_centavos: c.disponivel_centavos, em_aberto_centavos: c.em_aberto_centavos, bloqueado: c.bloqueado, motivo: c.motivo } };
+    });
+  });
+  /** Vínculos em lote (banca P-13): fornecedores, tabelas e crédito com consultas agrupadas */
+  const vinculosParaInstalador = (lista) => {
+    const fs = repo.porIds("contas", lista.map((v) => v.fornecedor_id));
+    const tabs = repo.porIds("tabelas", lista.map((v) => v.tabela_id));
+    const creds = negocio.creditos(lista);
+    return lista.map((v) => {
+      const f = fs.get(v.fornecedor_id);
+      const c = creds.get(v.id);
+      return { id: v.id, status: v.status, motivo: v.status === "recusado" ? v.motivo : null, fornecedor: { id: f.id, razao_social: f.razao_social, nome_fantasia: f.nome_fantasia, cidade: f.cidade, uf: f.uf }, tabela: v.tabela_id ? (tabs.get(v.tabela_id)?.nome ?? null) : null, credito: { limite_centavos: c.limite_centavos, disponivel_centavos: c.disponivel_centavos, em_aberto_centavos: c.em_aberto_centavos, comprometido_centavos: c.comprometido_centavos, bloqueado: c.bloqueado, motivo: c.motivo } };
+    });
   };
-  r.get("/api/instalador/vinculos", I("comercial"), ({ conta }) => repo.lista("vinculos", "WHERE instalador_id = ? ORDER BY criado_em DESC", conta.id).map(vinculoParaInstalador));
+  const vinculoParaInstalador = (v) => vinculosParaInstalador([v])[0];
+  r.get("/api/instalador/vinculos", I("comercial"), (ctx) => {
+    const pg = paginar(ctx, { padrao: 500, maximo: 500 });
+    return vinculosParaInstalador(pg.cortar(repo.lista("vinculos", "WHERE instalador_id = ? ORDER BY criado_em DESC, id LIMIT ? OFFSET ?", ctx.conta.id, ...pg.sql)));
+  });
   r.post("/api/instalador/vinculos", I("comercial"), async (ctx) => {
     const d = validar(z.object({ fornecedor_id: id }), await ctx.corpo());
     const f = repo.obter("contas", d.fornecedor_id);
@@ -83,7 +98,11 @@ export function rotasInstalador(h) {
     negocio.avisar(f.id, "vinculo_pedido", `${negocio.nomeConta(ctx.conta)} (${ctx.conta.cidade}/${ctx.conta.uf}) pediu vínculo. CNAE compatível: ${comp.join(", ")}.`, v.id);
     return vinculoParaInstalador(v);
   });
-  r.get("/api/instalador/fornecedores/:id/catalogo", I("comercial"), ({ conta, params, query }) => negocio.catalogo(conta.id, params.id, { busca: query.get("busca") ?? "", categoria: query.get("categoria") ?? "" }));
+  r.get("/api/instalador/fornecedores/:id/catalogo", I("comercial"), (ctx) => {
+    const pg = paginar(ctx, { padrao: 500, maximo: 500 });
+    const [limite, offset] = pg.sql;
+    return pg.cortar(negocio.catalogo(ctx.conta.id, ctx.params.id, { busca: ctx.query.get("busca") ?? "", categoria: ctx.query.get("categoria") ?? "", limite, offset }));
+  });
   r.get("/api/instalador/comparar", I("comercial"), ({ conta, query }) => {
     const codigo = (query.get("codigo") ?? "").trim();
     const termo = (query.get("termo") ?? "").trim();
@@ -92,7 +111,9 @@ export function rotasInstalador(h) {
   });
   // Combinação mais barata para uma lista de itens (pode dividir entre fornecedores; o split vai para cada um)
   r.post("/api/instalador/comparar", I("comercial"), async (ctx) => {
-    const d = validar(z.object({ itens: z.array(z.object({ codigo: op(60), termo: op(80), quantidade: qtd })).min(1).max(100) }), await ctx.corpo());
+    // Banca P-13: cada item precisa do código ou de pelo menos 2 letras (como no GET); item vazio montava o catálogo inteiro
+    const itemComparar = z.object({ codigo: op(60), termo: op(80), quantidade: qtd }).refine((i) => i.codigo?.trim() || (i.termo?.trim().length ?? 0) >= 2, "informe o código ou pelo menos 2 letras para comparar");
+    const d = validar(z.object({ itens: z.array(itemComparar).min(1).max(100) }), await ctx.corpo());
     const linhas = d.itens.map((i) => {
       const ofertas = negocio.comparar(ctx.conta.id, { codigo: i.codigo ?? "", termo: i.termo ?? "", quantidade: i.quantidade });
       const melhor = ofertas.find((o) => o.atende_quantidade) ?? null;
@@ -100,9 +121,12 @@ export function rotasInstalador(h) {
     });
     return { itens: linhas, total_centavos: linhas.reduce((s, l) => s + (l.melhor?.total_centavos ?? 0), 0), fornecedores: [...new Set(linhas.map((l) => l.melhor?.fornecedor_id).filter(Boolean))], faltando: linhas.filter((l) => !l.melhor).map((l) => l.pedido) };
   });
-  r.get("/api/instalador/titulos", I("comercial"), ({ conta }) =>
-    repo.lista("titulos", "WHERE instalador_id = ? ORDER BY vencimento", conta.id).map((x) => ({ ...x, vencido: x.status === "aberto" && x.vencimento < hoje(), fornecedor: negocio.nomeConta(repo.obter("contas", x.fornecedor_id)) })),
-  );
+  r.get("/api/instalador/titulos", I("comercial"), (ctx) => {
+    const pg = paginar(ctx, { padrao: 500, maximo: 500 });
+    const lista = pg.cortar(repo.lista("titulos", "WHERE instalador_id = ? ORDER BY vencimento, id LIMIT ? OFFSET ?", ctx.conta.id, ...pg.sql));
+    const fs = repo.porIds("contas", lista.map((x) => x.fornecedor_id));
+    return lista.map((x) => ({ ...x, vencido: x.status === "aberto" && x.vencimento < hoje(), fornecedor: negocio.nomeConta(fs.get(x.fornecedor_id)) }));
+  });
 
   /* ---------- Kits ---------- */
   const itemKit = z.object({ codigo: op(60), termo: op(80), quantidade: qtd, descricao: op(200) }).refine((i) => i.codigo || i.termo, "informe o código ou o termo de busca");
@@ -186,9 +210,12 @@ export function rotasInstalador(h) {
       notas: repo.lista("notas", "WHERE proposta_id = ? AND conta_id = ?", p.id, p.instalador_id),
     };
   }
-  r.get("/api/instalador/propostas", I("comercial"), ({ conta, query }) => {
-    const st = query.get("status") ?? "";
-    return repo.lista("propostas", "WHERE instalador_id = ? AND (? = '' OR status = ?) ORDER BY numero DESC LIMIT 500", conta.id, st, st).map((p) => ({ ...p, token_hash: undefined, token_cripto: undefined, cliente: p.cliente_id ? repo.obter("clientes", p.cliente_id)?.nome : null }));
+  r.get("/api/instalador/propostas", I("comercial"), (ctx) => {
+    const st = ctx.query.get("status") ?? "";
+    const pg = paginar(ctx, { padrao: 500, maximo: 500 });
+    const lista = pg.cortar(repo.lista("propostas", "WHERE instalador_id = ? AND (? = '' OR status = ?) ORDER BY numero DESC LIMIT ? OFFSET ?", ctx.conta.id, st, st, ...pg.sql));
+    const clis = repo.porIds("clientes", lista.map((p) => p.cliente_id));
+    return lista.map((p) => ({ ...p, token_hash: undefined, token_cripto: undefined, cliente: p.cliente_id ? (clis.get(p.cliente_id)?.nome ?? null) : null }));
   });
   r.post("/api/instalador/propostas", I("comercial"), async (ctx) => {
     const d = validar(propostaCampos, await ctx.corpo());
@@ -247,22 +274,38 @@ export function rotasInstalador(h) {
     const p = minha(ctx);
     if (p.status !== "paga") falha(409, "A NFS-e sai depois que a proposta for paga.");
     const ref = `elo-nfse-${p.id.slice(0, 13)}`;
-    const ja = repo.ler("notas", repo.um("SELECT * FROM notas WHERE ref = ?", ref));
+    const notaExistente = () => repo.ler("notas", repo.um("SELECT * FROM notas WHERE ref = ? AND conta_id = ?", ref, ctx.conta.id));
+    const ja = notaExistente();
     if (ja) return ja;
     const cli = repo.obter("clientes", p.cliente_id);
-    const servicos = negocio.itensDa(p.id).filter((i) => i.tipo === "servico");
+    // Banca P-08: o desconto da proposta é rateado entre os itens; a parte que cabe aos serviços entra na NFS-e como desconto
+    // incondicionado (o ISS e o valor líquido da nota conferem com o que o cliente pagou)
+    const servicos = negocio.ratearDesconto(negocio.itensDa(p.id), p.desconto_centavos).filter((i) => i.tipo === "servico");
     if (!servicos.length) falha(409, "Esta proposta não tem serviços para a NFS-e.");
-    const valor = servicos.reduce((s, i) => s + i.preco_unit_centavos * i.quantidade, 0);
+    const bruto = servicos.reduce((s, i) => s + i.bruto_centavos, 0);
+    const desconto = servicos.reduce((s, i) => s + i.desconto_rateado_centavos, 0);
     const c = ctx.conta.config;
     const doc = cli?.documento ?? "";
     const dados = {
       data_emissao: new Date(agora()).toISOString(),
       prestador: { cnpj: ctx.conta.cnpj, inscricao_municipal: c.inscricao_municipal ?? null, codigo_municipio: c.codigo_municipio ?? null },
       tomador: { ...(doc.length === 11 ? { cpf: doc } : { cnpj: doc }), razao_social: cli?.nome, email: cli?.email ?? undefined, telefone: cli?.telefone ?? undefined, endereco: cli?.endereco ?? {} },
-      servico: { aliquota: c.aliquota_iss_pct ?? 0, discriminacao: servicos.map((i) => `${i.quantidade}x ${i.descricao}`).join("; ") + ` · Proposta #${p.numero}`, iss_retido: false, item_lista_servico: c.item_lista_servico ?? null, valor_servicos: valor / 100 },
+      servico: {
+        aliquota: c.aliquota_iss_pct ?? 0, iss_retido: false, item_lista_servico: c.item_lista_servico ?? null,
+        discriminacao: servicos.map((i) => `${i.quantidade}x ${i.descricao}`).join("; ") + (desconto ? ` · Desconto de ${negocio.formatarReais(desconto)}` : "") + ` · Proposta #${p.numero}`,
+        valor_servicos: bruto / 100, desconto_incondicionado: desconto / 100, base_calculo: (bruto - desconto) / 100,
+      },
     };
     const res = await fiscal.emitir({ token: negocio.segredo(c.focus_token_cripto), tipo: "nfse", ref, dados });
-    const nota = repo.inserir("notas", { conta_id: ctx.conta.id, proposta_id: p.id, tipo: "nfse", ref, status: res.status, numero: res.numero, url: res.url, simulada: res.simulada, resposta: res.simulada ? { simulada: true } : res.dados });
+    let nota;
+    try {
+      nota = repo.inserir("notas", { conta_id: ctx.conta.id, proposta_id: p.id, tipo: "nfse", ref, status: res.status, numero: res.numero, url: res.url, simulada: res.simulada, resposta: res.simulada ? { simulada: true } : res.dados });
+    } catch (e) {
+      // Dois cliques ao mesmo tempo: a outra requisição já gravou a nota com esta ref (a Focus é idempotente pela ref)
+      const outra = notaExistente();
+      if (outra) return outra;
+      throw e;
+    }
     auditar(ctx, "nfse_emitida", { proposta_id: p.id, ref, simulada: res.simulada });
     return nota;
   });
@@ -273,7 +316,7 @@ export function rotasInstalador(h) {
       z.object({
         custos: z.object({ produtos_centavos: centavos.optional(), mao_obra_centavos: centavos.optional(), deslocamento_centavos: centavos.optional(), outros_centavos: centavos.optional() }),
         margem_pct: z.number().min(0).max(90),
-        regime: z.discriminatedUnion("tipo", [z.object({ tipo: z.literal("mei") }), z.object({ tipo: z.literal("simples"), anexo: z.enum(["I", "II", "III", "IV", "V"]), aliquota_pct: z.number().min(0).max(33) }), z.object({ tipo: z.literal("presumido") })]),
+        regime: z.discriminatedUnion("tipo", [z.object({ tipo: z.literal("mei") }), z.object({ tipo: z.literal("simples"), anexo: z.enum(["I", "II", "III", "IV", "V"]), aliquota_pct: z.number().min(0).max(33).optional(), rbt12_centavos: z.number().int().min(1).max(1_000_000_000_000).optional() }).refine((r) => r.aliquota_pct !== undefined || r.rbt12_centavos !== undefined, "informe a alíquota ou a receita dos últimos 12 meses (RBT12)"), z.object({ tipo: z.literal("presumido") })]),
         iss_pct: z.number().min(0).max(5).optional(),
         taxa_meio_pct: z.number().min(0).max(20).optional(),
         taxa_meio_fixa_centavos: centavos.optional(),
@@ -400,6 +443,8 @@ export function rotasInstalador(h) {
     // Banca P-11: a assinatura do cliente é a prova do serviço; depois de feita, não se troca
     if (o.assinatura_arquivo) falha(409, `Esta OS já foi assinada por ${o.assinado_por ?? "o cliente"}.`);
     const img = lerImagem(d.imagem, cfg.uploads.assinaturaMaxBytes);
+    // Banca U-05: imagem quase em branco (um toque só) não vale como assinatura
+    if (!assinaturaTemTraco(tintaPng(img.buf))) falha(400, "A assinatura está quase em branco (parece um toque só). Peça para o cliente assinar por inteiro no quadro.", { codigo: "assinatura_vazia" });
     mkdirSync(pastaOs(o.id), { recursive: true });
     const arquivo = `assinatura.${img.ext}`;
     writeFileSync(join(pastaOs(o.id), arquivo), img.buf, { mode: 0o600 });
@@ -428,7 +473,13 @@ export function rotasInstalador(h) {
 
   /* ---------- Contratos recorrentes (Asaas do próprio instalador, sem split) ---------- */
   const asaasDo = (c) => criarAsaas({ fetchFn, url: cfg.asaas.url, chave: negocio.segredo(c.config.asaas_chave_cripto) });
-  r.get("/api/instalador/contratos", I("comercial"), ({ conta }) => repo.lista("contratos", "WHERE instalador_id = ? ORDER BY criado_em DESC", conta.id).map((c) => ({ ...c, cliente: repo.obter("clientes", c.cliente_id)?.nome, cobrancas: repo.lista("contrato_cobrancas", "WHERE contrato_id = ? ORDER BY vencimento DESC LIMIT 24", c.id) })));
+  r.get("/api/instalador/contratos", I("comercial"), (ctx) => {
+    const pg = paginar(ctx, { padrao: 500, maximo: 500 });
+    const lista = pg.cortar(repo.lista("contratos", "WHERE instalador_id = ? ORDER BY criado_em DESC, id LIMIT ? OFFSET ?", ctx.conta.id, ...pg.sql));
+    const clis = repo.porIds("clientes", lista.map((c) => c.cliente_id));
+    const cobs = repo.agrupar("contrato_cobrancas", "contrato_id", lista.map((c) => c.id), "ORDER BY vencimento DESC");
+    return lista.map((c) => ({ ...c, cliente: clis.get(c.cliente_id)?.nome, cobrancas: (cobs.get(c.id) ?? []).slice(0, 24) }));
+  });
   r.post("/api/instalador/contratos", I("comercial"), async (ctx) => {
     const d = validar(z.object({ cliente_id: id, descricao: t(200), valor_centavos: centavos.refine((v) => v >= 500, "mínimo de R$ 5,00"), dia_vencimento: z.number().int().min(1).max(28), inicio: dia.optional() }), await ctx.corpo());
     const cli = daConta("clientes", d.cliente_id, "instalador_id", ctx.conta.id, "Cliente");

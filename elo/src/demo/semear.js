@@ -9,6 +9,7 @@ import { hashSenha } from "../seguranca.js";
 import { hojeBR, paraMs, somarDias } from "../regras/datas.js";
 import { gerarCnpj, gerarCpf } from "../regras/documentos.js";
 import { CNPJS_DEMO } from "./simulador.js";
+import { assinaturaExemplo } from "../regras/imagem.js";
 
 export const DEMO_SENHA = "demo-elo-2026";
 export const PAPEIS = [
@@ -233,7 +234,7 @@ export async function semear({ cfg, montarAplicacao, log = () => {} }) {
     await inst.c.put(`/api/instalador/os/${osConcluida.id}/checklist`, { checklist: osConcluida.checklist.map((c) => ({ ...c, feito: true })) });
     await inst.c.put(`/api/instalador/os/${osConcluida.id}/series`, { series: osConcluida.series.map((s, i) => ({ ...s, serie: `VT${2026}${String(4410 + i).padStart(6, "0")}`, garantia_meses: 12 })) });
     await inst.c.post(`/api/instalador/os/${osConcluida.id}/fotos`, { imagem: PNG, legenda: "DVR instalado no rack" });
-    await inst.c.post(`/api/instalador/os/${osConcluida.id}/assinatura`, { imagem: PNG, nome: clientes[5].nome });
+    await inst.c.post(`/api/instalador/os/${osConcluida.id}/assinatura`, { imagem: assinaturaExemplo(), nome: clientes[5].nome });
     ir(-8, "16:40");
     await inst.c.post(`/api/instalador/os/${osConcluida.id}/status`, { status: "concluida", nota: "Sistema entregue e cliente orientado." });
 

@@ -21,12 +21,15 @@ export function contaPublica(c, cofre) {
   if (!c) return null;
   const { wallet_cripto, focus_token_cripto, asaas_chave_cripto, asaas_webhook_cripto, ...config } = c.config ?? {};
   let wallet = null;
+  let walletIlegivel = false;
   try {
     wallet = wallet_cripto ? mascarar(cofre.decifrar(wallet_cripto)) : null;
   } catch {
+    // Banca P-10: cadastrado, mas não decifra (chave mestra trocada ou dado corrompido): é preciso cadastrar de novo
     wallet = null;
+    walletIlegivel = true;
   }
-  return { ...c, config: { ...config, wallet, focus_token: Boolean(focus_token_cripto), asaas_chave: Boolean(asaas_chave_cripto) } };
+  return { ...c, config: { ...config, wallet, ...(walletIlegivel ? { wallet_ilegivel: true } : {}), focus_token: Boolean(focus_token_cripto), asaas_chave: Boolean(asaas_chave_cripto) } };
 }
 
 export function criarApi(ctxApp) {

@@ -75,13 +75,22 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
   const vinculosAprovados = (instalador_id) =>
     repo.lista("vinculos", "WHERE instalador_id = ? AND status = 'aprovado' AND fornecedor_id IN (SELECT id FROM contas WHERE tipo = 'fornecedor' AND status = 'ativo')", instalador_id);
 
-  function catalogo(instalador_id, fornecedor_id, { busca = "", categoria = "", codigo = "" } = {}) {
+  /**
+   * Catálogo como o instalador vê. Banca P-13: a visibilidade (todos ou só as tabelas escolhidas) é filtrada no SQL, antes do
+   * LIMIT; assim o produto visível depois do 500º invisível aparece, e a página seguinte existe (limite/offset).
+   */
+  function catalogo(instalador_id, fornecedor_id, { busca = "", categoria = "", codigo = "", limite = 500, offset = 0 } = {}) {
     const v = vinculo(fornecedor_id, instalador_id);
     const f = conta(fornecedor_id);
     if (!v || v.status !== "aprovado" || f?.status !== "ativo") falha(403, "Você ainda não tem vínculo aprovado com este fornecedor.");
     const tabela = tabelaDo(v);
     const termo = `%${busca.trim().toLowerCase()}%`;
-    const lista = repo.lista("produtos", "WHERE fornecedor_id = ? AND ativo = 1 AND (? = '' OR lower(nome) LIKE ? OR lower(codigo) LIKE ? OR lower(coalesce(marca,'')) LIKE ?) AND (? = '' OR categoria = ?) AND (? = '' OR codigo = ?) ORDER BY categoria, nome LIMIT 500", fornecedor_id, busca.trim(), termo, termo, termo, categoria, categoria, codigo, codigo);
+    const tid = v.tabela_id ?? "";
+    const lista = repo.lista(
+      "produtos",
+      "WHERE fornecedor_id = ? AND ativo = 1 AND (visibilidade = 'todos' OR (? <> '' AND EXISTS (SELECT 1 FROM json_each(produtos.tabelas) WHERE value = ?))) AND (? = '' OR lower(nome) LIKE ? OR lower(codigo) LIKE ? OR lower(coalesce(marca,'')) LIKE ?) AND (? = '' OR categoria = ?) AND (? = '' OR codigo = ?) ORDER BY categoria, nome, id LIMIT ? OFFSET ?",
+      fornecedor_id, tid, tid, busca.trim(), termo, termo, termo, categoria, categoria, codigo, codigo, limite, offset,
+    );
     return lista.filter((p) => visivel(p, v)).map((p) => produtoParaInstalador(p, tabela, f));
   }
 
@@ -95,22 +104,68 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
   }
 
   /* ---------- Crédito e bloqueio ---------- */
-  function credito(v) {
-    const t = repo.um(
-      "SELECT COALESCE(SUM(valor_centavos),0) abertos, COALESCE(SUM(CASE WHEN vencimento < ? THEN valor_centavos ELSE 0 END),0) vencidos_valor, COALESCE(SUM(CASE WHEN vencimento < ? THEN 1 ELSE 0 END),0) vencidos FROM titulos WHERE fornecedor_id = ? AND instalador_id = ? AND status = 'aberto'",
-      hoje(), hoje(), v.fornecedor_id, v.instalador_id,
-    );
-    return {
-      limite_centavos: v.limite_credito_centavos,
-      em_aberto_centavos: t.abertos,
-      disponivel_centavos: Math.max(0, v.limite_credito_centavos - t.abertos),
-      vencidos: t.vencidos,
-      vencidos_centavos: t.vencidos_valor,
-      bloqueio_manual: Boolean(v.bloqueado),
-      bloqueio_inadimplencia: t.vencidos > 0,
-      bloqueado: Boolean(v.bloqueado) || t.vencidos > 0,
-      motivo: v.bloqueado ? v.motivo || "Bloqueio feito pelo fornecedor." : t.vencidos > 0 ? "Há título vencido com este fornecedor." : null,
-    };
+  /**
+   * Crédito de vários vínculos de uma vez (banca P-13: sem uma consulta por vínculo).
+   * Banca P-05: para o fornecedor SEM walletId, o que já está comprometido também consome o limite: itens dele em propostas com
+   * reserva ativa e em propostas aceitas com cobrança aberta (o título só nasce no pagamento; antes disso, três propostas de
+   * R$ 8.000 passavam num limite de R$ 10.000). Com walletId o fornecedor recebe pelo split e o limite não entra.
+   */
+  function creditos(vinculos) {
+    const ids = JSON.stringify(vinculos.map((v) => v.id));
+    const tit = new Map(repo.todos(
+      "SELECT v.id vid, COALESCE(SUM(t.valor_centavos),0) abertos, COALESCE(SUM(CASE WHEN t.vencimento < ? THEN t.valor_centavos ELSE 0 END),0) vencidos_valor, COALESCE(SUM(CASE WHEN t.vencimento < ? THEN 1 ELSE 0 END),0) vencidos FROM vinculos v JOIN titulos t ON t.fornecedor_id = v.fornecedor_id AND t.instalador_id = v.instalador_id AND t.status = 'aberto' WHERE v.id IN (SELECT value FROM json_each(?)) GROUP BY v.id",
+      hoje(), hoje(), ids,
+    ).map((x) => [x.vid, x]));
+    const comp = new Map(repo.todos(
+      `SELECT v.id vid, COALESCE(SUM(i.custo_unit_centavos * i.quantidade),0) n FROM vinculos v
+       JOIN contas f ON f.id = v.fornecedor_id AND json_extract(f.config, '$.wallet_cripto') IS NULL
+       JOIN propostas p ON p.instalador_id = v.instalador_id AND p.status IN ('enviada','vista','aceita')
+       JOIN proposta_itens i ON i.proposta_id = p.id AND i.fornecedor_id = v.fornecedor_id AND i.tipo = 'fornecedor'
+       WHERE v.id IN (SELECT value FROM json_each(?))
+         AND (EXISTS (SELECT 1 FROM reservas r WHERE r.proposta_id = p.id AND r.fornecedor_id = v.fornecedor_id AND r.status = 'ativa')
+              OR (p.status = 'aceita' AND EXISTS (SELECT 1 FROM pagamentos g WHERE g.proposta_id = p.id AND g.status = 'pendente')))
+       GROUP BY v.id`,
+      ids,
+    ).map((x) => [x.vid, x.n]));
+    return new Map(vinculos.map((v) => {
+      const t = tit.get(v.id) ?? { abertos: 0, vencidos_valor: 0, vencidos: 0 };
+      const comprometido = comp.get(v.id) ?? 0;
+      return [v.id, {
+        limite_centavos: v.limite_credito_centavos,
+        em_aberto_centavos: t.abertos,
+        comprometido_centavos: comprometido,
+        disponivel_centavos: Math.max(0, v.limite_credito_centavos - t.abertos - comprometido),
+        vencidos: t.vencidos,
+        vencidos_centavos: t.vencidos_valor,
+        bloqueio_manual: Boolean(v.bloqueado),
+        bloqueio_inadimplencia: t.vencidos > 0,
+        bloqueado: Boolean(v.bloqueado) || t.vencidos > 0,
+        motivo: v.bloqueado ? v.motivo || "Bloqueio feito pelo fornecedor." : t.vencidos > 0 ? "Há título vencido com este fornecedor." : null,
+      }];
+    }));
+  }
+  const credito = (v) => creditos([v]).get(v.id);
+
+  /* ---------- Conta de recebimento (walletId) ---------- */
+  /**
+   * walletId decifrado. Banca P-10: "não configurado" (devolve "") é diferente de "não deu para decifrar" (troca de MASTER_KEY,
+   * restauração parcial, campo corrompido). No segundo caso o dinheiro NÃO pode ir em silêncio para o instalador como título:
+   * registra no log e na auditoria, avisa o operador Nexor (uma vez por dia por conta) e recusa a cobrança com 503.
+   */
+  function walletDe(c) {
+    const v = c?.config?.wallet_cripto;
+    if (!v) return "";
+    try {
+      return cofre.decifrar(v);
+    } catch (e) {
+      console.error(`[wallet] walletId da conta ${c.id} (${nomeConta(c)}) não pôde ser decifrado: ${e.message}`);
+      repo.auditar(c.id, "sistema", "wallet_ilegivel", { erro: String(e.message).slice(0, 200) });
+      for (const op of repo.lista("contas", "WHERE tipo = 'nexor'")) {
+        if (repo.um("SELECT 1 FROM notificacoes WHERE conta_id = ? AND tipo = 'wallet_ilegivel' AND ref = ? AND criado_em > ?", op.id, c.id, agora() - 86400_000)) continue;
+        avisar(op.id, "wallet_ilegivel", `O walletId de ${nomeConta(c)} (${c.tipo}) não pôde ser lido: chave mestra trocada ou dado corrompido. As cobranças que dependem dele estão recusadas até o walletId ser cadastrado de novo.`, c.id);
+      }
+      falha(503, `Não foi possível gerar a cobrança agora: a conta de recebimento ${c.tipo === "fornecedor" ? "de um dos fornecedores" : "do instalador"} está com problema. A Nexor já foi avisada. Tente de novo mais tarde.`, { codigo: "wallet_ilegivel" });
+    }
   }
 
   /* ---------- Proposta: totais ---------- */
@@ -121,6 +176,24 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
     const custoFornecedores = itens.filter((i) => i.tipo === "fornecedor").reduce((s, i) => s + i.custo_unit_centavos * i.quantidade, 0);
     const taxa = Math.round((total * cfg.taxaPlataformaBps) / 10000);
     return { subtotal_centavos: subtotal, total_centavos: total, custo_fornecedores_centavos: custoFornecedores, taxa_plataforma_centavos: taxa };
+  }
+  /**
+   * Banca P-08: rateia o desconto da proposta entre os itens, proporcional ao valor de cada um (maiores restos: os centavos que
+   * sobram do arredondamento vão para os itens com a maior fração). A soma dos líquidos é sempre subtotal − desconto.
+   */
+  function ratearDesconto(itens, desconto = 0) {
+    const brutos = itens.map((i) => i.preco_unit_centavos * i.quantidade);
+    const subtotal = brutos.reduce((s, b) => s + b, 0);
+    const d = Math.min(Math.max(0, desconto ?? 0), subtotal);
+    const exato = brutos.map((b) => (subtotal ? (d * b) / subtotal : 0));
+    const partes = exato.map(Math.floor);
+    let sobra = d - partes.reduce((s, x) => s + x, 0);
+    for (const n of exato.map((x, n) => [x - Math.floor(x), n]).sort((a, b) => b[0] - a[0]).map(([, n]) => n)) {
+      if (sobra <= 0) break;
+      partes[n] += 1;
+      sobra -= 1;
+    }
+    return itens.map((i, n) => ({ ...i, bruto_centavos: brutos[n], desconto_rateado_centavos: partes[n], liquido_centavos: brutos[n] - partes[n] }));
   }
   /** Por fornecedor: soma do custo dos itens dele */
   function porFornecedor(itens) {
@@ -163,7 +236,7 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
       if (f?.status !== "ativo" || v?.status !== "aprovado") falha(409, `O vínculo com ${nomeConta(f)} não está ativo.`);
       const c = credito(v);
       if (c.bloqueado) falha(409, `${nomeConta(f)} bloqueou novas reservas: ${c.motivo}`, { codigo: "bloqueado", fornecedor_id: fid });
-      if (!segredo(f.config.wallet_cripto) && custo > c.disponivel_centavos) falha(409, `${nomeConta(f)} ainda não recebe pelo split e seu limite de crédito disponível (${reais(c.disponivel_centavos)}) não cobre ${reais(custo)}.`, { codigo: "credito", fornecedor_id: fid });
+      if (!f.config.wallet_cripto && custo > c.disponivel_centavos) falha(409, `${nomeConta(f)} ainda não recebe pelo split e seu limite de crédito disponível (${reais(c.disponivel_centavos)}) não cobre ${reais(custo)}.`, { codigo: "credito", fornecedor_id: fid });
       prazo = Math.min(prazo, f.config.prazo_reserva_dias ?? PRAZO_RESERVA_PADRAO);
     }
     if (!Number.isFinite(prazo)) prazo = PRAZO_RESERVA_PADRAO;
@@ -315,12 +388,12 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
     const itens = itensDa(p.id);
     const custos = porFornecedor(itens);
     const inst = conta(p.instalador_id);
-    const walletInst = segredo(inst.config.wallet_cripto);
+    const walletInst = walletDe(inst);
     if (!walletInst) falha(409, "O instalador ainda não configurou a conta de recebimento. Fale com ele.", { codigo: "wallet_instalador" });
     const partes = [];
     let comWallet = 0;
     for (const [fid, centavos] of custos) {
-      const w = segredo(conta(fid)?.config?.wallet_cripto);
+      const w = walletDe(conta(fid));
       partes.push({ destino: "fornecedor", conta_id: fid, centavos, via: w ? "split" : "titulo", walletId: w || null });
       if (w) comWallet += centavos;
     }
@@ -541,29 +614,41 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
   }
 
   /* ---------- Score do instalador (visto pelo fornecedor) ---------- */
-  function score(instalador_id, fornecedor_id) {
+  /** Score de vários instaladores de uma vez (banca P-13: 5 consultas agrupadas no lugar de 6 por instalador) */
+  function scores(fornecedor_id, instalador_ids) {
+    const ids = JSON.stringify([...new Set(instalador_ids)]);
     const desde = agora() - 90 * 86400_000;
-    const conv = (sqlExtra, ...p) => repo.um(`SELECT COUNT(*) enviadas, COALESCE(SUM(CASE WHEN status = 'paga' THEN 1 ELSE 0 END),0) pagas FROM propostas WHERE instalador_id = ? AND enviada_em IS NOT NULL ${sqlExtra}`, instalador_id, ...p);
-    const geral = conv("");
-    const comigo = conv("AND id IN (SELECT proposta_id FROM proposta_itens WHERE fornecedor_id = ?)", fornecedor_id);
-    const tit = repo.um("SELECT COUNT(*) pagos, COALESCE(SUM(CASE WHEN pago_no_prazo = 1 THEN 1 ELSE 0 END),0) em_dia FROM titulos WHERE instalador_id = ? AND fornecedor_id = ? AND status = 'pago'", instalador_id, fornecedor_id);
-    const vencidos = repo.um("SELECT COUNT(*) n FROM titulos WHERE instalador_id = ? AND fornecedor_id = ? AND status = 'aberto' AND vencimento < ?", instalador_id, fornecedor_id, hoje()).n;
-    const vol = repo.um("SELECT COALESCE(SUM(i.custo_unit_centavos * i.quantidade),0) v, COUNT(DISTINCT p.id) n FROM proposta_itens i JOIN propostas p ON p.id = i.proposta_id WHERE p.instalador_id = ? AND i.fornecedor_id = ? AND p.status = 'paga' AND p.paga_em >= ?", instalador_id, fornecedor_id, desde);
-    const taxaConv = geral.enviadas ? geral.pagas / geral.enviadas : 0;
-    const pontualidade = tit.pagos + vencidos ? tit.em_dia / (tit.pagos + vencidos) : 1;
-    const nota = Math.round(40 * taxaConv + 40 * pontualidade + 20 * Math.min(1, vol.v / 5_000_000));
-    return {
-      score: nota,
-      conversao: { enviadas: geral.enviadas, pagas: geral.pagas, taxa_pct: Math.round(taxaConv * 100), com_voce: { enviadas: comigo.enviadas, pagas: comigo.pagas } },
-      pagamentos: { titulos_pagos: tit.pagos, em_dia: tit.em_dia, vencidos_abertos: vencidos, pontualidade_pct: Math.round(pontualidade * 100) },
-      volume_90d: { centavos: vol.v, propostas_pagas: vol.n },
-    };
+    const porInst = (sql, ...p) => new Map(repo.todos(sql, ...p).map((x) => [x.inst, x]));
+    const geral = porInst("SELECT instalador_id inst, COUNT(*) enviadas, COALESCE(SUM(CASE WHEN status = 'paga' THEN 1 ELSE 0 END),0) pagas FROM propostas WHERE instalador_id IN (SELECT value FROM json_each(?)) AND enviada_em IS NOT NULL GROUP BY instalador_id", ids);
+    const comigo = porInst("SELECT instalador_id inst, COUNT(*) enviadas, COALESCE(SUM(CASE WHEN status = 'paga' THEN 1 ELSE 0 END),0) pagas FROM propostas WHERE instalador_id IN (SELECT value FROM json_each(?)) AND enviada_em IS NOT NULL AND id IN (SELECT proposta_id FROM proposta_itens WHERE fornecedor_id = ?) GROUP BY instalador_id", ids, fornecedor_id);
+    const tit = porInst("SELECT instalador_id inst, COUNT(*) pagos, COALESCE(SUM(CASE WHEN pago_no_prazo = 1 THEN 1 ELSE 0 END),0) em_dia FROM titulos WHERE fornecedor_id = ? AND instalador_id IN (SELECT value FROM json_each(?)) AND status = 'pago' GROUP BY instalador_id", fornecedor_id, ids);
+    const venc = porInst("SELECT instalador_id inst, COUNT(*) n FROM titulos WHERE fornecedor_id = ? AND instalador_id IN (SELECT value FROM json_each(?)) AND status = 'aberto' AND vencimento < ? GROUP BY instalador_id", fornecedor_id, ids, hoje());
+    const vol = porInst("SELECT p.instalador_id inst, COALESCE(SUM(i.custo_unit_centavos * i.quantidade),0) v, COUNT(DISTINCT p.id) n FROM proposta_itens i JOIN propostas p ON p.id = i.proposta_id WHERE p.instalador_id IN (SELECT value FROM json_each(?)) AND i.fornecedor_id = ? AND p.status = 'paga' AND p.paga_em >= ? GROUP BY p.instalador_id", ids, fornecedor_id, desde);
+    const r = new Map();
+    for (const inst of JSON.parse(ids)) {
+      const g = geral.get(inst) ?? { enviadas: 0, pagas: 0 };
+      const c = comigo.get(inst) ?? { enviadas: 0, pagas: 0 };
+      const t = tit.get(inst) ?? { pagos: 0, em_dia: 0 };
+      const vencidos = venc.get(inst)?.n ?? 0;
+      const v = vol.get(inst) ?? { v: 0, n: 0 };
+      const taxaConv = g.enviadas ? g.pagas / g.enviadas : 0;
+      const pontualidade = t.pagos + vencidos ? t.em_dia / (t.pagos + vencidos) : 1;
+      r.set(inst, {
+        score: Math.round(40 * taxaConv + 40 * pontualidade + 20 * Math.min(1, v.v / 5_000_000)),
+        conversao: { enviadas: g.enviadas, pagas: g.pagas, taxa_pct: Math.round(taxaConv * 100), com_voce: { enviadas: c.enviadas, pagas: c.pagas } },
+        pagamentos: { titulos_pagos: t.pagos, em_dia: t.em_dia, vencidos_abertos: vencidos, pontualidade_pct: Math.round(pontualidade * 100) },
+        volume_90d: { centavos: v.v, propostas_pagas: v.n },
+      });
+    }
+    return r;
   }
+  const score = (instalador_id, fornecedor_id) => scores(fornecedor_id, [instalador_id]).get(instalador_id);
 
   return {
-    avisar, enviarDireto, vinculo, tabelaDo, preco, visivel, catalogo, comparar, credito, itensDa, totais, prepararItens,
+    avisar, enviarDireto, vinculo, tabelaDo, preco, visivel, catalogo, comparar, credito, creditos, scores, walletDe, ratearDesconto, itensDa, totais, prepararItens,
     enviar, renovar, encerrar, registrarVista, aceitar, pagar, planoDeSplit, confirmarPagamento, eventoAsaas, rotina, score,
     liberarReservas, tarifaAsaas, estornarPagamento, linkProposta, linkOs, tokenDe, porToken, fornecedoresDa, segredo, nomeConta, produtoParaInstalador, vinculosAprovados,
+    formatarReais: reais,
     ocioso: () => fila,
   };
 }
