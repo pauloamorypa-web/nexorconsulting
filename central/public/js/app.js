@@ -24,7 +24,7 @@ const chipCliente = (c) => {
 };
 let catalogo = null;
 const pegarCatalogo = async () => (catalogo ??= await get("/catalogo"));
-const planosOpcoes = (cat) => Object.entries(cat.planos).flatMap(([prod, g]) => g.planos.filter((p) => p.mensal || p.por_unidade).map((p) => [p.id, `${cat.produtos[prod]} · ${p.nome} · ${p.por_unidade ? `${reais(p.por_unidade)}/${g.unidade} (mín. ${reais(p.minimo)})` : `${reais(p.mensal)}/mês`}`]));
+const planosOpcoes = (cat) => Object.entries(cat.planos).flatMap(([prod, g]) => g.planos.filter((p) => p.mensal || p.por_unidade).map((p) => [p.id, `${cat.produtos[prod]} · ${p.nome} · ${p.por_unidade ? (p.franquia ? `${reais(p.minimo)} até ${p.franquia} + ${reais(p.por_unidade)}/${g.unidade}` : `${reais(p.por_unidade)}/${g.unidade} (mín. ${reais(p.minimo)})`) : `${reais(p.mensal)}/mês`}`]));
 const acharPlano = (cat, id) => {
   for (const [prod, g] of Object.entries(cat.planos)) {
     const p = g.planos.find((x) => x.id === id);
@@ -412,7 +412,8 @@ async function contratar(c) {
     const d = f.ler();
     const p = acharPlano(cat, d.plano_id);
     if (!p) return limpar(previa, "Escolha o plano.");
-    const mensal = p.por_unidade ? Math.max(p.minimo, Math.round(p.por_unidade * (Number(d.quantidade) || 0))) : p.mensal;
+    const q = Number(d.quantidade) || 0;
+    const mensal = p.por_unidade ? (p.franquia ? p.minimo + Math.round(p.por_unidade * Math.max(0, q - p.franquia)) : Math.max(p.minimo, Math.round(p.por_unidade * q))) : p.mensal;
     const fund = d.fundador && cat.fundadores.produtos.includes(p.produto);
     const vagas = cat.fundadores.vagas - (cat.fundadores.usadas[p.produto] ?? 0);
     const desc = fund ? cat.fundadores.desconto_mensal : Number(d.desconto_pct) || 0;
@@ -448,7 +449,7 @@ async function comercial() {
     { class: "pagina" },
     topo("Planos e preços", "Tabela oficial da Nexor. Para mudar valores, edite central/src/planos.js e comercial/PLANOS-E-PRECOS.md."),
     h("div", { class: "grade-planos" }, Object.entries(cat.planos).filter(([k]) => k !== "one").map(([prod, g]) =>
-      h("section", { class: "cartao" }, h("h2", {}, cat.produtos[prod]), tabela([{ titulo: "Plano", valor: (p) => h("div", {}, h("strong", {}, p.nome), h("small", { class: "suave", style: { display: "block" } }, p.inclui)) }, { titulo: "Mensalidade", valor: (p) => (p.por_unidade ? `${reais(p.por_unidade)}/${g.unidade} · mín. ${reais(p.minimo)}` : reais(p.mensal)), classe: "num" }, { titulo: "Implantação", valor: (p) => reais(p.implantacao), classe: "num" }], g.planos), h("p", { class: "suave pequeno" }, `Teste grátis: ${cat.teste.produtos[prod]?.resumo ?? "—"}.`)),
+      h("section", { class: "cartao" }, h("h2", {}, cat.produtos[prod]), tabela([{ titulo: "Plano", valor: (p) => h("div", {}, h("strong", {}, p.nome), h("small", { class: "suave", style: { display: "block" } }, p.inclui)) }, { titulo: "Mensalidade", valor: (p) => (p.por_unidade ? (p.franquia ? `${reais(p.minimo)} até ${p.franquia} · + ${reais(p.por_unidade)}/${g.unidade}` : `${reais(p.por_unidade)}/${g.unidade} · mín. ${reais(p.minimo)}`) : reais(p.mensal)), classe: "num" }, { titulo: "Implantação", valor: (p) => reais(p.implantacao), classe: "num" }], g.planos), h("p", { class: "suave pequeno" }, `Teste grátis: ${cat.teste.produtos[prod]?.resumo ?? "—"}.`)),
     )),
     h("div", { class: "grade-2" },
       h("section", { class: "cartao" }, h("h2", {}, "Programa de fundadores"), h("p", {}, `${fd.desconto_mensal}% na mensalidade por ${fd.meses} meses, ${fd.desconto_implantacao}% na implantação e preço travado por ${fd.preco_travado_meses} meses. ${fd.vagas} vagas por produto.`), tabela([{ titulo: "Produto", valor: (p) => cat.produtos[p] }, { titulo: "Vagas usadas", valor: (p) => `${fd.usadas[p] ?? 0} de ${fd.vagas}`, classe: "num" }], fd.produtos), h("p", { class: "suave pequeno" }, `Contrapartidas: ${fd.contrapartidas.join("; ")}.`)),

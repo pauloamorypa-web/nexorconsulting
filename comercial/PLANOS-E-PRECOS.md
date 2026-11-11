@@ -77,10 +77,16 @@ As taxas do Asaas no clube de assinatura e o SMS de login ficam na conta da barb
 
 Cada conector novo sob medida custa de R$ 2.000 a R$ 5.000.
 
+### Nexor Service Desk
+| Plano | Inclui | Mensalidade | Implantação |
+|---|---|---|---|
+| Equipe | Até 5 técnicos: chamados com SLA, inventário com agente, ações remotas com permissão, painel, painel da TV e LGPD | R$ 299 (+ R$ 49 por técnico além de 5) | R$ 990 |
+
+Teste grátis de 30 dias com todas as funções e até 5 técnicos.
+
 ### Outros produtos e projetos
 | Produto | Mensalidade | Implantação |
 |---|---|---|
-| Nexor Service Desk | R$ 299 até 5 técnicos (+ R$ 49 por técnico) | R$ 990 |
 | Nexor Cofre | R$ 199 até 20 usuários (+ R$ 7 por usuário) | R$ 690 |
 | Nexor IT Platform | R$ 9,90 por máquina (mínimo R$ 299) | R$ 1.490 |
 | Nexor Site Pro | R$ 149 (hospedagem, ajustes e segurança) | R$ 2.900 a R$ 6.900 por projeto |
@@ -112,7 +118,7 @@ Cada conector novo sob medida custa de R$ 2.000 a R$ 5.000.
 
 ## 4. Programa de fundadores
 
-**Para quem:** os 10 primeiros clientes de cada um destes produtos: **Nexor Contábil, Nexor Barber e Nexor Agente**.
+**Para quem:** os 10 primeiros clientes de cada um destes produtos: **Nexor Contábil, Nexor Barber, Nexor Agente e Nexor Service Desk** (o Nexor Elo tem condições próprias em `ELO-PRECOS.md`).
 
 | Benefício | Valor |
 |---|---|

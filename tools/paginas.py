@@ -95,6 +95,8 @@ P = [
   recursos=["Abertura de chamados pelo computador ou pelo celular, com anexos, categorias e prioridade", "SLA por prioridade que pausa enquanto o chamado aguarda o usuário", "Triagem completa: assumir, pedir informação, resolver e o usuário confirma o fechamento", "Reabertura, histórico de cada chamado e avisos por e-mail", "Painel com indicadores, exportação em CSV e painel de TV por link", "Inventário de PCs Windows e Linux: hardware, programas e rede", "Ações remotas com permissão do gestor: instalar o Radmin, desligar, reiniciar e instalar programas", "Permissões por perfil (gestor e técnico) e trilha de auditoria com IP"],
   telas=[("/assets/img/servicedesk/chamados.webp", "Fila de chamados com prioridade, SLA e técnico responsável"), ("/assets/img/servicedesk/chamado.webp", "Chamado com o SLA pausado enquanto aguarda o usuário, e todo o histórico"), ("/assets/img/servicedesk/painel.webp", "Painel com indicadores do mês e exportação em CSV"), ("/assets/img/servicedesk/inventario.webp", "Inventário de PCs Windows e Linux, com ações remotas do gestor"), ("/assets/img/servicedesk/tv.webp", "Painel de TV por link com token, só com números e categorias")],
   telas_titulo="Como é o sistema", telas_nota="Telas ilustrativas com dados fictícios de demonstração (Empresa Exemplo).",
+  banca="Antes de chegar ao cliente, o Nexor Service Desk passou pela nossa Banca de Testes: cinco agentes especialistas que atacam, leem o código, testam e usam o sistema como um usuário apressado. Cada falha encontrada foi corrigida e ganhou um teste automático; hoje são mais de 400 testes rodando a cada versão.",
+  fundador=True,
   blocos_titulo="Segurança, LGPD e implantação",
   blocos=[("Segurança desde a base", ["Senhas guardadas com scrypt e sessões assinadas com HMAC", "Proteção contra CSRF, política de conteúdo (CSP) e limite de tentativas", "Comandos remotos assinados ou vinculados à máquina, com validade curta e registro na auditoria", "Trava do último gestor: a equipe nunca fica sem um administrador"]),
           ("LGPD no dia a dia", ["Aviso de privacidade para quem usa o sistema", "Anonimização dos dados pessoais quando o titular pede", "Backups do banco de dados", "Painel de TV só com dados mínimos, sem nomes nem dados pessoais"]),
@@ -253,6 +255,22 @@ def pagina(p):
         previa += (f'<section class="sp-bloco"><div class="container"><h2>{esc(p.get("blocos_titulo", "Mais recursos"))}</h2><div class="sp-duas">'
                    + "".join(f'<div class="sp-card"><h2>{esc(t)}</h2><ul class="sp-check">{"".join(f"<li>{esc(i)}</li>" for i in itens)}</ul></div>' for t, itens in p["blocos"])
                    + '</div></div></section>')
+    if p.get("banca"):
+        previa += ('<section class="sp-bloco"><div class="container"><div class="sp-card"><h2>Aprovado pela Banca de Testes Nexor</h2>'
+                   f'<p class="sp-sub">{esc(p["banca"])}</p><ul class="sp-check">'
+                   '<li><b>Hacker:</b> tenta invadir, roubar contas e ver dados de outros usuários</li>'
+                   '<li><b>Programador sênior:</b> lê o código linha a linha atrás de erros de lógica e lentidão</li>'
+                   '<li><b>Testador:</b> roda o sistema inteiro, com carga e com falhas de propósito</li>'
+                   '<li><b>Usuário confuso:</b> clica duas vezes, abre várias abas e usa no celular com pressa</li>'
+                   '<li><b>Veredito:</b> confere as provas, dá a nota e só libera depois das correções, cada uma com teste automático</li>'
+                   '</ul></div></div></section>')
+    if p.get("fundador"):
+        msg_f = f"Olá! Quero uma das vagas de fundador do {p['nome']}."
+        previa += ('<section class="sp-bloco" id="vagas-fundador"><div class="container"><div class="sp-card"><h2>Programa de fundadores · 10 vagas</h2>'
+                   f'<p class="sp-sub">As 10 primeiras empresas do {esc(p["nome"])} entram como fundadoras, em troca de feedback e de um depoimento.</p>'
+                   '<ul class="sp-check"><li><b>40%</b> de desconto na mensalidade por 12 meses</li><li><b>50%</b> de desconto na implantação</li>'
+                   '<li><b>24 meses</b> de preço travado, sem reajuste</li><li>Contrato mínimo de 12 meses</li></ul>'
+                   f'<div class="sp-ctas"><a class="btn btn-lg btn-primary" href="{wa(msg_f)}" target="_blank" rel="noopener" data-lead-origem="fundador-{p["id"]}">Quero ser fundador <svg class="ic"><use href="#i-arrow"/></svg></a></div></div></div></section>')
     destaque = ""
     if p.get("destaque"):
         t, txt, href, botao = p["destaque"]

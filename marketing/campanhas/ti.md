@@ -6,10 +6,10 @@
 | Complementos | **Nexor Cofre** (senhas com criptografia, permissões e histórico) e **Nexor IT Platform** (status em tempo real, descoberta de aparelhos na rede e alertas) |
 | Páginas | Service Desk: https://nexorconsultingit.com.br/solucoes/sistema-de-chamados/ (`#testar-chamados`) · Cofre: https://nexorconsultingit.com.br/solucoes/cofre-de-senhas/ (`#testar-cofre`) · IT Platform: https://nexorconsultingit.com.br/solucoes/inventario-de-ti/ (`#testar-ti`) |
 | Mercado | **Araguari e Triângulo Mineiro** (Uberlândia, Uberaba, Patos de Minas, Ituiutaba, Monte Carmelo) no presencial e na mídia local; **Brasil** só no Search de alta intenção |
-| Oferta | Teste grátis de 30 dias, sem cartão, com o time Nexor instalando. **Sem programa de fundador** neste produto (decisão em aberto, ver o fim do arquivo) |
+| Oferta | Teste grátis de 30 dias, sem cartão, com o time Nexor instalando. **Programa de fundadores: 10 vagas** com 40% na mensalidade por 12 meses, 50% na implantação e preço travado por 24 meses (contrato mínimo de 12 meses, depoimento e feedback). Botão na página: `#vagas-fundador` |
 | Demonstração | Demonstração no navegador (`#testar-chamados`) e o roteiro curto da seção 7. Ainda **não há pacote em `demo/`** |
 | Criativos | `../pecas/camp-ti.png` (quadrado) · `../pecas/sd-carrossel-capa.png` (1080×1350) · `../pecas/sd-story.png` (1080×1920) · `../pecas/sd-link.png` (1200×628) |
-| Prova | Testado pela Banca de Testes da Nexor (5 agentes especialistas). Uso **interno e na conversa de vendas**: as páginas de produto do site ainda não citam a Banca |
+| Prova | Aprovado pela Banca de Testes da Nexor (5 agentes especialistas, mais de 400 testes automáticos). Está na página do produto, na seção "Aprovado pela Banca de Testes Nexor" |
 
 > **Alerta da projeção:** no cenário médio, a mídia paga sozinha **não se paga** (LTV/CAC de cerca de 1,7). Estratégia: Search só com palavras exatas e verba pequena, Meta só local e de remarketing, e o peso no **canal de MSPs e técnicos de TI** do Triângulo (parceiro revenda de 20% a 30%) e na **venda casada** com a consultoria de LGPD. Revise depois das primeiras 5 demonstrações.
 
@@ -157,4 +157,4 @@
 | E-mail D+7 | https://nexorconsultingit.com.br/solucoes/sistema-de-chamados/?utm_source=email&utm_medium=outbound&utm_campaign=ti&utm_content=d7#testar-chamados |
 | Parceiro de TI | https://nexorconsultingit.com.br/solucoes/sistema-de-chamados/?utm_source=parceiro&utm_medium=referral&utm_campaign=ti&utm_term=CODIGO |
 
-> **Pendências:** (1) decidir se o Service Desk entra no programa de fundadores (hoje só Contábil, Barber, Agente e Elo); (2) decidir se a Banca de Testes vira selo nas páginas de produto; (3) criar o pacote de demonstração em `demo/`.
+> **Decidido em 11/11/2026:** o Service Desk entra no programa de fundadores (10 vagas) e a página do produto cita a Banca de Testes. **Pendência:** criar o pacote de demonstração em `demo/`.
