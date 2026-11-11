@@ -16,7 +16,12 @@ import { INSTRUCOES_DEMO } from "./conhecimento.js";
 import { limparOrigem, rotuloOrigem, temperatura } from "./leads.js";
 import { enviarParaMeta } from "./meta.js";
 import { gerarRelatorio } from "./relatorio.js";
-import { assinaturaValida, emBaloes, enviarTexto, extrairMensagens, marcarComoLida, pausaDigitando, whatsappConfigurado } from "./whatsapp.js";
+import { assinaturaValida, emBaloes, enviarTemplate, enviarTexto, extrairMensagens, marcarComoLida, pausaDigitando, whatsappConfigurado } from "./whatsapp.js";
+import { qualificarLead } from "./vendas/qualificacao.js";
+import { criarRascunhoComercial } from "./vendas/rascunho.js";
+import { criarGoogleCalendar } from "./vendas/google-calendar.js";
+import { criarAgendadorLembretes } from "./vendas/lembretes.js";
+import { pedidoCancelarReuniao, pedidoOptOutWhatsApp } from "./vendas/consentimento.js";
 
 const LIMITE_CORPO = 256 * 1024;
 const SESSAO_VALIDA = /^[A-Za-z0-9_-]{8,64}$/;
@@ -33,11 +38,13 @@ const LIMITES = {
 };
 
 export function criarLimitador({ quantidade, janelaMs }, agora = Date.now) {
+  const maximo = Number.isFinite(quantidade) && quantidade > 0 ? Math.max(1, Math.floor(quantidade)) : 1;
+  const janela = Number.isFinite(janelaMs) && janelaMs > 0 ? janelaMs : 60_000;
   const registros = new Map();
   return (chave) => {
     const t = agora();
-    const lista = (registros.get(chave) ?? []).filter((x) => t - x < janelaMs);
-    if (lista.length >= quantidade) {
+    const lista = (registros.get(chave) ?? []).filter((x) => t - x < janela);
+    if (lista.length >= maximo) {
       registros.set(chave, lista);
       return false;
     }
@@ -48,14 +55,12 @@ export function criarLimitador({ quantidade, janelaMs }, agora = Date.now) {
   };
 }
 
-/* IP real do visitante. O Render fica atrás da Cloudflare, que grava o IP verdadeiro em
-   True-Client-IP / CF-Connecting-IP (e sobrescreve o que o visitante mandar). O X-Forwarded-For
-   só é usado como reserva, porque o Render repassa o valor enviado pelo próprio visitante. */
-export const ipDoCliente = (req) =>
-  String(req.headers["true-client-ip"] ?? req.headers["cf-connecting-ip"] ?? "").trim() ||
-  String(req.headers["x-forwarded-for"] ?? "").split(",")[0].trim() ||
-  req.socket.remoteAddress ||
-  "desconhecido";
+/* Cabeçalhos de IP só são confiáveis quando a borda prova que é autorizada. */
+export const ipDoCliente = (req) => {
+  const remoto = req.socket.remoteAddress || "desconhecido";
+  if (!config.proxySecret || !tokenConfere(req.headers["x-nexor-proxy-secret"], config.proxySecret)) return remoto;
+  return String(req.headers["true-client-ip"] ?? req.headers["cf-connecting-ip"] ?? "").trim() || remoto;
+};
 
 const SEGURANCA = {
   "X-Content-Type-Options": "nosniff",
@@ -69,18 +74,18 @@ const SEGURANCA = {
 const limpar = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : undefined);
 
 async function notificarEquipe(texto, dados) {
-  console.log(`[aviso] ${texto.replace(/\n/g, " | ")}`);
+  console.info("[aviso] notificação comercial", { tipo: String(dados?.tipo ?? "evento").slice(0, 40) });
   const tarefas = [];
   if (config.webhookLeads) {
     tarefas.push(
-      fetch(config.webhookLeads, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dados) }).then((r) => {
+      fetch(config.webhookLeads, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dados), signal: AbortSignal.timeout(5000) }).then((r) => {
         if (!r.ok) throw new Error(`webhook ${r.status}`);
       }),
     );
   }
   if (whatsappConfigurado() && config.whatsapp.numeroEquipe) tarefas.push(enviarTexto(config.whatsapp.numeroEquipe, texto));
   for (const r of await Promise.allSettled(tarefas)) {
-    if (r.status === "rejected") console.error("[aviso] falha ao notificar:", r.reason?.message ?? r.reason);
+    if (r.status === "rejected") console.error("[aviso] falha ao notificar", { erro: r.reason?.name ?? "Error" });
   }
 }
 
@@ -111,12 +116,15 @@ const tokenConfere = (recebido, esperado) => {
   return a.length === b.length && timingSafeEqual(a, b);
 };
 
-export function criarServidor({ agente, agenteDemo = agente, armazenamento, notificar = notificarEquipe, enviarMeta = enviarParaMeta, clienteRelatorio }) {
+export function criarServidor({ agente, agenteDemo = agente, armazenamento, calendario, notificar = notificarEquipe, enviarMeta = enviarParaMeta, clienteRelatorio, clienteVendas, enviarTextoWhatsApp = enviarTexto, marcarLidaWhatsApp = marcarComoLida }) {
   const ultimosParciais = new Map(); // sessão → último lead parcial, para não repetir
   const vistas = new Set(); // ids de mensagens do WhatsApp já processadas (a Meta pode reenviar)
   const limiteChat = criarLimitador(LIMITES.chatPorIp);
   const limiteLead = criarLimitador(LIMITES.leadPorIp);
   const limiteRelatorio = criarLimitador({ quantidade: 20, janelaMs: 15 * 60_000 });
+  const limiteVendas = criarLimitador({ quantidade: 60, janelaMs: 5 * 60_000 });
+  const limiteRascunhoIp = criarLimitador({ quantidade: 10, janelaMs: 60_000 });
+  const limiteRascunhoGlobal = criarLimitador({ quantidade: 100, janelaMs: 60 * 60_000 });
   const limiteGlobal = criarLimitador({ quantidade: LIMITES.chatGlobalPorHora, janelaMs: 60 * 60_000 });
 
   const cabecalhosCors = (origem) =>
@@ -228,15 +236,112 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
     json(res, 200, { ok: true }, cors);
   }
 
+  async function qualificarLeadComercial(req, res) {
+    if (!config.vendas.habilitado || config.vendas.token.length < 32) return json(res, 404, { erro: "não encontrado" });
+    const recebido = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "");
+    if (!tokenConfere(recebido, config.vendas.token)) return json(res, 401, { erro: "não autorizado" });
+    if (!limiteVendas(ipDoCliente(req))) return json(res, 429, { erro: "muitas tentativas" }, { "Retry-After": "300" });
+
+    let dados;
+    try {
+      dados = JSON.parse((await lerCorpo(req)).toString("utf8"));
+    } catch (err) {
+      return json(res, err.status ?? 400, { erro: "JSON inválido" });
+    }
+
+    let resultado;
+    try {
+      resultado = qualificarLead(dados);
+    } catch (err) {
+      if (err?.name === "ZodError") return json(res, 400, { erro: "dados inválidos", campos: err.issues.map((i) => i.path.join(".")) });
+      throw err;
+    }
+
+    const lead = {
+      id: randomUUID(),
+      tipo: "vendas_qualificacao",
+      ...resultado.lead,
+      score: resultado.score,
+      temperatura: resultado.temperatura,
+      produto_recomendado: resultado.produto_recomendado,
+      confianca_recomendacao: resultado.confianca_recomendacao,
+      proxima_acao: resultado.proxima_acao,
+      contato_permitido: resultado.contato_permitido,
+      envio_automatico_habilitado: false,
+      registrado_em: new Date().toISOString(),
+    };
+    await armazenamento.salvarLead(lead);
+
+    if (resultado.score >= 40) {
+      const contato = lead.contato.whatsapp ?? lead.contato.email ?? "sem contato";
+      await notificar(
+        `🟦 Lead comercial ${resultado.temperatura} (${resultado.score}/100)\n${lead.nome} · ${lead.empresa}\n` +
+          `Solução: ${resultado.produto_recomendado ?? "a confirmar"}\nPróxima ação: ${resultado.proxima_acao}\nContato: ${contato}\n` +
+          `Origem: ${lead.canal_origem}${lead.fonte_url ? ` · ${lead.fonte_url}` : ""}`,
+        { tipo: "vendas_qualificacao", ...lead },
+      );
+    }
+    return json(res, 201, { ok: true, qualificacao: resultado });
+  }
+
+  async function rascunhoComercial(req, res) {
+    if (!config.vendas.habilitado || config.vendas.token.length < 32) return json(res, 404, { erro: "não encontrado" });
+    const recebido = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "");
+    if (!tokenConfere(recebido, config.vendas.token)) return json(res, 401, { erro: "não autorizado" });
+    const ip = ipDoCliente(req);
+    if (!limiteRascunhoIp(ip) || !limiteRascunhoGlobal("all")) return json(res, 429, { erro: "limite de geração atingido" }, { "Retry-After": "60" });
+    let dados;
+    try {
+      dados = JSON.parse((await lerCorpo(req)).toString("utf8"));
+    } catch (err) {
+      return json(res, err.status ?? 400, { erro: "JSON inválido" });
+    }
+    try {
+      const rascunho = await criarRascunhoComercial(dados, { cliente: clienteVendas });
+      return json(res, 200, rascunho);
+    } catch (err) {
+      if (err?.name === "ZodError") return json(res, 400, { erro: "dados inválidos", campos: err.issues.map((i) => i.path.join(".")) });
+      if (err?.status === 403) return json(res, 403, { erro: err.message });
+      throw err;
+    }
+  }
+
   async function processarWhatsApp(payload) {
     for (const m of extrairMensagens(payload)) {
-      if (vistas.has(m.id)) continue;
-      vistas.add(m.id);
-      if (vistas.size > 5000) vistas.delete(vistas.values().next().value);
-      marcarComoLida(m.id);
       try {
+        const cancelarReuniao = pedidoCancelarReuniao(m.texto);
+        const optOut = !cancelarReuniao && pedidoOptOutWhatsApp(m.texto);
+        if (!m.id || vistas.has(m.id)) continue;
+        const cancelados = cancelarReuniao ? await armazenamento.cancelarAgendamentos(m.de, new Date().toISOString()) : [];
+        // Revoke first so a crash/restart before event-dedupe persistence cannot lose an opt-out.
+        if (optOut) {
+          await armazenamento.revogarLembretes(m.de, new Date().toISOString());
+        }
+        if (typeof armazenamento.reivindicarEventoWhatsApp === "function" && !(await armazenamento.reivindicarEventoWhatsApp(m.id))) continue;
+        vistas.add(m.id);
+        if (vistas.size > 5000) vistas.delete(vistas.values().next().value);
+        marcarLidaWhatsApp(m.id);
+        if (cancelarReuniao) {
+          let falhaAgenda = false;
+          for (const item of cancelados) {
+            if (!item.calendar_event_id || !calendario?.configurado()) continue;
+            try { await calendario.cancelarReuniao(item.calendar_event_id); } catch { falhaAgenda = true; }
+          }
+          await notificar("Cancelamento de reunião solicitado pelo cliente", { tipo: "cancelamento_reuniao", telefone: m.de, quantidade: cancelados.length });
+          const resposta = !cancelados.length
+            ? "Não encontrei uma reunião ativa vinculada a este número. Pedi à equipe que confira e te retorne."
+            : falhaAgenda
+              ? "Registrei o pedido de cancelamento e a equipe vai confirmar a atualização na agenda."
+              : "Pronto, cancelei a reunião e os lembretes associados. Se quiser remarcar, é só me chamar.";
+          await enviarTextoWhatsApp(m.de, resposta);
+          continue;
+        }
+        if (optOut) {
+          await enviarTextoWhatsApp(m.de, "Tudo certo. Cancelei os lembretes de reunião pelo WhatsApp. Você ainda pode falar com a Nexor por aqui quando quiser.");
+          continue;
+        }
         if (!m.texto) {
-          await enviarTexto(m.de, "Por enquanto consigo ler só mensagens de texto. Pode me contar por escrito como posso ajudar? 🙂");
+          await enviarTextoWhatsApp(m.de, "Por enquanto consigo ler só mensagens de texto. Pode me contar por escrito como posso ajudar? 🙂");
           continue;
         }
         const texto = m.texto.slice(0, config.tamanhoMaximoMensagem);
@@ -250,10 +355,10 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
         const baloes = emBaloes(resposta);
         for (const [i, balao] of baloes.entries()) {
           if (i > 0) await new Promise((r) => setTimeout(r, pausaDigitando(balao)));
-          await enviarTexto(m.de, balao);
+          await enviarTextoWhatsApp(m.de, balao);
         }
       } catch (err) {
-        console.error(`[whatsapp] falha ao responder ${m.de}:`, err.message ?? err);
+        console.error("[whatsapp] falha ao responder mensagem", { erro: err?.name ?? "Error" });
       }
     }
   }
@@ -279,8 +384,15 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
         if (req.method === "POST") return await leadDoSite(req, res);
       }
 
+      if (req.method === "POST" && url.pathname === "/api/vendas/qualificar") {
+        return await qualificarLeadComercial(req, res);
+      }
+      if (req.method === "POST" && url.pathname === "/api/vendas/rascunho") {
+        return await rascunhoComercial(req, res);
+      }
+
       if (req.method === "GET" && url.pathname === "/api/relatorio") {
-        const token = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "") || url.searchParams.get("token") || "";
+        const token = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "");
         if (!limiteRelatorio(ipDoCliente(req))) return json(res, 429, { erro: "muitas tentativas" }, { "Retry-After": "900" });
         if (!tokenConfere(token, config.tokenRelatorio)) return json(res, 401, { erro: "não autorizado" });
         const dias = Math.max(1, Math.min(90, Number(url.searchParams.get("dias")) || 7));
@@ -313,7 +425,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
 
       json(res, 404, { erro: "não encontrado" });
     } catch (err) {
-      console.error("[servidor]", err);
+      console.error("[servidor] erro", { nome: err?.name ?? "Error", codigo: err?.code ?? "INTERNAL" });
       if (!res.headersSent) json(res, err.status ?? 500, { erro: "erro interno" });
     }
   });
@@ -322,11 +434,21 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
 /* Inicia o servidor quando executado diretamente: node src/servidor.js */
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const armazenamento = criarArmazenamento(config.pastaDados);
-  const agente = criarAgente({ armazenamento, notificar: notificarEquipe });
+  const calendario = criarGoogleCalendar();
+  const agente = criarAgente({ armazenamento, notificar: notificarEquipe, calendario });
   const agenteDemo = criarAgente({ armazenamento, instrucoes: INSTRUCOES_DEMO, comFerramentas: false });
-  criarServidor({ agente, agenteDemo, armazenamento }).listen(config.porta, () => {
+  const lembretes = criarAgendadorLembretes({
+    armazenamento,
+    configuracao: config.whatsapp,
+    enviar: enviarTemplate,
+    log: (mensagem, detalhe) => console.warn(`[vendas] ${mensagem}`, detalhe),
+  });
+  if (whatsappConfigurado() && config.whatsapp.templateLembrete24h && config.whatsapp.templateLembrete30m) lembretes.iniciar();
+  criarServidor({ agente, agenteDemo, armazenamento, calendario, notificar: notificarEquipe }).listen(config.porta, () => {
     console.log(`Blue (Nexor) ouvindo na porta ${config.porta} · modelo ${config.modelo}`);
     if (!whatsappConfigurado()) console.log("WhatsApp não configurado: só o chat do site está ativo.");
     if (whatsappConfigurado() && !config.whatsapp.segredoApp) console.warn("WHATSAPP_APP_SECRET vazio: o webhook vai recusar todas as mensagens.");
+    if (config.googleCalendar.required && !calendario.configurado()) console.warn("Google Calendar obrigatório sem credenciais: agendamentos permanecerão bloqueados.");
+    if (whatsappConfigurado() && (!config.whatsapp.templateLembrete24h || !config.whatsapp.templateLembrete30m)) console.warn("Templates de lembrete WhatsApp ausentes: lembretes outbound desativados.");
   });
 }

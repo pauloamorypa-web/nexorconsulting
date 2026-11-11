@@ -44,15 +44,16 @@ export async function enviarParaMeta(lead, contexto, { fetchFn = fetch } = {}) {
   try {
     const corpo = { data: eventosMeta(lead, contexto) };
     if (config.meta.codigoTeste) corpo.test_event_code = config.meta.codigoTeste;
-    const r = await fetchFn(`https://graph.facebook.com/${config.meta.versaoGraph}/${config.meta.pixel}/events?access_token=${encodeURIComponent(config.meta.token)}`, {
+    const r = await fetchFn(`https://graph.facebook.com/${config.meta.versaoGraph}/${config.meta.pixel}/events`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.meta.token}` },
       body: JSON.stringify(corpo),
+      signal: AbortSignal.timeout(8000),
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status} ${(await r.text()).slice(0, 200)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return true;
   } catch (err) {
-    console.error("[meta] falha ao enviar conversão:", err.message ?? err);
+    console.error("[meta] falha ao enviar conversão", { erro: err?.name ?? "Error" });
     return false;
   }
 }

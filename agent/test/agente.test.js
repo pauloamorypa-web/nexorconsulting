@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import path from "node:path";
-import { test } from "node:test";
+import { after, test } from "node:test";
 import { criarAgente } from "../src/agente.js";
 import { criarArmazenamento } from "../src/armazenamento.js";
 
@@ -25,17 +24,25 @@ function clienteFalso(respostas) {
 }
 
 const texto = (t) => ({ type: "text", text: t });
+const pastasTeste = new Set();
+after(async () => Promise.all([...pastasTeste].map((p) => rm(p, { recursive: true, force: true }))));
 
 async function agenteDeTeste(respostas) {
   const cliente = clienteFalso(respostas);
   const avisos = [];
   const agente = criarAgente({
     cliente,
-    armazenamento: criarArmazenamento(await mkdtemp(path.join(tmpdir(), "nexor-"))),
+    armazenamento: criarArmazenamento(await criarPastaTeste()),
     notificar: async (t, dados) => avisos.push(dados),
     agora: () => new Date("2026-11-02T10:00:00-03:00"),
   });
   return { agente, cliente, avisos };
+}
+
+async function criarPastaTeste() {
+  const pasta = await mkdtemp(path.join(process.cwd(), ".nexor-agent-test-"));
+  pastasTeste.add(pasta);
+  return pasta;
 }
 
 test("executa a ferramenta, devolve o resultado e responde com o texto final", async () => {
@@ -94,4 +101,28 @@ test("erro da API vira mensagem amigável e a conversa recomeça", async () => {
   cliente.beta.messages.create = async (p) => ({ stop_reason: "end_turn", content: [texto(`msgs=${p.messages.length}`)] });
   const r3 = await agente.responder({ idConversa: "site:zzzzzzzz", canal: "site", texto: "voltei" });
   assert.equal(r3.resposta, "msgs=1");
+});
+
+test("lembrete WhatsApp só é registrado quando o cliente confirma na própria mensagem", async () => {
+  async function agendar(textoCliente) {
+    const pasta = await criarPastaTeste();
+    const armazenamento = criarArmazenamento(pasta);
+    const cliente = clienteFalso([
+      { stop_reason: "tool_use", content: [{ type: "tool_use", id: "book", name: "agendar_diagnostico", input: { horario: "2026-11-03T10:30", nome: "Ana", contato: "5534999990000", assunto: "Apresentação" } }] },
+      { stop_reason: "end_turn", content: [texto("Agendado")] },
+    ]);
+    const agente = criarAgente({
+      cliente,
+      armazenamento,
+      agora: () => new Date("2026-11-02T10:00:00-03:00"),
+      calendario: { configurado: () => true, async ocupados() { return []; }, async criarReuniao() { return { id: "n123", link: "https://calendar.google.com/event", linkReuniao: "https://meet.google.com/abc-defg-hij" }; } },
+    });
+    await agente.responder({ idConversa: "wa:5534999990000", canal: "whatsapp", telefone: "5534999990000", texto: textoCliente });
+    return JSON.parse(await readFile(path.join(pasta, "agendamentos.json"), "utf8"))[0];
+  }
+  const autorizado = await agendar("Sim, aceito receber os lembretes pelo WhatsApp.");
+  const naoAutorizado = await agendar("Sim, pode mandar o link no WhatsApp.");
+  assert.equal(autorizado.whatsapp_optin, true);
+  assert.equal(autorizado.whatsapp_optin_em, "2026-11-02T13:00:00.000Z");
+  assert.equal(naoAutorizado.whatsapp_optin, false);
 });

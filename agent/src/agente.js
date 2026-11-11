@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { config } from "./config.js";
 import { INSTRUCOES } from "./conhecimento.js";
 import { DEFINICOES, criarExecutor } from "./ferramentas.js";
+import { confirmouLembreteWhatsApp } from "./vendas/consentimento.js";
 
 const MAX_ITERACOES = 8;
 const FALHA = "Desculpe, tive um problema para responder agora. Você pode falar direto com a equipe no WhatsApp (34) 99733-7499.";
@@ -27,8 +28,8 @@ const textoDa = (mensagem) =>
  * @param {string} [deps.instrucoes] instruções de sistema (padrão: a Blue, assistente da Nexor)
  * @param {boolean} [deps.comFerramentas] false = só conversa, sem registrar leads nem agendar (modo de teste)
  */
-export function criarAgente({ cliente = new Anthropic(), armazenamento, notificar = async () => {}, agora = () => new Date(), instrucoes = INSTRUCOES, comFerramentas = true }) {
-  const executar = criarExecutor({ armazenamento, notificar, agora });
+export function criarAgente({ cliente = new Anthropic(), armazenamento, notificar = async () => {}, agora = () => new Date(), instrucoes = INSTRUCOES, comFerramentas = true, calendario }) {
+  const executar = criarExecutor({ armazenamento, notificar, agora, calendario });
   const sistema = [{ type: "text", text: instrucoes }];
   const ferramentas = comFerramentas ? DEFINICOES : [];
   /** @type {Map<string, {mensagens: Anthropic.Beta.BetaMessageParam[], atualizadaEm: number, pausadaAte: number, envios: number[], fila: Promise<unknown>}>} */
@@ -59,7 +60,8 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
 
   async function rodar(c, { idConversa, canal, texto, telefone, contexto }) {
     let transferido = false;
-    const ctx = { idConversa, canal, telefone, transferir: () => (transferido = true) };
+    if (confirmouLembreteWhatsApp(texto)) c.whatsappReminderOptInAt = agora().toISOString();
+    const ctx = { idConversa, canal, telefone, whatsappReminderOptInAt: c.whatsappReminderOptInAt, transferir: () => (transferido = true) };
 
     c.mensagens.push({
       role: "user",
@@ -126,7 +128,7 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
           if (r.transferido) c.pausadaAte = agora().getTime() + config.pausaAposTransferenciaHoras * 3600_000;
           return r;
         } catch (err) {
-          console.error(`[agente] erro em ${idConversa}:`, err instanceof Anthropic.APIError ? `${err.status} ${err.message}` : err);
+          console.error("[agente] falha ao gerar resposta", { canal, tipo: err?.name ?? "Error", status: err instanceof Anthropic.APIError ? err.status : undefined });
           // Recomeça a conversa para não carregar um histórico pela metade
           c.mensagens = [];
           return { resposta: FALHA, transferido: false };

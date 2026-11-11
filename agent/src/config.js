@@ -27,6 +27,22 @@ export const config = {
   // Relatório de campanhas (GET /api/relatorio). Sem token, o relatório fica desligado.
   tokenRelatorio: process.env.REPORT_TOKEN ?? "",
 
+  // Núcleo inicial do Sales Agent: API fechada e desligada até provisionamento explícito.
+  vendas: {
+    habilitado: process.env.SALES_ENABLED === "true",
+    token: process.env.SALES_API_TOKEN ?? "",
+  },
+  // Só confie nos cabeçalhos de IP quando a borda acrescentar um segredo não acessível ao público.
+  proxySecret: process.env.TRUSTED_PROXY_SECRET ?? "",
+
+  googleCalendar: {
+    clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    refreshToken: process.env.GOOGLE_REFRESH_TOKEN ?? "",
+    calendarId: process.env.GOOGLE_CALENDAR_ID ?? "",
+    required: process.env.GOOGLE_CALENDAR_REQUIRED === "true",
+  },
+
   // API de Conversões da Meta: devolve os leads (e os leads quentes) para a Meta otimizar os anúncios
   meta: {
     pixel: process.env.META_PIXEL_ID ?? "",
@@ -45,6 +61,9 @@ export const config = {
     versaoGraph: process.env.WHATSAPP_GRAPH_VERSION ?? "v21.0",
     // Número da equipe que recebe os avisos de lead, agendamento e transferência (só dígitos, com DDI)
     numeroEquipe: process.env.TEAM_WHATSAPP ?? "",
+    templateLembrete24h: process.env.WHATSAPP_REMINDER_24H_TEMPLATE ?? "",
+    templateLembrete30m: process.env.WHATSAPP_REMINDER_30M_TEMPLATE ?? "",
+    idiomaTemplate: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR",
   },
 
   // Agenda do diagnóstico gratuito (horário de Brasília, UTC-3)

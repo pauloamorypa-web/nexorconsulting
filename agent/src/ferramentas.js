@@ -4,6 +4,7 @@
    - execução */
 
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
 import { config } from "./config.js";
 
 const OFFSET_BRASILIA = "-03:00";
@@ -124,7 +125,7 @@ export const DEFINICOES = [
   {
     name: "agendar_diagnostico",
     description:
-      "Agenda o diagnóstico gratuito em um horário livre e avisa a equipe. Só use depois que o cliente escolheu o horário e você tem nome, contato e assunto.",
+      "Agenda o diagnóstico gratuito em um horário livre, confere a agenda conectada do Google, cria evento privado e avisa a equipe. Só use depois que o cliente escolheu o horário e você tem nome, contato e assunto. O sistema só programa lembretes WhatsApp se o cliente tiver confirmado explicitamente na conversa que aceita receber lembretes por WhatsApp. Compartilhe link_reuniao apenas se a ferramenta o devolver e diga que os lembretes foram programados somente se lembretes_whatsapp for 'programados'.",
     input_schema: {
       type: "object",
       properties: {
@@ -178,7 +179,7 @@ export const DEFINICOES = [
  * @param {(texto: string, dados: object) => Promise<void>} deps.notificar
  * @param {() => Date} deps.agora
  */
-export function criarExecutor({ armazenamento, notificar, agora }) {
+export function criarExecutor({ armazenamento, notificar, agora, calendario }) {
   const acoes = {
     async registrar_lead(dados, ctx) {
       const lead = {
@@ -198,10 +199,25 @@ export function criarExecutor({ armazenamento, notificar, agora }) {
     },
 
     async ver_horarios_diagnostico() {
+      if (config.googleCalendar.required && !calendario?.configurado()) {
+        return { horarios: [], mensagem: "A agenda da Nexor está temporariamente indisponível. Ofereça encaminhar para a equipe." };
+      }
       const ocupados = new Set(
         (await armazenamento.listarAgendamentos()).filter((a) => a.status !== "cancelado").map((a) => a.horario),
       );
-      const livres = horariosLivres(agora(), ocupados).slice(0, 8);
+      let livres = horariosLivres(agora(), ocupados);
+      if (calendario?.configurado() && livres.length) {
+        const comOffset = (h) => new Date(`${h}:00${OFFSET_BRASILIA}`);
+        const inicio = comOffset(livres[0]);
+        const fim = new Date(comOffset(livres.at(-1)).getTime() + config.agenda.duracaoMinutos * 60_000);
+        const intervalos = await calendario.ocupados(inicio, fim);
+        livres = livres.filter((h) => {
+          const slotInicio = comOffset(h);
+          const slotFim = new Date(slotInicio.getTime() + config.agenda.duracaoMinutos * 60_000);
+          return !intervalos.some((x) => slotInicio < x.fim && slotFim > x.inicio);
+        });
+      }
+      livres = livres.slice(0, 8);
       if (!livres.length) return { horarios: [], mensagem: "Sem horários livres nos próximos dias. Ofereça transferir para a equipe." };
       return {
         fuso: "horário de Brasília",
@@ -211,12 +227,26 @@ export function criarExecutor({ armazenamento, notificar, agora }) {
     },
 
     async agendar_diagnostico(dados, ctx) {
+      if (config.googleCalendar.required && !calendario?.configurado()) {
+        return { ok: false, mensagem: "A agenda da Nexor está temporariamente indisponível. Não confirme o horário; ofereça encaminhar para a equipe." };
+      }
       // Confere se o horário existe na agenda; a ocupação é conferida na reserva
       if (!horariosLivres(agora(), new Set()).includes(dados.horario)) {
         return { ok: false, mensagem: "Horário fora da agenda disponível. Consulte ver_horarios_diagnostico de novo." };
       }
+      if (calendario?.configurado()) {
+        const inicio = new Date(`${dados.horario}:00${OFFSET_BRASILIA}`);
+        const fim = new Date(inicio.getTime() + config.agenda.duracaoMinutos * 60_000);
+        const ocupados = await calendario.ocupados(inicio, fim);
+        if (ocupados.some((x) => inicio < x.fim && fim > x.inicio)) {
+          return { ok: false, mensagem: "Esse horário não está mais livre na agenda conectada. Consulte de novo e ofereça outro." };
+        }
+      }
       const agendamento = {
+        id: randomUUID(),
         ...dados,
+        whatsapp_optin: Boolean(ctx.whatsappReminderOptInAt && /^\+?[0-9 ()-]{8,24}$/.test(dados.contato)),
+        ...(ctx.whatsappReminderOptInAt ? { whatsapp_optin_em: ctx.whatsappReminderOptInAt, whatsapp_optin_origem: "mensagem_conversa" } : {}),
         canal: ctx.canal,
         conversa: ctx.idConversa,
         status: "agendado",
@@ -225,13 +255,39 @@ export function criarExecutor({ armazenamento, notificar, agora }) {
       if (!(await armazenamento.reservar(agendamento))) {
         return { ok: false, mensagem: "Esse horário acabou de ser ocupado. Ofereça outro horário." };
       }
+      let reuniao;
+      if (calendario?.configurado()) {
+        try {
+          reuniao = await calendario.criarReuniao({
+            id: agendamento.id,
+            nome: dados.nome,
+            contato: dados.contato,
+            assunto: dados.assunto,
+            inicio: dados.horario,
+            duracaoMinutos: config.agenda.duracaoMinutos,
+          });
+          await armazenamento.atualizarAgendamento(agendamento.id, { calendar_event_id: reuniao.id, link_calendario: reuniao.link, link_reuniao: reuniao.linkReuniao ?? null });
+        } catch (err) {
+          await armazenamento.atualizarAgendamento(agendamento.id, { status: "cancelado", erro_agenda: err?.code ?? "CALENDAR_ERROR" });
+          throw err;
+        }
+      }
       const quando = formatarHorario(dados.horario);
+      const lembretesAtivos = Boolean(agendamento.whatsapp_optin && reuniao?.linkReuniao);
       await notificar(
         `🟩 Diagnóstico agendado: ${quando}\n${dados.nome}${dados.empresa ? ` · ${dados.empresa}` : ""}\n` +
-          `Contato: ${dados.contato}\nAssunto: ${dados.assunto}\nEnviar o link da reunião ao cliente.`,
-        { tipo: "agendamento", ...agendamento },
+          `Contato: ${dados.contato}\nAssunto: ${dados.assunto}${reuniao?.linkReuniao ? `\nMeet: ${reuniao.linkReuniao}` : ""}`,
+        { tipo: "agendamento", ...agendamento, ...reuniao },
       );
-      return { ok: true, quando, mensagem: "Agendado. A equipe envia o link da reunião pelo contato informado." };
+      return {
+        ok: true,
+        quando,
+        link_reuniao: reuniao?.linkReuniao ?? null,
+        lembretes_whatsapp: lembretesAtivos ? "programados" : "nao_programados",
+        mensagem: reuniao?.linkReuniao
+          ? `Reunião criada no Google Calendar. Informe ao cliente o link de apresentação.${lembretesAtivos ? " Lembretes WhatsApp foram programados." : " Não confirme lembretes WhatsApp."}`
+          : "Horário registrado. A equipe confirma o link da apresentação. Não confirme lembretes WhatsApp.",
+      };
     },
 
     async estimar_retorno(dados) {
@@ -268,7 +324,7 @@ export function criarExecutor({ armazenamento, notificar, agora }) {
       const resultado = await acoes[bloco.name](entrada.data, ctx);
       return { type: "tool_result", tool_use_id: bloco.id, content: JSON.stringify(resultado) };
     } catch (err) {
-      console.error(`[ferramenta ${bloco.name}]`, err);
+      console.error(`[ferramenta ${bloco.name}] falhou`, { erro: err?.name ?? "Error" });
       return { type: "tool_result", tool_use_id: bloco.id, is_error: true, content: "Falha interna ao executar. Peça desculpas e ofereça o contato humano." };
     }
   };
