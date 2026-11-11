@@ -166,6 +166,9 @@ function migrar(db) {
   coluna("pagamentos", "cancelar_asaas", "INTEGER NOT NULL DEFAULT 0");
   coluna("pagamentos", "estornado_em", "INTEGER");
   coluna("pagamentos", "indevido", "INTEGER NOT NULL DEFAULT 0");
+  // Banca U-02: chave do rascunho (duas abas do mesmo rascunho não criam duas propostas)
+  coluna("propostas", "chave", "TEXT");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS propostas_chave ON propostas (instalador_id, chave) WHERE chave IS NOT NULL");
   db.prepare("INSERT OR IGNORE INTO plataforma (chave, valor) VALUES ('versao_esquema', '1')").run();
 }
 

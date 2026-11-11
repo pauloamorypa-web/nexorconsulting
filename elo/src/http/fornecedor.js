@@ -8,7 +8,7 @@ import { lerCsv, reaisParaCentavos } from "../regras/documentos.js";
 import { instaladorParaFornecedor, propostaParaFornecedor, repasseParaFornecedor, reservaParaFornecedor } from "../servicos/privacidade.js";
 import { falha } from "./roteador.js";
 import { pode } from "./permissoes.js";
-import { centavos, cnaes, dia, email, id, op, pct, t, telefone, uf, url, validar } from "./validacao.js";
+import { centavos, cnaes, dia, email, id, op, pct, t, telefone, uf, url, conferir, validar } from "./validacao.js";
 
 export function rotasFornecedor(h) {
   const { r, repo, cofre, negocio, agora, auditar, daConta, contaPublica, fiscal } = h;
@@ -80,17 +80,20 @@ export function rotasFornecedor(h) {
       linhas.forEach((l, i) => {
         const linha = i + 2;
         const preco = reaisParaCentavos(l.preco);
-        const estoque = l.estoque === undefined || l.estoque === "" ? undefined : Number(l.estoque);
+        // Estoque como o brasileiro escreve: "1.000" = mil (banca U-06); "1,5" não é quantidade inteira
+        const estoqueTxt = String(l.estoque ?? "").trim();
+        const estoque = estoqueTxt === "" ? undefined : /^\d{1,3}(\.\d{3})+$/.test(estoqueTxt) ? Number(estoqueTxt.replaceAll(".", "")) : /^\d+$/.test(estoqueTxt) ? Number(estoqueTxt) : NaN;
+        if (Number.isNaN(estoque)) return res.erros.push({ linha, erro: `Estoque: "${estoqueTxt}" não é uma quantidade inteira (use 1000 ou 1.000)` });
         const dados = { codigo: l.codigo, nome: l.nome, marca: l.marca || null, categoria: l.categoria || null, preco_centavos: preco, ...(estoque !== undefined ? { estoque } : {}), ...(l.unidade ? { unidade: l.unidade } : {}), ...(l.prazo_dias ? { prazo_dias: Number(l.prazo_dias) } : {}), ...(l.foto_url ? { foto_url: l.foto_url } : {}) };
-        const ok = produtoCampos.safeParse(dados);
-        if (!ok.success || preco === null) return res.erros.push({ linha, erro: preco === null ? "preço inválido" : ok.error.issues.map((x) => `${x.path.join(".")}: ${x.message}`).join("; ") });
-        const atual = repo.um("SELECT id, reservado FROM produtos WHERE fornecedor_id = ? AND codigo = ?", ctx.conta.id, ok.data.codigo);
+        const ok = conferir(produtoCampos, dados);
+        if (!ok.ok || preco === null) return res.erros.push({ linha, erro: preco === null ? `Preço: "${l.preco ?? ""}" não é um valor válido (ex.: 1.234,56)` : ok.erro });
+        const atual = repo.um("SELECT id, reservado FROM produtos WHERE fornecedor_id = ? AND codigo = ?", ctx.conta.id, ok.dados.codigo);
         if (atual) {
-          if (ok.data.estoque !== undefined && ok.data.estoque < atual.reservado) return res.erros.push({ linha, erro: `estoque abaixo do reservado (${atual.reservado})` });
-          repo.atualizar("produtos", atual.id, { ...ok.data, ativo: true });
+          if (ok.dados.estoque !== undefined && ok.dados.estoque < atual.reservado) return res.erros.push({ linha, erro: `estoque abaixo do reservado (${atual.reservado})` });
+          repo.atualizar("produtos", atual.id, { ...ok.dados, ativo: true });
           res.atualizados++;
         } else {
-          repo.inserir("produtos", { fornecedor_id: ctx.conta.id, ...ok.data });
+          repo.inserir("produtos", { fornecedor_id: ctx.conta.id, ...ok.dados });
           res.criados++;
         }
       });

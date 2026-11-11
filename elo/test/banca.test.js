@@ -139,3 +139,50 @@ test("Banca P-04: a tarifa do Asaas sai da parte do instalador e os splits fixos
     s.fechar();
   }
 });
+
+test("Banca U-02: o mesmo rascunho enviado de duas abas (mesma chave) vira uma proposta só", async () => {
+  const s = await subir();
+  try {
+    const c = await cenario(s);
+    const corpo = { cliente_id: c.cliente.id, titulo: "CFTV duas abas", itens: itemA(c), chave: "rascunho-abc-1234567890" };
+    const [a, b] = await Promise.all([c.inst.ok.post("/api/instalador/propostas", corpo), c.inst.ok.post("/api/instalador/propostas", corpo)]);
+    assert.equal(a.id, b.id);
+    assert.equal(s.app.repo.um("SELECT COUNT(*) n FROM propostas WHERE chave = ?", corpo.chave).n, 1);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("Banca U-06/U-07/U-08: CSV entende '1.000', recusa '1,5' em português e limites de dinheiro aparecem em reais", async () => {
+  const s = await subir();
+  try {
+    const c = await cenario(s);
+    const csv = "codigo;nome;preco;estoque\nCSV-1;Cabo;10,00;1.000\nCSV-2;Conector;2,00;1,5\nCSV-3;Fonte;abc;5";
+    const r = await c.fa.c.ok.post("/api/fornecedor/produtos/importar", { csv });
+    const p1 = (await c.fa.c.ok.get("/api/fornecedor/produtos")).find((x) => x.codigo === "CSV-1");
+    assert.equal(p1.estoque, 1000, '"1.000" = mil unidades');
+    assert.equal(r.erros.length, 2);
+    assert.match(r.erros[0].erro, /^Estoque: "1,5" não é uma quantidade inteira/);
+    assert.match(r.erros[1].erro, /^Preço: "abc"/);
+    assert.ok(r.erros.every((e) => !/Invalid|expected|received/.test(e.erro)), "nada em inglês");
+    const calc = await c.inst.post("/api/instalador/calculadora", { custos: { mao_obra_centavos: 2_000_000_000 }, regime: "mei" });
+    assert.equal(calc.status, 400);
+    assert.match(calc.dados.erro, /Mão de obra: pode ser no máximo R\$\s?10\.000\.000,00/);
+  } finally {
+    s.fechar();
+  }
+});
+
+test("Banca P-06: renovar a reserva respeita o bloqueio por título vencido", async () => {
+  const s = await subir();
+  try {
+    const c = await cenario(s);
+    const { p } = await enviarProposta(c, itemA(c));
+    await c.fa.c.ok.post("/api/fornecedor/titulos", { instalador_id: c.instId, descricao: "Compra a prazo", valor_centavos: 10000, vencimento: "2026-11-01" });
+    const r = await c.inst.post(`/api/instalador/propostas/${p.id}/renovar`, {});
+    assert.equal(r.status, 409);
+    assert.match(r.dados.erro, /bloqueou novas reservas/);
+  } finally {
+    s.fechar();
+  }
+});

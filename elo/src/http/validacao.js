@@ -42,6 +42,8 @@ const ROTULOS = {
   checklist: "Checklist", series: "Números de série", serie: "Número de série", imagem: "Imagem", legenda: "Legenda", status: "Situação", nota: "Nota",
   dia_vencimento: "Dia do vencimento", inicio: "Início", endereco: "Endereço", logradouro: "Logradouro", numero: "Número", bairro: "Bairro", cep: "CEP",
   complemento: "Complemento", csv: "Arquivo CSV", fornecedor_id: "Fornecedor", segmento: "Segmento", termo: "Busca", atual: "Senha atual", nova: "Nova senha",
+  mao_obra_centavos: "Mão de obra", deslocamento_centavos: "Deslocamento", outros_centavos: "Outros custos", produtos_centavos: "Produtos",
+  desconto_centavos: "Desconto", taxa_fixa_centavos: "Taxa fixa", prazo_dias: "Prazo (dias)", unidade: "Unidade",
   codigo_instalacao: "Código de instalação", focus_token: "Token da Focus NFe", asaas_chave: "Chave do Asaas", garantia_meses: "Garantia (meses)",
 };
 const rotulo = (caminho) => {
@@ -51,7 +53,12 @@ const rotulo = (caminho) => {
 };
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 /** Mensagens em português para os erros padrão do zod (as mensagens escritas nos esquemas têm prioridade) */
+// Valores em centavos aparecem em reais nas mensagens (banca U-08: "no máximo R$ 10.000.000,00", não "1000000000")
+const ehDinheiro = (i) => String([...(i.path ?? [])].reverse().find((p) => typeof p === "string") ?? "").endsWith("_centavos");
+const emReais = (c) => (Number(c) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 function mensagemPt(i) {
+  if (i.code === "too_big" && i.origin === "number" && ehDinheiro(i)) return `pode ser no máximo ${emReais(i.maximum)}`;
+  if (i.code === "too_small" && i.origin === "number" && ehDinheiro(i)) return `precisa ser no mínimo ${emReais(i.minimum)}`;
   switch (i.code) {
     case "invalid_type":
       if (i.input === undefined || i.input === null) return "preenchimento obrigatório";
@@ -75,6 +82,13 @@ function mensagemPt(i) {
     default:
       return "valor inválido";
   }
+}
+
+/** Confere sem lançar erro: devolve { ok, dados } ou { ok: false, erro } com a mensagem em português (ex.: linhas de CSV) */
+export function conferir(esquema, dados) {
+  const r = esquema.safeParse(dados ?? {}, { error: mensagemPt });
+  if (r.success) return { ok: true, dados: r.data };
+  return { ok: false, erro: r.error.issues.map((i) => (i.message.startsWith(`${rotulo(i.path)} `) ? i.message : `${rotulo(i.path)}: ${i.message}`)).join("; ") };
 }
 
 export function validar(esquema, dados) {

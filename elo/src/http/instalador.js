@@ -156,7 +156,7 @@ export function rotasInstalador(h) {
     z.object({ tipo: z.literal("proprio"), descricao: t(200), codigo: op(60), unidade: op(10), quantidade: qtd, custo_unit_centavos: centavos.optional(), preco_unit_centavos: centavos }),
     z.object({ tipo: z.literal("servico"), descricao: t(200), unidade: op(10), quantidade: qtd, custo_unit_centavos: centavos.optional(), preco_unit_centavos: centavos }),
   ]);
-  const propostaCampos = z.object({ cliente_id: id.nullable().optional(), titulo: t(160), validade_dia: dia.nullable().optional(), condicoes: op(2000), garantia: op(2000), observacoes: op(2000), desconto_centavos: centavos.optional(), itens: z.array(itemProposta).max(200).optional() });
+  const propostaCampos = z.object({ cliente_id: id.nullable().optional(), titulo: t(160), validade_dia: dia.nullable().optional(), condicoes: op(2000), garantia: op(2000), observacoes: op(2000), desconto_centavos: centavos.optional(), itens: z.array(itemProposta).max(200).optional(), chave: z.string().regex(/^[\w-]{16,64}$/).optional() });
   const colunasItem = (i) => ({ ordem: i.ordem, tipo: i.tipo, fornecedor_id: i.fornecedor_id ?? null, produto_id: i.produto_id ?? null, codigo: i.codigo ?? null, descricao: i.descricao, unidade: i.unidade ?? null, foto_url: i.foto_url ?? null, quantidade: i.quantidade, custo_unit_centavos: i.custo_unit_centavos ?? 0, preco_unit_centavos: i.preco_unit_centavos });
   function recalcular(propostaId) {
     const p = repo.obter("propostas", propostaId);
@@ -194,6 +194,9 @@ export function rotasInstalador(h) {
     const d = validar(propostaCampos, await ctx.corpo());
     if (d.cliente_id) daConta("clientes", d.cliente_id, "instalador_id", ctx.conta.id, "Cliente");
     const { itens = [], ...campos } = d;
+    // O mesmo rascunho enviado de duas abas (ou reenviado com rede lenta) devolve a proposta que já existe
+    const existente = d.chave ? repo.ler("propostas", repo.um("SELECT * FROM propostas WHERE instalador_id = ? AND chave = ?", ctx.conta.id, d.chave)) : null;
+    if (existente) return propostaCompleta(existente);
     const p = repo.transacao(() => {
       const nova = repo.inserir("propostas", { instalador_id: ctx.conta.id, numero: repo.proximoNumero("propostas", ctx.conta.id), status: "rascunho", ...campos });
       gravarItens(ctx, nova, itens);
@@ -394,6 +397,8 @@ export function rotasInstalador(h) {
   r.post("/api/instalador/os/:id/assinatura", { ...I("os"), limite: 1024 * 1024 }, async (ctx) => {
     const o = daOs(ctx);
     const d = validar(z.object({ imagem: imagemBase64, nome: t(160) }), await ctx.corpo());
+    // Banca P-11: a assinatura do cliente é a prova do serviço; depois de feita, não se troca
+    if (o.assinatura_arquivo) falha(409, `Esta OS já foi assinada por ${o.assinado_por ?? "o cliente"}.`);
     const img = lerImagem(d.imagem, cfg.uploads.assinaturaMaxBytes);
     mkdirSync(pastaOs(o.id), { recursive: true });
     const arquivo = `assinatura.${img.ext}`;

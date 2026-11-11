@@ -226,6 +226,13 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
       if ((atual.renovacoes ?? 0) >= 1) falha(409, "A reserva desta proposta já foi renovada uma vez.");
       const ativas = repo.lista("reservas", "WHERE proposta_id = ? AND status = 'ativa'", p.id);
       const fids = fornecedoresDa(p.id);
+      // Banca P-06: renovar também respeita o bloqueio (título vencido ou bloqueio manual do fornecedor)
+      for (const fid of fids) {
+        const v = vinculo(fid, p.instalador_id);
+        if (!v) continue;
+        const c = credito(v);
+        if (c.bloqueado) falha(409, `${nomeConta(conta(fid))} bloqueou novas reservas: ${c.motivo}`, { codigo: "bloqueado", fornecedor_id: fid });
+      }
       const prazo = fids.length ? Math.min(...fids.map((fid) => conta(fid)?.config?.prazo_reserva_dias ?? PRAZO_RESERVA_PADRAO)) : PRAZO_RESERVA_PADRAO;
       if (atual.status === "expirada") {
         const res = reservar(atual, { renovacao: true });

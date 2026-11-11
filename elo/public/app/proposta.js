@@ -78,6 +78,8 @@ export async function telaEditor(el, id) {
     }
   } else if (E?.id) E = null;
   E = { ...novoEstado(), ...(E ?? {}) };
+  // A chave nasce com o rascunho e fica salva no aparelho: outra aba que abrir o mesmo rascunho usa a mesma chave
+  if (!E.id && !E.chave) E.chave = (crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`).replace(/[^\w-]/g, "");
   E.calc = { ...prefsCalc(), mao_obra_centavos: 0, deslocamento_centavos: 0, ...(E.calc ?? {}) };
   const guardar = () => guardarRascunho(E);
   guardar();
@@ -312,7 +314,9 @@ export async function telaEditor(el, id) {
       titulo.focus();
       throw new Error("Dê um título para a proposta (o cliente vê).");
     }
-    const corpo = { cliente_id: E.cliente_id || null, titulo: E.titulo.trim(), validade_dia: E.validade_dia || null, condicoes: E.condicoes || undefined, garantia: E.garantia || undefined, observacoes: E.observacoes || undefined, desconto_centavos: E.desconto_centavos || 0, itens: E.itens.map(paraApi) };
+    // Chave do rascunho (banca U-02): a mesma proposta enviada de duas abas ou reenviada com rede lenta não duplica
+    if (!E.id && !E.chave) E.chave = (crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`).replace(/[^\w-]/g, "");
+    const corpo = { ...(E.id ? {} : { chave: E.chave }), cliente_id: E.cliente_id || null, titulo: E.titulo.trim(), validade_dia: E.validade_dia || null, condicoes: E.condicoes || undefined, garantia: E.garantia || undefined, observacoes: E.observacoes || undefined, desconto_centavos: E.desconto_centavos || 0, itens: E.itens.map(paraApi) };
     for (const k of Object.keys(corpo)) if (corpo[k] === undefined) delete corpo[k];
     const p = E.id ? await put(`/propostas/${E.id}`, corpo) : await post("/propostas", corpo);
     E.id = p.id;
