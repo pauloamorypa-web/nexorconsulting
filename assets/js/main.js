@@ -364,7 +364,7 @@ $$(".solutions[data-grupo]").forEach((grade) => {
   grade.innerHTML = SOLUCOES.filter((x) => x.grupo === grade.dataset.grupo)
     .map(
       (x) => `
-    <article class="solution glow-card reveal" style="--a:${x.accent};--a2:${x.accent2}">
+    <article class="solution glow-card reveal${x.novo ? " sol-hot" : ""}" style="--a:${x.accent};--a2:${x.accent2}">
       <button class="sol-preview" type="button" data-solucao="${x.id}" aria-label="Ver modelos do ${x.nome}">
         <div class="sol-preview-tela">${renderMock(x.modelos[0].p)}</div>
         <span class="sol-preview-mais">${x.modelos.length} modelos · ver todos</span>
@@ -376,6 +376,7 @@ $$(".solutions[data-grupo]").forEach((grade) => {
         <ul class="checks">${x.recursos.slice(0, 3).map((r) => `<li><svg class="ic"><use href="#i-check"/></svg>${r}</li>`).join("")}</ul>
         <div class="sol-actions">
           <button class="btn btn-sm btn-ghost" type="button" data-solucao="${x.id}">Ver modelos</button>
+          ${x.pagina ? `<a class="btn btn-sm btn-ghost" href="${x.pagina}">Conhecer</a>` : ""}
           <button class="btn btn-sm btn-primary" type="button" data-testar="${x.id}">Testar 30 dias grátis</button>
         </div>
       </div>

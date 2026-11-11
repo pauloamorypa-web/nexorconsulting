@@ -1008,6 +1008,87 @@ const Teste = (() => {
     },
 
     /* Nexor Site Pro: monte o site e veja a prévia ao vivo */
+    /* Nexor Elo: o instalador monta o orçamento com o estoque do fornecedor e o pagamento já cai dividido */
+    elo(raiz) {
+      const FORN = { A: "Distribuidora Exemplo A", B: "Loja Exemplo B" };
+      const KITS = {
+        cftv: { nome: "CFTV 4 câmeras", itens: [["Câmera 1080p", 4, { A: [189, 32], B: [179, 6] }], ["Gravador 4 canais", 1, { A: [520, 12], B: [545, 3] }], ["HD 1 TB", 1, { A: [310, 20], B: [329, 9] }], ["Fonte, cabos e conectores", 1, { A: [240, 50], B: [228, 15] }]] },
+        solar: { nome: "Kit solar 5 kWp", itens: [["Módulo 550 W", 9, { A: [690, 120], B: [705, 40] }], ["Inversor 5 kW", 1, { A: [4300, 6], B: [4190, 2] }], ["Estrutura de telhado", 1, { A: [1350, 18], B: [1390, 7] }], ["Cabos e proteção CC", 1, { A: [780, 25], B: [760, 10] }]] },
+        quadro: { nome: "Quadro de distribuição", itens: [["Quadro 24 disjuntores", 1, { A: [210, 14], B: [198, 5] }], ["Disjuntores", 12, { A: [24, 300], B: [26, 120] }], ["DR e DPS", 1, { A: [340, 22], B: [355, 8] }], ["Cabos e barramento", 1, { A: [290, 40], B: [275, 12] }]] },
+      };
+      const TAXA = { pix: ["Pix", 0.01], cartao: ["Cartão em 10x", 0.045] }; // taxas de exemplo; na versão contratada vale a tabela do Asaas
+      const st = estado("elo", { kit: "cftv", mao: 800, desl: 100, margem: 15, simples: 6, pag: "pix", pago: false });
+      const fmtPct = (n) => `${String(n).replace(".", ",")}%`;
+      raiz.innerHTML = `<div class="ta-dois larga">
+        <form class="ta-card ta-form" data-elo>
+          <h4>1. Monte o orçamento (app do instalador)</h4>
+          <div class="ta-chips" data-kits>${Object.entries(KITS).map(([k, v]) => `<button type="button" data-kit="${k}" aria-pressed="${k === st.kit}">${v.nome}</button>`).join("")}</div>
+          <div data-itens></div>
+          <label>Mão de obra (R$)<input name="mao" type="number" min="0" step="10" value="${st.mao}"></label>
+          <label>Deslocamento (R$)<input name="desl" type="number" min="0" step="10" value="${st.desl}"></label>
+          <label>Margem desejada (%)<input name="margem" type="number" min="0" max="60" step="1" value="${st.margem}"></label>
+          <label>Simples Nacional, alíquota efetiva (%)<input name="simples" type="number" min="0" max="30" step="0.5" value="${st.simples}"></label>
+          <label>Pagamento do cliente<select name="pag">${Object.entries(TAXA).map(([k, [n]]) => `<option value="${k}" ${k === st.pag ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+          <p class="muted ta-dica">O comparador escolhe, item a item, o fornecedor vinculado mais barato com estoque. Fornecedores, preços e taxas são de exemplo.</p>
+        </form>
+        <div class="ta-card">
+          <h4>2. Proposta e split</h4>
+          <div data-res></div>
+          <button class="btn btn-primary" type="button" data-pagar style="margin-top:14px">Simular pagamento do cliente</button>
+          <h4 style="margin-top:20px">3. O que o fornecedor vê</h4>
+          <div data-forn></div>
+          <p class="muted ta-dica">Nome, documento, telefone e endereço do cliente final ficam só com o instalador.</p>
+        </div>
+      </div>`;
+      const form = raiz.querySelector("[data-elo]");
+      const desenhar = () => {
+        const kit = KITS[st.kit];
+        const linhas = kit.itens.map(([n, q, of]) => {
+          const [f, [preco, estq]] = Object.entries(of).filter(([, [, e]]) => e >= q).sort((a, b) => a[1][0] - b[1][0])[0];
+          return { n, q, f, preco, estq, total: preco * q };
+        });
+        form.querySelector("[data-itens]").innerHTML = tabela(["Item", "Qtd.", "Fornecedor", "Total"], linhas.map((l) => [esc(l.n), l.q, `${esc(FORN[l.f])}<br><em class="ta-chip ok">${l.estq} em estoque</em>`, brl(l.total)]));
+        const P = linhas.reduce((s, l) => s + l.total, 0);
+        const porForn = linhas.reduce((o, l) => ((o[l.f] = (o[l.f] || 0) + l.total), o), {});
+        const M = Number(st.mao) || 0, D = Number(st.desl) || 0, m = (Number(st.margem) || 0) / 100, s = (Number(st.simples) || 0) / 100, f = TAXA[st.pag][1];
+        const B = (P + M + D) * (1 + m);
+        const X = (B - s * P) / (1 - f - s); // preço que cobre impostos e taxa e garante o lucro desejado
+        const imp = s * (X - P), taxa = f * X, lucro = X - P - taxa - imp - D;
+        const dois = (html) => html.replace('class="ta-kpis"', 'class="ta-kpis" style="grid-template-columns:repeat(2,minmax(0,1fr))"');
+        const chip = (ok, sim, nao) => `<em class="ta-chip ${ok ? "ok" : "info"}">${ok ? sim : nao}</em>`;
+        raiz.querySelector("[data-res]").innerHTML =
+          dois(kpis([["Preço ao cliente", brl(X)], ["Seu lucro líquido", brl(lucro), "ok"], ["Impostos (Simples)", brl(imp)], [`Taxa ${TAXA[st.pag][0]}`, brl(taxa)]])) +
+          '<p class="muted ta-dica" style="margin:14px 0 8px">Como o dinheiro se divide:</p>' +
+          dois(kpis([
+            ...Object.entries(porForn).map(([k, v]) => [`${esc(FORN[k])} · produtos ${chip(st.pago, "liquidado", "reservado 5 dias")}`, brl(v)]),
+            [`Instalador · serviço e margem ${chip(st.pago, "na sua conta", "aguardando")}`, brl(X - P - taxa)],
+          ]));
+        raiz.querySelector("[data-forn]").innerHTML = `<ul class="ta-lista">${Object.entries(porForn).map(([k, v]) => `<li><b>${esc(FORN[k])}</b> vê: instalador (você), obra em Araguari/MG, itens de ${brl(v)} e o status ${chip(st.pago, "paga", "enviada")}</li>`).join("")}</ul>`;
+        raiz.querySelector("[data-pagar]").textContent = st.pago ? "Montar outro orçamento" : "Simular pagamento do cliente";
+      };
+      form.addEventListener("input", () => {
+        Object.assign(st, Object.fromEntries(new FormData(form)), { pago: false });
+        salvar("elo", st);
+        desenhar();
+      });
+      form.querySelector("[data-kits]").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-kit]");
+        if (!b) return;
+        st.kit = b.dataset.kit;
+        st.pago = false;
+        form.querySelectorAll("[data-kit]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        salvar("elo", st);
+        desenhar();
+      });
+      raiz.querySelector("[data-pagar]").addEventListener("click", () => {
+        st.pago = !st.pago;
+        salvar("elo", st);
+        desenhar();
+        if (st.pago) aviso("Cliente pagou: o split já separou o dinheiro de cada um.");
+      });
+      desenhar();
+    },
+
     sitepro(raiz) {
       const p0 = NX.ler("nx-teste-perfil", {});
       const st = estado("sitepro", { nome: p0.empresa ?? "Minha Empresa", slogan: "Qualidade e atendimento que fazem a diferença", cor: "#2f8bff", servicos: "Atendimento personalizado\nEntrega rápida\nGarantia de satisfação", whats: p0.telefone ?? "" });

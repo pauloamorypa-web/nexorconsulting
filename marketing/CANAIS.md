@@ -4,7 +4,7 @@ Textos prontos para copiar e colar, atualizados em novembro de 2026 (teste grát
 
 **Regras para todos os canais:**
 - **Preço dos planos:** não publique. Fale de "teste grátis de 30 dias" e "diagnóstico gratuito"; os preços vão na proposta.
-- **Programa de fundadores:** as condições são públicas e podem ser citadas: 40% na mensalidade por 12 meses, 50% na implantação, preço travado por 24 meses e 10 vagas por produto (Contábil, Barber e Agente).
+- **Programa de fundadores:** as condições são públicas e podem ser citadas: 40% na mensalidade por 12 meses, 50% na implantação, preço travado por 24 meses e 10 vagas por produto (Contábil, Barber e Agente). No **Nexor Elo**, as 10 vagas são para **fornecedores** (ver a seção 5).
 - **Números de resultado:** use só os que temos. Não use números de clientes ou de resultados que não possamos comprovar.
 - **Telas:** as dos sistemas são reais, com empresas fictícias. Diga isso quando alguém perguntar.
 
@@ -201,3 +201,73 @@ Só para quem pediu para receber novidades. Ofereça sempre: "Se não quiser mai
   - Bastidores.
 - **Post fixado:** `ia-gente-cuida.png`, `fundadores.png` e `portfolio.png`.
 - **Facebook:** use a mesma descrição do Google na seção "Sobre", o botão **Enviar mensagem no WhatsApp** e a capa `linkedin-capa.png`.
+
+---
+
+## 5. Nexor Elo: abordagem de fornecedores e instaladores
+
+O Elo liga **fornecedores** (lojas e distribuidores de segurança eletrônica, material elétrico, energia solar, refrigeração e telecom) aos **instaladores** que compram deles. Página: https://nexorconsultingit.com.br/solucoes/rede-fornecedores-instaladores/ · Preços e condições em [`../comercial/ELO-PRECOS.md`](../comercial/ELO-PRECOS.md) · Lista de prospects e roteiro de visita em [`../comercial/ELO-ARAGUARI.md`](../comercial/ELO-ARAGUARI.md).
+
+**Frase principal:** Seu orçamento já sai com o estoque do fornecedor e o dinheiro já cai dividido.
+**Assinatura:** IA com cuidado humano: a IA monta, compara e divide; o time da Nexor importa o catálogo e cadastra os instaladores junto com você.
+
+**Regras do Elo nos canais:**
+- Não publique a mensalidade nem o percentual da taxa por venda; diga "teste de 30 dias" e "vagas de fundador". Para o instalador, pode dizer **"comece grátis"**.
+- Sempre diga que **o fornecedor não vê o cliente do instalador**: é o que faz o instalador confiar.
+- Os valores das artes são exemplos fictícios. Diga isso se perguntarem.
+- Mensagem para quem não pediu contato: uma só, curta, com saída ("se não fizer sentido, é só me falar"). Nada de lista de transmissão sem pedido.
+
+### Imagens
+| Peça | Arquivo | Uso |
+|---|---|---|
+| Carrossel (4 telas, 1080×1350) | `pecas/elo-1-problema.png`, `pecas/elo-2-solucao.png`, `pecas/elo-3-dinheiro.png`, `pecas/elo-4-cta.png` | Instagram, LinkedIn (como documento ou imagens) e Status em sequência |
+| Story (1080×1920) | `pecas/elo-story.png` | Instagram, Status do WhatsApp e destaque "Elo" |
+| Capa do LinkedIn (1584×396) | `pecas/elo-linkedin-capa.png` | Perfil pessoal do fundador durante o lançamento |
+
+### WhatsApp: fornecedor
+**Primeira mensagem (depois de uma indicação ou visita):**
+> Oi, [nome]! Aqui é o [seu nome], da Nexor, de Uberlândia. Estamos lançando no Triângulo o Nexor Elo: o instalador monta o orçamento no celular com o **estoque da sua loja**, o cliente final paga no link e o dinheiro **já cai dividido**: a parte dos produtos vai direto para vocês, sem prazo e sem calote. E vocês não veem o cliente do instalador, o que faz ele trazer as vendas para cá. Posso passar aí 20 minutos esta semana para mostrar no celular?
+
+**Primeira mensagem (sem contato anterior):**
+> Bom dia! Sou o [seu nome], da Nexor Consulting. Uma pergunta rápida: dos orçamentos que os instaladores levam do balcão de vocês, quantos voltam como pedido? Criamos um sistema em que o orçamento já sai com o estoque da loja e o pagamento do cliente final já chega dividido entre a loja e o instalador. Se fizer sentido, te mostro em 20 minutos. Se não for o momento, é só me falar.
+
+**Depois da visita:**
+> [nome], obrigado pelo café! Como combinamos: no teste de 30 dias a gente importa o catálogo de vocês, monta os kits de [segmento] e cadastra os instaladores junto com vocês no "café no balcão". Para começar, só preciso da planilha de produtos com preço e estoque. Lembrando que ainda temos vagas de fundador: 40% na mensalidade por 12 meses, 50% na implantação e preço travado por 24 meses.
+
+**Resposta rápida `/elo`:**
+> O Nexor Elo liga a sua loja aos seus instaladores: o orçamento já sai com o seu estoque, o cliente final paga no link e o dinheiro já cai dividido, a parte dos produtos para vocês e o serviço para o instalador. Veja: nexorconsultingit.com.br/solucoes/rede-fornecedores-instaladores/
+
+### WhatsApp: instalador
+**Convite (enviado pela Nexor em nome do fornecedor, com autorização dele):**
+> Oi, [nome]! A [nome da loja] agora está no Nexor Elo, e você foi convidado. Funciona assim: você monta o orçamento no celular com o estoque da loja, manda o link para o seu cliente, ele aceita e paga no Pix, boleto ou cartão parcelado, e o seu serviço cai **direto na sua conta**. Você não precisa comprar o material antes, e a loja **não vê o seu cliente**. É grátis para começar. Posso te cadastrar agora?
+
+**Para instalador sem fornecedor vinculado:**
+> Oi, [nome]! Vi o seu trabalho com [CFTV / elétrica / solar / ar-condicionado]. Estamos montando no Triângulo uma rede que liga instaladores às lojas da região: o orçamento já sai com o estoque e o preço da loja, e o pagamento do cliente chega dividido, com o seu serviço garantido na sua conta. Começa grátis. De qual loja você mais compra hoje? Se ela ainda não estiver na rede, a gente convida.
+
+**Resposta rápida `/elo-instalador`:**
+> No Nexor Elo você faz o orçamento no celular com o estoque do fornecedor, o cliente paga no link e o seu serviço cai na sua conta. Sem comprar material antes e sem calote. O fornecedor não vê o seu cliente. Começa grátis: nexorconsultingit.com.br/solucoes/rede-fornecedores-instaladores/
+
+**Etiquetas novas:** Elo: fornecedor · Elo: instalador · Elo: café no balcão
+
+### LinkedIn
+**Post de lançamento (perfil pessoal, com o carrossel):**
+> Passei as últimas semanas conversando com lojas de material elétrico, distribuidores de segurança eletrônica e instaladores aqui do Triângulo. A mesma história aparece em todo balcão: o orçamento sai da loja e não volta; o instalador compra o material antes e espera o cliente pagar; a loja vende a prazo e torce para receber.
+>
+> Por isso criamos o Nexor Elo. O instalador monta o orçamento no celular com o estoque do fornecedor, o cliente final aceita e paga no link, e o dinheiro já cai dividido: os produtos para a loja, o serviço e a margem para o instalador. E o fornecedor não vê o cliente do instalador.
+>
+> A IA monta, compara e divide. A gente importa o catálogo e cadastra os instaladores junto com a loja. IA com cuidado humano.
+>
+> Temos 10 vagas de fundador para fornecedores. Se você tem uma loja ou distribuidora de segurança, elétrica, solar, refrigeração ou telecom, me chama.
+
+**Post 2 (para instaladores, com `elo-3-dinheiro.png`):**
+> Instalador: quantas vezes você já comprou o material, instalou e ficou correndo atrás do cliente para receber? No Nexor Elo o cliente paga antes, no link, e o dinheiro já cai separado: o material para a loja e o seu serviço para você. Começa grátis.
+
+**Mensagem direta para dono de loja ou distribuidora:**
+> Olá, [nome]! Vi que a [empresa] atende instaladores de [segmento] na região. Estamos lançando o Nexor Elo no Triângulo: o orçamento do instalador já sai com o estoque de vocês, e o pagamento do cliente final chega dividido, com a parte da loja liquidada na hora. Abrimos 10 vagas de fundador para fornecedores. Faz sentido conversarmos 20 minutos?
+
+**Mensagem direta para instalador ou integrador:**
+> Olá, [nome]! Vi o seu trabalho com [segmento]. Criamos uma forma de o seu orçamento sair com o estoque do fornecedor e o seu serviço cair direto na sua conta quando o cliente paga, sem você comprar material antes. Começa grátis. Quer que eu te mostre?
+
+**Título do perfil durante o lançamento (opcional, até 220 caracteres):**
+> Fundador da Nexor Consulting · IA com cuidado humano · Nexor Elo: o orçamento do instalador já sai com o estoque do fornecedor e o dinheiro já cai dividido · Triângulo Mineiro
+
