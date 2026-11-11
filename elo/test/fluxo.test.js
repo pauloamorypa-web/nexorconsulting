@@ -70,8 +70,9 @@ test("Fluxo: cadastro, vínculo, catálogo, proposta, reserva, aceite, pagamento
     const cob = s.rede.asaas.find((x) => x.caminho.endsWith("/payments"));
     assert.equal(cob.chave, "chave-asaas-plataforma");
     assert.equal(cob.corpo.value, 1800);
-    assert.deepEqual(cob.corpo.split, [{ walletId: "wallet-fornecedor-a", fixedValue: 630 }, { walletId: "wallet-instalador", fixedValue: 1125 }]);
-    assert.equal(cob.corpo.split.reduce((a, x) => a + x.fixedValue, 0) + 45, 1800, "split + taxa Nexor = total (a parte do fornecedor sem wallet fica com o instalador, que a deve num título)");
+    // Instalador = 1800 − 630 (fornecedor A) − 45 (taxa) − 1,99 (tarifa estimada do Pix, banca P-04)
+    assert.deepEqual(cob.corpo.split, [{ walletId: "wallet-fornecedor-a", fixedValue: 630 }, { walletId: "wallet-instalador", fixedValue: 1123.01 }]);
+    assert.equal(Math.round((cob.corpo.split.reduce((a, x) => a + x.fixedValue, 0) + 45 + 1.99) * 100), 180000, "split + taxa + tarifa = total; os splits fixos nunca passam do valor líquido");
     const repetida = await pub.ok.post(`/api/publico/propostas/${token}/pagar`, { forma: "PIX" });
     assert.equal(repetida.link, pg.link, "não cria cobrança em dobro");
 
@@ -94,8 +95,10 @@ test("Fluxo: cadastro, vínculo, catálogo, proposta, reserva, aceite, pagamento
     assert.equal(rep["fornecedor:split"].valor_centavos, 63000);
     assert.equal(rep["fornecedor:split"].status, "recebido");
     assert.equal(rep["fornecedor:titulo"].valor_centavos, 34000);
-    assert.equal(rep["nexor:retido"].valor_centavos, 4500);
-    assert.equal(rep["instalador:split"].valor_centavos, 112500);
+    // A plataforma retém a taxa (R$ 45) + a tarifa estimada do Pix (R$ 1,99), que sai da parte do instalador (banca P-04)
+    assert.equal(rep["nexor:retido"].valor_centavos, 4500 + 199);
+    assert.equal(rep["instalador:split"].valor_centavos, 112500 - 199);
+    assert.equal(rep["fornecedor:split"].valor_centavos + rep["nexor:retido"].valor_centavos + rep["instalador:split"].valor_centavos, 180000, "a divisão fecha no total (o título do fornecedor sem wallet está dentro da parte do instalador)");
     const finA = await fa.c.ok.get("/api/fornecedor/repasses");
     assert.equal(finA.resumo.recebido_split_centavos, 63000);
     const titB = await fb.c.ok.get("/api/fornecedor/titulos");

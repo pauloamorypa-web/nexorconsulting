@@ -31,6 +31,14 @@ export function lerConfig(env = process.env) {
       chave: env.ASAAS_API_KEY ?? "",
       walletNexor: env.NEXOR_WALLET_ID ?? "",
       vencimentoDias: 3,
+      // Tarifa estimada do Asaas por cobrança (sai da parte do instalador, como na calculadora). CONFIRA no seu contrato Asaas.
+      tarifas: {
+        pixCentavos: Number(env.ASAAS_TARIFA_PIX_CENTAVOS ?? 199),
+        boletoCentavos: Number(env.ASAAS_TARIFA_BOLETO_CENTAVOS ?? 199),
+        cartaoFixoCentavos: Number(env.ASAAS_TARIFA_CARTAO_FIXO_CENTAVOS ?? 49),
+        cartaoAvistaBps: Number(env.ASAAS_TARIFA_CARTAO_BPS ?? 299),
+        cartaoParceladoBps: Number(env.ASAAS_TARIFA_CARTAO_PARCELADO_BPS ?? 349),
+      },
     },
     cnpj: { url: (env.CNPJ_API_URL ?? "https://brasilapi.com.br/api/cnpj/v1").replace(/\/$/, ""), cacheDias: numero(env.CNPJ_CACHE_DIAS, 30) },
     fiscal: { url: env.FOCUS_AMBIENTE === "producao" ? "https://api.focusnfe.com.br" : "https://homologacao.focusnfe.com.br" },

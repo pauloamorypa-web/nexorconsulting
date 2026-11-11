@@ -162,6 +162,10 @@ function migrar(db) {
   db.exec(ESQUEMA);
   // Exemplo de evolução futura (mantém a chamada idempotente): coluna("produtos", "ncm", "TEXT");
   coluna("contas", "aprovado_em", "INTEGER");
+  // Banca P-01/P-03: cobrança substituída precisa ser cancelada no Asaas; estorno/chargeback e pagamento indevido
+  coluna("pagamentos", "cancelar_asaas", "INTEGER NOT NULL DEFAULT 0");
+  coluna("pagamentos", "estornado_em", "INTEGER");
+  coluna("pagamentos", "indevido", "INTEGER NOT NULL DEFAULT 0");
   db.prepare("INSERT OR IGNORE INTO plataforma (chave, valor) VALUES ('versao_esquema', '1')").run();
 }
 

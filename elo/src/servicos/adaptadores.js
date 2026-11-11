@@ -74,6 +74,8 @@ export function criarAsaas({ fetchFn, url, chave }) {
     },
     criarAssinatura: ({ cliente, valor_centavos, proximo_vencimento, descricao, referencia }) => chamar("POST", "/subscriptions", { customer: cliente, billingType: "UNDEFINED", value: reais(valor_centavos), nextDueDate: proximo_vencimento, cycle: "MONTHLY", description: descricao, externalReference: referencia }),
     cancelarAssinatura: (id) => chamar("DELETE", `/subscriptions/${encodeURIComponent(id)}`),
+    /** Cancela a cobrança no Asaas (parcelado: o parcelamento inteiro) */
+    cancelarCobranca: (id, { parcelado = false } = {}) => chamar("DELETE", `${parcelado ? "/installments" : "/payments"}/${encodeURIComponent(id)}`),
   };
 }
 

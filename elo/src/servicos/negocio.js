@@ -251,11 +251,12 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
     repo.transacao(() => {
       liberarReservas(p.id);
       repo.atualizar("propostas", p.id, cancelar ? { status: "cancelada", cancelada_em: agora(), token_hash: null, token_cripto: null } : { status: "rascunho", token_hash: null, token_cripto: null, reserva_expira_em: null, enviada_em: null, vista_em: null, aceita_em: null, aceite: null, expirada_em: null, renovacoes: 0 });
-      if (cancelar) repo.rodar("UPDATE pagamentos SET status = 'cancelado', atualizado_em = ? WHERE proposta_id = ? AND status = 'pendente'", agora(), p.id);
+      if (cancelar) repo.rodar("UPDATE pagamentos SET status = 'cancelado', cancelar_asaas = 1, atualizado_em = ? WHERE proposta_id = ? AND status = 'pendente'", agora(), p.id);
     });
     const fornecedores = [...new Set(itensDa(p.id).filter((i) => i.fornecedor_id).map((i) => i.fornecedor_id))];
     if (p.status !== "rascunho") for (const fid of fornecedores) avisar(fid, "reserva_liberada", `A proposta #${p.numero} de ${nomeConta(conta(p.instalador_id))} foi ${cancelar ? "cancelada" : "reaberta para edição"}; a reserva foi liberada.`, p.id);
     repo.auditar(p.instalador_id, autor, cancelar ? "proposta_cancelada" : "proposta_reaberta", { proposta_id: p.id });
+    if (cancelar) cancelarNoAsaas().catch(() => {});
     return repo.obter("propostas", p.id);
   }
 
@@ -288,8 +289,19 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
     return repo.obter("propostas", p.id);
   }
 
-  /** Divisão do valor: cada fornecedor com walletId recebe o custo dos itens dele; a Nexor fica com a taxa; o resto é do instalador */
-  function planoDeSplit(p) {
+  /** Tarifa estimada do Asaas para a cobrança (banca P-04): sai da parte do instalador, igual à calculadora */
+  function tarifaAsaas(total, forma = "PIX", parcelas = 1) {
+    const t = cfg.asaas.tarifas ?? {};
+    if (forma === "CREDIT_CARD") return Math.ceil((total * (parcelas > 1 ? t.cartaoParceladoBps ?? 349 : t.cartaoAvistaBps ?? 299)) / 10000) + (t.cartaoFixoCentavos ?? 49);
+    return forma === "BOLETO" ? (t.boletoCentavos ?? 199) : (t.pixCentavos ?? 199);
+  }
+
+  /**
+   * Divisão do valor: cada fornecedor com walletId recebe o custo dos itens dele (valor fixo); o instalador recebe o restante
+   * menos a taxa da plataforma e a tarifa estimada do Asaas; a conta da plataforma fica com taxa + tarifa (o Asaas desconta a tarifa
+   * dela). Assim a soma dos splits fixos nunca passa do valor líquido da cobrança.
+   */
+  function planoDeSplit(p, forma = "PIX", parcelas = 1) {
     const itens = itensDa(p.id);
     const custos = porFornecedor(itens);
     const inst = conta(p.instalador_id);
@@ -303,14 +315,40 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
       if (w) comWallet += centavos;
     }
     const taxa = p.taxa_plataforma_centavos;
-    const instalador = p.total_centavos - comWallet - taxa;
-    if (instalador < 0) falha(409, "O valor da proposta não cobre os repasses.");
-    partes.push({ destino: "nexor", conta_id: null, centavos: taxa, via: "retido", walletId: null });
+    const tarifa = tarifaAsaas(p.total_centavos, forma, parcelas);
+    const instalador = p.total_centavos - comWallet - taxa - tarifa;
+    if (instalador < 0) falha(409, "O valor da proposta não cobre os repasses e a tarifa do meio de pagamento.");
+    partes.push({ destino: "nexor", conta_id: null, centavos: taxa + tarifa, via: "retido", walletId: null, taxa_centavos: taxa, tarifa_asaas_centavos: tarifa });
     partes.push({ destino: "instalador", conta_id: p.instalador_id, centavos: instalador, via: "split", walletId: walletInst });
     return partes;
   }
 
-  async function pagar(p, { forma, parcelas = 1, documento, email }) {
+  /** Cancela no Asaas as cobranças marcadas (substituídas ou de proposta cancelada); o que falhar a rotina tenta de novo */
+  async function cancelarNoAsaas() {
+    for (const pg of repo.lista("pagamentos", "WHERE cancelar_asaas = 1 LIMIT 50")) {
+      try {
+        await asaasPlataforma.cancelarCobranca(pg.asaas_id, { parcelado: pg.parcelas > 1 });
+        repo.atualizar("pagamentos", pg.id, { cancelar_asaas: 0 });
+      } catch (e) {
+        console.error("[asaas] cancelar cobrança", pg.id, e.message);
+      }
+    }
+  }
+  const pagando = new Set();
+
+  async function pagar(p, opcoes) {
+    // Dois cliques em "pagar" ao mesmo tempo não geram duas cobranças (banca P-02)
+    if (pagando.has(p.id)) falha(409, "Estamos gerando a sua cobrança. Aguarde alguns segundos.");
+    pagando.add(p.id);
+    try {
+      return await pagarSemConcorrencia(p, opcoes);
+    } finally {
+      pagando.delete(p.id);
+    }
+  }
+
+  async function pagarSemConcorrencia(p, { forma, parcelas = 1, documento, email }) {
+    p = repo.obter("propostas", p.id);
     if (p.status === "paga") falha(409, "Esta proposta já está paga.");
     if (p.status !== "aceita") falha(409, "Aceite a proposta antes de pagar.");
     if (!p.reserva_expira_em || p.reserva_expira_em <= agora()) falha(409, "A reserva dos produtos venceu. Fale com o instalador para renovar.");
@@ -320,15 +358,19 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
     const cli = repo.obter("clientes", p.cliente_id);
     const doc = soDigitos(documento || cli?.documento || p.aceite?.documento || "");
     if (!documentoValido(doc)) falha(400, "Informe um CPF ou CNPJ válido para gerar a cobrança.");
-    const partes = planoDeSplit(p);
+    const partes = planoDeSplit(p, forma, parcelas);
     const cliente = await asaasPlataforma.criarCliente({ nome: p.aceite?.nome || cli?.nome, documento: doc, email: email || cli?.email, telefone: cli?.telefone, referencia: `elo-cliente-${cli?.id}` });
     const cobranca = await asaasPlataforma.criarCobranca({
       cliente: cliente.id, forma, parcelas, valor_centavos: p.total_centavos, vencimento: somarDias(hoje(), cfg.asaas.vencimentoDias),
       descricao: `Proposta #${p.numero} · ${nomeConta(conta(p.instalador_id))}`, referencia: `elo-proposta-${p.id}`,
       split: partes.filter((x) => x.via === "split" && x.walletId).map((x) => ({ walletId: x.walletId, centavos: x.centavos })),
     });
-    return repo.transacao(() => {
-      repo.rodar("UPDATE pagamentos SET status = 'cancelado', atualizado_em = ? WHERE proposta_id = ? AND status = 'pendente'", agora(), p.id);
+    const novo = repo.transacao(() => {
+      // Releitura depois das chamadas ao Asaas: a proposta pode ter sido cancelada ou paga nesse meio tempo
+      const atual = repo.obter("propostas", p.id);
+      if (atual.status !== "aceita") return { recusada: atual.status };
+      // A cobrança anterior (outra forma de pagamento) é cancelada aqui e no Asaas (banca P-01)
+      repo.rodar("UPDATE pagamentos SET status = 'cancelado', cancelar_asaas = 1, atualizado_em = ? WHERE proposta_id = ? AND status = 'pendente'", agora(), p.id);
       const pg = repo.inserir("pagamentos", {
         proposta_id: p.id, asaas_id: cobranca.installment ?? cobranca.id, forma, parcelas, valor_centavos: p.total_centavos, status: "pendente",
         link: cobranca.invoiceUrl ?? null, split: partes.map(({ walletId, ...x }) => ({ ...x, wallet: walletId ? `••••${walletId.slice(-4)}` : null })),
@@ -336,6 +378,13 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
       for (const x of partes) repo.inserir("repasses", { pagamento_id: pg.id, proposta_id: p.id, destino: x.destino, conta_id: x.conta_id, valor_centavos: x.centavos, via: x.via, status: "previsto" });
       return pg;
     });
+    if (novo.recusada) {
+      // A cobrança recém-criada não vale: cancela no Asaas para o cliente não pagar algo que não existe mais
+      await asaasPlataforma.cancelarCobranca(cobranca.installment ?? cobranca.id, { parcelado: Boolean(cobranca.installment) }).catch((e) => console.error("[asaas] cancelar cobrança órfã", e.message));
+      falha(409, novo.recusada === "paga" ? "Esta proposta já está paga." : "Esta proposta não está mais disponível para pagamento.");
+    }
+    await cancelarNoAsaas();
+    return novo;
   }
 
   /** Pagamento confirmado (webhook do Asaas): dá baixa nas reservas, registra repasses, cria títulos sem wallet e avisa */
@@ -344,6 +393,16 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
     if (!pg) return { ignorado: "pagamento desconhecido" };
     if (pg.status === "pago") return { ok: true, repetido: true };
     const p = repo.obter("propostas", pg.proposta_id);
+    // Cliente pagou uma cobrança substituída ou de proposta cancelada/já paga (banca P-01): registra, NÃO baixa estoque nem
+    // gera repasses/títulos de novo, e avisa para estornar
+    if (pg.status === "cancelado" || p.status === "cancelada" || (p.status === "paga" && repo.um("SELECT 1 FROM pagamentos WHERE proposta_id = ? AND status = 'pago' AND id <> ?", p.id, pg.id))) {
+      repo.atualizar("pagamentos", pg.id, { status: "pago", pago_em: agora(), indevido: 1 });
+      repo.rodar("UPDATE repasses SET status = 'cancelado', atualizado_em = ? WHERE pagamento_id = ?", agora(), pg.id);
+      repo.auditar(p.instalador_id, "Asaas", "pagamento_indevido", { proposta_id: p.id, pagamento_id: pg.id, valor_centavos: pg.valor_centavos });
+      avisar(p.instalador_id, "pagamento_indevido", `Chegou um pagamento de ${reais(pg.valor_centavos)} de uma cobrança que não vale mais (proposta #${p.numero}). Nada foi baixado do estoque. A Nexor vai estornar ao cliente.`, p.id);
+      for (const op of repo.lista("contas", "WHERE tipo = 'nexor'")) avisar(op.id, "pagamento_indevido", `Estornar no Asaas: pagamento indevido de ${reais(pg.valor_centavos)} na proposta #${p.numero} (cobrança ${pg.asaas_id}).`, p.id);
+      return { ok: true, indevido: true };
+    }
     const faltas = [];
     repo.transacao(() => {
       repo.atualizar("pagamentos", pg.id, { status: "pago", pago_em: agora() });
@@ -401,13 +460,44 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
       if (!pago && evento?.event !== "PAYMENT_CREATED") return { ignorado: evento?.event };
       return cobrancaContrato(c, pay, pago);
     }
-    if (!pago) return { ignorado: evento?.event ?? "sem evento" };
     const id = pay.installment && repo.um("SELECT 1 FROM pagamentos WHERE asaas_id = ?", pay.installment) ? pay.installment : pay.id;
-    return confirmarPagamento(id);
+    if (pago) return confirmarPagamento(id);
+    if (["PAYMENT_REFUNDED", "PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_CHARGEBACK_DISPUTE", "PAYMENT_AWAITING_CHARGEBACK_REVERSAL"].includes(evento?.event)) return estornarPagamento(id, evento.event);
+    if (["PAYMENT_DELETED", "PAYMENT_OVERDUE"].includes(evento?.event)) {
+      // Boleto vencido ou cobrança excluída no Asaas: deixa de travar a proposta (pode reabrir ou gerar outra cobrança)
+      const pg = repo.ler("pagamentos", repo.um("SELECT * FROM pagamentos WHERE asaas_id = ? AND status = 'pendente'", id));
+      if (!pg) return { ignorado: evento.event };
+      repo.atualizar("pagamentos", pg.id, { status: "cancelado" });
+      repo.rodar("UPDATE repasses SET status = 'cancelado', atualizado_em = ? WHERE pagamento_id = ?", agora(), pg.id);
+      return { ok: true, cancelado: true };
+    }
+    return { ignorado: evento?.event ?? "sem evento" };
+  }
+
+  /** Estorno ou contestação (chargeback) de um pagamento já confirmado (banca P-03) */
+  function estornarPagamento(asaasId, motivo) {
+    const pg = repo.ler("pagamentos", repo.um("SELECT * FROM pagamentos WHERE asaas_id = ?", asaasId));
+    if (!pg || pg.status !== "pago" || pg.estornado_em) return { ignorado: "nada a estornar" };
+    const p = repo.obter("propostas", pg.proposta_id);
+    repo.transacao(() => {
+      repo.atualizar("pagamentos", pg.id, { status: "cancelado", estornado_em: agora() });
+      repo.rodar("UPDATE repasses SET status = 'cancelado', atualizado_em = ? WHERE pagamento_id = ?", agora(), pg.id);
+      // O título "sem wallet" nasceu do pagamento do cliente: sem pagamento, ele não vale (não bloqueia o instalador)
+      if (!pg.indevido) repo.rodar("UPDATE titulos SET status = 'cancelado' WHERE proposta_id = ? AND origem = 'sem_wallet' AND status = 'aberto'", p.id);
+      if (!pg.indevido && p.status === "paga") repo.atualizar("propostas", p.id, { status: "cancelada", cancelada_em: agora() });
+    });
+    const inst = conta(p.instalador_id);
+    const texto = motivo === "PAYMENT_REFUNDED" ? "foi estornado" : "foi contestado no cartão (chargeback)";
+    repo.auditar(p.instalador_id, "Asaas", "pagamento_estornado", { proposta_id: p.id, pagamento_id: pg.id, motivo });
+    avisar(p.instalador_id, "pagamento_estornado", `O pagamento da proposta #${p.numero} (${reais(pg.valor_centavos)}) ${texto}. Os repasses foram desfeitos; confira os produtos já entregues.`, p.id);
+    if (!pg.indevido) for (const fid of fornecedoresDa(p.id)) avisar(fid, "pagamento_estornado", `O pagamento da proposta #${p.numero} de ${nomeConta(inst)} ${texto}. O repasse dos seus itens foi desfeito pelo Asaas; combine a devolução ou a cobrança dos produtos com o instalador.`, p.id);
+    return { ok: true, estornado: true };
   }
 
   /* ---------- Rotina: expiração de reservas, aviso de vencimento, títulos vencidos ---------- */
   function rotina() {
+    // Cobranças que ficaram para cancelar no Asaas (falha de rede na hora): tenta de novo
+    cancelarNoAsaas().catch(() => {});
     const r = { expiradas: 0, avisos_vencendo: 0, titulos_vencidos: 0 };
     const vencidas = repo.lista("propostas", "WHERE status IN ('enviada','vista','aceita') AND reserva_expira_em IS NOT NULL AND reserva_expira_em <= ?", agora());
     for (const p of vencidas) {
@@ -463,7 +553,7 @@ export function criarNegocio({ repo, cofre, cfg, agora, asaasPlataforma, notific
   return {
     avisar, enviarDireto, vinculo, tabelaDo, preco, visivel, catalogo, comparar, credito, itensDa, totais, prepararItens,
     enviar, renovar, encerrar, registrarVista, aceitar, pagar, planoDeSplit, confirmarPagamento, eventoAsaas, rotina, score,
-    liberarReservas, linkProposta, linkOs, tokenDe, porToken, fornecedoresDa, segredo, nomeConta, produtoParaInstalador, vinculosAprovados,
+    liberarReservas, tarifaAsaas, estornarPagamento, linkProposta, linkOs, tokenDe, porToken, fornecedoresDa, segredo, nomeConta, produtoParaInstalador, vinculosAprovados,
     ocioso: () => fila,
   };
 }

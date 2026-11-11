@@ -14,6 +14,8 @@ export const CNPJ_SEM_CNAE = gerarCnpj("99887766");
 export const CNPJ_BAIXADO = gerarCnpj("55443322");
 
 export function rede() {
+  // atraso (ms) no Asaas falso: para reproduzir cliques simultâneos com o provedor lento
+  const ctl = { atraso: 0 };
   const asaas = [];
   const mensagens = [];
   const focus = [];
@@ -35,6 +37,7 @@ export function rede() {
       return receita.has(c) ? resp(200, { cnpj: c, ...receita.get(c) }) : resp(404, { message: "CNPJ não encontrado" });
     }
     if (u.hostname.includes("asaas.com")) {
+      if (ctl.atraso) await new Promise((ok) => setTimeout(ok, ctl.atraso));
       asaas.push({ metodo: init.method, caminho: u.pathname, corpo, chave: init.headers?.access_token });
       if (u.pathname.endsWith("/customers")) return resp(200, { id: `cus_${++n}` });
       if (u.pathname.endsWith("/payments")) return resp(200, { id: `pay_${++n}`, invoiceUrl: `https://asaas.teste/i/${n}`, ...(corpo?.installmentCount > 1 ? { installment: `ins_${n}` } : {}) });
@@ -51,7 +54,7 @@ export function rede() {
     }
     return resp(404, { erro: "não simulado" });
   };
-  return { fetchFn, asaas, mensagens, focus, receita, consultas: () => consultasCnpj };
+  return Object.assign(ctl, { fetchFn, asaas, mensagens, focus, receita, consultas: () => consultasCnpj });
 }
 
 /** Relógio controlado: começa numa terça, 10/11/2026 às 08:00 de Brasília */
