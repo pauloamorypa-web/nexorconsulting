@@ -18,6 +18,7 @@ export const SISTEMAS = [
   { id: "atende", nome: "Nexor Atende IA", pasta: "atende", porta: 8790, resumo: "WhatsApp com IA que atende, agenda e passa para humano" },
   { id: "agente", nome: "Nexor Agente", pasta: "nexor-agente", porta: 8792, resumo: "Agente de IA que executa tarefas da empresa com aprovação" },
   { id: "contabil", nome: "Nexor Contábil", pasta: "contabil", porta: 8793, resumo: "Escritório contábil: obrigações, documentos com IA, honorários e portal" },
+  { id: "elo", nome: "Nexor Elo", pasta: "elo", porta: 8796, resumo: "Rede de fornecedores e instaladores: orçamento com estoque reservado e pagamento dividido" },
 ];
 
 const versao = Number(process.versions.node.split(".")[0]);

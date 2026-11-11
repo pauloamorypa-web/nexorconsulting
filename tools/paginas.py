@@ -160,6 +160,21 @@ P = [
        ("Com quais sistemas ele funciona?", "Com qualquer sistema que tenha API, como ERP, CRM e financeiro. Cada sistema entra como um conector, e você define por sistema se a escrita precisa de aprovação, é livre ou é bloqueada."),
        ("Outra pessoa pode mandar ordens para o agente?", "Não. Só os números autorizados pela empresa dão ordens. Qualquer outro número recebe uma recusa educada e nada é executado."),
        ("A IA vê as senhas dos meus sistemas?", "Não. As credenciais ficam no servidor da empresa e são usadas só na hora da chamada. A IA recebe apenas os dados da resposta, tratados como dados e não como ordens.")]),
+ dict(slug="rede-fornecedores-instaladores", id="elo", nome="Nexor Elo", icone="i-plug", novo=True,
+  title="Rede de fornecedores e instaladores com orçamento e split | Nexor Elo",
+  desc="Nexor Elo: o instalador monta o orçamento com o estoque do fornecedor, o cliente final paga por Pix, boleto ou cartão e o dinheiro já cai dividido entre fornecedor e instalador. Segurança eletrônica, elétrica, solar, refrigeração e telecom. Teste grátis.",
+  h1="Seu orçamento já sai com o <em>estoque do fornecedor</em> e o dinheiro já cai dividido",
+  sub="O instalador monta a proposta no celular com o estoque e o preço do fornecedor, o cliente final aprova e paga no link, e o split separa na hora a parte dos produtos e a parte do serviço. O fornecedor não vê o cliente do instalador.",
+  dores_titulo="Isso acontece entre a sua loja e os seus instaladores?",
+  passos=[("Fornecedor no ar", "A Nexor importa o catálogo e o estoque, monta os kits do seu segmento e convida os seus instaladores junto com você."), ("Instalador monta", "No celular, ele escolhe o kit, ajusta os itens, vê impostos e lucro e envia a proposta. O estoque fica reservado."), ("Cliente paga", "O cliente final abre o link, aceita e paga por Pix, boleto ou cartão parcelado."), ("Dinheiro dividido", "O split liquida a parte dos produtos para o fornecedor e o serviço e a margem para o instalador. A ordem de serviço acompanha a obra.")],
+  dores=["Orçamento que sai do balcão e nunca volta como pedido", "Instalador que compra o material antes e espera o cliente pagar", "Venda a prazo para instalador que atrasa ou não paga", "Estoque que some enquanto o instalador ainda está negociando", "Cotação em três lojas por WhatsApp para montar um único orçamento"],
+  recursos=["Orçamento com o estoque e o preço do fornecedor, com reserva por prazo definido", "Comparador que sugere a combinação mais barata entre os fornecedores vinculados", "Kits prontos por segmento: CFTV 4 câmeras, kit solar 5 kWp, quadro de distribuição", "Proposta por link com fotos, garantia e aceite, paga por Pix, boleto ou cartão parcelado", "Split automático: a parte dos produtos vai para o fornecedor e o serviço e a margem para o instalador", "Privacidade por desenho: o fornecedor vê o instalador, os itens e a cidade da obra, nunca o cliente final", "Crédito por instalador, bloqueio automático por título vencido e score de conversão", "Calculadora de preço com Simples Nacional, ISS e taxas, ordem de serviço com fotos e contratos de manutenção recorrentes"],
+  publico=["Distribuidores de segurança eletrônica", "Lojas de material elétrico", "Distribuidores de energia solar", "Lojas de refrigeração e climatização", "Fornecedores de telecom e redes", "Instaladores, eletricistas e integradores"],
+  faq=[("Quem paga o Nexor Elo?", "O fornecedor paga uma mensalidade pelo porte da rede e uma pequena taxa sobre os produtos vendidos e já recebidos pelo split. O instalador começa grátis e pode assinar o plano Pro. A mão de obra e a margem do instalador não pagam taxa da Nexor."),
+       ("O fornecedor vê os clientes do instalador?", "Não. O fornecedor vê só o instalador, os itens, a cidade e o estado da obra e o status da proposta. Nome, documento, telefone e endereço do cliente final ficam só com o instalador."),
+       ("Como fica a nota fiscal?", "O instalador compra do fornecedor, com NF-e do fornecedor para o instalador, e presta o serviço ao cliente final, com a NFS-e dele. O split só liquida essa compra junto com o pagamento do cliente. O Elo preenche os dados das notas a partir da proposta."),
+       ("E se o estoque acabar enquanto o cliente decide?", "Ao enviar a proposta, os itens ficam reservados pelo prazo que o fornecedor definir. A reserva vence sozinha e o instalador pode renovar uma vez."),
+       ("Preciso trocar o meu ERP?", "Não. O Elo é o canal de venda com os instaladores. O catálogo e o estoque vêm da planilha ou do ERP que o fornecedor já usa.")]),
 ]
 
 # Modelo de implantação da Nexor (vale para todos os produtos): o sistema roda no ambiente do cliente,
@@ -207,6 +222,8 @@ def pagina(p):
                   '<li><b>Diagnóstico</b><span>Entendemos seu processo e estimamos o retorno, sem custo.</span></li>'
                   '<li><b>Implantação</b><span>Configuramos com seus dados e integramos aos seus sistemas.</span></li>'
                   '<li><b>Acompanhamento</b><span>Suporte, ajustes e indicadores para você ver o resultado.</span></li>')
+        if p.get("passos"):
+            passos = "".join(f"<li><b>{esc(a)}</b><span>{esc(b)}</span></li>" for a, b in p["passos"])
         final_h, final_p = "Veja funcionando na sua empresa", f"Teste o {p['nome']} grátis por 30 dias ou fale com um especialista."
         final_cta = f'<a class="btn btn-lg btn-primary" href="/#testar-{p["id"]}">Começar teste grátis</a>'
     previa = ""
@@ -273,7 +290,7 @@ def pagina(p):
   <section class="sp-hero">
     <div class="container">
       <nav class="sp-trilha" aria-label="Você está em"><a href="/">Início</a> / <a href="/#servicos">Soluções</a> / <span>{esc(p["nome"])}</span></nav>
-      <p class="sp-selo"><svg class="ic"><use href="#{p["icone"]}"/></svg>{esc(p["nome"])}</p>
+      <p class="sp-selo"><svg class="ic"><use href="#{p["icone"]}"/></svg>{esc(p["nome"])}{" · Novo" if p.get("novo") else ""}</p>
       <h1>{p["h1"]}</h1>
       <p class="sp-sub">{esc(p["sub"])}</p>
       <div class="sp-ctas">

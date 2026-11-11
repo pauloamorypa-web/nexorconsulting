@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Nexor Elo · App do instalador</title>
+    <meta name="description" content="Monte a proposta com o estoque do fornecedor, envie ao cliente e receba já dividido." />
+    <meta name="theme-color" content="#0b1530" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="manifest" href="/app/manifest.webmanifest" />
+    <link rel="icon" href="/app/icone.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/app/icone-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Elo" />
+    <link rel="stylesheet" href="/app/app.css" />
+  </head>
+  <body>
+    <a class="so-leitor" href="#conteudo">Pular para o conteúdo</a>
+    <div id="app"><div class="tela-carregando"><span class="girando" role="status" aria-label="Carregando"></span></div></div>
+    <div id="toasts" aria-live="polite"></div>
+    <noscript>O app do instalador precisa de JavaScript ligado.</noscript>
+    <script type="module" src="/app/app.js"></script>
+    <script type="module" src="/publico/demo-faixa.js"></script>
+  </body>
+</html>

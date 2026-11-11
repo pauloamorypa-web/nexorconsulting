@@ -239,6 +239,36 @@ const SOLUCOES = [
     ],
   },
   {
+    id: "elo",
+    grupo: "negocio",
+    novo: true,
+    pagina: "/solucoes/rede-fornecedores-instaladores/",
+    nome: "Nexor Elo",
+    resumo: "A rede que liga fornecedores e instaladores: o orçamento já sai com o estoque do fornecedor e o dinheiro já cai dividido.",
+    selo: "Novo",
+    icone: "i-plug",
+    accent: "#06b6d4",
+    accent2: "#3b8dff",
+    recursos: ["O instalador monta o orçamento no celular com o estoque e o preço do fornecedor", "O cliente final aprova e paga no link por Pix, boleto ou cartão parcelado", "Split automático: produtos para o fornecedor, serviço e margem para o instalador", "O fornecedor não vê o cliente do instalador: privacidade por desenho", "Reserva de estoque com prazo, crédito por instalador e bloqueio por inadimplência"],
+    modelos: [
+      {
+        nome: "Orçamento do instalador",
+        texto: "O instalador escolhe um kit, ajusta os itens com o estoque do fornecedor e vê o lucro líquido antes de enviar. Dados fictícios.",
+        p: { type: "form", url: "elo.nexor.app/proposta/nova", d: { titulo: "Kit CFTV 4 câmeras", selo: "estoque reservado por 5 dias", campos: [["Produtos (2 fornecedores)", "R$ 1.774,00 · em estoque|ok"], ["Mão de obra + deslocamento", "R$ 800,00 + R$ 100,00"], ["Margem desejada", "15%"], ["Impostos e taxas", "Simples 6% · ISS · cartão|info"], ["Lucro líquido do instalador", "R$ 1.201,10|ok", true]], botao: "Enviar proposta ao cliente" } },
+      },
+      {
+        nome: "Dinheiro dividido",
+        texto: "O cliente pagou e o split já separou cada parte. O fornecedor vê a cidade da obra, nunca o cliente final. Dados fictícios.",
+        p: { type: "app", url: "elo.nexor.app/fornecedor/vendas", d: { titulo: "Vendas liquidadas", selo: "split automático", kpis: [["Hoje", "R$ 14,2 mil"], ["Propostas pagas", "6"], ["Reservas", "11"], ["Vencidos", "0"]], colunas: ["Instalador", "Obra", "Produtos", "Status"], linhas: [["Instalações Alfa", "Araguari/MG", "R$ 2.180", "Pago|ok"], ["Solar Beta", "Uberlândia/MG", "R$ 11.940", "Pago|ok"], ["Eletro Gama", "Araguari/MG", "R$ 640", "Reservado|info"], ["Clima Delta", "Uberaba/MG", "R$ 1.320", "Aceita|info"]] } },
+      },
+      {
+        nome: "Crédito e score",
+        texto: "O fornecedor define o limite de cada instalador. Título vencido bloqueia novas reservas sozinho. Dados fictícios.",
+        p: { type: "app", url: "elo.nexor.app/fornecedor/instaladores", d: { titulo: "Instaladores", selo: "38 ativos", colunas: ["Instalador", "Conversão", "Limite", "Situação"], linhas: [["Instalações Alfa", "42%", "R$ 8 mil", "Em dia|ok"], ["Solar Beta", "35%", "R$ 20 mil", "Em dia|ok"], ["Eletro Gama", "28%", "R$ 3 mil", "Título vencido|bad"], ["Clima Delta", "31%", "R$ 5 mil", "Em dia|ok"]] } },
+      },
+    ],
+  },
+  {
     id: "sitepro",
     grupo: "negocio",
     nome: "Nexor Site Pro",
