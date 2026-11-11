@@ -1,0 +1,46 @@
+[
+  {
+    "id": "agente-1-socio-distribuidora",
+    "tipo": "quente",
+    "descricao": "Persona fictícia. Sócio de distribuidora com 40 funcionários, usa ERP e CRM, tem verba.",
+    "canal": "site",
+    "origem": { "utm_source": "meta", "utm_medium": "pago", "utm_campaign": "nexor-agente-fundadores" },
+    "mensagens": [
+      "Sou sócio de uma distribuidora em Araguari com 40 funcionários",
+      "Usamos o Omie e um CRM. Queria pedir pelo WhatsApp o faturamento do dia e aprovar pedidos sem abrir o sistema",
+      "Tenho verba pra isso e quero começar já. Pode me chamar no (34) 90000-0501"
+    ],
+    "esperado": { "campanha": "agente", "classe": "quente", "nota_min": 70, "nota_max": 100, "motivos": ["decisor: sócio"] }
+  },
+  {
+    "id": "agente-2-academia",
+    "tipo": "morno",
+    "descricao": "Persona fictícia. Dono de academia com 6 funcionários, talvez no próximo mês.",
+    "canal": "whatsapp",
+    "telefone": "5534900000502",
+    "mensagens": [
+      "Oi, quero saber do Nexor Agente",
+      "Sou dono de uma academia, temos 6 funcionários",
+      "Uso uma planilha e o sistema da academia. Talvez no próximo mês"
+    ],
+    "esperado": { "campanha": "agente", "classe": "morno", "nota_min": 40, "nota_max": 69 }
+  },
+  {
+    "id": "agente-3-uso-pessoal",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Quer uma IA para a vida pessoal, sem empresa.",
+    "canal": "whatsapp",
+    "telefone": "5534900000503",
+    "mensagens": ["Oi, queria uma IA pessoal pra organizar minha vida, minha agenda e as contas de casa. Não tenho empresa"],
+    "esperado": { "campanha": "agente", "classe": "frio", "nota_min": 0, "nota_max": 25, "descarte": "pessoa_fisica" }
+  },
+  {
+    "id": "agente-4-estudante",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Estudante de engenharia de software fazendo trabalho da faculdade.",
+    "canal": "site",
+    "origem": { "utm_source": "instagram", "utm_campaign": "agente" },
+    "mensagens": ["Sou aluno de engenharia de software e queria saber como vocês fazem a aprovação no WhatsApp, é pra um trabalho da faculdade"],
+    "esperado": { "campanha": "agente", "classe": "frio", "nota_min": 0, "nota_max": 15, "descarte": "estudante" }
+  }
+]

@@ -1,0 +1,49 @@
+[
+  {
+    "id": "contabil-1-escritorio-araguari",
+    "tipo": "quente",
+    "descricao": "Persona fictícia. Contador titular com 60 empresas na carteira em Araguari, quer ser fundador.",
+    "canal": "site",
+    "origem": { "utm_source": "google", "utm_medium": "cpc", "utm_campaign": "google-contabil-fundadores" },
+    "mensagens": [
+      "Sou contador, tenho um escritório de contabilidade em Araguari com 60 empresas na carteira",
+      "A gente perde muito tempo cobrando documento dos clientes pelo WhatsApp",
+      "Usamos o Domínio. Quero garantir a vaga de fundador ainda este mês",
+      "Meu e-mail é contato@escritorio-exemplo.com.br, podemos marcar uma demonstração?"
+    ],
+    "esperado": { "campanha": "contabil", "classe": "quente", "nota_min": 70, "nota_max": 100, "motivos": ["porte ideal: 60 empresas na carteira", "deixou e-mail"] }
+  },
+  {
+    "id": "contabil-2-autonoma-pesquisando",
+    "tipo": "morno",
+    "descricao": "Persona fictícia. Contadora autônoma com 18 empresas, sem pressa.",
+    "canal": "whatsapp",
+    "telefone": "5534900000202",
+    "mensagens": [
+      "Olá! Vi o Nexor Contábil",
+      "Sou contadora autônoma, atendo 18 empresas",
+      "Ainda estou só pesquisando, sem pressa"
+    ],
+    "esperado": { "campanha": "contabil", "classe": "morno", "nota_min": 40, "nota_max": 69, "motivos": ["urgência baixa"] }
+  },
+  {
+    "id": "contabil-3-estudante-tcc",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Estudante de Ciências Contábeis fazendo TCC.",
+    "canal": "site",
+    "origem": { "utm_source": "instagram", "utm_campaign": "contabil" },
+    "mensagens": [
+      "Oi, sou estudante de Ciências Contábeis e estou fazendo meu TCC sobre automação em escritórios. Vocês podem me explicar como a IA lê as notas?"
+    ],
+    "esperado": { "campanha": "contabil", "classe": "frio", "nota_min": 0, "nota_max": 15, "descarte": "estudante" }
+  },
+  {
+    "id": "contabil-4-so-preco",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Só quer saber o preço, sem dar nenhuma informação.",
+    "canal": "whatsapp",
+    "telefone": "5534900000204",
+    "mensagens": ["Quanto custa o Nexor Contábil? Só quero saber o preço"],
+    "esperado": { "campanha": "contabil", "classe": "morno", "nota_min": 40, "nota_max": 40, "motivos": ["vira morno com o material de preços"] }
+  }
+]

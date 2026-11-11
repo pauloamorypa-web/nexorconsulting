@@ -4,3 +4,4 @@ dados
 .env
 *.log
 test
+simulacao

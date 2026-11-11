@@ -1,0 +1,48 @@
+[
+  {
+    "id": "elo-1-distribuidor-araguari",
+    "tipo": "quente",
+    "descricao": "Persona fictícia. Gerente comercial de distribuidora de material elétrico com 45 instaladores, problema de calote.",
+    "canal": "whatsapp",
+    "telefone": "5534900000601",
+    "referral": { "source_type": "ad", "source_id": "000000000000006", "headline": "Nexor Elo para distribuidores", "body": "Seu instalador vende com o seu estoque", "ctwa_clid": "simulado-ctwa-601" },
+    "mensagens": [
+      "Boa tarde! Tenho uma distribuidora de material elétrico em Araguari",
+      "Sou o gerente comercial. Uns 45 instaladores compram com a gente, e o maior problema é calote e venda a prazo",
+      "Queremos ver uma demonstração ainda esta semana"
+    ],
+    "esperado": { "campanha": "elo", "classe": "quente", "nota_min": 70, "nota_max": 100, "motivos": ["porte ideal: 45 instaladores"] }
+  },
+  {
+    "id": "elo-2-instalador-cftv",
+    "tipo": "morno",
+    "descricao": "Persona fictícia. Instalador de CFTV com 6 orçamentos por mês perguntando o preço do Pro.",
+    "canal": "site",
+    "origem": { "utm_source": "meta", "utm_medium": "pago", "utm_campaign": "elo-instaladores" },
+    "mensagens": [
+      "Sou instalador de CFTV em Uberlândia",
+      "Faço uns 6 orçamentos por mês",
+      "Quanto custa o plano Pro?"
+    ],
+    "esperado": { "campanha": "elo", "classe": "morno", "nota_min": 40, "nota_max": 69 }
+  },
+  {
+    "id": "elo-3-cliente-final",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Cliente final procurando quem instale câmeras em casa.",
+    "canal": "whatsapp",
+    "telefone": "5534900000603",
+    "referral": { "source_type": "ad", "source_id": "000000000000006", "headline": "Nexor Elo: rede de fornecedores e instaladores", "body": "Orçamento com estoque e pagamento dividido" },
+    "mensagens": ["Oi, preciso de alguém pra instalar câmeras na minha casa"],
+    "esperado": { "campanha": "elo", "classe": "frio", "nota_min": 0, "nota_max": 25, "descarte": "pessoa_fisica" }
+  },
+  {
+    "id": "elo-4-software-os",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Funcionário de empresa de software de ordem de serviço (concorrente).",
+    "canal": "site",
+    "origem": { "utm_source": "google", "utm_campaign": "elo" },
+    "mensagens": ["Trabalho numa empresa que faz software de ordem de serviço para técnicos. Vocês integram com quem?"],
+    "esperado": { "campanha": "elo", "classe": "frio", "nota_min": 0, "nota_max": 10, "descarte": "concorrente" }
+  }
+]

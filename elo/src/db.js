@@ -128,6 +128,35 @@ CREATE TABLE IF NOT EXISTS auditoria (id TEXT PRIMARY KEY, conta_id TEXT, autor 
 CREATE INDEX IF NOT EXISTS auditoria_conta ON auditoria (conta_id, criado_em);
 `;
 
+/** Banca P-12: índices que faltavam (reservas, pagamentos, repasses, rotina, títulos, vínculos e tabelas-filhas) */
+const INDICES = `
+CREATE INDEX IF NOT EXISTS reservas_proposta ON reservas (proposta_id, status);
+CREATE INDEX IF NOT EXISTS reservas_fornecedor ON reservas (fornecedor_id, status, criado_em);
+CREATE INDEX IF NOT EXISTS pagamentos_proposta ON pagamentos (proposta_id, status);
+CREATE INDEX IF NOT EXISTS repasses_pagamento ON repasses (pagamento_id);
+CREATE INDEX IF NOT EXISTS repasses_proposta ON repasses (proposta_id);
+CREATE INDEX IF NOT EXISTS repasses_conta ON repasses (conta_id, destino, status);
+CREATE INDEX IF NOT EXISTS propostas_rotina ON propostas (status, reserva_expira_em);
+CREATE INDEX IF NOT EXISTS propostas_instalador ON propostas (instalador_id, status);
+CREATE INDEX IF NOT EXISTS titulos_vencimento ON titulos (status, vencimento);
+CREATE INDEX IF NOT EXISTS titulos_instalador ON titulos (instalador_id, status);
+CREATE INDEX IF NOT EXISTS titulos_proposta ON titulos (proposta_id);
+CREATE INDEX IF NOT EXISTS vinculos_instalador ON vinculos (instalador_id, status);
+CREATE INDEX IF NOT EXISTS vinculos_tabela ON vinculos (tabela_id);
+CREATE INDEX IF NOT EXISTS clientes_instalador ON clientes (instalador_id);
+CREATE INDEX IF NOT EXISTS ordens_instalador ON ordens (instalador_id, status);
+CREATE INDEX IF NOT EXISTS os_fotos_os ON os_fotos (os_id);
+CREATE INDEX IF NOT EXISTS os_historico_os ON os_historico (os_id);
+CREATE INDEX IF NOT EXISTS contratos_instalador ON contratos (instalador_id);
+CREATE INDEX IF NOT EXISTS contrato_cobrancas_contrato ON contrato_cobrancas (contrato_id);
+CREATE INDEX IF NOT EXISTS notas_conta ON notas (conta_id, criado_em);
+CREATE INDEX IF NOT EXISTS notas_proposta ON notas (proposta_id);
+CREATE INDEX IF NOT EXISTS envios_conta ON envios (conta_id, criado_em);
+CREATE INDEX IF NOT EXISTS sessoes_usuario ON sessoes (usuario_id);
+CREATE INDEX IF NOT EXISTS kits_instalador ON kits (instalador_id);
+CREATE INDEX IF NOT EXISTS tabelas_fornecedor ON tabelas (fornecedor_id);
+`;
+
 const JSON_COLS = {
   contas: ["cnaes", "config"],
   vinculos: ["cnaes_compativeis"],
@@ -169,6 +198,8 @@ function migrar(db) {
   // Banca U-02: chave do rascunho (duas abas do mesmo rascunho não criam duas propostas)
   coluna("propostas", "chave", "TEXT");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS propostas_chave ON propostas (instalador_id, chave) WHERE chave IS NOT NULL");
+  // Banca P-12: índices das colunas mais filtradas (no SQLite a chave estrangeira não cria índice). Idempotente.
+  db.exec(INDICES);
   db.prepare("INSERT OR IGNORE INTO plataforma (chave, valor) VALUES ('versao_esquema', '1')").run();
 }
 
@@ -244,6 +275,24 @@ export function abrirBanco(caminho, agora = () => Date.now()) {
     },
     remover: (tabela, id) => q(`DELETE FROM ${tabela} WHERE id = ?`).run(id).changes > 0,
     lista: (tabela, sql = "", ...p) => q(`SELECT * FROM ${tabela} ${sql}`).all(...p).map((r) => ler(tabela, r)),
+    /** Banca P-13 (sem N+1): várias linhas por id numa consulta só → Map id → linha */
+    porIds(tabela, ids) {
+      const unicos = [...new Set(ids.filter(Boolean))];
+      if (!unicos.length) return new Map();
+      return new Map(q(`SELECT * FROM ${tabela} WHERE id IN (SELECT value FROM json_each(?))`).all(JSON.stringify(unicos)).map((r) => [r.id, ler(tabela, r)]));
+    },
+    /** Linhas-filhas de vários pais numa consulta só → Map valor da coluna → [linhas] (na ordem do `extra`) */
+    agrupar(tabela, coluna, valores, extra = "") {
+      const m = new Map();
+      const unicos = [...new Set(valores.filter(Boolean))];
+      if (!unicos.length) return m;
+      for (const r of q(`SELECT * FROM ${tabela} WHERE ${coluna} IN (SELECT value FROM json_each(?)) ${extra}`).all(JSON.stringify(unicos))) {
+        const x = ler(tabela, r);
+        if (!m.has(x[coluna])) m.set(x[coluna], []);
+        m.get(x[coluna]).push(x);
+      }
+      return m;
+    },
 
     plataforma: (chave) => q("SELECT valor FROM plataforma WHERE chave = ?").get(chave)?.valor ?? null,
     definirPlataforma: (chave, valor) => q("INSERT INTO plataforma (chave, valor) VALUES (?, ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor").run(chave, valor),

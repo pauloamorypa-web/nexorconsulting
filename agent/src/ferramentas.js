@@ -3,8 +3,11 @@
    - validação com zod (a entrada vem do modelo e é tratada como não confiável)
    - execução */
 
+import { createHash } from "node:crypto";
 import { z } from "zod";
+import { UMBRELLA } from "./campanhas.js";
 import { config } from "./config.js";
+import { perguntasRespondidas, pontuarLead } from "./qualificacao.js";
 
 const OFFSET_BRASILIA = "-03:00";
 const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
@@ -89,6 +92,34 @@ const esquemas = {
     motivo: texto(300),
     resumo: texto(1500),
   }),
+  qualificar_lead: z.object({
+    nome: opcional(120),
+    empresa: opcional(160),
+    tem_empresa: z.boolean().optional(),
+    segmento: opcional(120),
+    perfil: opcional(60),
+    cnae: opcional(20),
+    porte_numero: z.number().min(0).max(10_000_000).optional(),
+    porte_unidade: opcional(60),
+    porte: z.enum(["pequeno", "medio", "grande", "nao_informado"]).optional(),
+    cargo: opcional(80),
+    cidade: opcional(80),
+    uf: opcional(2),
+    dor: opcional(500),
+    ferramenta_atual: opcional(160),
+    urgencia: z.enum(["alta", "media", "baixa", "nao_informado"]).optional(),
+    orcamento: z.enum(["sim", "nao", "nao_informado"]).optional(),
+    pediu_preco: z.boolean().optional(),
+    apenas_preco: z.boolean().optional(),
+    pediu_demo: z.boolean().optional(),
+    perguntas_respondidas: z.number().int().min(0).max(10).optional(),
+    telefone: opcional(40),
+    email: opcional(160),
+    aceita_contato: z.boolean().optional(),
+    pessoa_fisica: z.boolean().optional(),
+    estudante: z.boolean().optional(),
+    concorrente: z.boolean().optional(),
+  }),
 };
 
 /* ---------- Definições enviadas ao Claude ---------- */
@@ -155,6 +186,43 @@ export const DEFINICOES = [
     },
   },
   {
+    name: "qualificar_lead",
+    description:
+      "Registra o que você já sabe sobre a pessoa para a nota do lead (0 a 100). Chame sempre que descobrir algo novo (segmento, porte, cargo, cidade, dor, urgência, orçamento, pedido de preço ou demonstração, contato). Envie só o que a pessoa disse; não invente nem chute. Os dados se somam entre as chamadas. O resultado diz a classe (quente, morno, frio) e o próximo passo. Nunca conte a nota nem a classe para o cliente.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nome: { type: "string" },
+        empresa: { type: "string", description: "Nome da empresa, se a pessoa disse" },
+        tem_empresa: { type: "boolean", description: "true se a pessoa tem empresa, MEI ou atua como profissional autônomo" },
+        segmento: { type: "string", description: "Ramo, nas palavras da pessoa: barbearia, clínica, escritório de contabilidade, distribuidor de material elétrico..." },
+        perfil: { type: "string", description: "No Nexor Elo: fornecedor ou instalador" },
+        cnae: { type: "string", description: "CNAE, só se a pessoa informou" },
+        porte_numero: { type: "number", description: "Número que mede o porte, na unidade da campanha (colaboradores, barbeiros, empresas na carteira, instaladores, orçamentos por mês, computadores, mensagens por dia)" },
+        porte_unidade: { type: "string", description: "Unidade do porte_numero, ex.: barbeiros" },
+        porte: { type: "string", enum: ["pequeno", "medio", "grande", "nao_informado"] },
+        cargo: { type: "string", description: "Cargo ou papel: dono, sócio, gerente de TI, analista, contador titular..." },
+        cidade: { type: "string" },
+        uf: { type: "string", description: "Sigla do estado, ex.: MG" },
+        dor: { type: "string", description: "O problema que a pessoa quer resolver, em uma frase" },
+        ferramenta_atual: { type: "string", description: "O que usa hoje: caderno, planilha, outro sistema" },
+        urgencia: { type: "string", enum: ["alta", "media", "baixa", "nao_informado"], description: "alta = quer começar agora ou neste mês" },
+        orcamento: { type: "string", enum: ["sim", "nao", "nao_informado"], description: "sim = disse que tem verba ou que o valor cabe" },
+        pediu_preco: { type: "boolean" },
+        apenas_preco: { type: "boolean", description: "true se a pessoa só quer saber o preço e não quer conversar" },
+        pediu_demo: { type: "boolean", description: "Pediu teste, demonstração ou diagnóstico" },
+        perguntas_respondidas: { type: "integer", description: "Quantas perguntas de qualificação da campanha a pessoa já respondeu" },
+        telefone: { type: "string" },
+        email: { type: "string" },
+        aceita_contato: { type: "boolean", description: "true se a pessoa aceitou receber material ou contato da equipe (opt-in)" },
+        pessoa_fisica: { type: "boolean", description: "true se é para uso pessoal, sem empresa" },
+        estudante: { type: "boolean", description: "true se é estudante ou pesquisa acadêmica" },
+        concorrente: { type: "boolean", description: "true se trabalha numa empresa que vende produto parecido" },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
     name: "transferir_para_humano",
     description:
       "Passa o atendimento para uma pessoa da equipe Nexor e envia a ela um resumo. Use quando o cliente pedir, para clientes atuais com problemas, reclamações, negociação ou assuntos que você não resolve.",
@@ -178,7 +246,38 @@ export const DEFINICOES = [
  * @param {(texto: string, dados: object) => Promise<void>} deps.notificar
  * @param {() => Date} deps.agora
  */
-export function criarExecutor({ armazenamento, notificar, agora }) {
+/* Orientação devolvida à Blue para cada próximo passo da qualificação. */
+const ORIENTACAO = {
+  agendar_demo: "Lead quente: a equipe já foi avisada. Ofereça a demonstração ou o diagnóstico agora (use ver_horarios_diagnostico).",
+  enviar_material_preco: "A pessoa quer preço. Seja gentil: ofereça o material de preços da campanha e pergunte se pode enviar por aqui ou por e-mail. Se ela topar, marque aceita_contato. Não insista em perguntas.",
+  cadencia: "Lead morno. Continue a conversa com a próxima pergunta de qualificação que falta, uma por vez. Antes de encerrar, pergunte se pode mandar um resumo por aqui ou por e-mail (opt-in).",
+  conteudo: "Ainda há pouca informação. Faça a próxima pergunta de qualificação, de forma leve.",
+  conteudo_educativo: "É estudante. Ajude com cordialidade, indique o conteúdo do site e não ofereça demonstração comercial.",
+  encerrar_cordialmente: "Parece ser alguém do mesmo mercado. Seja educada, não passe detalhes internos nem preços e encerre com cordialidade.",
+  explicar_produto_para_empresas: "É pessoa física sem empresa. Explique com gentileza que a solução é para empresas e, se fizer sentido, indique o conteúdo do site. Sem grosseria.",
+};
+
+const idDaConversa = (idConversa) => `conv-${createHash("sha256").update(idConversa).digest("hex").slice(0, 20)}`;
+const semVazios = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "nao_informado"));
+const DESCARTES_SEM_EVENTO = new Set(["concorrente", "estudante", "pessoa_fisica"]);
+
+/**
+ * @param {object} deps
+ * @param {ReturnType<import('./armazenamento.js').criarArmazenamento>} deps.armazenamento
+ * @param {(texto: string, dados: object) => Promise<void>} deps.notificar
+ * @param {() => Date} deps.agora
+ * @param {(evento: string, lead: object) => Promise<unknown>} [deps.conversao] eventos Lead, LeadQualificado e AgendouDemo
+ */
+export function criarExecutor({ armazenamento, notificar, agora, conversao = async () => {} }) {
+  /** @type {Map<string, {sinais: object, lead: object, eventos: Set<string>}>} */
+  const qualificacoes = new Map();
+
+  const emitir = (evento, lead, q) => {
+    if (q.eventos.has(evento)) return;
+    q.eventos.add(evento);
+    Promise.resolve(conversao(evento, lead)).catch((err) => console.error(`[conversao ${evento}]`, err?.message ?? err));
+  };
+
   const acoes = {
     async registrar_lead(dados, ctx) {
       const lead = {
@@ -226,6 +325,12 @@ export function criarExecutor({ armazenamento, notificar, agora }) {
         return { ok: false, mensagem: "Esse horário acabou de ser ocupado. Ofereça outro horário." };
       }
       const quando = formatarHorario(dados.horario);
+      const q = qualificacoes.get(ctx.idConversa);
+      if (q) {
+        q.lead = { ...q.lead, agendou_demo: true, demo_em: dados.horario, registrado_em: agora().toISOString() };
+        await armazenamento.salvarLead(q.lead);
+        emitir("AgendouDemo", q.lead, q);
+      }
       await notificar(
         `🟩 Diagnóstico agendado: ${quando}\n${dados.nome}${dados.empresa ? ` · ${dados.empresa}` : ""}\n` +
           `Contato: ${dados.contato}\nAssunto: ${dados.assunto}\nEnviar o link da reunião ao cliente.`,
@@ -236,6 +341,72 @@ export function criarExecutor({ armazenamento, notificar, agora }) {
 
     async estimar_retorno(dados) {
       return calcularRetorno(dados);
+    },
+
+    async qualificar_lead(dados, ctx) {
+      const campanha = ctx.campanha ?? UMBRELLA;
+      const anterior = qualificacoes.get(ctx.idConversa) ?? { sinais: {}, lead: null, eventos: new Set() };
+      const sinais = { ...anterior.sinais, ...semVazios(dados) };
+      if (!sinais.telefone && ctx.telefone) sinais.telefone = ctx.telefone;
+      const r = pontuarLead(sinais, campanha);
+      const lead = {
+        id: idDaConversa(ctx.idConversa),
+        tipo: "conversa",
+        conversa: ctx.idConversa,
+        canal: ctx.canal,
+        campanha: campanha.id,
+        campanha_via: ctx.campanhaVia,
+        produto: r.produto,
+        produto_indicado: r.produto_indicado,
+        nome: sinais.nome,
+        empresa: sinais.empresa,
+        telefone: sinais.telefone,
+        email: sinais.email,
+        nota: r.nota,
+        classe: r.classe,
+        temperatura: r.classe,
+        motivos: r.motivos,
+        componentes: r.componentes,
+        descarte: r.descarte,
+        proxima_acao: r.proxima_acao,
+        aceita_contato: sinais.aceita_contato === true,
+        sinais,
+        origem: ctx.origem ?? {},
+        consentimento_medicao: ctx.consentimento === true,
+        agendou_demo: anterior.lead?.agendou_demo,
+        inicio_em: ctx.inicioEm,
+        primeira_resposta_em: ctx.primeiraRespostaEm,
+        quente_em: anterior.lead?.quente_em ?? (r.classe === "quente" ? agora().toISOString() : undefined),
+        qualificado_em: anterior.lead?.qualificado_em ?? agora().toISOString(),
+        registrado_em: agora().toISOString(),
+      };
+      const q = { sinais, lead, eventos: anterior.eventos };
+      qualificacoes.set(ctx.idConversa, q);
+      if (qualificacoes.size > 20_000) qualificacoes.delete(qualificacoes.keys().next().value);
+      await armazenamento.salvarLead(lead);
+
+      // "Lead" sai uma vez, quando já há contato e alguma qualificação (não só o "oi" da primeira mensagem)
+      const qualificado = r.classe !== "frio" || perguntasRespondidas(sinais, campanha) > 0;
+      if ((lead.telefone || lead.email) && qualificado && !DESCARTES_SEM_EVENTO.has(r.descarte)) emitir("Lead", lead, q);
+      if (r.classe === "quente" && !anterior.eventos.has("LeadQualificado")) {
+        emitir("LeadQualificado", lead, q);
+        await notificar(
+          `🔥 Lead quente · ${lead.produto} · nota ${r.nota}/100\n${lead.nome ?? "Sem nome"}${lead.empresa ? ` · ${lead.empresa}` : ""}${sinais.cargo ? ` (${sinais.cargo})` : ""}\n` +
+            `Campanha: ${campanha.nome}${ctx.campanhaVia ? ` (via ${ctx.campanhaVia})` : ""}\n` +
+            `Contato: ${lead.telefone ?? lead.email ?? "não informado"} · canal: ${ctx.canal}\n` +
+            `Por quê: ${r.motivos.join("; ")}\n` +
+            `Próximo passo: chamar agora. A Blue está oferecendo horários de demonstração.`,
+          { ...lead, tipo: "lead_quente", tipo_registro: lead.tipo },
+        );
+      }
+      return {
+        ok: true,
+        classe: r.classe,
+        proxima_acao: r.proxima_acao,
+        produto_indicado: r.produto_indicado,
+        orientacao: ORIENTACAO[r.proxima_acao],
+        perguntas_que_faltam: campanha.perguntas.filter((p) => sinais[p.sinal] === undefined).map((p) => p.texto),
+      };
     },
 
     async transferir_para_humano(dados, ctx) {

@@ -8,7 +8,7 @@ import { lerCsv, reaisParaCentavos } from "../regras/documentos.js";
 import { instaladorParaFornecedor, propostaParaFornecedor, repasseParaFornecedor, reservaParaFornecedor } from "../servicos/privacidade.js";
 import { falha } from "./roteador.js";
 import { pode } from "./permissoes.js";
-import { centavos, cnaes, dia, email, id, op, pct, t, telefone, uf, url, conferir, validar } from "./validacao.js";
+import { centavos, cnaes, dia, email, id, op, paginar, pct, t, telefone, uf, url, conferir, validar } from "./validacao.js";
 
 export function rotasFornecedor(h) {
   const { r, repo, cofre, negocio, agora, auditar, daConta, contaPublica, fiscal } = h;
@@ -56,13 +56,24 @@ export function rotasFornecedor(h) {
     return repo.inserir("produtos", { fornecedor_id: ctx.conta.id, ...d });
   });
   r.put("/api/fornecedor/produtos/:id", F("catalogo"), async (ctx) => {
-    const p = daConta("produtos", ctx.params.id, "fornecedor_id", ctx.conta.id, "Produto");
+    daConta("produtos", ctx.params.id, "fornecedor_id", ctx.conta.id, "Produto");
     const d = validar(produtoCampos.partial(), await ctx.corpo());
     conferirTabelas(ctx, d.tabelas);
-    if (d.codigo && d.codigo !== p.codigo && repo.um("SELECT 1 FROM produtos WHERE fornecedor_id = ? AND codigo = ?", ctx.conta.id, d.codigo)) falha(409, `Já existe um produto com o código ${d.codigo}.`);
-    if (d.estoque !== undefined && d.estoque < p.reservado) falha(409, `O estoque não pode ficar abaixo do reservado (${p.reservado}).`);
-    if (d.ativo === false && p.reservado > 0) falha(409, "Há reservas ativas deste produto. Espere vencerem ou serem pagas para desativar.");
-    return repo.atualizar("produtos", p.id, d);
+    // Banca P-15: o produto é lido de novo DEPOIS de receber o corpo (uma reserva pode ter entrado nesse meio tempo), e a
+    // gravação confere o reservado no próprio UPDATE; se perder a corrida, responde 409 com a mensagem (não 500)
+    return repo.transacao(() => {
+      const p = repo.obter("produtos", ctx.params.id);
+      if (d.codigo && d.codigo !== p.codigo && repo.um("SELECT 1 FROM produtos WHERE fornecedor_id = ? AND codigo = ?", ctx.conta.id, d.codigo)) falha(409, `Já existe um produto com o código ${d.codigo}.`);
+      const abaixo = () => falha(409, `O estoque não pode ficar abaixo do reservado (${repo.obter("produtos", p.id).reservado}). Uma reserva pode ter entrado agora: confira e tente de novo.`, { codigo: "estoque_reservado" });
+      if (d.estoque !== undefined && d.estoque < p.reservado) abaixo();
+      if (d.ativo === false && p.reservado > 0) falha(409, "Há reservas ativas deste produto. Espere vencerem ou serem pagas para desativar.");
+      try {
+        return repo.atualizar("produtos", p.id, d);
+      } catch (e) {
+        if (/CHECK constraint/i.test(String(e.message))) abaixo();
+        throw e;
+      }
+    });
   });
   r.delete("/api/fornecedor/produtos/:id", F("catalogo"), (ctx) => {
     const p = daConta("produtos", ctx.params.id, "fornecedor_id", ctx.conta.id, "Produto");
@@ -122,23 +133,32 @@ export function rotasFornecedor(h) {
   });
 
   /* ---------- Vínculos com instaladores ---------- */
-  const vinculoPublico = (v) => {
-    const inst = repo.obter("contas", v.instalador_id);
-    const tb = v.tabela_id ? repo.obter("tabelas", v.tabela_id) : null;
-    const s = negocio.score(v.instalador_id, v.fornecedor_id);
-    return {
-      id: v.id, status: v.status, criado_em: v.criado_em, decidido_em: v.decidido_em, decidido_por: v.decidido_por, motivo: v.motivo,
-      instalador: { ...instaladorParaFornecedor(inst), cnaes: inst.cnaes },
-      cnaes_compativeis: v.cnaes_compativeis,
-      tabela: tb ? { id: tb.id, nome: tb.nome } : null,
-      credito: negocio.credito(v),
-      score: s.score,
-    };
+  /** Vínculos em lote (banca P-13): instaladores, tabelas, crédito e score com consultas agrupadas, não por vínculo */
+  const vinculosPublicos = (lista) => {
+    if (!lista.length) return [];
+    const insts = repo.porIds("contas", lista.map((v) => v.instalador_id));
+    const tabs = repo.porIds("tabelas", lista.map((v) => v.tabela_id));
+    const creds = negocio.creditos(lista);
+    const scores = negocio.scores(lista[0].fornecedor_id, lista.map((v) => v.instalador_id));
+    return lista.map((v) => {
+      const inst = insts.get(v.instalador_id);
+      const tb = v.tabela_id ? tabs.get(v.tabela_id) : null;
+      return {
+        id: v.id, status: v.status, criado_em: v.criado_em, decidido_em: v.decidido_em, decidido_por: v.decidido_por, motivo: v.motivo,
+        instalador: { ...instaladorParaFornecedor(inst), cnaes: inst.cnaes },
+        cnaes_compativeis: v.cnaes_compativeis,
+        tabela: tb ? { id: tb.id, nome: tb.nome } : null,
+        credito: creds.get(v.id),
+        score: scores.get(v.instalador_id).score,
+      };
+    });
   };
+  const vinculoPublico = (v) => vinculosPublicos([v])[0];
   const meuVinculo = (ctx) => daConta("vinculos", ctx.params.id, "fornecedor_id", ctx.conta.id, "Vínculo");
-  r.get("/api/fornecedor/vinculos", F("ver"), ({ conta, query }) => {
-    const st = query.get("status") ?? "";
-    return repo.lista("vinculos", "WHERE fornecedor_id = ? AND (? = '' OR status = ?) ORDER BY criado_em DESC", conta.id, st, st).map(vinculoPublico);
+  r.get("/api/fornecedor/vinculos", F("ver"), (ctx) => {
+    const st = ctx.query.get("status") ?? "";
+    const pg = paginar(ctx, { padrao: 500, maximo: 500 });
+    return vinculosPublicos(pg.cortar(repo.lista("vinculos", "WHERE fornecedor_id = ? AND (? = '' OR status = ?) ORDER BY criado_em DESC, id LIMIT ? OFFSET ?", ctx.conta.id, st, st, ...pg.sql)));
   });
   r.get("/api/fornecedor/vinculos/:id", F("ver"), (ctx) => vinculoPublico(meuVinculo(ctx)));
   const tabelaOuNulo = (ctx, tid) => (tid ? daConta("tabelas", tid, "fornecedor_id", ctx.conta.id, "Tabela").id : null);
@@ -197,46 +217,73 @@ export function rotasFornecedor(h) {
   });
 
   /* ---------- Propostas e reservas que envolvem o fornecedor (projeção sem dados do cliente) ---------- */
-  const propostasMinhas = (contaId, status = "") =>
-    repo.lista("propostas", "WHERE status <> 'rascunho' AND id IN (SELECT proposta_id FROM proposta_itens WHERE fornecedor_id = ?) AND (? = '' OR status = ?) ORDER BY COALESCE(enviada_em, criado_em) DESC LIMIT 500", contaId, status, status);
-  const projetar = (p, contaId) => {
-    const pg = repo.ler("pagamentos", repo.um("SELECT * FROM pagamentos WHERE proposta_id = ? ORDER BY CASE status WHEN 'pago' THEN 0 WHEN 'pendente' THEN 1 ELSE 2 END, criado_em DESC LIMIT 1", p.id));
-    return propostaParaFornecedor(p, negocio.itensDa(p.id), repo.obter("contas", p.instalador_id), contaId, { reservas: repo.lista("reservas", "WHERE proposta_id = ?", p.id), pagamento: pg });
+  const propostasMinhas = (contaId, status, [limite, offset]) =>
+    repo.lista("propostas", "WHERE status <> 'rascunho' AND id IN (SELECT proposta_id FROM proposta_itens WHERE fornecedor_id = ?) AND (? = '' OR status = ?) ORDER BY COALESCE(enviada_em, criado_em) DESC, id LIMIT ? OFFSET ?", contaId, status, status, limite, offset);
+  /** Projeção em lote (banca P-13): itens, reservas, pagamentos e instaladores de todas as propostas em 4 consultas */
+  const projetarLote = (lista, contaId) => {
+    const ids = lista.map((p) => p.id);
+    const itens = repo.agrupar("proposta_itens", "proposta_id", ids, "ORDER BY ordem");
+    const reservas = repo.agrupar("reservas", "proposta_id", ids);
+    const pags = repo.agrupar("pagamentos", "proposta_id", ids, "ORDER BY CASE status WHEN 'pago' THEN 0 WHEN 'pendente' THEN 1 ELSE 2 END, criado_em DESC");
+    const insts = repo.porIds("contas", lista.map((p) => p.instalador_id));
+    return lista.map((p) => propostaParaFornecedor(p, itens.get(p.id) ?? [], insts.get(p.instalador_id), contaId, { reservas: reservas.get(p.id) ?? [], pagamento: pags.get(p.id)?.[0] ?? null }));
   };
+  const projetar = (p, contaId) => projetarLote([p], contaId)[0];
   const minhaProposta = (ctx) => {
     const p = repo.obter("propostas", ctx.params.id);
     if (!p || p.status === "rascunho" || !repo.um("SELECT 1 FROM proposta_itens WHERE proposta_id = ? AND fornecedor_id = ?", p.id, ctx.conta.id)) falha(404, "Proposta não encontrada.");
     return p;
   };
-  r.get("/api/fornecedor/propostas", F("ver"), ({ conta, query }) => propostasMinhas(conta.id, query.get("status") ?? "").map((p) => projetar(p, conta.id)));
+  r.get("/api/fornecedor/propostas", F("ver"), (ctx) => {
+    const pg = paginar(ctx, { padrao: 500, maximo: 500 });
+    return projetarLote(pg.cortar(propostasMinhas(ctx.conta.id, ctx.query.get("status") ?? "", pg.sql)), ctx.conta.id);
+  });
   r.get("/api/fornecedor/propostas/:id", F("ver"), (ctx) => projetar(minhaProposta(ctx), ctx.conta.id));
-  r.get("/api/fornecedor/reservas", F("ver"), ({ conta, query }) => {
-    const st = query.get("status") ?? "";
-    return repo.lista("reservas", "WHERE fornecedor_id = ? AND (? = '' OR status = ?) ORDER BY criado_em DESC LIMIT 1000", conta.id, st, st).map((x) => {
-      const p = repo.obter("propostas", x.proposta_id);
-      return reservaParaFornecedor(x, repo.obter("produtos", x.produto_id), p, repo.obter("contas", p.instalador_id));
+  r.get("/api/fornecedor/reservas", F("ver"), (ctx) => {
+    const st = ctx.query.get("status") ?? "";
+    const pg = paginar(ctx, { padrao: 1000, maximo: 1000 });
+    const lista = pg.cortar(repo.lista("reservas", "WHERE fornecedor_id = ? AND (? = '' OR status = ?) ORDER BY criado_em DESC, id LIMIT ? OFFSET ?", ctx.conta.id, st, st, ...pg.sql));
+    const props = repo.porIds("propostas", lista.map((x) => x.proposta_id));
+    const prods = repo.porIds("produtos", lista.map((x) => x.produto_id));
+    const insts = repo.porIds("contas", [...props.values()].map((p) => p.instalador_id));
+    return lista.map((x) => {
+      const p = props.get(x.proposta_id);
+      return reservaParaFornecedor(x, prods.get(x.produto_id), p, insts.get(p?.instalador_id));
     });
   });
 
   /* ---------- Financeiro: repasses, títulos e notas ---------- */
-  r.get("/api/fornecedor/repasses", F("financeiro"), ({ conta }) => {
-    const lista = repo.lista("repasses", "WHERE destino = 'fornecedor' AND conta_id = ? AND status <> 'cancelado' ORDER BY criado_em DESC LIMIT 1000", conta.id);
-    const soma = (f) => lista.filter(f).reduce((s, x) => s + x.valor_centavos, 0);
+  r.get("/api/fornecedor/repasses", F("financeiro"), (ctx) => {
+    const { conta } = ctx;
+    const pg = paginar(ctx, { padrao: 1000, maximo: 1000 });
+    const lista = pg.cortar(repo.lista("repasses", "WHERE destino = 'fornecedor' AND conta_id = ? AND status <> 'cancelado' ORDER BY criado_em DESC, id LIMIT ? OFFSET ?", conta.id, ...pg.sql));
+    // O resumo soma tudo (no SQL), não só a página
+    const soma = (status) => repo.um("SELECT COALESCE(SUM(valor_centavos),0) n FROM repasses WHERE destino = 'fornecedor' AND conta_id = ? AND via = 'split' AND status = ?", conta.id, status).n;
     const titulos = repo.um("SELECT COALESCE(SUM(valor_centavos),0) n FROM titulos WHERE fornecedor_id = ? AND status = 'aberto'", conta.id).n;
+    const props = repo.porIds("propostas", lista.map((x) => x.proposta_id));
+    const insts = repo.porIds("contas", [...props.values()].map((p) => p.instalador_id));
     return {
-      resumo: { recebido_split_centavos: soma((x) => x.via === "split" && x.status === "recebido"), previsto_split_centavos: soma((x) => x.via === "split" && x.status === "previsto"), a_receber_titulos_centavos: titulos },
+      resumo: { recebido_split_centavos: soma("recebido"), previsto_split_centavos: soma("previsto"), a_receber_titulos_centavos: titulos },
       repasses: lista.map((x) => {
-        const p = repo.obter("propostas", x.proposta_id);
-        return repasseParaFornecedor(x, p, repo.obter("contas", p.instalador_id));
+        const p = props.get(x.proposta_id);
+        return repasseParaFornecedor(x, p, insts.get(p?.instalador_id));
       }),
     };
   });
-  const tituloPublico = (x) => ({ ...x, vencido: x.status === "aberto" && x.vencimento < hoje(), instalador: instaladorParaFornecedor(repo.obter("contas", x.instalador_id)), proposta: x.proposta_id ? { id: x.proposta_id, numero: repo.obter("propostas", x.proposta_id)?.numero } : null });
-  r.get("/api/fornecedor/titulos", F("financeiro"), ({ conta, query }) => {
+  /** Títulos em lote (banca P-13): instaladores e propostas numa consulta cada */
+  const titulosPublicos = (lista) => {
+    const insts = repo.porIds("contas", lista.map((x) => x.instalador_id));
+    const props = repo.porIds("propostas", lista.map((x) => x.proposta_id));
+    return lista.map((x) => ({ ...x, vencido: x.status === "aberto" && x.vencimento < hoje(), instalador: instaladorParaFornecedor(insts.get(x.instalador_id)), proposta: x.proposta_id ? { id: x.proposta_id, numero: props.get(x.proposta_id)?.numero } : null }));
+  };
+  const tituloPublico = (x) => titulosPublicos([x])[0];
+  r.get("/api/fornecedor/titulos", F("financeiro"), (ctx) => {
+    const { query } = ctx;
     const st = query.get("status") ?? "";
     const inst = query.get("instalador_id") ?? "";
     const vencidos = query.get("vencidos") === "1";
-    return repo.lista("titulos", "WHERE fornecedor_id = ? AND (? = '' OR status = ?) AND (? = '' OR instalador_id = ?) AND (? = 0 OR (status = 'aberto' AND vencimento < ?)) ORDER BY vencimento", conta.id, st, st, inst, inst, vencidos ? 1 : 0, hoje()).map(tituloPublico);
+    const pg = paginar(ctx, { padrao: 500, maximo: 500 });
+    return titulosPublicos(pg.cortar(repo.lista("titulos", "WHERE fornecedor_id = ? AND (? = '' OR status = ?) AND (? = '' OR instalador_id = ?) AND (? = 0 OR (status = 'aberto' AND vencimento < ?)) ORDER BY vencimento, id LIMIT ? OFFSET ?", ctx.conta.id, st, st, inst, inst, vencidos ? 1 : 0, hoje(), ...pg.sql)));
   });
   r.post("/api/fornecedor/titulos", F("financeiro"), async (ctx) => {
     const d = validar(z.object({ instalador_id: id, descricao: t(200), valor_centavos: centavos.refine((v) => v > 0, "precisa ser maior que zero"), vencimento: dia }), await ctx.corpo());
@@ -271,7 +318,8 @@ export function rotasFornecedor(h) {
     const p = minhaProposta(ctx);
     if (p.status !== "paga") falha(409, "A NF-e sai depois que a proposta for paga.");
     const ref = `elo-nfe-${p.id.slice(0, 8)}-${ctx.conta.id.slice(0, 8)}`;
-    const ja = repo.ler("notas", repo.um("SELECT * FROM notas WHERE ref = ?", ref));
+    const notaExistente = () => repo.ler("notas", repo.um("SELECT * FROM notas WHERE ref = ? AND conta_id = ?", ref, ctx.conta.id));
+    const ja = notaExistente();
     if (ja) return ja;
     const vis = projetar(p, ctx.conta.id);
     const inst = repo.obter("contas", p.instalador_id);
@@ -282,7 +330,14 @@ export function rotasFornecedor(h) {
       items: vis.itens.map((i, n) => ({ numero_item: n + 1, codigo_produto: i.codigo, descricao: i.descricao, unidade_comercial: i.unidade, quantidade_comercial: i.quantidade, valor_unitario_comercial: i.preco_unit_centavos / 100, valor_bruto: i.total_centavos / 100 })),
     };
     const res = await fiscal.emitir({ token: negocio.segredo(ctx.conta.config.focus_token_cripto), tipo: "nfe", ref, dados });
-    const nota = repo.inserir("notas", { conta_id: ctx.conta.id, proposta_id: p.id, tipo: "nfe", ref, status: res.status, numero: res.numero, url: res.url, simulada: res.simulada, resposta: res.simulada ? { simulada: true } : res.dados });
+    let nota;
+    try {
+      nota = repo.inserir("notas", { conta_id: ctx.conta.id, proposta_id: p.id, tipo: "nfe", ref, status: res.status, numero: res.numero, url: res.url, simulada: res.simulada, resposta: res.simulada ? { simulada: true } : res.dados });
+    } catch (e) {
+      const outra = notaExistente();
+      if (outra) return outra;
+      throw e;
+    }
     auditar(ctx, "nfe_emitida", { proposta_id: p.id, ref, simulada: res.simulada });
     return nota;
   });

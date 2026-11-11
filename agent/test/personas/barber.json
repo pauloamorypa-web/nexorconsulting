@@ -1,0 +1,52 @@
+[
+  {
+    "id": "barber-1-dono-uberlandia",
+    "tipo": "quente",
+    "descricao": "Persona fictícia. Dono de barbearia com 4 barbeiros no Triângulo, agenda no caderno, quer começar já.",
+    "canal": "whatsapp",
+    "telefone": "5534900000101",
+    "mensagens": [
+      "Quero o teste do Nexor Barber",
+      "Sou o dono, tenho uma barbearia em Uberlândia com 4 barbeiros",
+      "Hoje a agenda fica no caderno e o que mais me incomoda é cliente que falta",
+      "Quero começar já, pode ativar o teste?"
+    ],
+    "esperado": { "campanha": "barber", "classe": "quente", "nota_min": 70, "nota_max": 100, "motivos": ["Triângulo Mineiro", "decisor", "pediu demonstração"] }
+  },
+  {
+    "id": "barber-2-autonomo-preco",
+    "tipo": "morno",
+    "descricao": "Persona fictícia. Barbeiro que trabalha sozinho em Goiânia, veio do Instagram e pergunta o preço.",
+    "canal": "site",
+    "origem": { "utm_source": "instagram", "utm_medium": "pago", "utm_campaign": "barber-fundadores", "pagina": "https://nexorconsultingit.com.br/solucoes/sistema-para-barbearia/" },
+    "mensagens": [
+      "Oi, vi o anúncio do app pra barbearia",
+      "Sou barbeiro, trabalho sozinho aqui em Goiânia",
+      "Quanto custa?"
+    ],
+    "esperado": { "campanha": "barber", "classe": "morno", "nota_min": 40, "nota_max": 69, "motivos": ["pediu preço"] }
+  },
+  {
+    "id": "barber-3-cliente-final",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Cliente de barbearia que quer marcar corte (pessoa física).",
+    "canal": "whatsapp",
+    "telefone": "5534900000103",
+    "mensagens": [
+      "Oi, sou cliente de uma barbearia e queria saber se dá pra marcar meu corte por aqui",
+      "É pra mim mesmo, só quero cortar o cabelo"
+    ],
+    "esperado": { "campanha": "barber", "classe": "frio", "nota_min": 0, "nota_max": 25, "descarte": "pessoa_fisica" }
+  },
+  {
+    "id": "barber-4-concorrente",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Empresa que desenvolve app para barbearias pesquisando a concorrência.",
+    "canal": "site",
+    "origem": { "utm_source": "google", "utm_medium": "cpc", "utm_campaign": "barber" },
+    "mensagens": [
+      "Olá, desenvolvemos um app para barbearias e quero ver como vocês fazem o clube de assinatura. Quanto custa?"
+    ],
+    "esperado": { "campanha": "barber", "classe": "frio", "nota_min": 0, "nota_max": 10, "descarte": "concorrente" }
+  }
+]

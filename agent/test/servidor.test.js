@@ -162,3 +162,33 @@ test("respostas da API saem com cabeçalhos de segurança", async () => {
   assert.equal(r.headers.get("x-content-type-options"), "nosniff");
   assert.match(r.headers.get("content-security-policy"), /frame-ancestors 'none'/);
 });
+
+test("chat do site leva as UTMs e o consentimento até a Blue, com a campanha detectada", async () => {
+  await chat({ sessao: "utm12345", mensagem: "Oi", consentimento: true, origem: { utm_source: "instagram", utm_campaign: "barber-fundadores", gclid: "G1", lixo: "x" } });
+  const m = recebidas.at(-1);
+  assert.equal(m.campanha.id, "barber");
+  assert.equal(m.campanha.via, "utm_campaign");
+  assert.deepEqual(m.origem, { utm_source: "instagram", utm_campaign: "barber-fundadores", gclid: "G1" });
+  assert.equal(m.consentimento, true);
+  await chat({ sessao: "utm67890", mensagem: "Quero saber do Nexor Elo" });
+  assert.equal(recebidas.at(-1).campanha.id, "elo");
+  assert.equal(recebidas.at(-1).consentimento, false);
+});
+
+test("lead do formulário ganha a campanha; equipe registra o primeiro contato; relatório traz porCampanha", async () => {
+  await lead({ sessao: "cont1234", tipo: "teste", solucao: "Nexor Contábil", dados: { nome: "Lia", telefone: "34900000099" }, pontuacao: 3 });
+  assert.equal(leads.at(-1).campanha, "contabil");
+  const contato = (corpo, token = "relatorio-secreto") =>
+    fetch(`${base}/api/contato`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+  assert.equal((await contato({ telefone: "34900000099" }, "errado")).status, 401);
+  assert.equal((await contato({})).status, 400);
+  assert.equal((await contato({ telefone: "(34) 90000-0099" })).status, 200);
+  assert.deepEqual([leads.at(-1).tipo, leads.at(-1).telefone], ["contato_equipe", "34900000099"]);
+  const rel = await (await fetch(`${base}/api/relatorio?dias=30&cadencia=1&investimento=${encodeURIComponent("contabil: R$ 90")}`, { headers: { Authorization: "Bearer relatorio-secreto" } })).json();
+  const c = rel.porCampanha.find((g) => g.campanha === "contabil");
+  assert.equal(c.leads, 1);
+  assert.equal(c.investimento, 90);
+  assert.equal(typeof c.primeiro_contato_equipe_mediana_min, "number");
+  assert.ok(Array.isArray(rel.cadencia_mornos));
+  assert.equal(rel.total.leads, leads.filter((l) => l.tipo !== "contato_equipe").length, "registro de contato não conta como lead");
+});

@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node src/servidor.js",
     "chat": "node src/chat-cli.js",
-    "test": "node --test"
+    "test": "node --test",
+    "simular-campanhas": "node simulacao/simular-campanhas.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

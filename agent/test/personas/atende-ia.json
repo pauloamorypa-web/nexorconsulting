@@ -1,0 +1,48 @@
+[
+  {
+    "id": "atende-1-clinica-anuncio",
+    "tipo": "quente",
+    "descricao": "Persona fictícia. Dona de clínica odontológica que chegou por anúncio de clique para o WhatsApp.",
+    "canal": "whatsapp",
+    "telefone": "5534900000401",
+    "referral": { "source_type": "ad", "source_id": "000000000000001", "headline": "Teste grátis do Nexor Atende IA", "body": "Seu WhatsApp respondendo 24 horas", "ctwa_clid": "simulado-ctwa-401" },
+    "mensagens": [
+      "Olá! Quero saber mais sobre isso",
+      "Tenho uma clínica odontológica em Uberlândia, sou a dona",
+      "Chegam umas 80 mensagens por dia e a recepção não dá conta, perco paciente que manda mensagem de noite",
+      "Quero começar o quanto antes. Podemos agendar uma demonstração amanhã?"
+    ],
+    "esperado": { "campanha": "atende-ia", "classe": "quente", "nota_min": 70, "nota_max": 100, "motivos": ["porte ideal: 80 mensagens por dia"] }
+  },
+  {
+    "id": "atende-2-loja-pesquisando",
+    "tipo": "morno",
+    "descricao": "Persona fictícia. Dona de loja de roupas pesquisando, 25 mensagens por dia.",
+    "canal": "site",
+    "origem": { "utm_source": "instagram", "utm_medium": "pago", "utm_campaign": "teste12h" },
+    "mensagens": [
+      "Oi, tenho uma loja de roupas e quero entender como funciona a IA no WhatsApp",
+      "Umas 25 mensagens por dia",
+      "Ainda não sei quando, estou pesquisando"
+    ],
+    "esperado": { "campanha": "atende-ia", "classe": "morno", "nota_min": 40, "nota_max": 69 }
+  },
+  {
+    "id": "atende-3-so-preco",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Só quer o preço do Atende IA.",
+    "canal": "whatsapp",
+    "telefone": "5534900000403",
+    "mensagens": ["Quanto custa o atende ia? me passa só o preço"],
+    "esperado": { "campanha": "atende-ia", "classe": "morno", "nota_min": 40, "nota_max": 40, "motivos": ["vira morno com o material de preços"] }
+  },
+  {
+    "id": "atende-4-agencia-chatbot",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Agência que vende chatbot (concorrente).",
+    "canal": "whatsapp",
+    "telefone": "5534900000404",
+    "mensagens": ["Vi o anúncio do Nexor Atende IA. Sou de uma agência que vende chatbot pra WhatsApp e queria entender o modelo de vocês"],
+    "esperado": { "campanha": "atende-ia", "classe": "frio", "nota_min": 0, "nota_max": 10, "descarte": "concorrente" }
+  }
+]

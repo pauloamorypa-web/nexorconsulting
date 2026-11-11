@@ -42,7 +42,7 @@ const ROTULOS = {
   checklist: "Checklist", series: "Números de série", serie: "Número de série", imagem: "Imagem", legenda: "Legenda", status: "Situação", nota: "Nota",
   dia_vencimento: "Dia do vencimento", inicio: "Início", endereco: "Endereço", logradouro: "Logradouro", numero: "Número", bairro: "Bairro", cep: "CEP",
   complemento: "Complemento", csv: "Arquivo CSV", fornecedor_id: "Fornecedor", segmento: "Segmento", termo: "Busca", atual: "Senha atual", nova: "Nova senha",
-  mao_obra_centavos: "Mão de obra", deslocamento_centavos: "Deslocamento", outros_centavos: "Outros custos", produtos_centavos: "Produtos",
+  rbt12_centavos: "Receita dos últimos 12 meses (RBT12)", mao_obra_centavos: "Mão de obra", deslocamento_centavos: "Deslocamento", outros_centavos: "Outros custos", produtos_centavos: "Produtos",
   desconto_centavos: "Desconto", taxa_fixa_centavos: "Taxa fixa", prazo_dias: "Prazo (dias)", unidade: "Unidade",
   codigo_instalacao: "Código de instalação", focus_token: "Token da Focus NFe", asaas_chave: "Chave do Asaas", garantia_meses: "Garantia (meses)",
 };
@@ -102,5 +102,28 @@ export function validar(esquema, dados) {
   return r.data;
 }
 
+/**
+ * Banca P-13: paginação das listas sem mudar o formato da resposta (continua um array).
+ * Query: `?limite=` (1..maximo, padrão `padrao`) e `?pagina=` (1, 2, ...). Cabeçalhos: `X-Pagina`, `X-Limite` e, quando há
+ * mais itens, `X-Proxima-Pagina`. A consulta pede limite + 1 linhas para saber se há próxima página.
+ */
+export function paginar(ctx, { padrao = 200, maximo = 500 } = {}) {
+  const n = (k) => Math.floor(Number(ctx.query.get(k)));
+  const limite = Math.min(maximo, Math.max(1, n("limite") || padrao));
+  const pagina = Math.min(100_000, Math.max(1, n("pagina") || 1));
+  return {
+    limite,
+    pagina,
+    /** parâmetros do `LIMIT ? OFFSET ?` */
+    sql: [limite + 1, (pagina - 1) * limite],
+    cortar(lista) {
+      const mais = lista.length > limite;
+      ctx.res.setHeader("X-Pagina", String(pagina));
+      ctx.res.setHeader("X-Limite", String(limite));
+      if (mais) ctx.res.setHeader("X-Proxima-Pagina", String(pagina + 1));
+      return mais ? lista.slice(0, limite) : lista;
+    },
+  };
+}
 
 export const usuarioPublico = ({ senha_hash, ...u }) => u;

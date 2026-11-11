@@ -192,7 +192,8 @@
         const r = await fetch(`${NEXOR_API_URL.replace(/\/$/, "")}/api/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessao: NX.sessao, mensagem: texto, contexto: `viu ${NX.interesses().slice(0, 8).join(", ") || "a página inicial"}` }),
+          // origem (utm_*) e consentimento: a Blue abre a conversa no contexto da campanha de onde o visitante veio
+          body: JSON.stringify({ sessao: NX.sessao, mensagem: texto, contexto: `viu ${NX.interesses().slice(0, 8).join(", ") || "a página inicial"}`, origem: typeof NXT !== "undefined" ? NXT.origem() : undefined, consentimento: typeof NXT !== "undefined" && NXT.consentimento() }),
         });
         if (!r.ok) throw new Error(String(r.status));
         // Cada bloco separado por linha em branco vira um balão, como no WhatsApp

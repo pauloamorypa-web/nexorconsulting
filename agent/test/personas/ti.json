@@ -1,0 +1,46 @@
+[
+  {
+    "id": "ti-1-supermercados",
+    "tipo": "quente",
+    "descricao": "Persona fictícia. Coordenador de TI de rede de supermercados com 180 computadores, orçamento aprovado.",
+    "canal": "site",
+    "origem": { "utm_source": "google", "utm_medium": "cpc", "utm_campaign": "google-service-desk" },
+    "mensagens": [
+      "Sou coordenador de TI de uma rede de supermercados em Uberlândia, atendemos 180 computadores",
+      "Hoje os chamados chegam pelo WhatsApp do suporte e se perdem, sem SLA nenhum, e as senhas ficam numa planilha",
+      "A diretoria aprovou o orçamento, queremos implantar este mês. Meu e-mail é ti@exemplo.com.br, pode marcar uma apresentação?"
+    ],
+    "esperado": { "campanha": "ti", "classe": "quente", "nota_min": 85, "nota_max": 100, "motivos": ["decisor: coordenador de TI"] }
+  },
+  {
+    "id": "ti-2-analista-sp",
+    "tipo": "morno",
+    "descricao": "Persona fictícia. Analista de TI (influenciador) com 35 máquinas em São Paulo, vai levar ao gestor.",
+    "canal": "whatsapp",
+    "telefone": "5511900000702",
+    "mensagens": [
+      "Oi, vi o IT Platform",
+      "Sou analista de TI numa empresa de São Paulo com 35 máquinas",
+      "Usamos o GLPI, mas sem inventário automático. Vou levar pro meu gestor"
+    ],
+    "esperado": { "campanha": "ti", "classe": "morno", "nota_min": 40, "nota_max": 69, "motivos": ["influenciador"] }
+  },
+  {
+    "id": "ti-3-computador-de-casa",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Pessoa com o computador de casa lento.",
+    "canal": "site",
+    "origem": { "utm_source": "google", "utm_campaign": "ti" },
+    "mensagens": ["Meu computador de casa está lento, vocês fazem formatação?"],
+    "esperado": { "campanha": "ti", "classe": "frio", "nota_min": 0, "nota_max": 25, "descarte": "pessoa_fisica" }
+  },
+  {
+    "id": "ti-4-so-preco",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Só quer o valor do Service Desk.",
+    "canal": "whatsapp",
+    "telefone": "5534900000704",
+    "mensagens": ["Qual o valor do Service Desk? Só quero saber o preço"],
+    "esperado": { "campanha": "ti", "classe": "morno", "nota_min": 40, "nota_max": 40, "motivos": ["vira morno com o material de preços"] }
+  }
+]

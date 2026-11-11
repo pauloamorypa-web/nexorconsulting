@@ -207,7 +207,10 @@ export async function telaEditor(el, id) {
   /* Calculadora */
   const C = E.calc;
   const regime = seletor([["mei", "MEI"], ["simples", "Simples"], ["presumido", "Presumido"]], C.regime);
-  const anexo = seletor([["I", "I · comércio"], ["III", "III · serviços"], ["IV", "IV"], ["V", "V"]], C.anexo);
+  const anexo = seletor([["I", "I · comércio"], ["II", "II · indústria"], ["III", "III · serviços"], ["IV", "IV"], ["V", "V"]], C.anexo);
+  // Banca P-14: alíquota efetiva pela faixa (receita dos últimos 12 meses) ou informada à mão
+  const modoAliq = seletor([["manual", "Informar a alíquota"], ["rbt12", "Calcular pela receita de 12 meses"]], C.simples_modo ?? "manual");
+  const rbt12 = entradaDinheiro(C.rbt12_centavos ?? 0, (c) => ((C.rbt12_centavos = c), recalc()));
   const aliq = entrada({ inputmode: "decimal", value: String(C.aliquota_pct).replace(".", ",") });
   const iss = entrada({ inputmode: "decimal", value: String(C.iss_pct).replace(".", ",") });
   const taxaPct = entrada({ inputmode: "decimal", value: String(C.taxa_meio_pct).replace(".", ",") });
@@ -218,11 +221,17 @@ export async function telaEditor(el, id) {
   const num = (i) => Number(String(i.value).replace(",", ".")) || 0;
   const campoAnexo = campo("Anexo", anexo);
   const campoAliq = campo("Alíquota efetiva (%)", aliq, "Veja no seu último DAS.");
+  const campoModo = campo("Alíquota do Simples", modoAliq);
+  const campoRbt = campo("Receita bruta dos últimos 12 meses", rbt12, "RBT12: a alíquota efetiva sai da faixa do anexo.");
   const campoIss = campo("ISS (%)", iss);
   const visRegime = () => {
-    campoAnexo.hidden = campoAliq.hidden = regime.value !== "simples";
+    const simples = regime.value === "simples";
+    campoAnexo.hidden = campoModo.hidden = !simples;
+    campoAliq.hidden = !simples || modoAliq.value === "rbt12";
+    campoRbt.hidden = !simples || modoAliq.value !== "rbt12";
     campoIss.hidden = regime.value !== "presumido";
   };
+  modoAliq.addEventListener("change", () => ((C.simples_modo = modoAliq.value), visRegime(), recalc()));
   for (const [i, k] of [[aliq, "aliquota_pct"], [iss, "iss_pct"], [taxaPct, "taxa_meio_pct"], [margem, "margem_pct"]]) i.addEventListener("input", () => ((C[k] = num(i)), recalc()));
   regime.addEventListener("change", () => ((C.regime = regime.value), visRegime(), recalc()));
   anexo.addEventListener("change", () => ((C.anexo = anexo.value), recalc()));
@@ -245,7 +254,7 @@ export async function telaEditor(el, id) {
     const base = {
       custos: { produtos_centavos: t.custoProd, mao_obra_centavos: t.custoServ + (C.mao_obra_centavos || 0), deslocamento_centavos: C.deslocamento_centavos || 0 },
       margem_pct: Math.min(90, Math.max(0, C.margem_pct || 0)),
-      regime: C.regime === "simples" ? { tipo: "simples", anexo: C.anexo, aliquota_pct: Math.min(33, C.aliquota_pct || 0) } : { tipo: C.regime },
+      regime: C.regime === "simples" ? { tipo: "simples", anexo: C.anexo, ...(C.simples_modo === "rbt12" && C.rbt12_centavos > 0 ? { rbt12_centavos: C.rbt12_centavos } : { aliquota_pct: Math.min(33, C.aliquota_pct || 0) }) } : { tipo: C.regime },
       ...(C.regime === "presumido" ? { iss_pct: Math.min(5, C.iss_pct || 0) } : {}),
       taxa_meio_pct: Math.min(20, C.taxa_meio_pct || 0),
       taxa_meio_fixa_centavos: C.taxa_meio_fixa_centavos || 0,
@@ -313,7 +322,17 @@ export async function telaEditor(el, id) {
     guardar();
     recalc();
   }
-  async function salvar() {
+  /* Banca U-03: com rede lenta, "Salvar" e logo depois "Enviar" disparavam dois salvamentos ao mesmo tempo. A chave do rascunho
+     já impede a proposta duplicada, mas o segundo POST recebia a proposta antiga e as edições feitas no meio se perdiam.
+     Agora os salvamentos entram numa fila: o próximo espera o anterior terminar e, com o id já conhecido, grava por PUT
+     o estado mais recente. O envio sempre parte do que acabou de ser salvo. */
+  let filaSalvar = Promise.resolve();
+  function salvar() {
+    const vez = filaSalvar.then(salvarAgora, salvarAgora);
+    filaSalvar = vez.catch(() => {});
+    return vez;
+  }
+  async function salvarAgora() {
     if (!E.titulo.trim()) {
       titulo.focus();
       throw new Error("Dê um título para a proposta (o cliente vê).");
@@ -374,7 +393,7 @@ export async function telaEditor(el, id) {
             { class: "cartao dobra", open: matchMedia("(min-width: 900px)").matches },
             h("summary", {}, ic("calculadora", 18), "Impostos, taxas e lucro líquido"),
             h("div", { class: "pilha", style: { marginTop: "10px" } },
-              h("div", { class: "grade2" }, campo("Regime", regime), campoAnexo, campoAliq, campoIss, campo("Margem líquida desejada (%)", margem), campo("Taxa do pagamento (%)", taxaPct), campo("Taxa fixa por cobrança", taxaFixa), campo("Custo da sua mão de obra", maoObra), campo("Deslocamento", desloc)),
+              h("div", { class: "grade2" }, campo("Regime", regime), campoAnexo, campoModo, campoAliq, campoRbt, campoIss, campo("Margem líquida desejada (%)", margem), campo("Taxa do pagamento (%)", taxaPct), campo("Taxa fixa por cobrança", taxaFixa), campo("Custo da sua mão de obra", maoObra), campo("Deslocamento", desloc)),
               saidaCalc),
           ),
           resumo,

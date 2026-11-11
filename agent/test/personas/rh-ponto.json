@@ -1,0 +1,46 @@
+[
+  {
+    "id": "rh-1-industria-uberaba",
+    "tipo": "quente",
+    "descricao": "Persona fictícia. Gerente administrativo de indústria com 85 funcionários, orçamento aprovado.",
+    "canal": "site",
+    "origem": { "utm_source": "meta", "utm_medium": "pago", "utm_campaign": "meta-rh-ponto" },
+    "mensagens": [
+      "Boa tarde, sou o gerente administrativo de uma indústria em Uberaba com 85 funcionários",
+      "Hoje o ponto é no relógio de papel e o fechamento leva três dias, sempre com erro de hora extra",
+      "Temos orçamento aprovado e queremos trocar até o fim do mês. Podem agendar uma demonstração? Meu WhatsApp é (34) 90000-0301"
+    ],
+    "esperado": { "campanha": "rh-ponto", "classe": "quente", "nota_min": 85, "nota_max": 100, "motivos": ["tem orçamento", "urgência alta"] }
+  },
+  {
+    "id": "rh-2-loja-patos",
+    "tipo": "morno",
+    "descricao": "Persona fictícia. Loja de roupas com 12 funcionários, planilha, pensa no próximo mês.",
+    "canal": "whatsapp",
+    "telefone": "5534900000302",
+    "mensagens": [
+      "Oi, queria saber do ponto eletrônico",
+      "Tenho uma loja de roupas com 12 funcionários aqui em Patos de Minas",
+      "Uso planilha. Pensando pro próximo mês"
+    ],
+    "esperado": { "campanha": "rh-ponto", "classe": "morno", "nota_min": 40, "nota_max": 69 }
+  },
+  {
+    "id": "rh-3-freelancer-pf",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Freelancer sem empresa querendo controlar as próprias horas.",
+    "canal": "whatsapp",
+    "telefone": "5534900000303",
+    "mensagens": ["Oi! Queria um app de controle de ponto pra marcar minhas horas de freelancer, não tenho empresa"],
+    "esperado": { "campanha": "rh-ponto", "classe": "frio", "nota_min": 0, "nota_max": 25, "descarte": "pessoa_fisica" }
+  },
+  {
+    "id": "rh-4-software-house",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Software house que desenvolve sistema de ponto.",
+    "canal": "site",
+    "origem": { "utm_source": "google", "utm_campaign": "rh" },
+    "mensagens": ["Somos uma software house que desenvolve sistema de ponto. Vocês fazem white label? Qual o preço?"],
+    "esperado": { "campanha": "rh-ponto", "classe": "frio", "nota_min": 0, "nota_max": 10, "descarte": "concorrente" }
+  }
+]
