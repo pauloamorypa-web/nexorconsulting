@@ -289,13 +289,13 @@ export const CAMPANHAS = [
   },
   {
     id: "ti",
-    nome: "Soluções de TI: Service Desk, Cofre e IT Platform",
-    produto: "Soluções de TI (Service Desk, Cofre, IT Platform)",
-    utm: ["ti", "service-desk", "servicedesk", "helpdesk", "help-desk", "chamados", "cofre", "cofre-de-senhas", "it-platform", "inventario", "inventario-ti"],
+    nome: "Nexor Service Desk (chamados, inventário e ações remotas), com Cofre e IT Platform",
+    produto: "Nexor Service Desk (com Cofre e IT Platform)",
+    utm: ["ti", "service-desk", "servicedesk", "nexor-service-desk", "helpdesk", "help-desk", "chamados", "sistema-de-chamados", "cofre", "cofre-de-senhas", "it-platform", "inventario", "inventario-ti"],
     paginas: ["sistema-de-chamados", "inventario-de-ti", "cofre-de-senhas"],
-    gatilhos: { forte: /service desk|it platform|cofre de senhas|nexor cofre|inventario de (ti|maquinas|computadores)/, fraco: /help ?desk|chamados|sistema de chamado|glpi|equipe de ti|parque de maquinas|acesso remoto|senhas da empresa/ },
+    gatilhos: { forte: /service desk|it platform|cofre de senhas|nexor cofre|inventario de (ti|maquinas|computadores)/, fraco: /help ?desk|chamados|sistema de chamado|glpi|equipe de ti|parque de maquinas|acesso remoto|senhas da empresa|sla de atendimento|radmin|msp\b/ },
     publico:
-      "Empresas com equipe de TI própria ou terceirizada (MSP) que atendem 20 ou mais computadores e querem chamados com SLA, senhas protegidas e inventário automático, tudo no servidor da empresa. Decisor: gerente ou coordenador de TI, diretor administrativo ou dono do MSP.",
+      "Empresas de 20 a 300 computadores com TI de 1 a 5 pessoas, própria ou terceirizada (MSP), em Araguari, no Triângulo Mineiro e no Brasil, que querem chamados com SLA, inventário de PCs e ações remotas auditadas no servidor da empresa, sem nuvem com mensalidade. Decisor: gerente ou coordenador de TI, diretor administrativo ou dono do MSP.",
     icp: {
       segmentos: null,
       cnae: "*",
@@ -306,27 +306,27 @@ export const CAMPANHAS = [
       decisoresExtra: /\b(cio|cto|head de ti|gerente de ti|coordenador[a]? de ti|supervisor[a]? de ti)\b/,
     },
     abertura:
-      "Oi! Aqui é a Blue, a assistente de IA da Nexor 😊 Vi que você chegou pelas soluções para equipes de TI: Service Desk, Cofre de senhas e IT Platform, todas instaladas no servidor da sua empresa.\n\nPara começar: quantos computadores a equipe de TI atende hoje?",
+      "Oi! Aqui é a Blue, a assistente de IA da Nexor 😊 Vi que você chegou pelo Nexor Service Desk: chamados com SLA, inventário dos computadores e ações remotas, tudo instalado no servidor da sua empresa.\n\nPara começar: quantos computadores a equipe de TI atende hoje?",
     perguntas: [
       { sinal: "porte_numero", texto: "Quantos computadores a equipe de TI atende hoje?" },
-      { sinal: "dor", texto: "O que aperta mais: chamado sem controle, senha espalhada ou não saber o que tem em cada máquina?" },
+      { sinal: "dor", texto: "O que aperta mais: chamado sem controle e sem prazo, não saber o que tem em cada máquina ou ir de mesa em mesa para resolver?" },
       { sinal: "ferramenta_atual", texto: "Vocês usam alguma ferramenta hoje, como GLPI, planilha ou outro sistema?" },
       { sinal: "cargo", texto: "Você é da equipe de TI ou da gestão da empresa?" },
     ],
-    sinais_compra: ["20 ou mais computadores", "chamados por WhatsApp ou e-mail sem SLA", "senhas em planilha", "auditoria, LGPD ou inventário pedido pela diretoria"],
+    sinais_compra: ["20 ou mais computadores", "chamados por WhatsApp ou e-mail sem SLA", "técnico indo de mesa em mesa", "senhas em planilha", "auditoria, LGPD ou inventário pedido pela diretoria", "MSP que atende várias empresas"],
     sinais_descarte: ["uso doméstico (um computador em casa)", "estudante", "vende software de chamados ou RMM (concorrente)"],
     dores: /chamado (perdido|sem controle)|sem sla|senha (em planilha|espalhad|no post-it)|planilha de senha|nao sei o que tem|inventario|auditoria|antivirus|disco cheio|acesso remoto|perda de controle|whatsapp do suporte/,
-    palavras: /chamado|help ?desk|service desk|senha|inventario|computadores|maquinas|ti\b|suporte tecnico|acesso remoto/,
+    palavras: /chamado|help ?desk|service desk|sla|senha|inventario|computadores|maquinas|ti\b|suporte tecnico|acesso remoto/,
     preco: "Service Desk a partir de R$ 299 por mês (até 5 técnicos), Cofre a partir de R$ 199 e IT Platform a partir de R$ 299 por mês, mais a implantação",
-    material: "resumo das três soluções de TI e os preços de entrada",
+    material: "resumo do Nexor Service Desk (com Cofre e IT Platform) e os preços de entrada",
     cadencia: {
       d0: {
-        whatsapp: "Oi, {nome}! Aqui é da Nexor. Segue o resumo das soluções de TI: Service Desk com SLA e painel da gerência, Cofre de senhas com permissões e auditoria, e IT Platform com inventário automático e alertas que viram chamado. Tudo no servidor da {empresa}, sem licenças de terceiros. {preco}Quer ver numa demonstração?",
-        email: { assunto: "Soluções de TI da Nexor: o resumo que você pediu", texto: "Olá, {nome}.\n\nNexor Service Desk (chamados com SLA de 4 h a 72 h, filas e painel), Nexor Cofre (senhas com criptografia, pastas por equipe e histórico de acesso) e Nexor IT Platform (inventário automático, alertas, instalação remota e auditoria). Tudo implantado no ambiente da {empresa}. {preco}\n\nEquipe Nexor" },
+        whatsapp: "Oi, {nome}! Aqui é da Nexor. Segue o resumo do Nexor Service Desk: chamados com SLA que pausa quando aguarda o usuário, painel com indicadores e painel de TV, inventário de PCs Windows e Linux e ações remotas só com permissão do gestor. Se precisar, somamos o Cofre de senhas e a IT Platform. Tudo no servidor da {empresa}, sem licenças de terceiros. {preco}Quer ver numa demonstração?",
+        email: { assunto: "Soluções de TI da Nexor: o resumo que você pediu", texto: "Olá, {nome}.\n\nNexor Service Desk (chamados com SLA por prioridade, triagem, painel com indicadores, painel de TV, inventário de PCs Windows e Linux e ações remotas auditadas), Nexor Cofre (senhas com criptografia, pastas por equipe e histórico de acesso) e Nexor IT Platform (inventário automático, alertas, instalação remota e auditoria). Tudo implantado no ambiente da {empresa}. {preco}\n\nEquipe Nexor" },
       },
       d2: {
-        whatsapp: "Oi, {nome}, tudo bem? No IT Platform, um alerta como disco cheio ou máquina sem antivírus vira chamado em um clique no Service Desk. Quer que a gente mostre isso com algumas máquinas de teste?",
-        email: { assunto: "Do alerta ao chamado em um clique", texto: "Olá, {nome}.\n\nO agente leve do IT Platform levanta hardware, programas e status de cada máquina, e os alertas viram chamado no Service Desk. Quer agendar 30 minutos para ver com a equipe?\n\nEquipe Nexor" },
+        whatsapp: "Oi, {nome}, tudo bem? No Service Desk, o agente de inventário mostra cada computador e o gestor reinicia ou instala um programa de longe, com o comando assinado e registrado na auditoria. Quer ver isso com algumas máquinas de teste?",
+        email: { assunto: "Do chamado à máquina, no mesmo sistema", texto: "Olá, {nome}.\n\nO agente leve do Nexor Service Desk levanta hardware, programas e rede de cada PC Windows ou Linux, e o gestor dispara reinício ou instalação de programas com comando assinado e auditado. Quer agendar 30 minutos para ver com a equipe?\n\nEquipe Nexor" },
       },
       d7: {
         whatsapp: "Oi, {nome}! Passando para saber se ainda faz sentido organizar chamados, senhas e inventário da {empresa}. Se for melhor deixar para depois, é só me avisar.",
