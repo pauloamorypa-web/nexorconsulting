@@ -55,7 +55,7 @@ export function resumirCampanhas(registros, { desde, investimento } = {}) {
   const contatos = registros.filter((r) => r.tipo === "contato_equipe");
   const leads = consolidarLeads(registros).filter((l) => !desde || new Date(l.registrado_em) >= desde);
   const gasto = lerInvestimento(investimento);
-  const grupos = new Map(CAMPANHAS.map((c) => [c.id, { campanha: c.id, nome: c.nome, produto: c.produto, leads: 0, quente: 0, morno: 0, frio: 0, notas: [], agendaram_demo: 0, resposta_blue_s: [], contato_equipe_min: [], quentes_sem_contato: 0, motivos_descarte: {}, origens: {}, produtos_indicados: {} }]));
+  const grupos = new Map(CAMPANHAS.map((c) => [c.id, { campanha: c.id, nome: c.nome, produto: c.produto, leads: 0, quente: 0, morno: 0, frio: 0, notas: [], agendaram_demo: 0, resposta_blue_s: [], contato_equipe_min: [], quentes_sem_contato: 0, motivos_descarte: {}, origens: {}, produtos_indicados: {}, testes: 0, contratos: 0, receita: 0 }]));
 
   for (const l of leads) {
     const id = l.campanha ?? detectarCampanha({ origem: l.origem, texto: l.solucao ?? "" }).id;
@@ -84,6 +84,17 @@ export function resumirCampanhas(registros, { desde, investimento } = {}) {
     else if (classe === "quente") g.quentes_sem_contato++;
   }
 
+  // Conversões offline vindas da Nexor Central (POST /api/conversao): testes ativados, contratos e receita real
+  const semLead = { testes: 0, contratos: 0, receita: 0 };
+  for (const c of registros.filter((r) => r.tipo === "conversao_offline" && (!desde || new Date(r.quando ?? r.registrado_em) >= desde))) {
+    const g = c.campanha ? grupos.get(c.campanha) ?? grupos.get("qualquer-cenario") : semLead;
+    if (c.evento === "teste_ativado") g.testes++;
+    else if (c.evento === "contrato_fechado") {
+      g.contratos++;
+      g.receita = Math.round((g.receita + (Number(c.valor) || 0)) * 100) / 100;
+    }
+  }
+
   const porCampanha = [...grupos.values()]
     .map(({ notas, resposta_blue_s, contato_equipe_min, ...g }) => {
       const investido = gasto.porCampanha[g.campanha];
@@ -94,13 +105,28 @@ export function resumirCampanhas(registros, { desde, investimento } = {}) {
         investimento: investido ?? null,
         custo_por_lead: investido !== undefined && g.leads ? Math.round((investido / g.leads) * 100) / 100 : null,
         custo_por_lead_quente: investido !== undefined && g.quente ? Math.round((investido / g.quente) * 100) / 100 : null,
+        custo_por_teste: investido !== undefined && g.testes ? Math.round((investido / g.testes) * 100) / 100 : null,
+        // CAC real: investimento informado ÷ contratos fechados vindos da campanha
+        cac: investido !== undefined && g.contratos ? Math.round((investido / g.contratos) * 100) / 100 : null,
+        retorno_sobre_investimento: investido ? Math.round((g.receita / investido) * 100) / 100 : null,
         primeira_resposta_blue_mediana_s: mediana(resposta_blue_s),
         primeiro_contato_equipe_mediana_min: mediana(contato_equipe_min),
       };
     })
-    .filter((g) => g.leads || g.investimento !== null)
-    .sort((a, b) => b.quente - a.quente || b.leads - a.leads);
-  return { porCampanha, investimento_sem_campanha: gasto.semCampanha };
+    .filter((g) => g.leads || g.investimento !== null || g.testes || g.contratos)
+    .sort((a, b) => b.contratos - a.contratos || b.quente - a.quente || b.leads - a.leads);
+  const investimentoTotal = Object.values(gasto.porCampanha).reduce((a, b) => a + b, 0) + Object.values(gasto.semCampanha).reduce((a, b) => a + b, 0);
+  const contratos = porCampanha.reduce((a, g) => a + g.contratos, 0) + semLead.contratos;
+  const conversao_offline = {
+    testes: porCampanha.reduce((a, g) => a + g.testes, 0) + semLead.testes,
+    contratos,
+    receita: Math.round((porCampanha.reduce((a, g) => a + g.receita, 0) + semLead.receita) * 100) / 100,
+    // Conversões cujo cliente não foi achado entre os leads (veio por indicação, por outro canal ou sem e-mail/telefone igual)
+    sem_lead: semLead,
+    investimento_total: investimentoTotal || null,
+    cac_geral: investimentoTotal && contratos ? Math.round((investimentoTotal / contratos) * 100) / 100 : null,
+  };
+  return { porCampanha, investimento_sem_campanha: gasto.semCampanha, conversao_offline };
 }
 
 const INSTRUCOES_ANALISE = `Você é o gestor de tráfego da Nexor Consulting (software sob medida, sistemas e IA para empresas).
@@ -111,6 +137,7 @@ Responda em português do Brasil, direto, em no máximo 12 linhas:
 2. O que pausar ou corrigir (muito lead frio ou nenhum quente).
 3. Três ações para a próxima semana (orçamento, público, criativo ou oferta).
 Também recebe porCampanha: por produto, a % de leads quentes, a nota média, o custo por lead quente (quando o investimento foi informado), o tempo até o primeiro contato da equipe e os motivos de descarte. Priorize o custo por lead quente, não o volume de leads.
+Quando houver, porCampanha traz também testes (teste de 30 dias ativado), contratos, receita (1ª mensalidade + implantação) e cac (investimento ÷ contratos), vindos da Nexor Central; conversao_offline traz o total. Com contratos, o CAC real vale mais que o custo por lead quente.
 Use só os números recebidos. Se houver poucos dados (menos de 20 leads), diga isso e sugira manter as campanhas rodando antes de mudar.`;
 
 export async function gerarRelatorio({ armazenamento, dias = 7, analise = false, investimento, cadencia = false, cliente, agora = () => new Date() }) {

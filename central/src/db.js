@@ -57,6 +57,15 @@ CREATE TABLE IF NOT EXISTS indicacoes (
   id TEXT PRIMARY KEY, parceiro_id TEXT NOT NULL REFERENCES parceiros(id), empresa TEXT NOT NULL, contato TEXT, telefone TEXT, email TEXT,
   produto TEXT, observacao TEXT, status TEXT NOT NULL DEFAULT 'nova', cliente_id TEXT, criado_em INTEGER NOT NULL, atualizado_em INTEGER NOT NULL
 );
+-- Conversão offline (conversao.js): fila de eventos teste_ativado e contrato_fechado para a Blue / Meta / Google.
+-- dados: só e-mail e telefone em hash, produto e valores. Um evento por cliente e tipo.
+CREATE TABLE IF NOT EXISTS conversoes (
+  id TEXT PRIMARY KEY, cliente_id TEXT NOT NULL, evento TEXT NOT NULL, dados TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pendente', tentativas INTEGER NOT NULL DEFAULT 0, proxima_em INTEGER NOT NULL,
+  erro TEXT, enviado_em INTEGER, criado_em INTEGER NOT NULL, atualizado_em INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS conversoes_unica ON conversoes (cliente_id, evento);
+CREATE INDEX IF NOT EXISTS conversoes_fila ON conversoes (status, proxima_em);
 `;
 
 const LETRAS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem 0/O, 1/I: fácil de ditar e digitar

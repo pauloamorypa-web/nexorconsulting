@@ -3,6 +3,7 @@
    POST /api/chat           → chat do site  {sessao, mensagem, modo?, negocio?} → {resposta}
    POST /api/lead           → leads do site (pré-cadastro, teste grátis, formulários abandonados)
    GET  /api/relatorio      → leads por campanha, com análise por IA (?dias=7&analise=1&cadencia=1, exige REPORT_TOKEN)
+   POST /api/conversao      → Nexor Central avisa teste ativado / contrato fechado (exige CONVERSAO_TOKEN ou REPORT_TOKEN)
    POST /api/contato        → equipe registra o primeiro contato com um lead {lead|conversa|telefone} (exige REPORT_TOKEN)
    GET  /webhook/whatsapp   → verificação do webhook pela Meta
    POST /webhook/whatsapp   → mensagens recebidas no WhatsApp */
@@ -14,6 +15,7 @@ import { criarAgente } from "./agente.js";
 import { criarArmazenamento } from "./armazenamento.js";
 import { detectarCampanha } from "./campanhas.js";
 import { config } from "./config.js";
+import { lerConversao, processarConversaoOffline } from "./conversao.js";
 import { INSTRUCOES_DEMO } from "./conhecimento.js";
 import { limparOrigem, rotuloOrigem, temperatura } from "./leads.js";
 import { conversaoGoogle, enviarEventosMeta, enviarParaMeta, eventoConversao } from "./meta.js";
@@ -134,12 +136,14 @@ const tokenConfere = (recebido, esperado) => {
   return a.length === b.length && timingSafeEqual(a, b);
 };
 
-export function criarServidor({ agente, agenteDemo = agente, armazenamento, notificar = notificarEquipe, enviarMeta = enviarParaMeta, clienteRelatorio }) {
+export function criarServidor({ agente, agenteDemo = agente, armazenamento, notificar = notificarEquipe, enviarMeta = enviarParaMeta, clienteRelatorio, fetchConversao = fetch }) {
   const ultimosParciais = new Map(); // sessão → último lead parcial, para não repetir
   const vistas = new Set(); // ids de mensagens do WhatsApp já processadas (a Meta pode reenviar)
   const limiteChat = criarLimitador(LIMITES.chatPorIp);
   const limiteLead = criarLimitador(LIMITES.leadPorIp);
   const limiteRelatorio = criarLimitador({ quantidade: 20, janelaMs: 15 * 60_000 });
+  const limiteConversao = criarLimitador({ quantidade: 300, janelaMs: 15 * 60_000 });
+  const conversoesEmCurso = new Set(); // ids em processamento: duas entregas iguais ao mesmo tempo não enviam duas vezes
   const limiteGlobal = criarLimitador({ quantidade: LIMITES.chatGlobalPorHora, janelaMs: 60 * 60_000 });
 
   const cabecalhosCors = (origem) =>
@@ -312,6 +316,30 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
           return res.end();
         }
         if (req.method === "POST") return await leadDoSite(req, res);
+      }
+
+      if (req.method === "POST" && url.pathname === "/api/conversao") {
+        const token = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "");
+        if (!limiteConversao(ipDoCliente(req))) return json(res, 429, { erro: "muitas tentativas" }, { "Retry-After": "900" });
+        if (!tokenConfere(token, config.tokenConversao)) return json(res, 401, { erro: "não autorizado" });
+        let d;
+        try {
+          d = JSON.parse((await lerCorpo(req)).toString("utf8"));
+        } catch (err) {
+          return json(res, err.status ?? 400, { erro: "JSON inválido" });
+        }
+        const conv = lerConversao(d);
+        if (!conv) return json(res, 400, { erro: "informe id e evento (teste_ativado ou contrato_fechado)" });
+        const chave = `${conv.id}:${conv.evento}`;
+        if (conversoesEmCurso.has(chave)) return json(res, 409, { erro: "em processamento" }, { "Retry-After": "60" });
+        conversoesEmCurso.add(chave);
+        try {
+          const r = await processarConversaoOffline(conv, { armazenamento, fetchFn: fetchConversao });
+          if (!r.ok) return json(res, 502, { erro: r.erro });
+          return json(res, 200, { ok: true, duplicado: Boolean(r.duplicado), lead_encontrado: Boolean(r.registro.lead), campanha: r.registro.campanha, enviado: r.registro.enviado, motivo: r.registro.motivo });
+        } finally {
+          conversoesEmCurso.delete(chave);
+        }
       }
 
       if (req.method === "POST" && url.pathname === "/api/contato") {

@@ -36,6 +36,9 @@ export function lerConfig(env = process.env) {
       antecedencia: numero(env.RULE_INVOICE_DAYS, 10),
       manter_ponto: true,
     },
+    // Conversão offline: teste ativado e contrato fechado vão para a Blue (POST /api/conversao), que devolve ao Meta e ao Google.
+    // Padrão: CONVERSAO_URL=https://<blue>/api/conversao e CONVERSAO_TOKEN = o REPORT_TOKEN da Blue. Vazio: desligado.
+    conversao: { url: env.CONVERSAO_URL ?? "", token: env.CONVERSAO_TOKEN ?? "" },
     contato: { whatsapp: env.SUPPORT_WHATSAPP ?? "", email: env.SUPPORT_EMAIL ?? "contato@nexorconsultingit.com.br" },
     limites: { tentativasLogin: 8 },
   };

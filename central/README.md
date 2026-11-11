@@ -152,6 +152,20 @@ Segurança do código:
 
 Para testar antes, use o sandbox: `ASAAS_URL=https://api-sandbox.asaas.com/v3`.
 
+## Conversão offline (Meta e Google)
+
+Com `CONVERSAO_URL` e `CONVERSAO_TOKEN`, a Central avisa dois marcos de cada cliente:
+
+| Marco | Quando | Valor |
+|---|---|---|
+| `teste_ativado` | Cliente criado no teste grátis ou "Começar teste" (a prorrogação não conta) | menor mensalidade do produto no catálogo |
+| `contrato_fechado` | "Contratar plano" ou, para quem já estava em contrato, o 1º pagamento | mensalidade com desconto + implantação |
+
+- O padrão é a Blue: `CONVERSAO_URL=https://<endereço da Blue>/api/conversao` e `CONVERSAO_TOKEN` igual ao `CONVERSAO_TOKEN` (ou `REPORT_TOKEN`) da Blue. A Blue acha o lead e manda `StartTrial`/`Purchase` ao Meta e a linha com `gclid` ao Google.
+- **Fila com novas tentativas** (tabela `conversoes`): se a Blue estiver fora, tenta de novo em 1, 2, 4, 8... minutos (no máximo 6 h); depois de 10 tentativas fica como `falhou`. `GET /api/conversoes` mostra a fila e `POST /api/conversoes/:id/reenviar` volta um evento que falhou.
+- **Idempotência:** um evento por cliente e tipo. Prorrogar o teste, pagar outra fatura ou reprocessar não envia de novo; a nova tentativa usa o mesmo `id`, e a Blue descarta a repetição.
+- **LGPD:** só saem o e-mail e o telefone do cliente em hash SHA-256, o produto, o plano e os valores. Nome, CNPJ e o id do cliente ficam na Central.
+
 ## Perfis da equipe
 
 | Perfil | Pode |
@@ -173,7 +187,7 @@ Para testar antes, use o sandbox: `ASAAS_URL=https://api-sandbox.asaas.com/v3`.
 ```bash
 npm install
 npm start          # http://localhost:8800 (fora de produção não pede código de instalação)
-npm test           # 9 testes: 2FA, régua, licença assinada, webhook, Asaas, perfis
+npm test           # 2FA, régua, licença assinada, webhook, Asaas, perfis, comercial e conversão offline
 ```
 
 O código que fala com a Central nos sistemas é o mesmo arquivo em `rh/src/nexor/central.js`, `atende/src/nexor/central.js` e `nexor-agente/src/nexor/central.js`. Altere os três juntos. Os testes de ponta a ponta ficam em `rh/test/nexor.test.js`, `atende/test/nexor.test.js` e `nexor-agente/test/fluxo.test.js`.

@@ -5,6 +5,12 @@ import { createHash } from "node:crypto";
 import { config } from "./config.js";
 
 const hash = (v) => createHash("sha256").update(v).digest("hex");
+/** E-mail e telefone no formato que o Meta pede (e que a Nexor Central usa): minúsculas; só dígitos com DDI 55. */
+export const hashEmail = (v) => (typeof v === "string" && v.includes("@") ? hash(v.trim().toLowerCase()) : undefined);
+export const hashTelefone = (v) => {
+  const tel = String(v ?? "").replace(/\D/g, "");
+  return tel.length >= 10 ? hash(tel.length <= 11 ? `55${tel}` : tel) : undefined;
+};
 
 export const metaConfigurada = () => Boolean(config.meta.pixel && config.meta.token);
 
@@ -50,9 +56,10 @@ export const valorConversao = (nota, evento = "Lead") => Math.round(Math.max(0, 
 
 function dadosDoUsuario(lead) {
   const user_data = {};
-  const tel = lead.telefone?.replace(/\D/g, "");
-  if (tel && tel.length >= 10) user_data.ph = [hash(tel.length <= 11 ? `55${tel}` : tel)];
-  if (lead.email) user_data.em = [hash(lead.email.trim().toLowerCase())];
+  const ph = hashTelefone(lead.telefone);
+  if (ph) user_data.ph = [ph];
+  const em = hashEmail(lead.email);
+  if (em) user_data.em = [em];
   user_data.country = [hash("br")];
   user_data.external_id = [hash(lead.conversa ?? lead.sessao ?? lead.id)];
   if (lead.origem?.fbc) user_data.fbc = lead.origem.fbc;
@@ -98,6 +105,58 @@ export function conversaoGoogle(evento, lead, quando = new Date()) {
     conversion_value: valorConversao(lead.nota, evento),
     currency_code: "BRL",
     order_id: `${lead.id}-${evento}`,
+  };
+}
+
+/* ---------- Conversão offline (vinda da Nexor Central) ----------
+   Teste de 30 dias ativado → StartTrial; contrato fechado → Purchase. Valor em reais de verdade (receita),
+   action_source "system_generated" (o evento nasce no sistema, não no site). */
+
+export const EVENTO_OFFLINE = { teste_ativado: "StartTrial", contrato_fechado: "Purchase" };
+
+/** fbc a partir do fbclid, no formato do Meta (fb.1.<ms do clique>.<fbclid>), quando o site não gravou o cookie _fbc. */
+export const fbcDe = (origem = {}, quandoClique) => origem.fbc ?? (origem.fbclid ? `fb.1.${Date.parse(quandoClique) || Date.now()}.${origem.fbclid}` : undefined);
+
+/**
+ * Evento do Meta para a conversão offline.
+ * @param {{id: string, evento: string, quando: string, valor: number, moeda?: string, produto?: string, plano?: string, em?: string, ph?: string}} conv
+ * @param {object} [lead] lead da Blue achado pelo e-mail ou telefone (para campanha, fbc, fbp, ctwa_clid)
+ */
+export function eventoOffline(conv, lead) {
+  const user_data = lead ? dadosDoUsuario(lead) : { country: [hash("br")] };
+  if (conv.em) user_data.em = [conv.em];
+  if (conv.ph) user_data.ph = [conv.ph];
+  const fbc = lead && fbcDe(lead.origem, lead.primeiro_registro ?? lead.registrado_em);
+  if (fbc) user_data.fbc = fbc;
+  return {
+    event_name: EVENTO_OFFLINE[conv.evento],
+    event_id: `${conv.id}-${conv.evento}`,
+    event_time: Math.floor(new Date(conv.quando).getTime() / 1000),
+    action_source: "system_generated",
+    user_data,
+    custom_data: {
+      value: conv.valor,
+      currency: conv.moeda ?? "BRL",
+      content_name: conv.produto ?? lead?.produto,
+      ...(conv.plano ? { content_ids: [conv.plano] } : {}),
+      ...(lead?.campanha ? { campanha: lead.campanha } : {}),
+    },
+  };
+}
+
+/** Linha de conversão offline do Google Ads para teste ativado e contrato. Só com gclid, gbraid ou wbraid. */
+export function conversaoGoogleOffline(conv, lead) {
+  const o = lead?.origem ?? {};
+  if (!o.gclid && !o.gbraid && !o.wbraid) return null;
+  return {
+    gclid: o.gclid,
+    gbraid: o.gbraid,
+    wbraid: o.wbraid,
+    conversion_name: conv.evento === "contrato_fechado" ? config.google.conversaoContrato : config.google.conversaoTeste,
+    conversion_time: new Date(conv.quando).toISOString(),
+    conversion_value: conv.valor,
+    currency_code: conv.moeda ?? "BRL",
+    order_id: `${conv.id}-${conv.evento}`,
   };
 }
 
