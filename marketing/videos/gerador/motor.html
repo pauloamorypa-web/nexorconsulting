@@ -203,6 +203,23 @@ const VISUAIS = {
     };
   },
   /* indicadores que contam e linhas que deslizam */
+  /* captura real do produto: forma "pc" (janela, com zoom lento até o foco) ou "cel" (celular, com rolagem lenta) */
+  tela(c, v, dur) {
+    const nota = el("div", "", v.nota ?? "tela real · dados fictícios");
+    nota.style.cssText = "position:absolute;left:0;right:0;top:1700px;text-align:center;font:500 26px 'Inter';color:var(--suave);opacity:.8";
+    if (v.forma === "cel") {
+      const cel = el("div", "cel"); cel.style.top = "690px"; cel.style.height = "980px";
+      cel.innerHTML = `<div class="tela" style="background:#fff"><img src="${v.src}" alt="" style="width:100%;display:block"></div>`;
+      c.append(cel, nota);
+      const img = cel.querySelector("img");
+      return (t) => { entra(cel, t, .3, { y: 140, dur: .7 }); entra(nota, t, 1); img.style.transform = `translateY(${-(v.rolar ?? 0) * sai(janela(t, 1.6, dur - 2.6))}px)`; };
+    }
+    const jan = el("div", "cartao"); jan.style.cssText = "position:absolute;left:46px;right:46px;top:720px;height:900px;overflow:hidden;padding:0;box-shadow:0 40px 120px rgba(0,88,250,.28)";
+    jan.innerHTML = `<div style="height:58px;display:flex;align-items:center;gap:12px;padding:0 26px;background:#0f1b33;border-bottom:2px solid var(--linha)"><i style="width:16px;height:16px;border-radius:50%;background:#f2555a"></i><i style="width:16px;height:16px;border-radius:50%;background:#f5b13d"></i><i style="width:16px;height:16px;border-radius:50%;background:#22c55e"></i><span style="margin-left:18px;font:500 24px 'Inter';color:var(--suave)">${v.endereco ?? ""}</span></div><div style="position:absolute;top:58px;left:0;right:0;bottom:0;overflow:hidden;background:#fff"><img src="${v.src}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:${v.foco ?? "50% 50%"};transform-origin:${v.foco ?? "50% 50%"}"></div>`;
+    c.append(jan, nota);
+    const img = jan.querySelector("img");
+    return (t) => { entra(jan, t, .3, { y: 140, dur: .7 }); entra(nota, t, 1); img.style.transform = `scale(${1 + ((v.zoom ?? 1.25) - 1) * sai(janela(t, .9, dur - 1.6))})`; };
+  },
   kpis(c, v) {
     const p = el("div", "painel cartao"); p.style.top = "640px";
     const g = el("div", "kpis"); const nums = v.itens.map((k) => { const d = el("div", "kpi", `<b>0</b><small>${k.rot}</small>`); d.querySelector("b").style.color = k.cor ?? "var(--texto)"; g.append(d); return { d, k }; });

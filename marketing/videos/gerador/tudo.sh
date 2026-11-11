@@ -1,6 +1,6 @@
 set -e
 i=0
-for x in rh contabil atende agente barber; do
+for x in rh contabil atende agente barber elo servicedesk; do
   node renderizar.mjs $x
   d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 mudo-$x.mp4)
   node trilha.mjs $d trilha-$x.wav $i
