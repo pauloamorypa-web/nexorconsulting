@@ -72,13 +72,15 @@ export function criarRoteador() {
         }) +
         "$",
     );
-    rotas.push({ metodo, padrao, nomes, opcoes, fn });
+    rotas.push({ metodo, caminho, padrao, nomes, opcoes, fn });
   };
   return {
     get: (c, o, f) => adicionar("GET", c, o, f),
     post: (c, o, f) => adicionar("POST", c, o, f),
     put: (c, o, f) => adicionar("PUT", c, o, f),
     delete: (c, o, f) => adicionar("DELETE", c, o, f),
+    /** Lista das rotas (documentação e testes de privacidade) */
+    listar: () => rotas.map(({ metodo, caminho, opcoes }) => ({ metodo, caminho, opcoes })),
     encontrar(metodo, caminho) {
       let caminhoExiste = false;
       for (const r of rotas) {

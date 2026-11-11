@@ -90,7 +90,7 @@ export async function semear({ cfg, montarAplicacao, log = () => {} }) {
   let t = paraMs(somarDias(hoje, -60), "09:00");
   const agora = () => t;
   const ir = (offset, hora = "09:00") => (t = paraMs(somarDias(hoje, offset), hora));
-  const app = montarAplicacao({ cfg: { ...cfg, demoReiniciar: false }, agora });
+  const app = montarAplicacao({ cfg: { ...cfg, demoReiniciar: false, sessaoDias: 400 }, agora });
   await new Promise((ok) => app.servidor.listen(0, "127.0.0.1", ok));
   const url = `http://127.0.0.1:${app.servidor.address().port}`;
   const banco = join(cfg.pastaDados, "elo.db");

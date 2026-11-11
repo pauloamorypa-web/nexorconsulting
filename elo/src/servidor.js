@@ -222,6 +222,7 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
   const rotina = async () => negocio.rotina();
   return {
     servidor,
+    api,
     repo,
     negocio,
     sim,
