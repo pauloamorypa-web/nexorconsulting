@@ -1,20 +1,22 @@
 <!doctype html>
 <html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Nexor Elo</title>
-<style>
-:root{--fundo:#f8fafc;--texto:#0f172a;--suave:#475569}
-@media (prefers-color-scheme:dark){:root{--fundo:#0b1220;--texto:#e5e7eb;--suave:#94a3b8}}
-body{margin:0;font-family:system-ui,sans-serif;background:var(--fundo);color:var(--texto);display:grid;place-items:center;min-height:100vh;padding:16px}
-main{max-width:520px}h1{margin:0 0 8px}p{color:var(--suave)}
-</style>
-</head>
-<body>
-<main>
-<h1>Nexor Elo</h1>
-<p>A rede que liga fornecedores e instaladores. Página provisória: o painel do fornecedor, o app do instalador e as páginas públicas da proposta e da OS estão em construção. A API já está no ar em <code>/api</code> (ver API.md).</p>
-</main>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Sua proposta</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0b1530" />
+    <link rel="icon" href="/app/icone.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/app/app.css" />
+    <link rel="stylesheet" href="/publico/publico.css" />
+  </head>
+  <body class="pagina-publica">
+    <main id="pagina" class="casca-publica" tabindex="-1"><div class="tela-carregando"><span class="girando" role="status" aria-label="Carregando"></span></div></main>
+    <div id="toasts" aria-live="polite"></div>
+    <noscript>Esta página precisa de JavaScript ligado.</noscript>
+    <script type="module" src="/publico/proposta.js"></script>
+    <script type="module" src="/publico/demo-faixa.js"></script>
+  </body>
 </html>
