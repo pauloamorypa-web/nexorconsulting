@@ -193,39 +193,39 @@ export async function semear({ cfg, montarAplicacao, log = () => {} }) {
     }
 
     log("· 60 dias de propostas, pagamentos e títulos");
+    // Contratos recorrentes de monitoramento (Asaas do instalador, sem split)
+    ir(-59, "10:00");
+    const contratos = [];
+    for (const ci of [0, 3]) contratos.push(await inst.c.post("/api/instalador/contratos", { cliente_id: clientes[ci].id, descricao: "Monitoramento e manutenção preventiva mensal", valor_centavos: ci ? 14990 : 8990, dia_vencimento: 10 }));
+    // Linha do tempo: [dia, kit, cliente, até onde vai]. "vista"/"enviada" viram expiradas (o cliente não respondeu a tempo).
     const roteiro = [
       [-58, "cftv4", 0], [-52, "alarme", 2], [-47, "quadro", 4], [-41, "cftv8", 1], [-36, "cerca", 6], [-30, "cftv4", 7],
-      [-24, "alarme", 9], [-18, "quadro", 3], [-12, "cftv4", 5], [-10, "alarme", 8],
+      [-27, "cftv8", 1, "vista"], [-24, "alarme", 9], [-18, "quadro", 3], [-15, "cerca", 6, "enviada"], [-12, "cftv4", 5], [-10, "alarme", 8],
     ];
     const pagas = [];
-    for (const [dia, kit, ci] of roteiro) {
+    for (const [dia, kit, ci, ate] of roteiro) {
+      ir(dia, "08:00");
+      await app.rotina();
+      // A Elétrica Triângulo não tem conta de split: o instalador paga os títulos dela em dia
+      for (const x of repo.lista("titulos", "WHERE fornecedor_id = ? AND status = 'aberto'", tri.id)) await tri.c.post(`/api/fornecedor/titulos/${x.id}/baixar`);
+      if (dia === -25 || dia === -24) {
+        // Eletro Rocha: título de compra a prazo que vai vencer sem pagamento (bloqueio automático na Vigia Forte)
+        if (!repo.um("SELECT 1 FROM titulos WHERE instalador_id = ?", rocha.id)) await vigia.c.post("/api/fornecedor/titulos", { instalador_id: rocha.id, descricao: "Compra a prazo: material elétrico (NF 1187)", valor_centavos: 184000, vencimento: somarDias(hoje, -6) });
+      }
       ir(dia, "10:30");
-      pagas.push(await fluxo(kit, clientes[ci], { forma: ["PIX", "BOLETO", "CREDIT_CARD"][Math.abs(dia) % 3] }));
-      await app.rotina();
+      const env = await fluxo(kit, clientes[ci], { ate: ate ?? "paga", forma: ["PIX", "BOLETO", "CREDIT_CARD"][Math.abs(dia) % 3] });
+      if (!ate) pagas.push(env);
     }
-    // Expiradas (o cliente não respondeu dentro do prazo da reserva)
-    ir(-27, "11:00");
-    await fluxo("cftv8", clientes[1], { ate: "vista" });
-    ir(-15, "15:00");
-    await fluxo("cerca", clientes[6], { ate: "enviada" });
-    for (const d of [-22, -10]) {
-      ir(d, "06:00");
-      await app.rotina();
-    }
-    // Triângulo não tem conta de split: os títulos dos produtos dela. Os mais antigos foram pagos em dia.
-    ir(-20, "14:00");
-    for (const x of repo.lista("titulos", "WHERE fornecedor_id = ? AND status = 'aberto' AND vencimento <= ?", tri.id, hojeBR(t))) await tri.c.post(`/api/fornecedor/titulos/${x.id}/baixar`);
-    // Eletro Rocha: título de compra a prazo vencido na Vigia Forte (bloqueio automático)
-    ir(-25, "09:00");
-    await vigia.c.post("/api/fornecedor/titulos", { instalador_id: rocha.id, descricao: "Compra a prazo: material elétrico (NF 1187)", valor_centavos: 184000, vencimento: somarDias(hoje, -6) });
-    ir(-3, "09:00");
-    for (const x of repo.lista("titulos", "WHERE fornecedor_id = ? AND status = 'aberto' AND vencimento < ?", tri.id, hojeBR(t))) await tri.c.post(`/api/fornecedor/titulos/${x.id}/baixar`);
+    ir(-9, "06:00");
+    await app.rotina();
+    for (const [i, d] of [-40, -10].entries())
+      for (const c of contratos) negocio.eventoAsaas({ event: "PAYMENT_RECEIVED", payment: { id: `pay_contrato_${c.id.slice(0, 6)}_${i}`, subscription: c.asaas_assinatura, value: c.valor_centavos / 100, dueDate: somarDias(hoje, d) } }, { instaladorId: inst.id });
 
     // Ordens de serviço das propostas pagas
     log("· ordens de serviço e contratos");
     const propPaga = (env) => env.id;
     ir(-9, "08:00");
-    const osConcluida = await inst.c.post("/api/instalador/os", { proposta_id: propPaga(pagas[8]), tecnico_id: tecnico.id, agendada_dia: somarDias(hoje, -8), agendada_hora: "08:30" });
+    const osConcluida = await inst.c.post("/api/instalador/os", { proposta_id: propPaga(pagas.at(-2)), tecnico_id: tecnico.id, agendada_dia: somarDias(hoje, -8), agendada_hora: "08:30" });
     ir(-8, "08:20");
     for (const s of ["a_caminho", "em_execucao"]) await inst.c.post(`/api/instalador/os/${osConcluida.id}/status`, { status: s });
     await inst.c.put(`/api/instalador/os/${osConcluida.id}/checklist`, { checklist: osConcluida.checklist.map((c) => ({ ...c, feito: true })) });
@@ -235,15 +235,9 @@ export async function semear({ cfg, montarAplicacao, log = () => {} }) {
     ir(-8, "16:40");
     await inst.c.post(`/api/instalador/os/${osConcluida.id}/status`, { status: "concluida", nota: "Sistema entregue e cliente orientado." });
 
-    // Contratos recorrentes de monitoramento (Asaas do instalador, sem split)
-    ir(-45, "10:00");
-    const contratos = [];
-    for (const ci of [0, 3]) contratos.push(await inst.c.post("/api/instalador/contratos", { cliente_id: clientes[ci].id, descricao: "Monitoramento e manutenção preventiva mensal", valor_centavos: ci ? 14990 : 8990, dia_vencimento: 10 }));
-    for (const [i, d] of [-40, -10].entries())
-      for (const c of contratos) {
-        ir(d, "09:00");
-        negocio.eventoAsaas({ event: "PAYMENT_RECEIVED", payment: { id: `pay_contrato_${c.id.slice(0, 6)}_${i}`, subscription: c.asaas_assinatura, value: c.valor_centavos / 100, dueDate: hojeBR(t) } }, { instaladorId: inst.id });
-      }
+    ir(-3, "09:00");
+    await app.rotina();
+    for (const x of repo.lista("titulos", "WHERE fornecedor_id = ? AND status = 'aberto'", tri.id)) await tri.c.post(`/api/fornecedor/titulos/${x.id}/baixar`);
 
     // Hoje: propostas em todos os status e uma OS em andamento
     log("· o dia de hoje");
