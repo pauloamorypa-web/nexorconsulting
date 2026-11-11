@@ -98,7 +98,11 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
     if (rel.includes("\0")) return false;
     // Páginas com token no endereço: sem Referer (o token não vaza para links externos) e fora dos buscadores
     const comToken = /^(p|os)\/[\w-]+$/.test(rel);
-    if (rel === "" || comToken) rel = "index.html";
+    // Mapa das telas: / (entrada) · /fornecedor/ (painel) · /nexor/ (operação) · /app/ (instalador, PWA) · /p/:token e /os/:token (cliente final)
+    const area = rel.split("/")[0];
+    if (rel === "") rel = "index.html";
+    else if (comToken) rel = area === "p" ? "publico/proposta.html" : "publico/os.html";
+    const raizArea = ["fornecedor", "nexor", "app"].includes(area) ? area : "";
     let alvo = normalize(join(PUBLICO, rel));
     if (alvo !== PUBLICO && !alvo.startsWith(PUBLICO + sep)) return false;
     let info = await stat(alvo).catch(() => null);
@@ -107,7 +111,8 @@ export function montarAplicacao({ cfg = configPadrao, caminhoBanco, agora = () =
       info = await stat(alvo).catch(() => null);
     }
     if (!info && !extname(alvo)) {
-      alvo = join(PUBLICO, "index.html");
+      // Rotas internas de cada tela (#/… ou /area/…) caem no index.html da própria área
+      alvo = join(PUBLICO, raizArea, "index.html");
       info = await stat(alvo).catch(() => null);
     }
     if (!info?.isFile()) return false;
