@@ -403,12 +403,15 @@ export function rotasInstalador(h) {
     auditar(ctx, "os_assinada", { os_id: o.id, ip: ctx.ip });
     return osCompleta(n);
   });
-  r.get("/api/instalador/os/:id/assinatura", I("os"), (ctx) => {
-    const o = daOs(ctx);
+  function servirAssinatura(res, o) {
     if (!o.assinatura_arquivo) falha(404, "OS sem assinatura.");
-    ctx.res.writeHead(200, { "Content-Type": o.assinatura_arquivo.endsWith(".png") ? "image/png" : o.assinatura_arquivo.endsWith(".webp") ? "image/webp" : "image/jpeg", "Cache-Control": "private, no-store" });
-    ctx.res.end(readFileSync(join(pastaOs(o.id), o.assinatura_arquivo)));
-  });
+    res.writeHead(200, { "Content-Type": o.assinatura_arquivo.endsWith(".png") ? "image/png" : o.assinatura_arquivo.endsWith(".webp") ? "image/webp" : "image/jpeg", "Cache-Control": "private, no-store" });
+    res.end(readFileSync(join(pastaOs(o.id), o.assinatura_arquivo)));
+  }
+  h.servirAssinatura = servirAssinatura;
+  r.get("/api/instalador/os/:id/assinatura", I("os"), (ctx) => servirAssinatura(ctx.res, daOs(ctx)));
+  // Todas as notas fiscais (NFS-e) da conta, da mais nova para a mais antiga
+  r.get("/api/instalador/notas", I("comercial"), (ctx) => repo.lista("notas", "WHERE conta_id = ? ORDER BY criado_em DESC LIMIT 300", ctx.conta.id));
   function servirFoto(res, o, fotoId) {
     const f = repo.ler("os_fotos", repo.um("SELECT * FROM os_fotos WHERE id = ? AND os_id = ?", fotoId, o.id));
     if (!f || f.arquivo === "pendente") falha(404, "Foto não encontrada.");

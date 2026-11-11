@@ -183,8 +183,10 @@ function telaCadastro() {
       ),
       x.situacao !== "ATIVA"
         ? h("div", { class: "aviso-faixa" }, ic("alerta"), h("span", {}, `Este CNPJ está com situação "${x.situacao || "desconhecida"}" na Receita. Só CNPJ ativo pode se cadastrar.`))
-        : compat.length
-          ? h("div", { class: "aviso-faixa ok" }, ic("check"), h("span", {}, `CNAE compatível: ${compat.map((c) => `${c} (${SEGMENTOS.find(([p]) => String(c).startsWith(p))[1]})`).join(", ")}.`))
+        : x.compativel === false
+          ? h("div", { class: "aviso-faixa" }, ic("alerta"), h("span", {}, "Ainda não há fornecedor no Elo que aceite os CNAEs deste CNPJ. Você pode se cadastrar e pedir vínculo quando um fornecedor do seu segmento entrar."))
+        : compat.length || x.compativel
+          ? h("div", { class: "aviso-faixa ok" }, ic("check"), h("span", {}, compat.length ? `CNAE compatível: ${compat.map((c) => `${c} (${SEGMENTOS.find(([p]) => String(c).startsWith(p))[1]})`).join(", ")}.${x.fornecedores_compativeis ? ` ${x.fornecedores_compativeis} fornecedor(es) no Elo aceitam o seu CNAE.` : ""}` : `${x.fornecedores_compativeis} fornecedor(es) no Elo aceitam o seu CNAE.`))
           : h("div", { class: "aviso-faixa" }, ic("alerta"), h("span", {}, "Nenhum CNAE deste CNPJ é dos segmentos atendidos pelos fornecedores do Elo (segurança, elétrica, refrigeração, telecom, hidráulica, automação). Você pode se cadastrar, mas os fornecedores podem recusar o vínculo.")),
     );
     resto.hidden = x.situacao !== "ATIVA";

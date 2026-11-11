@@ -2,7 +2,7 @@
    O cliente vê o que é dele (itens com preço de venda, condições, garantia) e nunca o custo nem quem é o fornecedor. */
 
 import { z } from "zod";
-import { mascararDoc } from "../regras/documentos.js";
+import { cnaesCompativeis, mascararDoc } from "../regras/documentos.js";
 import { FORMAS } from "../servicos/negocio.js";
 import { falha } from "./roteador.js";
 import { documento, email, t, validar } from "./validacao.js";
@@ -69,12 +69,15 @@ export function rotasPublicas(h) {
 
   r.get("/api/publico/os/:token", P, (ctx) => h.osPublica(buscar("ordens", ctx)));
   r.get("/api/publico/os/:token/fotos/:foto", P, (ctx) => h.servirFoto(ctx.res, buscar("ordens", ctx), ctx.params.foto));
+  r.get("/api/publico/os/:token/assinatura", P, (ctx) => h.servirAssinatura(ctx.res, buscar("ordens", ctx)));
 
   // Consulta pública de CNPJ para preencher o cadastro (limitada por IP; usa o mesmo adaptador e cache)
   r.get("/api/publico/cnpj/:cnpj", P, async (ctx) => {
     limitar(`cnpj:${ctx.ip}`, 20);
     const d = validar(z.object({ cnpj: z.string().regex(/^\d{14}$/, "CNPJ com 14 números") }), { cnpj: String(ctx.params.cnpj).replace(/\D/g, "") });
     const x = await cnpjs.consultar(d.cnpj);
-    return { cnpj: x.cnpj, razao_social: x.razao_social, nome_fantasia: x.nome_fantasia, situacao: x.situacao, cnaes: x.cnaes, cnae_descricao: x.cnae_descricao, cidade: x.cidade, uf: x.uf };
+    // Quantos fornecedores ativos aceitam algum CNAE deste CNPJ (só o número; os nomes aparecem depois do cadastro)
+    const fornecedores_compativeis = repo.lista("contas", "WHERE tipo = 'fornecedor' AND status = 'ativo'").filter((f) => cnaesCompativeis(x.cnaes ?? [], f.cnaes ?? []).length > 0).length;
+    return { cnpj: x.cnpj, razao_social: x.razao_social, nome_fantasia: x.nome_fantasia, situacao: x.situacao, cnaes: x.cnaes, cnae_descricao: x.cnae_descricao, cidade: x.cidade, uf: x.uf, fornecedores_compativeis, compativel: fornecedores_compativeis > 0 };
   });
 }

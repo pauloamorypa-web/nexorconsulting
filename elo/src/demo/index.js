@@ -86,6 +86,8 @@ export function criarRotasDemo({ cfg, repo, negocio, sim }) {
       try {
         d = JSON.parse((await lerCorpo(req, 4096)).toString("utf8") || "{}");
       } catch {}
+      // Da página do cliente: pelo token da proposta (paga exatamente esta proposta)
+      if (d.token && !d.proposta_id) d.proposta_id = negocio.porToken("propostas", String(d.token))?.id ?? "-";
       const pg = d.proposta_id
         ? repo.um("SELECT * FROM pagamentos WHERE proposta_id = ? AND status = 'pendente' ORDER BY criado_em DESC LIMIT 1", String(d.proposta_id))
         : repo.um("SELECT * FROM pagamentos WHERE status = 'pendente' ORDER BY criado_em DESC LIMIT 1");

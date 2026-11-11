@@ -26,3 +26,6 @@ body.pagina-publica.com-cta { padding-bottom: calc(150px + env(safe-area-inset-b
 .rodape-publico { text-align: center; color: var(--texto3); font-size: 12.5px; margin-top: 26px; display: grid; gap: 4px; }
 .progresso { height: 8px; border-radius: 99px; background: var(--sup2); overflow: hidden; }
 .progresso i { display: block; height: 100%; background: linear-gradient(90deg, var(--cor), var(--cor2)); border-radius: inherit; }
+
+/* Assinatura do cliente na página da OS */
+.assinatura-img { display: block; max-width: 100%; width: 320px; height: auto; margin-top: 10px; background: #fff; border: 1px solid var(--linha, #e2e8f0); border-radius: 10px; }

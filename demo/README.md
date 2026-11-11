@@ -9,6 +9,7 @@ Um comando sobe todos os sistemas da Nexor no seu notebook. Cada um vem com uma 
 | Nexor Atende IA | Clínica Sorriso | 8790 |
 | Nexor Agente | Distribuidora Vale Verde | 8792 |
 | Nexor Contábil | Escritório Exemplo Contabilidade | 8793 |
+| Nexor Elo | Distribuidora Vigia Forte e Instala Seg Araguari | 8796 |
 | Página inicial (escolher sistema e perfil) | | 8780 |
 
 ## Preparar o notebook (uma vez)
@@ -42,7 +43,7 @@ Em todas as telas aparece a faixa laranja **"Demonstração · dados fictícios"
 - **Mensagens enviadas:** mostra o que o sistema "mandou" por WhatsApp, SMS e e-mail. É a prova de que a automação funciona.
 
 O roteiro de 10 minutos de cada produto, com o que clicar e o que falar, está no `DEMO.md` de cada pasta:
-[Barber](../barber/DEMO.md) · [RH](../rh/DEMO.md) · [Atende](../atende/DEMO.md) · [Agente](../nexor-agente/DEMO.md) · [Contábil](../contabil/DEMO.md)
+[Barber](../barber/DEMO.md) · [RH](../rh/DEMO.md) · [Atende](../atende/DEMO.md) · [Agente](../nexor-agente/DEMO.md) · [Contábil](../contabil/DEMO.md) · [Elo](../elo/DEMO.md)
 
 ## IA de verdade (opcional)
 Por padrão, a IA responde com roteiros prontos, coerentes com os dados da empresa fictícia. Funciona offline e sem custo. Para usar a IA real:

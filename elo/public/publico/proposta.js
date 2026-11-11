@@ -158,7 +158,7 @@ function blocoAcao(p) {
 
 function botaoDemoPagar() {
   return botao("Simular pagamento do cliente (demonstração)", async () => {
-    const r = await chamar("/api/demo/pagar", { metodo: "POST", corpo: {} });
+    const r = await chamar("/api/demo/pagar", { metodo: "POST", corpo: { token } });
     if (!r.ok) throw new Error(r.erro ?? "Não foi possível simular.");
     await atualizarEmSilencio();
   }, "btn-fantasma btn-bloco", "check");

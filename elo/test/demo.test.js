@@ -74,7 +74,7 @@ test("Demo: semeia, trava a rede, escuta só em loopback, entra por papel, simul
     assert.equal(cmp.length, 2, "comparador com os dois fornecedores");
     const tec = await entrar("instalador_tecnico");
     assert.ok((await tec.get("/api/instalador/os")).length >= 2);
-    assert.equal((await entrar("nexor")).local, "/#/nexor");
+    assert.equal((await entrar("nexor")).local, "/nexor/#/painel");
     for (const p of ["fornecedor_comercial", "fornecedor_financeiro", "fornecedor2_dono"]) await entrar(p);
     const cli = await entrar("cliente");
     assert.match(cli.local, /^\/p\/[\w-]+$/);

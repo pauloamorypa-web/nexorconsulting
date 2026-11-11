@@ -12,13 +12,13 @@ import { CNPJS_DEMO } from "./simulador.js";
 
 export const DEMO_SENHA = "demo-elo-2026";
 export const PAPEIS = [
-  { papel: "fornecedor_dono", tipo: "fornecedor", email: "marcos@vigiaforte.demo", nome: "Marcos Vieira", descricao: "Dono da Distribuidora Vigia Forte: reservas, vínculos, crédito, repasses e score", destino: "/#/fornecedor" },
-  { papel: "fornecedor_comercial", tipo: "fornecedor", email: "patricia@vigiaforte.demo", nome: "Patrícia Lemos", descricao: "Comercial da Vigia Forte: catálogo, tabelas de preço e aprovação de instaladores", destino: "/#/fornecedor" },
-  { papel: "fornecedor_financeiro", tipo: "fornecedor", email: "sergio@vigiaforte.demo", nome: "Sérgio Antunes", descricao: "Financeiro da Vigia Forte: títulos, bloqueio por inadimplência e repasses", destino: "/#/fornecedor" },
-  { papel: "fornecedor2_dono", tipo: "fornecedor", email: "helena@eletricatriangulo.demo", nome: "Helena Prado", descricao: "Dona da Elétrica Triângulo (segundo fornecedor, para o comparador de preços)", destino: "/#/fornecedor" },
-  { papel: "instalador_dono", tipo: "instalador", email: "diego@instalaseg.demo", nome: "Diego Martins", descricao: "Dono da Instala Seg Araguari: propostas, comparador, calculadora, OS e contratos", destino: "/#/instalador" },
-  { papel: "instalador_tecnico", tipo: "instalador", email: "rafael@instalaseg.demo", nome: "Rafael Souza", descricao: "Técnico da Instala Seg: só as ordens de serviço dele (checklist, fotos, assinatura)", destino: "/#/instalador/os" },
-  { papel: "nexor", tipo: "nexor", email: "operacao@nexor.demo", nome: "Operação Nexor", descricao: "Operador Nexor: aprova fornecedores e vê métricas agregadas", destino: "/#/nexor" },
+  { papel: "fornecedor_dono", tipo: "fornecedor", email: "marcos@vigiaforte.demo", nome: "Marcos Vieira", descricao: "Dono da Distribuidora Vigia Forte: reservas, vínculos, crédito, repasses e score", destino: "/fornecedor/#/painel" },
+  { papel: "fornecedor_comercial", tipo: "fornecedor", email: "patricia@vigiaforte.demo", nome: "Patrícia Lemos", descricao: "Comercial da Vigia Forte: catálogo, tabelas de preço e aprovação de instaladores", destino: "/fornecedor/#/painel" },
+  { papel: "fornecedor_financeiro", tipo: "fornecedor", email: "sergio@vigiaforte.demo", nome: "Sérgio Antunes", descricao: "Financeiro da Vigia Forte: títulos, bloqueio por inadimplência e repasses", destino: "/fornecedor/#/painel" },
+  { papel: "fornecedor2_dono", tipo: "fornecedor", email: "helena@eletricatriangulo.demo", nome: "Helena Prado", descricao: "Dona da Elétrica Triângulo (segundo fornecedor, para o comparador de preços)", destino: "/fornecedor/#/painel" },
+  { papel: "instalador_dono", tipo: "instalador", email: "diego@instalaseg.demo", nome: "Diego Martins", descricao: "Dono da Instala Seg Araguari: propostas, comparador, calculadora, OS e contratos", destino: "/app/#/inicio" },
+  { papel: "instalador_tecnico", tipo: "instalador", email: "rafael@instalaseg.demo", nome: "Rafael Souza", descricao: "Técnico da Instala Seg: só as ordens de serviço dele (checklist, fotos, assinatura)", destino: "/app/#/os" },
+  { papel: "nexor", tipo: "nexor", email: "operacao@nexor.demo", nome: "Operação Nexor", descricao: "Operador Nexor: aprova fornecedores e vê métricas agregadas", destino: "/nexor/#/painel" },
   { papel: "cliente", tipo: "cliente", nome: "Cliente final", descricao: "Página pública da proposta (sem login): ver, aceitar e pagar", destino: "/p/" },
 ];
 
@@ -173,20 +173,22 @@ export async function semear({ cfg, montarAplicacao, log = () => {} }) {
     const token = (link) => link.split("/").at(-1);
     const publico = cliente(url);
     async function fluxo(kit, cli, { ate = "paga", forma = "PIX", dias = [0, 0, 1, 1] } = {}) {
-      const base = Math.round((t - paraMs(hoje)) / 86400_000);
+      const base = Math.floor((t - paraMs(hoje)) / 86400_000);
+      // A linha do tempo só anda para frente: enviada → vista → aceita → paga (pelo menos 20 min entre cada passo)
+      const passo = (offset, hora) => (t = Math.max(t + 20 * 60_000, paraMs(somarDias(hoje, base + offset), hora)));
       const p = await proposta(kit, cli);
       const env = await inst.c.post(`/api/instalador/propostas/${p.id}/enviar`, {});
       const tk = token(env.link);
       if (ate === "enviada") return env;
-      ir(base + dias[1], "19:30");
+      passo(dias[1], "19:30");
       await publico.get(`/api/publico/propostas/${tk}`);
       if (ate === "vista") return env;
-      ir(base + dias[2], "08:10");
+      passo(dias[2], "08:10");
       await publico.post(`/api/publico/propostas/${tk}/aceitar`, { nome: cli.nome, concordo: true });
       if (ate === "aceita") return env;
       await publico.post(`/api/publico/propostas/${tk}/pagar`, { forma, ...(forma === "CREDIT_CARD" ? { parcelas: 6 } : {}) });
       if (ate === "cobrada") return env;
-      ir(base + dias[3], "10:00");
+      passo(dias[3], "10:00");
       const pg = repo.um("SELECT asaas_id FROM pagamentos WHERE proposta_id = ? AND status = 'pendente'", p.id);
       negocio.eventoAsaas({ event: "PAYMENT_RECEIVED", payment: { id: pg.asaas_id } });
       return env;

@@ -150,6 +150,13 @@ test("Fluxo: cadastro, vínculo, catálogo, proposta, reserva, aceite, pagamento
     assert.ok(!JSON.stringify(osPub).includes(c.cliente.documento), "OS pública sem documento");
     const foto = await fetch(`${s.url}/api/publico/os/${link.split("/").at(-1)}/fotos/${comFoto.fotos[0].id}`);
     assert.equal(foto.headers.get("content-type"), "image/png");
+    // A assinatura do cliente também aparece na página pública da OS
+    const assin = await fetch(`${s.url}/api/publico/os/${link.split("/").at(-1)}/assinatura`);
+    assert.equal(assin.status, 200);
+    assert.equal(assin.headers.get("content-type"), "image/png");
+    // Lista de notas fiscais do instalador numa chamada só
+    const notas = await inst.ok.get("/api/instalador/notas");
+    assert.ok(notas.some((n) => n.tipo === "nfse" && n.proposta_id === p.id));
     const pagina = await fetch(link.replace("https://elo.teste", s.url));
     assert.equal(pagina.status, 200);
     assert.equal(pagina.headers.get("referrer-policy"), "no-referrer");
@@ -169,7 +176,8 @@ test("Cadastro do instalador: CNPJ consultado (com cache), situação e vínculo
   try {
     const c = await cenario(s);
     const antes = s.rede.consultas();
-    await s.cliente().ok.get(`/api/publico/cnpj/${(await c.inst.ok.get("/api/instalador/eu")).conta.cnpj}`);
+    const consulta = await s.cliente().ok.get(`/api/publico/cnpj/${(await c.inst.ok.get("/api/instalador/eu")).conta.cnpj}`);
+    assert.equal(typeof consulta.compativel, "boolean", "diz antes do cadastro se há fornecedor compatível");
     assert.equal(s.rede.consultas(), antes, "resposta da BrasilAPI cacheada");
     assert.equal((await s.cliente().post("/api/instalador/cadastro", { cnpj: CNPJ_BAIXADO, nome: "X", email: "x@x.teste", senha: SENHA })).status, 400);
     assert.equal((await s.cliente().post("/api/instalador/cadastro", { cnpj: gerarCnpj("11223344"), nome: "X", email: "y@x.teste", senha: SENHA })).status, 400, "CNPJ não encontrado");

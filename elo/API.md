@@ -188,3 +188,11 @@ Token errado conta como tentativa (40 por 15 min por IP → `429`).
 | POST | `/api/demo/pagar` | `{ proposta_id? }` simula o Asaas confirmando a cobrança em aberto (baixa ao vivo) |
 
 Senha de todos os usuários da demonstração: `demo-elo-2026`.
+
+## Rotas acrescentadas na integração das telas
+| Método | Caminho | Quem | Resposta |
+|---|---|---|---|
+| GET | `/api/publico/os/:token/assinatura` | público (token da OS) | imagem da assinatura do cliente (404 se ainda não assinou) |
+| GET | `/api/instalador/notas` | instalador (dono, comercial) | todas as notas fiscais da conta, da mais nova para a mais antiga (até 300) |
+| GET | `/api/publico/cnpj/:cnpj` | público | agora inclui `fornecedores_compativeis` (número) e `compativel` (sim/não), sem nomes de fornecedores |
+| POST | `/api/demo/pagar` | só com `DEMO=1` | aceita `{ token }` da proposta para pagar exatamente aquela proposta |
