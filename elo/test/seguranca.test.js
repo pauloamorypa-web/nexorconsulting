@@ -15,7 +15,7 @@ test("CSRF: sem o cabeçalho x-nexor: 1 toda escrita é recusada (inclusive na p
     assert.equal((await sem("/api/instalador/clientes", { nome: "X" })).status, 403);
     assert.equal((await sem("/api/instalador/entrar", { email: "diego@inst.teste", senha: SENHA })).status, 403);
     assert.equal((await fetch(s.url + "/api/instalador/clientes", { method: "POST", headers: { cookie, "x-nexor": "0" }, body: "{}" })).status, 403);
-    const { token } = await enviarProposta(c, [{ tipo: "servico", descricao: "Serviço", quantidade: 1, preco_unit_centavos: 10000 }]);
+    const { token } = await enviarProposta(c, [{ tipo: "servico", descricao: "Serviço", quantidade: 1, custo_unit_centavos: 4000, preco_unit_centavos: 10000 }]);
     assert.equal((await sem(`/api/publico/propostas/${token}/aceitar`, { nome: "Fulano", concordo: true })).status, 403);
     // GET não altera nada e não precisa do cabeçalho
     assert.equal((await fetch(s.url + "/api/instalador/eu", { headers: { cookie } })).status, 200);

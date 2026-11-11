@@ -167,7 +167,7 @@ export async function semear({ cfg, montarAplicacao, log = () => {} }) {
         const custo = negocio.preco(p, negocio.tabelaDo(negocio.vinculo(f.id, inst.id)));
         return { tipo: "fornecedor", produto_id: p.id, quantidade: q, preco_unit_centavos: Math.round((custo * 1.35) / 10) * 10 };
       });
-      for (const [descricao, preco] of SERVICOS[kit]) itens.push({ tipo: "servico", descricao, quantidade: 1, preco_unit_centavos: preco });
+      for (const [descricao, preco] of SERVICOS[kit]) itens.push({ tipo: "servico", descricao, quantidade: 1, custo_unit_centavos: Math.round(preco * 0.4), preco_unit_centavos: preco });
       return inst.c.post("/api/instalador/propostas", { cliente_id: cli.id, titulo: { cftv4: "CFTV com 4 câmeras", cftv8: "CFTV com 8 câmeras", alarme: "Alarme monitorado", quadro: "Quadro de distribuição novo", cerca: "Cerca elétrica" }[kit], validade_dia: somarDias(hojeBR(t), 15), condicoes: "Pagamento à vista no Pix ou boleto, ou cartão em até 10x.", garantia: "12 meses nos equipamentos e 6 meses na instalação.", itens, ...extra });
     }
     const token = (link) => link.split("/").at(-1);

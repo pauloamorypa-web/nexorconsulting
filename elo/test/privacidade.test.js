@@ -33,7 +33,7 @@ test("Privacidade: todas as rotas GET do fornecedor, em todos os perfis e status
     const c = await cenario(s);
     const pa = c.pa;
     // Observações e condições com dados do cliente também não podem vazar
-    const item = (q) => [{ tipo: "fornecedor", produto_id: pa["CAM-1"].id, quantidade: q, preco_unit_centavos: 30000 }, { tipo: "servico", descricao: "Instalação", quantidade: 1, preco_unit_centavos: 20000 }];
+    const item = (q) => [{ tipo: "fornecedor", produto_id: pa["CAM-1"].id, quantidade: q, preco_unit_centavos: 30000 }, { tipo: "servico", descricao: "Instalação", quantidade: 1, custo_unit_centavos: 15000, preco_unit_centavos: 20000 }];
     const extra = { observacoes: `Falar com ${CLIENTE_FINAL.nome} no ${CLIENTE_FINAL.telefone}`, condicoes: `Endereço: ${CLIENTE_FINAL.endereco.logradouro}` };
     const enviada = await enviarProposta(c, item(1), extra);
     const vista = await enviarProposta(c, item(1), extra);

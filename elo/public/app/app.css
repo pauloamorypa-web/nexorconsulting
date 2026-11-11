@@ -233,3 +233,7 @@ dialog.janela::backdrop { background: rgba(5, 10, 20, .55); }
   .grade-larga { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* Serviço sem custo informado (obrigatório para enviar) */
+.falta-custo { display: block; margin-top: 4px; color: var(--perigo, #dc2626); font-size: 12px; font-weight: 600; }
+.falta-custo[hidden] { display: none; }
