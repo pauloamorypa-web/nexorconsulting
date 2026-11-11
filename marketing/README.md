@@ -30,6 +30,8 @@ Regra de ouro: toda peça leva para o site (teste grátis de 30 dias, programa d
 | `linkedin-capa-pagina.png` | Capa da página da empresa no LinkedIn (1128×191, em 2x) | Página da empresa |
 | `linkedin-logo.png` | Logo quadrado (400×400) | Página da empresa no LinkedIn |
 | `folheto-a5.png` | Folheto A5 com QR codes (1748×2480) | Impressão para eventos, BNI, balcão |
+| `camp-atende.png`, `camp-rh-ponto.png`, `camp-contabil.png`, `camp-barber.png`, `camp-agente.png`, `camp-elo.png`, `camp-ti.png`, `camp-nexor-qualquer-cenario.png` | Quadrado 1080×1080 · um anúncio por campanha, com chamada para o teste de 30 dias | Anúncios do Meta e do LinkedIn (plano em [`campanhas/`](campanhas/README.md)) |
+| `camp-cenario-1.png` a `camp-cenario-4.png` | Carrossel 1080×1080 · "um sistema para cada cenário" | Anúncio da campanha umbrella, Instagram e LinkedIn |
 
 ---
 

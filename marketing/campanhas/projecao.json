@@ -1,0 +1,798 @@
+{
+  "versao": "2026-11",
+  "premissas": {
+    "moeda": "BRL",
+    "data_base": "2026-11",
+    "status": "hipótese: nenhum número abaixo é resultado medido; trocar pelos dados reais a partir da semana 3 da Fase 0",
+    "definicao_lead": "pré-cadastro no site ou conversa com a Blue com nome e WhatsApp ou e-mail válidos",
+    "definicao_lead_quente": "nota da Blue >= 70 (morno 40 a 69; frio < 40)",
+    "taxa_reuniao_significa": "fração dos leads quentes que fazem a demonstração de 10 minutos",
+    "taxa_fechamento_significa": "fração das demonstrações que viram cliente pagante depois do teste de 30 dias",
+    "ticket_mensal_significa": "mensalidade média esperada nos primeiros 12 meses, já com o desconto de fundador onde ele existe (Contábil, Barber, Agente e Elo)",
+    "margem_bruta_mensalidade": 0.75,
+    "margem_bruta_implantacao": 0.4,
+    "comissao_vendedor_primeira_mensalidade": 0.5,
+    "comissao_vendedor_implantacao": 0.05,
+    "cac_inclui": "mídia + comissão do vendedor interno (50% da 1ª mensalidade e 5% da implantação); não inclui salário fixo nem horas de demonstração",
+    "defasagem_meses_ate_pagar": 1,
+    "cpl_escala_multiplicador": 1.25,
+    "calendario": {
+      "fase0_meses": [
+        1
+      ],
+      "fase0_fracao_do_mes": 0.75,
+      "fase1_meses": [
+        2,
+        3
+      ],
+      "fase2_meses": [
+        4,
+        12
+      ]
+    },
+    "regra_escala": "só vai para a Fase 2 a campanha que, na Fase 1, tiver LTV/CAC >= 3, payback <= 12 meses e custo por lead quente <= cpl_quente_maximo",
+    "regra_corte": "LTV/CAC < 2 ou nenhuma demonstração após 15 leads quentes: pausar e trocar oferta, público ou página",
+    "churn_mensal": "1 / retencao_meses"
+  },
+  "campanhas": [
+    {
+      "id": "atende",
+      "nome": "Nexor Atende IA",
+      "mercado": "Brasil (clínicas, imobiliárias, escolas e comércio com WhatsApp cheio); Triângulo no presencial",
+      "verba_mensal": {
+        "teste": 750,
+        "validacao": 2000,
+        "escala": 5000
+      },
+      "cpl": {
+        "baixo": 25,
+        "medio": 45,
+        "alto": 80
+      },
+      "taxa_quente": 0.2,
+      "taxa_reuniao": 0.5,
+      "taxa_fechamento": 0.22,
+      "ticket_mensal": 597,
+      "ticket_implantacao": 1800,
+      "retencao_meses": 18,
+      "derivados_validacao": {
+        "baixo": {
+          "leads": 80,
+          "quentes": 16,
+          "reunioes": 8,
+          "vendas": 1.8,
+          "cac": 1524.9,
+          "ltv": 8779.5,
+          "ltv_cac": 5.76,
+          "payback": 1.8,
+          "cpl_quente": 125,
+          "cpl_quente_maximo": 279.2
+        },
+        "medio": {
+          "leads": 44.4,
+          "quentes": 8.9,
+          "reunioes": 4.4,
+          "vendas": 1,
+          "cac": 2434,
+          "ltv": 8779.5,
+          "ltv_cac": 3.61,
+          "payback": 3.83,
+          "cpl_quente": 225,
+          "cpl_quente_maximo": 279.2
+        },
+        "alto": {
+          "leads": 25,
+          "quentes": 5,
+          "reunioes": 2.5,
+          "vendas": 0.6,
+          "cac": 4024.9,
+          "ltv": 8779.5,
+          "ltv_cac": 2.18,
+          "payback": 7.38,
+          "cpl_quente": 400,
+          "cpl_quente_maximo": 279.2
+        }
+      },
+      "projecao": {
+        "baixo": {
+          "decisao": "escalar",
+          "mrr_mes3": 1330,
+          "mrr_mes6": 6144,
+          "mrr_mes12": 15342,
+          "clientes_ativos_mes12": 25.7,
+          "midia_12_meses": 49563,
+          "implantacao_12_meses": 57915
+        },
+        "medio": {
+          "decisao": "escalar",
+          "mrr_mes3": 739,
+          "mrr_mes6": 3413,
+          "mrr_mes12": 8523,
+          "clientes_ativos_mes12": 14.3,
+          "midia_12_meses": 49563,
+          "implantacao_12_meses": 32175
+        },
+        "alto": {
+          "decisao": "otimizar (fica na validação)",
+          "mrr_mes3": 416,
+          "mrr_mes6": 1281,
+          "mrr_mes12": 2625,
+          "clientes_ativos_mes12": 4.4,
+          "midia_12_meses": 22563,
+          "implantacao_12_meses": 10178
+        }
+      }
+    },
+    {
+      "id": "rh-ponto",
+      "nome": "Nexor RH e Ponto",
+      "mercado": "Triângulo Mineiro (presencial) + Brasil online; Araguari forte em café, comércio e serviços",
+      "verba_mensal": {
+        "teste": 750,
+        "validacao": 2000,
+        "escala": 5000
+      },
+      "cpl": {
+        "baixo": 30,
+        "medio": 55,
+        "alto": 95
+      },
+      "taxa_quente": 0.22,
+      "taxa_reuniao": 0.5,
+      "taxa_fechamento": 0.25,
+      "ticket_mensal": 380,
+      "ticket_implantacao": 1300,
+      "retencao_meses": 30,
+      "derivados_validacao": {
+        "baixo": {
+          "leads": 66.7,
+          "quentes": 14.7,
+          "reunioes": 7.3,
+          "vendas": 1.8,
+          "cac": 1345.9,
+          "ltv": 9070,
+          "ltv_cac": 6.74,
+          "payback": 2.9,
+          "cpl_quente": 136.4,
+          "cpl_quente_maximo": 346
+        },
+        "medio": {
+          "leads": 36.4,
+          "quentes": 8,
+          "reunioes": 4,
+          "vendas": 1,
+          "cac": 2255,
+          "ltv": 9070,
+          "ltv_cac": 4.02,
+          "payback": 6.09,
+          "cpl_quente": 250,
+          "cpl_quente_maximo": 346
+        },
+        "alto": {
+          "leads": 21.1,
+          "quentes": 4.6,
+          "reunioes": 2.3,
+          "vendas": 0.6,
+          "cac": 3709.5,
+          "ltv": 9070,
+          "ltv_cac": 2.45,
+          "payback": 11.19,
+          "cpl_quente": 431.8,
+          "cpl_quente_maximo": 346
+        }
+      },
+      "projecao": {
+        "baixo": {
+          "decisao": "escalar",
+          "mrr_mes3": 886,
+          "mrr_mes6": 4192,
+          "mrr_mes12": 11114,
+          "clientes_ativos_mes12": 29.2,
+          "midia_12_meses": 49563,
+          "implantacao_12_meses": 43570
+        },
+        "medio": {
+          "decisao": "escalar",
+          "mrr_mes3": 483,
+          "mrr_mes6": 2286,
+          "mrr_mes12": 6062,
+          "clientes_ativos_mes12": 16,
+          "midia_12_meses": 49563,
+          "implantacao_12_meses": 23766
+        },
+        "alto": {
+          "decisao": "otimizar (fica na validação)",
+          "mrr_mes3": 280,
+          "mrr_mes6": 891,
+          "mrr_mes12": 1942,
+          "clientes_ativos_mes12": 5.1,
+          "midia_12_meses": 22563,
+          "implantacao_12_meses": 7738
+        }
+      }
+    },
+    {
+      "id": "contabil",
+      "nome": "Nexor Contábil",
+      "mercado": "Araguari é pequeno: Triângulo + Minas Gerais + Brasil online",
+      "verba_mensal": {
+        "teste": 750,
+        "validacao": 1800,
+        "escala": 3500
+      },
+      "cpl": {
+        "baixo": 40,
+        "medio": 70,
+        "alto": 120
+      },
+      "taxa_quente": 0.25,
+      "taxa_reuniao": 0.55,
+      "taxa_fechamento": 0.25,
+      "ticket_mensal": 420,
+      "ticket_implantacao": 1100,
+      "retencao_meses": 30,
+      "derivados_validacao": {
+        "baixo": {
+          "leads": 45,
+          "quentes": 11.3,
+          "reunioes": 6.2,
+          "vendas": 1.5,
+          "cac": 1428.6,
+          "ltv": 9890,
+          "ltv_cac": 6.92,
+          "payback": 3.14,
+          "cpl_quente": 160,
+          "cpl_quente_maximo": 416.9
+        },
+        "medio": {
+          "leads": 25.7,
+          "quentes": 6.4,
+          "reunioes": 3.5,
+          "vendas": 0.9,
+          "cac": 2301.4,
+          "ltv": 9890,
+          "ltv_cac": 4.3,
+          "payback": 5.91,
+          "cpl_quente": 280,
+          "cpl_quente_maximo": 416.9
+        },
+        "alto": {
+          "leads": 15,
+          "quentes": 3.8,
+          "reunioes": 2.1,
+          "vendas": 0.5,
+          "cac": 3755.9,
+          "ltv": 9890,
+          "ltv_cac": 2.63,
+          "payback": 10.53,
+          "cpl_quente": 480,
+          "cpl_quente_maximo": 416.9
+        }
+      },
+      "projecao": {
+        "baixo": {
+          "decisao": "escalar",
+          "mrr_mes3": 846,
+          "mrr_mes6": 3359,
+          "mrr_mes12": 8321,
+          "clientes_ativos_mes12": 19.8,
+          "midia_12_meses": 35663,
+          "implantacao_12_meses": 25110
+        },
+        "medio": {
+          "decisao": "escalar",
+          "mrr_mes3": 483,
+          "mrr_mes6": 1919,
+          "mrr_mes12": 4755,
+          "clientes_ativos_mes12": 11.3,
+          "midia_12_meses": 35663,
+          "implantacao_12_meses": 14348
+        },
+        "alto": {
+          "decisao": "otimizar (fica na validação)",
+          "mrr_mes3": 282,
+          "mrr_mes6": 883,
+          "mrr_mes12": 1916,
+          "clientes_ativos_mes12": 4.6,
+          "midia_12_meses": 20363,
+          "implantacao_12_meses": 5849
+        }
+      }
+    },
+    {
+      "id": "barber",
+      "nome": "Nexor Barber",
+      "mercado": "Araguari é pequeno: Triângulo + capitais e cidades médias do Brasil",
+      "verba_mensal": {
+        "teste": 450,
+        "validacao": 1200,
+        "escala": 3000
+      },
+      "cpl": {
+        "baixo": 12,
+        "medio": 22,
+        "alto": 40
+      },
+      "taxa_quente": 0.18,
+      "taxa_reuniao": 0.55,
+      "taxa_fechamento": 0.3,
+      "ticket_mensal": 150,
+      "ticket_implantacao": 450,
+      "retencao_meses": 18,
+      "derivados_validacao": {
+        "baixo": {
+          "leads": 100,
+          "quentes": 18,
+          "reunioes": 9.9,
+          "vendas": 3,
+          "cac": 501.5,
+          "ltv": 2205,
+          "ltv_cac": 4.4,
+          "payback": 2.86,
+          "cpl_quente": 66.7,
+          "cpl_quente_maximo": 105.2
+        },
+        "medio": {
+          "leads": 54.5,
+          "quentes": 9.8,
+          "reunioes": 5.4,
+          "vendas": 1.6,
+          "cac": 838.2,
+          "ltv": 2205,
+          "ltv_cac": 2.63,
+          "payback": 5.85,
+          "cpl_quente": 122.2,
+          "cpl_quente_maximo": 105.2
+        },
+        "alto": {
+          "leads": 30,
+          "quentes": 5.4,
+          "reunioes": 3,
+          "vendas": 0.9,
+          "cac": 1444.3,
+          "ltv": 2205,
+          "ltv_cac": 1.53,
+          "payback": 11.24,
+          "cpl_quente": 222.2,
+          "cpl_quente_maximo": 105.2
+        }
+      },
+      "projecao": {
+        "baixo": {
+          "decisao": "escalar",
+          "mrr_mes3": 564,
+          "mrr_mes6": 2605,
+          "mrr_mes12": 6505,
+          "clientes_ativos_mes12": 43.4,
+          "midia_12_meses": 29738,
+          "implantacao_12_meses": 24433
+        },
+        "medio": {
+          "decisao": "otimizar (fica na validação)",
+          "mrr_mes3": 308,
+          "mrr_mes6": 948,
+          "mrr_mes12": 1943,
+          "clientes_ativos_mes12": 13,
+          "midia_12_meses": 13538,
+          "implantacao_12_meses": 7495
+        },
+        "alto": {
+          "decisao": "cortar",
+          "mrr_mes3": 169,
+          "mrr_mes6": 262,
+          "mrr_mes12": 186,
+          "clientes_ativos_mes12": 1.2,
+          "midia_12_meses": 2738,
+          "implantacao_12_meses": 915
+        }
+      }
+    },
+    {
+      "id": "agente",
+      "nome": "Nexor Agente",
+      "mercado": "Triângulo + Brasil (distribuidoras, indústrias e serviços com ERP)",
+      "verba_mensal": {
+        "teste": 750,
+        "validacao": 1800,
+        "escala": 4000
+      },
+      "cpl": {
+        "baixo": 45,
+        "medio": 80,
+        "alto": 140
+      },
+      "taxa_quente": 0.15,
+      "taxa_reuniao": 0.5,
+      "taxa_fechamento": 0.18,
+      "ticket_mensal": 450,
+      "ticket_implantacao": 1900,
+      "retencao_meses": 20,
+      "derivados_validacao": {
+        "baixo": {
+          "leads": 40,
+          "quentes": 6,
+          "reunioes": 3,
+          "vendas": 0.5,
+          "cac": 3653.3,
+          "ltv": 7510,
+          "ltv_cac": 2.06,
+          "payback": 8.57,
+          "cpl_quente": 300,
+          "cpl_quente_maximo": 196.5
+        },
+        "medio": {
+          "leads": 22.5,
+          "quentes": 3.4,
+          "reunioes": 1.7,
+          "vendas": 0.3,
+          "cac": 6245.9,
+          "ltv": 7510,
+          "ltv_cac": 1.2,
+          "payback": 16.25,
+          "cpl_quente": 533.3,
+          "cpl_quente_maximo": 196.5
+        },
+        "alto": {
+          "leads": 12.9,
+          "quentes": 1.9,
+          "reunioes": 1,
+          "vendas": 0.2,
+          "cac": 10690.4,
+          "ltv": 7510,
+          "ltv_cac": 0.7,
+          "payback": 29.42,
+          "cpl_quente": 933.3,
+          "cpl_quente_maximo": 196.5
+        }
+      },
+      "projecao": {
+        "baixo": {
+          "decisao": "otimizar (fica na validação)",
+          "mrr_mes3": 315,
+          "mrr_mes6": 963,
+          "mrr_mes12": 1996,
+          "clientes_ativos_mes12": 4.4,
+          "midia_12_meses": 20363,
+          "implantacao_12_meses": 10581
+        },
+        "medio": {
+          "decisao": "cortar",
+          "mrr_mes3": 177,
+          "mrr_mes6": 275,
+          "mrr_mes12": 202,
+          "clientes_ativos_mes12": 0.4,
+          "midia_12_meses": 4163,
+          "implantacao_12_meses": 1335
+        },
+        "alto": {
+          "decisao": "cortar",
+          "mrr_mes3": 101,
+          "mrr_mes6": 157,
+          "mrr_mes12": 116,
+          "clientes_ativos_mes12": 0.3,
+          "midia_12_meses": 4163,
+          "implantacao_12_meses": 763
+        }
+      }
+    },
+    {
+      "id": "elo",
+      "nome": "Nexor Elo (fornecedor)",
+      "mercado": "Araguari e Triângulo (estratégia de âncora); depois Goiás e interior de SP",
+      "verba_mensal": {
+        "teste": 450,
+        "validacao": 1000,
+        "escala": 2000
+      },
+      "cpl": {
+        "baixo": 35,
+        "medio": 65,
+        "alto": 120
+      },
+      "taxa_quente": 0.25,
+      "taxa_reuniao": 0.6,
+      "taxa_fechamento": 0.2,
+      "ticket_mensal": 700,
+      "ticket_implantacao": 900,
+      "retencao_meses": 24,
+      "derivados_validacao": {
+        "baixo": {
+          "leads": 28.6,
+          "quentes": 7.1,
+          "reunioes": 4.3,
+          "vendas": 0.9,
+          "cac": 1561.7,
+          "ltv": 12960,
+          "ltv_cac": 8.3,
+          "payback": 2.29,
+          "cpl_quente": 140,
+          "cpl_quente_maximo": 471
+        },
+        "medio": {
+          "leads": 15.4,
+          "quentes": 3.8,
+          "reunioes": 2.3,
+          "vendas": 0.5,
+          "cac": 2561.7,
+          "ltv": 12960,
+          "ltv_cac": 5.06,
+          "payback": 4.19,
+          "cpl_quente": 260,
+          "cpl_quente_maximo": 471
+        },
+        "alto": {
+          "leads": 8.3,
+          "quentes": 2.1,
+          "reunioes": 1.3,
+          "vendas": 0.3,
+          "cac": 4395,
+          "ltv": 12960,
+          "ltv_cac": 2.95,
+          "payback": 7.69,
+          "cpl_quente": 480,
+          "cpl_quente_maximo": 471
+        }
+      },
+      "projecao": {
+        "baixo": {
+          "decisao": "escalar",
+          "mrr_mes3": 794,
+          "mrr_mes6": 3130,
+          "mrr_mes12": 7617,
+          "clientes_ativos_mes12": 10.9,
+          "midia_12_meses": 20338,
+          "implantacao_12_meses": 11677
+        },
+        "medio": {
+          "decisao": "escalar",
+          "mrr_mes3": 428,
+          "mrr_mes6": 1685,
+          "mrr_mes12": 4101,
+          "clientes_ativos_mes12": 5.9,
+          "midia_12_meses": 20338,
+          "implantacao_12_meses": 6288
+        },
+        "alto": {
+          "decisao": "otimizar (fica na validação)",
+          "mrr_mes3": 232,
+          "mrr_mes6": 707,
+          "mrr_mes12": 1494,
+          "clientes_ativos_mes12": 2.1,
+          "midia_12_meses": 11338,
+          "implantacao_12_meses": 2326
+        }
+      }
+    },
+    {
+      "id": "ti",
+      "nome": "Nexor TI (Service Desk, Cofre e IT Platform)",
+      "mercado": "Brasil online (Google Search); Triângulo no presencial",
+      "verba_mensal": {
+        "teste": 600,
+        "validacao": 1500,
+        "escala": 3500
+      },
+      "cpl": {
+        "baixo": 50,
+        "medio": 90,
+        "alto": 160
+      },
+      "taxa_quente": 0.2,
+      "taxa_reuniao": 0.5,
+      "taxa_fechamento": 0.22,
+      "ticket_mensal": 380,
+      "ticket_implantacao": 1100,
+      "retencao_meses": 24,
+      "derivados_validacao": {
+        "baixo": {
+          "leads": 30,
+          "quentes": 6,
+          "reunioes": 3,
+          "vendas": 0.7,
+          "cac": 2517.7,
+          "ltv": 7280,
+          "ltv_cac": 2.89,
+          "payback": 7.29,
+          "cpl_quente": 250,
+          "cpl_quente_maximo": 240
+        },
+        "medio": {
+          "leads": 16.7,
+          "quentes": 3.3,
+          "reunioes": 1.7,
+          "vendas": 0.4,
+          "cac": 4335.9,
+          "ltv": 7280,
+          "ltv_cac": 1.68,
+          "payback": 13.67,
+          "cpl_quente": 450,
+          "cpl_quente_maximo": 240
+        },
+        "alto": {
+          "leads": 9.4,
+          "quentes": 1.9,
+          "reunioes": 0.9,
+          "vendas": 0.2,
+          "cac": 7517.7,
+          "ltv": 7280,
+          "ltv_cac": 0.97,
+          "payback": 24.83,
+          "cpl_quente": 800,
+          "cpl_quente_maximo": 240
+        }
+      },
+      "projecao": {
+        "baixo": {
+          "decisao": "otimizar (fica na validação)",
+          "mrr_mes3": 323,
+          "mrr_mes6": 1006,
+          "mrr_mes12": 2136,
+          "clientes_ativos_mes12": 5.6,
+          "midia_12_meses": 16950,
+          "implantacao_12_meses": 7478
+        },
+        "medio": {
+          "decisao": "cortar",
+          "mrr_mes3": 179,
+          "mrr_mes6": 286,
+          "mrr_mes12": 221,
+          "clientes_ativos_mes12": 0.6,
+          "midia_12_meses": 3450,
+          "implantacao_12_meses": 928
+        },
+        "alto": {
+          "decisao": "cortar",
+          "mrr_mes3": 101,
+          "mrr_mes6": 161,
+          "mrr_mes12": 125,
+          "clientes_ativos_mes12": 0.3,
+          "midia_12_meses": 3450,
+          "implantacao_12_meses": 522
+        }
+      }
+    },
+    {
+      "id": "nexor-qualquer-cenario",
+      "nome": "Umbrella: um sistema para cada cenário",
+      "mercado": "Triângulo Mineiro (remarketing e marca) + Brasil",
+      "verba_mensal": {
+        "teste": 600,
+        "validacao": 1200,
+        "escala": 2500
+      },
+      "cpl": {
+        "baixo": 20,
+        "medio": 40,
+        "alto": 70
+      },
+      "taxa_quente": 0.12,
+      "taxa_reuniao": 0.45,
+      "taxa_fechamento": 0.18,
+      "ticket_mensal": 450,
+      "ticket_implantacao": 1500,
+      "retencao_meses": 18,
+      "derivados_validacao": {
+        "baixo": {
+          "leads": 60,
+          "quentes": 7.2,
+          "reunioes": 3.2,
+          "vendas": 0.6,
+          "cac": 2357.6,
+          "ltv": 6675,
+          "ltv_cac": 2.83,
+          "payback": 5.21,
+          "cpl_quente": 166.7,
+          "cpl_quente_maximo": 155.9
+        },
+        "medio": {
+          "leads": 30,
+          "quentes": 3.6,
+          "reunioes": 1.6,
+          "vendas": 0.3,
+          "cac": 4415.2,
+          "ltv": 6675,
+          "ltv_cac": 1.51,
+          "payback": 11.3,
+          "cpl_quente": 333.3,
+          "cpl_quente_maximo": 155.9
+        },
+        "alto": {
+          "leads": 17.1,
+          "quentes": 2.1,
+          "reunioes": 0.9,
+          "vendas": 0.2,
+          "cac": 7501.6,
+          "ltv": 6675,
+          "ltv_cac": 0.89,
+          "payback": 20.45,
+          "cpl_quente": 583.3,
+          "cpl_quente_maximo": 155.9
+        }
+      },
+      "projecao": {
+        "baixo": {
+          "decisao": "otimizar (fica na validação)",
+          "mrr_mes3": 355,
+          "mrr_mes6": 1044,
+          "mrr_mes12": 2112,
+          "clientes_ativos_mes12": 4.7,
+          "midia_12_meses": 13650,
+          "implantacao_12_meses": 9076
+        },
+        "medio": {
+          "decisao": "cortar",
+          "mrr_mes3": 178,
+          "mrr_mes6": 267,
+          "mrr_mes12": 189,
+          "clientes_ativos_mes12": 0.4,
+          "midia_12_meses": 2850,
+          "implantacao_12_meses": 1039
+        },
+        "alto": {
+          "decisao": "cortar",
+          "mrr_mes3": 102,
+          "mrr_mes6": 152,
+          "mrr_mes12": 108,
+          "clientes_ativos_mes12": 0.2,
+          "midia_12_meses": 2850,
+          "implantacao_12_meses": 594
+        }
+      }
+    }
+  ],
+  "fontes": [
+    {
+      "titulo": "Leadster, Panorama de Geração de Leads 2025 (via Agendor): conversão média de sites de 2,98%",
+      "url": "https://www.agendor.com.br/blog/panorama-de-geracao-de-leads-no-brasil/"
+    },
+    {
+      "titulo": "Mundo do Marketing: custo por lead no Brasil subiu 33,6% entre 2024 e 2025",
+      "url": "https://mundodomarketing.com.br/conversao-de-leads-volta-a-crescer-no-brasil-apos-tres-anos-de-queda"
+    },
+    {
+      "titulo": "Conversion: Google Ads Benchmarks 2024 (conversão média de 6,96%, CPL médio de US$ 66,69)",
+      "url": "https://www.conversion.com.br/blog/google-ads-benchmarks-2024"
+    },
+    {
+      "titulo": "Conversion: calculadora de CPL e conversão por segmento (Panorama Leadster 2025)",
+      "url": "https://www.conversion.com.br/blog/calculadora-de-custo-por-lead-cpl"
+    },
+    {
+      "titulo": "Search Engine Land / WordStream: CPC médio do Google Ads de US$ 5,42 em 2025, com conversão melhorando",
+      "url": "https://searchengineland.com/google-ads-costs-keep-rising-but-conversion-rates-improved-in-2025-477927"
+    },
+    {
+      "titulo": "Snov.io: estatísticas de geração de leads 2026 (CPL B2B global de US$ 84; Google US$ 70; Meta US$ 27,66; LinkedIn US$ 110)",
+      "url": "https://snov.io/blog/br/estatisticas-de-geracao-de-leads/"
+    },
+    {
+      "titulo": "Metadata.io: benchmarks B2B 2025 (LinkedIn: US$ 193 a US$ 346 por lead, conforme formulário nativo ou landing page)",
+      "url": "https://metadata.io/b2b-advertising-benchmarks"
+    },
+    {
+      "titulo": "Search Engine Land: CPC do LinkedIn Ads em prospecção (média de US$ 13,94; SaaS B2B US$ 11,02)",
+      "url": "https://searchengineland.com/linkedin-ads-cpc-benchmarks-how-costs-compare-with-google-ads-481010"
+    },
+    {
+      "titulo": "V4 Company: LinkedIn Ads no Brasil (CPC estimado de US$ 2 a US$ 5)",
+      "url": "https://v4company.com/blog/marketing-digital/linkedin-ads"
+    },
+    {
+      "titulo": "Babi Tonhela: faixas de CPL no Brasil (Google Search R$ 35 a R$ 85; compilação, ordem de grandeza)",
+      "url": "https://babitonhela.com/blog/custo-por-lead-brasil-benchmarks/"
+    },
+    {
+      "titulo": "Superads: custo por lead no Facebook Ads no Brasil",
+      "url": "https://www.superads.ai/facebook-ads-costs/cost-per-lead/brazil"
+    }
+  ],
+  "totais_cenario_medio": {
+    "mrr_mes3": 2975,
+    "mrr_mes6": 11080,
+    "mrr_mes12": 25997,
+    "clientes_ativos_mes12": 61.8,
+    "midia_12_meses": 179125,
+    "implantacao_12_meses": 87373,
+    "mrr_mes12_cenario_alto": 8512
+  }
+}

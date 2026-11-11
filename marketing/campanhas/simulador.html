@@ -1,0 +1,130 @@
+<title>Simulador de Campanhas Nexor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: faixa de resumo no topo, cenário + gráfico, depois uma linha por campanha (entradas à esquerda, resultado à direita) */
+:root{--bg:#f4f7fb;--sup:#ffffff;--linha:#dfe6ef;--fg:#0f1b2d;--suave:#5a6b82;--azul:#1f6feb;--ciano:#0e9fb8;--ok:#13804b;--alerta:#b26b00;--ruim:#c0392b;--okf:#e3f4ea;--alf:#fff3dc;--ruf:#fbe5e2;
+--f-tit:"Space Grotesk",system-ui,sans-serif;--f-txt:"Inter",system-ui,sans-serif;--f-num:"JetBrains Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--sup:#121c2f;--linha:#22304a;--fg:#e6edf7;--suave:#93a3bb;--azul:#5b9bff;--ciano:#37c7dd;--ok:#4cc38a;--alerta:#f0b44c;--ruim:#ff7b6b;--okf:#123326;--alf:#3a2c10;--ruf:#3d1a17;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b1220;--sup:#121c2f;--linha:#22304a;--fg:#e6edf7;--suave:#93a3bb;--azul:#5b9bff;--ciano:#37c7dd;--ok:#4cc38a;--alerta:#f0b44c;--ruim:#ff7b6b;--okf:#123326;--alf:#3a2c10;--ruf:#3d1a17;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-txt);font-size:14px;line-height:1.5}
+.pag{max-width:1180px;margin:0 auto;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+h1,h2,h3{font-family:var(--f-tit);text-wrap:balance;margin:0}
+h1{font-size:clamp(24px,4vw,32px)}
+.sub{color:var(--suave);max-width:70ch;margin:4px 0 0}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{background:var(--sup);border:1px solid var(--linha);border-radius:12px;padding:12px 14px;min-width:0}
+.kpi small{display:block;color:var(--suave);font-size:12px;letter-spacing:.02em}
+.kpi b{display:block;font-family:var(--f-num);font-size:20px;margin-top:2px}
+.barra{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--linha);border-radius:999px;overflow:hidden;background:var(--sup)}
+.seg button{border:0;background:none;color:var(--fg);padding:7px 14px;font:inherit;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--azul);color:#fff}
+.seg button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+.painel{background:var(--sup);border:1px solid var(--linha);border-radius:14px;padding:16px;min-width:0}
+.grafico{overflow-x:auto}
+svg text{fill:var(--suave);font-size:11px;font-family:var(--f-num)}
+.camp{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start;border-top:1px solid var(--linha);padding-top:14px}
+.camp:first-child{border-top:0;padding-top:0}
+@media (max-width:760px){.camp{grid-template-columns:1fr}}
+.camp header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.chip{font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px}
+.c-ok{background:var(--okf);color:var(--ok)}.c-al{background:var(--alf);color:var(--alerta)}.c-ru{background:var(--ruf);color:var(--ruim)}
+.mercado{color:var(--suave);font-size:12.5px;margin:0 0 8px}
+.campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+label{display:grid;gap:2px;font-size:12px;color:var(--suave)}
+input,select{font:inherit;font-family:var(--f-num);color:var(--fg);background:var(--bg);border:1px solid var(--linha);border-radius:8px;padding:6px 8px;width:100%;min-width:0;box-sizing:border-box}
+.res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
+.res div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--linha);padding:3px 0}
+.res span{color:var(--suave)}
+.nota{color:var(--suave);font-size:12.5px}
+.fontes a{color:var(--azul)}
+.fontes li{margin:2px 0}
+</style>
+<div class="pag">
+  <header>
+    <h1>Simulador de Campanhas Nexor</h1>
+    <p class="sub">Mude a verba e as taxas de cada campanha e veja na hora leads quentes, vendas, custo de aquisição, retorno e receita recorrente em 12 meses. Os valores iniciais são as hipóteses de <span class="num">marketing/campanhas/projecao.json</span>; troque pelos números reais a partir da semana 3 da fase de testes.</p>
+  </header>
+  <section class="resumo" id="resumo" aria-live="polite"></section>
+  <section class="painel">
+    <div class="barra">
+      <strong>Cenário de custo por lead</strong>
+      <div class="seg" role="group" aria-label="Cenário de custo por lead" id="cenario">
+        <button type="button" data-c="baixo" aria-pressed="false">Otimista</button><button type="button" data-c="medio" aria-pressed="true">Provável</button><button type="button" data-c="alto" aria-pressed="false">Pessimista</button>
+      </div>
+      <span class="nota">Mês 1: testes (75% do mês) · meses 2–3: validação · meses 4–12: escala só para quem passou na regra; quem não passou fica na validação ou é cortado.</span>
+    </div>
+    <div class="grafico"><svg id="graf" role="img" aria-label="Receita recorrente mensal projetada" width="100%" height="220" viewBox="0 0 760 220" preserveAspectRatio="none"></svg></div>
+  </section>
+  <section class="painel" id="lista" aria-label="Campanhas"></section>
+  <section class="painel nota">
+    <h3 style="font-size:15px;margin-bottom:6px">Como o simulador calcula</h3>
+    <p>Leads = verba ÷ custo por lead. Quentes = leads × taxa de quente (nota da Blue ≥ 70). Vendas = quentes × reuniões × fechamento. Custo de aquisição = verba ÷ vendas + comissão do vendedor (50% da 1ª mensalidade + 5% da implantação). Valor do cliente = mensalidade × margem de 75% × meses de retenção + implantação × 40%. Retorno = valor do cliente ÷ custo de aquisição. Regra para escalar: retorno ≥ 3 e payback ≤ 12 meses. Na escala, o custo por lead sobe 25%. A receita entra um mês depois da venda (o teste de 30 dias) e cada mês sai 1 ÷ retenção dos clientes.</p>
+    <p>Fontes dos custos por lead (benchmarks gerais, não resultado da Nexor):</p>
+    <ul class="fontes" id="fontes"></ul>
+  </section>
+</div>
+<script>
+const D = {"c":[{"id":"atende","nome":"Nexor Atende IA","mercado":"Brasil (clínicas, imobiliárias, escolas e comércio com WhatsApp cheio); Triângulo no presencial","verba":{"teste":750,"validacao":2000,"escala":5000},"cpl":{"baixo":25,"medio":45,"alto":80},"q":0.2,"r":0.5,"f":0.22,"tm":597,"ti":1800,"ret":18,"dec":"escalar"},{"id":"rh-ponto","nome":"Nexor RH e Ponto","mercado":"Triângulo Mineiro (presencial) + Brasil online; Araguari forte em café, comércio e serviços","verba":{"teste":750,"validacao":2000,"escala":5000},"cpl":{"baixo":30,"medio":55,"alto":95},"q":0.22,"r":0.5,"f":0.25,"tm":380,"ti":1300,"ret":30,"dec":"escalar"},{"id":"contabil","nome":"Nexor Contábil","mercado":"Araguari é pequeno: Triângulo + Minas Gerais + Brasil online","verba":{"teste":750,"validacao":1800,"escala":3500},"cpl":{"baixo":40,"medio":70,"alto":120},"q":0.25,"r":0.55,"f":0.25,"tm":420,"ti":1100,"ret":30,"dec":"escalar"},{"id":"barber","nome":"Nexor Barber","mercado":"Araguari é pequeno: Triângulo + capitais e cidades médias do Brasil","verba":{"teste":450,"validacao":1200,"escala":3000},"cpl":{"baixo":12,"medio":22,"alto":40},"q":0.18,"r":0.55,"f":0.3,"tm":150,"ti":450,"ret":18,"dec":"otimizar (fica na validação)"},{"id":"agente","nome":"Nexor Agente","mercado":"Triângulo + Brasil (distribuidoras, indústrias e serviços com ERP)","verba":{"teste":750,"validacao":1800,"escala":4000},"cpl":{"baixo":45,"medio":80,"alto":140},"q":0.15,"r":0.5,"f":0.18,"tm":450,"ti":1900,"ret":20,"dec":"cortar"},{"id":"elo","nome":"Nexor Elo (fornecedor)","mercado":"Araguari e Triângulo (estratégia de âncora); depois Goiás e interior de SP","verba":{"teste":450,"validacao":1000,"escala":2000},"cpl":{"baixo":35,"medio":65,"alto":120},"q":0.25,"r":0.6,"f":0.2,"tm":700,"ti":900,"ret":24,"dec":"escalar"},{"id":"ti","nome":"Nexor TI (Service Desk, Cofre e IT Platform)","mercado":"Brasil online (Google Search); Triângulo no presencial","verba":{"teste":600,"validacao":1500,"escala":3500},"cpl":{"baixo":50,"medio":90,"alto":160},"q":0.2,"r":0.5,"f":0.22,"tm":380,"ti":1100,"ret":24,"dec":"cortar"},{"id":"nexor-qualquer-cenario","nome":"Umbrella: um sistema para cada cenário","mercado":"Triângulo Mineiro (remarketing e marca) + Brasil","verba":{"teste":600,"validacao":1200,"escala":2500},"cpl":{"baixo":20,"medio":40,"alto":70},"q":0.12,"r":0.45,"f":0.18,"tm":450,"ti":1500,"ret":18,"dec":"cortar"}],"mbm":0.75,"mbi":0.4,"cv1":0.5,"cvi":0.05,"esc":1.25,"fontes":[{"titulo":"Leadster, Panorama de Geração de Leads 2025 (via Agendor): conversão média de sites de 2,98%","url":"https://www.agendor.com.br/blog/panorama-de-geracao-de-leads-no-brasil/"},{"titulo":"Mundo do Marketing: custo por lead no Brasil subiu 33,6% entre 2024 e 2025","url":"https://mundodomarketing.com.br/conversao-de-leads-volta-a-crescer-no-brasil-apos-tres-anos-de-queda"},{"titulo":"Conversion: Google Ads Benchmarks 2024 (conversão média de 6,96%, CPL médio de US$ 66,69)","url":"https://www.conversion.com.br/blog/google-ads-benchmarks-2024"},{"titulo":"Conversion: calculadora de CPL e conversão por segmento (Panorama Leadster 2025)","url":"https://www.conversion.com.br/blog/calculadora-de-custo-por-lead-cpl"},{"titulo":"Search Engine Land / WordStream: CPC médio do Google Ads de US$ 5,42 em 2025, com conversão melhorando","url":"https://searchengineland.com/google-ads-costs-keep-rising-but-conversion-rates-improved-in-2025-477927"},{"titulo":"Snov.io: estatísticas de geração de leads 2026 (CPL B2B global de US$ 84; Google US$ 70; Meta US$ 27,66; LinkedIn US$ 110)","url":"https://snov.io/blog/br/estatisticas-de-geracao-de-leads/"},{"titulo":"Metadata.io: benchmarks B2B 2025 (LinkedIn: US$ 193 a US$ 346 por lead, conforme formulário nativo ou landing page)","url":"https://metadata.io/b2b-advertising-benchmarks"},{"titulo":"Search Engine Land: CPC do LinkedIn Ads em prospecção (média de US$ 13,94; SaaS B2B US$ 11,02)","url":"https://searchengineland.com/linkedin-ads-cpc-benchmarks-how-costs-compare-with-google-ads-481010"}]};
+const R = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const N = (v, d = 1) => v.toLocaleString("pt-BR", { maximumFractionDigits: d, minimumFractionDigits: 0 });
+let cen = "medio";
+const est = D.c.map((c) => ({ ...c, vv: c.verba.validacao, ve: c.verba.escala, cplm: null }));
+function calc(c, verba, mult = 1) {
+  const cpl = (c.cplm ?? c.cpl[cen]) * mult;
+  const leads = verba / cpl, quentes = leads * c.q, reun = quentes * c.r, vendas = reun * c.f;
+  const comissao = D.cv1 * c.tm + D.cvi * c.ti;
+  const cac = vendas > 0 ? verba / vendas + comissao : Infinity;
+  const ltv = c.tm * D.mbm * c.ret + c.ti * D.mbi;
+  const payback = (cac - c.ti * D.mbi) / (c.tm * D.mbm);
+  return { cpl, leads, quentes, reun, vendas, cac, ltv, ltvcac: ltv / cac, payback, cplq: quentes ? verba / quentes : Infinity };
+}
+function decisao(m) { return m.ltvcac >= 3 && m.payback <= 12 ? ["Escalar", "c-ok"] : m.ltvcac >= 2 ? ["Otimizar", "c-al"] : ["Cortar a mídia", "c-ru"]; }
+function serie(c) {
+  const val = calc(c, c.vv), escala = decisao(val)[0] === "Escalar", otim = decisao(val)[0] === "Otimizar";
+  const verbas = [], vendas = [];
+  for (let m = 1; m <= 12; m++) {
+    const v = m === 1 ? c.verba.teste * 0.75 : m <= 3 ? c.vv : escala ? c.ve : otim ? c.vv : 0;
+    verbas.push(v); vendas.push(v ? calc(c, v, m >= 4 && escala ? D.esc : 1).vendas : 0);
+  }
+  const mrr = []; let ativos = 0;
+  for (let m = 0; m < 12; m++) { ativos = ativos * (1 - 1 / c.ret) + (m >= 1 ? vendas[m - 1] : 0); mrr.push(ativos * c.tm); }
+  return { verbas, vendas, mrr, midia: verbas.reduce((a, b) => a + b, 0) };
+}
+function desenhar() {
+  const lista = document.getElementById("lista");
+  if (!lista.childElementCount) est.forEach((c, i) => lista.append(cartao(c, i)));
+  let tot = { verba: 0, quentes: 0, vendas: 0, mrr: Array(12).fill(0), midia: 0 };
+  est.forEach((c, i) => {
+    const m = calc(c, c.vv), [d, cls] = decisao(m), s = serie(c);
+    const el = lista.children[i];
+    el.querySelector(".chip").textContent = d; el.querySelector(".chip").className = "chip " + cls;
+    el.querySelector(".res").innerHTML = [["Leads/mês", N(m.leads)], ["Quentes/mês", N(m.quentes)], ["Demos/mês", N(m.reun)], ["Vendas/mês", N(m.vendas, 2)], ["Custo por quente", isFinite(m.cplq) ? R(m.cplq) : "—"], ["Custo de aquisição", isFinite(m.cac) ? R(m.cac) : "—"], ["Valor do cliente", R(m.ltv)], ["Retorno (LTV/CAC)", isFinite(m.ltvcac) ? N(m.ltvcac) + "×" : "—"], ["Payback", isFinite(m.payback) ? N(Math.max(0, m.payback)) + " meses" : "—"], ["Receita mês 12", R(s.mrr[11])]].map(([a, b]) => `<div><span>${a}</span><b class="num">${b}</b></div>`).join("");
+    tot.verba += c.vv; tot.quentes += m.quentes; tot.vendas += m.vendas; tot.midia += s.midia; s.mrr.forEach((v, k) => (tot.mrr[k] += v));
+  });
+  document.getElementById("resumo").innerHTML = [["Verba mensal (validação)", R(tot.verba)], ["Leads quentes por mês", N(tot.quentes)], ["Vendas por mês", N(tot.vendas)], ["Mídia em 12 meses", R(tot.midia)], ["Receita recorrente mês 6", R(tot.mrr[5])], ["Receita recorrente mês 12", R(tot.mrr[11])]].map(([a, b]) => `<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join("");
+  grafico(tot.mrr);
+}
+function grafico(v) {
+  const g = document.getElementById("graf"), W = 760, H = 220, pl = 64, pb = 24, pt = 12, max = Math.max(1000, ...v) * 1.1;
+  const x = (i) => pl + (i * (W - pl - 12)) / 11, y = (val) => pt + (H - pt - pb) * (1 - val / max);
+  let s = "";
+  for (let k = 0; k <= 4; k++) { const val = (max * k) / 4; s += `<line x1="${pl}" x2="${W - 12}" y1="${y(val)}" y2="${y(val)}" stroke="var(--linha)"/><text x="${pl - 6}" y="${y(val) + 4}" text-anchor="end">${R(val)}</text>`; }
+  v.forEach((_, i) => (s += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">m${i + 1}</text>`));
+  const pts = v.map((val, i) => `${x(i)},${y(val)}`).join(" ");
+  s += `<polygon points="${x(0)},${y(0)} ${pts} ${x(11)},${y(0)}" fill="var(--ciano)" fill-opacity=".15"/><polyline points="${pts}" fill="none" stroke="var(--ciano)" stroke-width="2.5"/><circle cx="${x(11)}" cy="${y(v[11])}" r="4" fill="var(--ciano)"/>`;
+  g.innerHTML = s;
+}
+function cartao(c, i) {
+  const el = document.createElement("article"); el.className = "camp";
+  const campo = (rot, k, passo, fator = 1) => `<label>${rot}<input id="${c.id}-${k}" type="number" min="0" step="${passo}" value="${+(c[k] * fator).toFixed(2)}" data-k="${k}" data-f="${fator}"></label>`;
+  el.innerHTML = `<div><header><h3 style="font-size:16px">${c.nome}</h3><span class="chip"></span></header><p class="mercado">${c.mercado}</p><div class="campos">${campo("Verba validação (R$/mês)", "vv", 50)}${campo("Verba escala (R$/mês)", "ve", 50)}<label>Custo por lead (R$)<input id="${c.id}-cpl" type="number" min="1" step="1" placeholder="${c.cpl[cen]}" data-k="cplm" data-f="1"></label>${campo("% quente", "q", 1, 100)}${campo("% demo", "r", 1, 100)}${campo("% fechamento", "f", 1, 100)}${campo("Mensalidade (R$)", "tm", 10)}${campo("Implantação (R$)", "ti", 50)}${campo("Retenção (meses)", "ret", 1)}</div></div><div class="res"></div>`;
+  el.addEventListener("input", (e) => { const k = e.target.dataset.k; if (!k) return; const v = parseFloat(e.target.value); est[i][k] = isNaN(v) ? (k === "cplm" ? null : est[i][k]) : v / +e.target.dataset.f; desenhar(); });
+  return el;
+}
+document.getElementById("cenario").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; cen = b.dataset.c; document.querySelectorAll("#cenario button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); est.forEach((c) => { const inp = document.getElementById(c.id + "-cpl"); if (inp) inp.placeholder = c.cpl[cen]; }); desenhar(); });
+document.getElementById("fontes").innerHTML = D.fontes.map((f) => `<li><a href="${f.url}" target="_blank" rel="noopener">${f.titulo}</a></li>`).join("");
+desenhar();
+</script>
