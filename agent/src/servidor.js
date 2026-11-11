@@ -2,7 +2,8 @@
    GET  /health             → verificação de saúde
    POST /api/chat           → chat do site  {sessao, mensagem, modo?, negocio?} → {resposta}
    POST /api/lead           → leads do site (pré-cadastro, teste grátis, formulários abandonados)
-   GET  /api/relatorio      → leads por campanha, com análise por IA (?dias=7&analise=1, exige REPORT_TOKEN)
+   GET  /api/relatorio      → leads por campanha, com análise por IA (?dias=7&analise=1&cadencia=1, exige REPORT_TOKEN)
+   POST /api/contato        → equipe registra o primeiro contato com um lead {lead|conversa|telefone} (exige REPORT_TOKEN)
    GET  /webhook/whatsapp   → verificação do webhook pela Meta
    POST /webhook/whatsapp   → mensagens recebidas no WhatsApp */
 
@@ -11,10 +12,11 @@ import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
 import { criarAgente } from "./agente.js";
 import { criarArmazenamento } from "./armazenamento.js";
+import { detectarCampanha } from "./campanhas.js";
 import { config } from "./config.js";
 import { INSTRUCOES_DEMO } from "./conhecimento.js";
 import { limparOrigem, rotuloOrigem, temperatura } from "./leads.js";
-import { enviarParaMeta } from "./meta.js";
+import { conversaoGoogle, enviarEventosMeta, enviarParaMeta, eventoConversao } from "./meta.js";
 import { gerarRelatorio } from "./relatorio.js";
 import { assinaturaValida, emBaloes, enviarTexto, extrairMensagens, marcarComoLida, pausaDigitando, whatsappConfigurado } from "./whatsapp.js";
 
@@ -84,6 +86,27 @@ async function notificarEquipe(texto, dados) {
   }
 }
 
+/* Conversões das conversas qualificadas (Lead, LeadQualificado, AgendouDemo).
+   Meta: só com consentimento de medição (site) ou, no WhatsApp, com anúncio de origem e META_CAPI_WHATSAPP=1.
+   Google: linha de conversão offline (com gclid) para LEAD_WEBHOOK_URL. */
+export async function registrarConversao(evento, lead, { enviarMeta = enviarEventosMeta, fetchFn = fetch } = {}) {
+  if (!lead.consentimento_medicao) return { meta: false, google: false };
+  const quando = new Date();
+  const doWhatsapp = lead.canal === "whatsapp";
+  const meta = doWhatsapp && !(config.metaWhatsapp && lead.origem?.ctwa_clid) ? false : await enviarMeta([eventoConversao(evento, lead, quando)]);
+  let google = false;
+  const linha = conversaoGoogle(evento, lead, quando);
+  if (linha && config.webhookLeads) {
+    try {
+      const r = await fetchFn(config.webhookLeads, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo: "conversao_google", evento, lead: lead.id, campanha: lead.campanha, google: linha }) });
+      google = r.ok;
+    } catch (err) {
+      console.error("[google] falha ao enviar conversão ao webhook:", err.message ?? err);
+    }
+  }
+  return { meta, google };
+}
+
 const lerCorpo = (req) =>
   new Promise((resolve, reject) => {
     const partes = [];
@@ -149,11 +172,15 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
       return json(res, 200, { resposta: r.resposta ?? "", transferido: false }, cors);
     }
     const pagina = limpar(dados.contexto, 300);
+    const origem = limparOrigem(dados.origem);
     const { resposta, transferido } = await agente.responder({
       idConversa: `site:${sessao}`,
       canal: "site",
       texto: mensagem,
       contexto: pagina ? `no site, o visitante: ${pagina}` : undefined,
+      campanha: detectarCampanha({ origem, texto: mensagem }),
+      origem,
+      consentimento: dados.consentimento === true,
     });
     json(res, 200, { resposta: resposta ?? "Sua conversa foi passada para a equipe. Para continuar agora, chame no WhatsApp (34) 99733-7499.", transferido }, cors);
   }
@@ -195,6 +222,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
       registrado_em: new Date().toISOString(),
     };
     if (!lead.telefone && !lead.email) return json(res, 400, { erro: "informe WhatsApp ou e-mail" }, cors);
+    lead.campanha = detectarCampanha({ origem: lead.origem, texto: lead.solucao ?? "" }).id;
 
     if (lead.tipo === "parcial") {
       const chave = `${lead.telefone}|${lead.email}|${lead.nome}|${lead.pontuacao >= LEAD_FORTE}`;
@@ -240,11 +268,18 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
           continue;
         }
         const texto = m.texto.slice(0, config.tamanhoMaximoMensagem);
+        const origem = m.referral
+          ? { utm_source: "meta", utm_medium: "anuncio-whatsapp", ...(m.referral.source_id && { anuncio: m.referral.source_id }), ...(m.referral.ctwa_clid && { ctwa_clid: m.referral.ctwa_clid }) }
+          : undefined;
         const { resposta } = await agente.responder({
           idConversa: `wa:${m.de}`,
           canal: "whatsapp",
           texto: m.nome ? `${texto}\n\n(nome no perfil do WhatsApp: ${m.nome})` : texto,
           telefone: m.de,
+          campanha: detectarCampanha({ texto, referral: m.referral }),
+          origem,
+          // No WhatsApp, medição só para quem chegou por anúncio e com a opção ligada (ver META_CAPI_WHATSAPP)
+          consentimento: Boolean(config.metaWhatsapp && m.referral?.ctwa_clid),
         });
         // Resposta em balões, com uma pausa de "digitando" entre eles, como uma pessoa
         const baloes = emBaloes(resposta);
@@ -279,6 +314,23 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
         if (req.method === "POST") return await leadDoSite(req, res);
       }
 
+      if (req.method === "POST" && url.pathname === "/api/contato") {
+        const token = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "");
+        if (!limiteRelatorio(ipDoCliente(req))) return json(res, 429, { erro: "muitas tentativas" }, { "Retry-After": "900" });
+        if (!tokenConfere(token, config.tokenRelatorio)) return json(res, 401, { erro: "não autorizado" });
+        let d;
+        try {
+          d = JSON.parse((await lerCorpo(req)).toString("utf8"));
+        } catch (err) {
+          return json(res, err.status ?? 400, { erro: "JSON inválido" });
+        }
+        const ref = { lead: limpar(d?.lead, 80), conversa: limpar(d?.conversa, 120), telefone: limpar(d?.telefone, 40)?.replace(/\D/g, "") };
+        if (!ref.lead && !ref.conversa && !ref.telefone) return json(res, 400, { erro: "informe lead, conversa ou telefone" });
+        const quando = d?.quando && !Number.isNaN(Date.parse(d.quando)) ? new Date(d.quando).toISOString() : new Date().toISOString();
+        await armazenamento.salvarLead({ tipo: "contato_equipe", ...Object.fromEntries(Object.entries(ref).filter(([, v]) => v)), contato_em: quando, registrado_em: new Date().toISOString() });
+        return json(res, 200, { ok: true });
+      }
+
       if (req.method === "GET" && url.pathname === "/api/relatorio") {
         const token = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "") || url.searchParams.get("token") || "";
         if (!limiteRelatorio(ipDoCliente(req))) return json(res, 429, { erro: "muitas tentativas" }, { "Retry-After": "900" });
@@ -289,6 +341,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
           dias,
           analise: url.searchParams.get("analise") === "1",
           investimento: limpar(url.searchParams.get("investimento") ?? undefined, 500),
+          cadencia: url.searchParams.get("cadencia") === "1",
           cliente: clienteRelatorio,
         });
         return json(res, 200, relatorio);
@@ -322,7 +375,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
 /* Inicia o servidor quando executado diretamente: node src/servidor.js */
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const armazenamento = criarArmazenamento(config.pastaDados);
-  const agente = criarAgente({ armazenamento, notificar: notificarEquipe });
+  const agente = criarAgente({ armazenamento, notificar: notificarEquipe, conversao: (evento, lead) => registrarConversao(evento, lead) });
   const agenteDemo = criarAgente({ armazenamento, instrucoes: INSTRUCOES_DEMO, comFerramentas: false });
   criarServidor({ agente, agenteDemo, armazenamento }).listen(config.porta, () => {
     console.log(`Blue (Nexor) ouvindo na porta ${config.porta} · modelo ${config.modelo}`);

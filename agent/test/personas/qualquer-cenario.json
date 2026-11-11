@@ -1,0 +1,46 @@
+[
+  {
+    "id": "geral-1-transportadora",
+    "tipo": "quente",
+    "descricao": "Persona fictícia. Dono de transportadora com 120 funcionários e ponto dos motoristas bagunçado. Deve indicar RH + Ponto.",
+    "canal": "site",
+    "origem": { "utm_source": "meta", "utm_medium": "pago", "utm_campaign": "nexor-atende-qualquer-cenario" },
+    "mensagens": [
+      "Tenho uma transportadora em Uberlândia com 120 funcionários e o controle de ponto dos motoristas é uma bagunça",
+      "Sou o dono. Quero resolver isso ainda este mês, tenho orçamento",
+      "Pode agendar o diagnóstico? Meu WhatsApp é (34) 90000-0801"
+    ],
+    "esperado": { "campanha": "qualquer-cenario", "classe": "quente", "nota_min": 70, "nota_max": 100, "produto_indicado": "Nexor RH + Ponto" }
+  },
+  {
+    "id": "geral-2-pizzaria",
+    "tipo": "morno",
+    "descricao": "Persona fictícia. Pizzaria que perde pedido por demora no WhatsApp, sem pressa. Deve indicar Atende IA.",
+    "canal": "whatsapp",
+    "telefone": "5534900000802",
+    "mensagens": [
+      "Oi, tudo bem? Queria entender o que vocês fazem",
+      "Tenho uma pizzaria em Araguari e perco muito pedido porque demoro pra responder no WhatsApp",
+      "Somos 8 pessoas. Não tenho pressa"
+    ],
+    "esperado": { "campanha": "qualquer-cenario", "classe": "morno", "nota_min": 40, "nota_max": 69, "produto_indicado": "Nexor Atende IA" }
+  },
+  {
+    "id": "geral-3-estudante",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Estudante fazendo pesquisa para a faculdade.",
+    "canal": "site",
+    "origem": {},
+    "mensagens": ["Oi! Sou estudante de administração e estou fazendo uma pesquisa pra faculdade sobre empresas de tecnologia"],
+    "esperado": { "campanha": "qualquer-cenario", "classe": "frio", "nota_min": 0, "nota_max": 15, "descarte": "estudante" }
+  },
+  {
+    "id": "geral-4-quanto-custa-site",
+    "tipo": "curioso",
+    "descricao": "Persona fictícia. Pergunta seca de preço, sem nenhum contexto.",
+    "canal": "whatsapp",
+    "telefone": "5534900000804",
+    "mensagens": ["Quanto custa um site?"],
+    "esperado": { "campanha": "qualquer-cenario", "classe": "morno", "nota_min": 40, "nota_max": 40, "motivos": ["vira morno com o material de preços"] }
+  }
+]

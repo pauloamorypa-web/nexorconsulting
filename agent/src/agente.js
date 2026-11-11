@@ -2,6 +2,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { config } from "./config.js";
+import { contextoCampanha } from "./campanhas.js";
 import { INSTRUCOES } from "./conhecimento.js";
 import { DEFINICOES, criarExecutor } from "./ferramentas.js";
 
@@ -26,9 +27,10 @@ const textoDa = (mensagem) =>
  * @param {() => Date} [deps.agora]
  * @param {string} [deps.instrucoes] instruções de sistema (padrão: a Blue, assistente da Nexor)
  * @param {boolean} [deps.comFerramentas] false = só conversa, sem registrar leads nem agendar (modo de teste)
+ * @param {(evento: string, lead: object) => Promise<unknown>} [deps.conversao] eventos de conversão (Meta, Google)
  */
-export function criarAgente({ cliente = new Anthropic(), armazenamento, notificar = async () => {}, agora = () => new Date(), instrucoes = INSTRUCOES, comFerramentas = true }) {
-  const executar = criarExecutor({ armazenamento, notificar, agora });
+export function criarAgente({ cliente = new Anthropic(), armazenamento, notificar = async () => {}, agora = () => new Date(), instrucoes = INSTRUCOES, comFerramentas = true, conversao }) {
+  const executar = criarExecutor({ armazenamento, notificar, agora, conversao });
   const sistema = [{ type: "text", text: instrucoes }];
   const ferramentas = comFerramentas ? DEFINICOES : [];
   /** @type {Map<string, {mensagens: Anthropic.Beta.BetaMessageParam[], atualizadaEm: number, pausadaAte: number, envios: number[], fila: Promise<unknown>}>} */
@@ -42,7 +44,7 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
     if (!c || expirada) {
       // Uma conversa nova em vez de cortar o histórico: o histórico só cresce (append-only),
       // o que mantém o cache válido e os blocos de raciocínio do modelo consistentes.
-      c = { mensagens: [], atualizadaEm: t, pausadaAte: c?.pausadaAte ?? 0, envios: c?.envios ?? [], fila: Promise.resolve() };
+      c = { mensagens: [], atualizadaEm: t, pausadaAte: c?.pausadaAte ?? 0, envios: c?.envios ?? [], fila: Promise.resolve(), campanha: c?.campanha, origem: c?.origem, consentimento: c?.consentimento };
       conversas.set(id, c);
     }
     return c;
@@ -57,9 +59,35 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
     return true;
   };
 
+  /* Campanha da conversa: fica a primeira detectada; a padrão (sem pista nenhuma) cede lugar a uma detectada depois. */
+  const definirCampanha = (c, deteccao) => {
+    if (!deteccao?.campanha) return false;
+    if (c.campanha && !(c.campanha.via === "padrao" && deteccao.via !== "padrao")) return false;
+    if (c.campanha?.campanha.id === deteccao.campanha.id) return false;
+    c.campanha = deteccao;
+    return true;
+  };
+
   async function rodar(c, { idConversa, canal, texto, telefone, contexto }) {
     let transferido = false;
-    const ctx = { idConversa, canal, telefone, transferir: () => (transferido = true) };
+    const ctx = {
+      idConversa,
+      canal,
+      telefone,
+      campanha: c.campanha?.campanha,
+      campanhaVia: c.campanha?.via,
+      origem: c.origem,
+      consentimento: c.consentimento,
+      inicioEm: c.inicioEm,
+      get primeiraRespostaEm() {
+        return c.primeiraRespostaEm;
+      },
+      transferir: () => (transferido = true),
+    };
+    if (c.campanha && (c.mensagens.length === 0 || c.campanhaMudou)) {
+      contexto = [contexto, contextoCampanha(c.campanha.campanha, { mostrarPreco: config.campanhaMostrarPreco })].filter(Boolean).join("\n");
+      c.campanhaMudou = false;
+    }
 
     c.mensagens.push({
       role: "user",
@@ -82,6 +110,8 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
       });
+
+      c.primeiraRespostaEm ??= agora().toISOString();
 
       // O conteúdo completo volta ao histórico (inclui blocos de raciocínio e de fallback)
       c.mensagens.push({ role: "assistant", content: resposta.content });
@@ -109,10 +139,17 @@ export function criarAgente({ cliente = new Anthropic(), armazenamento, notifica
   return {
     /**
      * Responde a uma mensagem do cliente.
+     * @param {{campanha: object, via: string}} [m.campanha] resultado de detectarCampanha (campanhas.js)
+     * @param {object} [m.origem] utm_*, gclid, fbc, ctwa_clid... (já limpos)
+     * @param {boolean} [m.consentimento] consentimento de medição de anúncios (LGPD)
      * @returns {Promise<{resposta: string | null, transferido: boolean}>} resposta null = conversa com a equipe humana, o agente fica em silêncio
      */
-    responder({ idConversa, canal, texto, telefone, contexto }) {
+    responder({ idConversa, canal, texto, telefone, contexto, campanha, origem, consentimento }) {
       const c = obterConversa(idConversa);
+      if (definirCampanha(c, campanha) && c.mensagens.length > 0) c.campanhaMudou = true;
+      if (origem && Object.keys(origem).length) c.origem = { ...c.origem, ...origem };
+      if (consentimento !== undefined) c.consentimento = consentimento === true;
+      c.inicioEm ??= agora().toISOString();
       if (c.pausadaAte > agora().getTime()) return Promise.resolve({ resposta: null, transferido: true });
       if (!dentroDoLimite(c)) {
         return Promise.resolve({ resposta: "Recebi muitas mensagens seguidas. Aguarde alguns minutos ou fale com a equipe no WhatsApp (34) 99733-7499.", transferido: false });

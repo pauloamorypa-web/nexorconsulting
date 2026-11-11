@@ -34,7 +34,24 @@ export const config = {
     versaoGraph: process.env.META_GRAPH_VERSION ?? "v23.0",
     // Código de teste do Gerenciador de Eventos (aba "Testar eventos"). Apague depois de testar.
     codigoTeste: process.env.META_TEST_EVENT_CODE ?? "",
+    // Conta do WhatsApp Business: necessária para eventos de conversas vindas de anúncio de clique para o WhatsApp
+    wabaId: process.env.META_WABA_ID ?? "",
   },
+
+  // Conversas do WhatsApp vindas de anúncio (clique para o WhatsApp) também viram eventos na Meta.
+  // Desligado por padrão: ligue só depois de prever isso na política de privacidade (LGPD).
+  metaWhatsapp: process.env.META_CAPI_WHATSAPP === "1",
+
+  // Google Ads: o servidor não fala com a API do Google. Ele prepara as linhas de conversão offline
+  // (com gclid) e manda para LEAD_WEBHOOK_URL, para importar por planilha, n8n ou Zapier.
+  google: {
+    conversaoLead: process.env.GOOGLE_CONVERSAO_LEAD ?? "Lead",
+    conversaoQualificado: process.env.GOOGLE_CONVERSAO_QUALIFICADO ?? "LeadQualificado",
+    conversaoDemo: process.env.GOOGLE_CONVERSAO_DEMO ?? "AgendouDemo",
+  },
+
+  // Campanhas: a Blue pode citar o preço de entrada do produto (tabela comercial em validação)
+  campanhaMostrarPreco: process.env.CAMPANHA_MOSTRAR_PRECO === "1",
 
   // WhatsApp Cloud API (Meta)
   whatsapp: {

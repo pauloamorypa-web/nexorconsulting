@@ -21,13 +21,22 @@ export function extrairMensagens(payload) {
       const valor = mudanca.value ?? {};
       const nomes = Object.fromEntries((valor.contacts ?? []).map((c) => [c.wa_id, c.profile?.name]));
       for (const m of valor.messages ?? []) {
-        mensagens.push({
+        const msg = {
           id: m.id,
           de: m.from,
           nome: nomes[m.from],
           tipo: m.type,
           texto: m.type === "text" ? m.text?.body : m.type === "button" ? m.button?.text : m.type === "interactive" ? (m.interactive?.button_reply?.title ?? m.interactive?.list_reply?.title) : undefined,
-        });
+        };
+        // Mensagem que veio de um anúncio de clique para o WhatsApp: a Meta manda o anúncio de origem
+        if (m.referral && typeof m.referral === "object") {
+          const r = m.referral;
+          const corta = (v, n) => (typeof v === "string" ? v.slice(0, n) : undefined);
+          msg.referral = Object.fromEntries(
+            Object.entries({ source_url: corta(r.source_url, 300), source_id: corta(r.source_id, 60), source_type: corta(r.source_type, 20), headline: corta(r.headline, 200), body: corta(r.body, 500), ctwa_clid: corta(r.ctwa_clid, 300) }).filter(([, v]) => v),
+          );
+        }
+        mensagens.push(msg);
       }
     }
   }
