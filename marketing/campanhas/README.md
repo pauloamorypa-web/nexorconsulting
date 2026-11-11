@@ -79,9 +79,20 @@ Conversão offline enviada para Meta e Google (otimiza a compra de mídia) + ped
 | Pré-cadastro ou conversa com contato | `Lead` | Otimização inicial (Fase 0) |
 | Nota ≥ 70 | `LeadQuente` (API de Conversões do Meta) e `LeadQualificado` (conversão do Google e do Meta) | Otimização a partir da Fase 1, quando houver volume |
 | Demonstração marcada | `AgendouDemo` | Medir a taxa de reunião por campanha |
-| Teste ativado e contratação | Conversão offline (vinda da Central; **ainda não existe** no código da Blue) | Calcular o CAC real e alimentar o lance por valor |
+| Teste de 30 dias ativado | `StartTrial` (Meta) e `TesteAtivado` (Google), conversão offline vinda da Central | Medir o custo por teste por campanha |
+| Contrato fechado | `Purchase` (Meta) e `Contrato` (Google), com o valor real (1ª mensalidade + implantação) | Calcular o CAC real e alimentar o lance por valor |
 
-Os eventos levam um valor em reais proporcional à nota do lead (por exemplo, nota 80 vale R$ 240 no `Lead`). É um valor de **sinal para o leilão**, não receita: não some esses valores no painel.
+Os eventos de lead levam um valor em reais proporcional à nota do lead (por exemplo, nota 80 vale R$ 240 no `Lead`). É um valor de **sinal para o leilão**, não receita: não some esses valores no painel. Só o `Purchase`/`Contrato` leva receita de verdade (detalhes na seção "Conversão offline" abaixo).
+
+### Conversão offline
+
+1. **Central:** quando o cliente entra no teste de 30 dias (`teste_ativado`) e quando vira contrato (`contrato_fechado`, na contratação ou no 1º pagamento), a Nexor Central põe o evento numa fila e chama a Blue (`POST /api/conversao`). Configure `CONVERSAO_URL` e `CONVERSAO_TOKEN` na Central. A fila tenta de novo se a Blue estiver fora, e cada cliente gera no máximo um evento de cada tipo.
+2. **Blue:** acha o lead pelo e-mail ou pelo telefone (em hash) e recupera a campanha, o `fbclid`/`fbc`/`fbp` e o `gclid`.
+   - **Meta:** `StartTrial` e `Purchase`, com `value`/`currency` e `action_source: "system_generated"`.
+   - **Google:** linha de conversão offline com `gclid`, nome da conversão (`GOOGLE_CONVERSAO_TESTE`, `GOOGLE_CONVERSAO_CONTRATO`) e valor, enviada para `LEAD_WEBHOOK_URL`, de onde se importa por planilha, n8n ou Zapier.
+3. **Consentimento (LGPD):** saem só o e-mail e o telefone em hash e os valores. Sem consentimento de medição, ou sem lead encontrado, a conversão fica só registrada na Blue. Sem `gclid`, ela vai só ao Meta.
+4. **Relatório:** `GET /api/relatorio?dias=30&investimento=barber: R$ 500; contabil: R$ 300` traz, por campanha, testes, contratos, receita, custo por teste e **CAC real** (investimento ÷ contratos). Em `conversao_offline`, traz o total, o CAC geral e as conversões que não acharam o lead (vindas de indicação ou de outro canal).
+5. **Nas plataformas:** no Meta, use `Purchase` como evento de otimização por valor só quando houver volume. No Google, crie as conversões `TesteAtivado` e `Contrato` com origem "importação" (cliques), primeiro como secundárias. A janela do Google aceita cliques de até 90 dias, e o Meta aceita eventos de até 7 dias.
 
 **Regra de otimização:** o Meta precisa de volume de eventos para sair da fase de aprendizado (a referência da própria plataforma é de cerca de 50 eventos por semana por conjunto de anúncios). Com verba pequena, otimize para **Lead** na Fase 0 e passe para **Lead quente** só quando a campanha somar pelo menos 15 a 20 quentes por semana. No Google, importe o lead quente e a contratação como conversões secundárias desde o primeiro dia e promova a principal quando houver 30 conversões em 30 dias.
 
