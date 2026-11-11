@@ -78,6 +78,9 @@ const NX = (() => {
 
   /** Envia um lead. tipo: parcial | teste | diagnostico | calculadora | saida | interesse | blue */
   async function enviarLead(tipo, dados, extra = {}) {
+    // Receber novidades é opcional e separado do pedido: checkbox "novidades", sempre desmarcado de início
+    const { novidades, ...resto } = dados ?? {};
+    dados = resto;
     const lead = {
       id: novoId(),
       sessao,
@@ -87,7 +90,9 @@ const NX = (() => {
       temperatura: temperatura(tipo, eng.pontos),
       interesses: interesses(),
       origem: typeof NXT !== "undefined" ? NXT.origem() : undefined,
-      consentimento: typeof NXT !== "undefined" && NXT.consentimento(),
+      // Escolha feita no aviso de cookies: sem medicao: true, o servidor não envia nada à Meta
+      consentimento: typeof NXT !== "undefined" ? NXT.registroConsentimento() : { medicao: false, versao: 2, em: null },
+      novidades: novidades === true || novidades === "1" || novidades === "on",
       ...extra,
     };
     if (tipo !== "parcial" && typeof NXT !== "undefined") NXT.lead({ id: lead.id, tipo, temperatura: lead.temperatura, dados });

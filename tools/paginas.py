@@ -3,6 +3,8 @@ Uso: python3 tools/paginas.py  (rode na raiz do repositório e publique os arqui
 import html, json, os
 
 DOM = "https://nexorconsultingit.com.br"
+# Identificação da empresa no rodapé (Decreto 7.962/2013), igual em todas as páginas
+RODAPE_LEGAL = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "rodape-legal.html"), encoding="utf-8").read()
 WA = "5534997337499"
 
 P = [
@@ -227,7 +229,7 @@ def pagina(p):
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://connect.facebook.net https://www.googletagmanager.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://connect.facebook.net https://www.googletagmanager.com https://unpkg.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>{esc(p["title"])}</title>
   <meta name="description" content="{esc(p["desc"])}">
@@ -244,9 +246,6 @@ def pagina(p):
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/assets/img/favicon.png">
   <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Michroma&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css">
   <link rel="stylesheet" href="/assets/css/solucao.css">
   <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
@@ -339,9 +338,9 @@ def pagina(p):
 </main>
 
 <footer class="site-footer">
-  <div class="container footer-bottom">
+{RODAPE_LEGAL}  <div class="container footer-bottom">
     <p>© 2026 Nexor Consulting · Inteligência • Desenvolvimento • Automação</p>
-    <p><a href="/">Início</a> · <a href="https://www.instagram.com/nexorconsultingit/" target="_blank" rel="noopener">Instagram</a> · <a href="/privacidade.html">Privacidade</a> · <a href="#" data-cookies>Cookies</a></p>
+    <p><a href="/">Início</a> · <a href="https://www.instagram.com/nexorconsultingit/" target="_blank" rel="noopener">Instagram</a></p>
   </div>
 </footer>
 
@@ -367,8 +366,8 @@ if __name__ == "__main__":
         d = os.path.join(raiz, "solucoes", p["slug"]); os.makedirs(d, exist_ok=True)
         open(os.path.join(d, "index.html"), "w", encoding="utf-8").write(pagina(p))
     # sitemap
-    urls = [f"{DOM}/"] + [f"{DOM}/solucoes/{p['slug']}/" for p in P] + [f"{DOM}/privacidade.html"]
-    pri = {f"{DOM}/": "1.0", f"{DOM}/privacidade.html": "0.3"}
+    urls = [f"{DOM}/"] + [f"{DOM}/solucoes/{p['slug']}/" for p in P] + [f"{DOM}/privacidade.html", f"{DOM}/termos.html"]
+    pri = {f"{DOM}/": "1.0", f"{DOM}/privacidade.html": "0.3", f"{DOM}/termos.html": "0.3"}
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "".join(
         f'  <url><loc>{u}</loc><lastmod>2026-11-04</lastmod><priority>{pri.get(u, "0.8")}</priority></url>\n' for u in urls) + "</urlset>\n"
     open(os.path.join(raiz, "sitemap.xml"), "w").write(sm)

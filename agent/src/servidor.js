@@ -8,13 +8,15 @@
 
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
+import { isIP } from "node:net";
 import { pathToFileURL } from "node:url";
 import { criarAgente } from "./agente.js";
 import { criarArmazenamento } from "./armazenamento.js";
 import { config } from "./config.js";
 import { INSTRUCOES_DEMO } from "./conhecimento.js";
 import { limparOrigem, rotuloOrigem, temperatura } from "./leads.js";
-import { enviarParaMeta } from "./meta.js";
+import { enviarParaMeta, registroConsentimento } from "./meta.js";
+import { criarOrcamento } from "./orcamento.js";
 import { gerarRelatorio } from "./relatorio.js";
 import { assinaturaValida, emBaloes, enviarTexto, extrairMensagens, marcarComoLida, pausaDigitando, whatsappConfigurado } from "./whatsapp.js";
 
@@ -48,14 +50,48 @@ export function criarLimitador({ quantidade, janelaMs }, agora = Date.now) {
   };
 }
 
-/* IP real do visitante. O Render fica atrás da Cloudflare, que grava o IP verdadeiro em
-   True-Client-IP / CF-Connecting-IP (e sobrescreve o que o visitante mandar). O X-Forwarded-For
-   só é usado como reserva, porque o Render repassa o valor enviado pelo próprio visitante. */
-export const ipDoCliente = (req) =>
-  String(req.headers["true-client-ip"] ?? req.headers["cf-connecting-ip"] ?? "").trim() ||
-  String(req.headers["x-forwarded-for"] ?? "").split(",")[0].trim() ||
-  req.socket.remoteAddress ||
-  "desconhecido";
+/* IP real do visitante.
+   Os cabeçalhos CF-Connecting-IP, True-Client-IP e X-Forwarded-For podem ser escritos por qualquer um.
+   Só valem quando a conexão vem de um proxy confiável configurado (TRUSTED_PROXIES) ou quando o
+   servidor só é alcançável por um túnel (TRUST_PROXY_TUNNEL=1). Fora disso, vale o IP da conexão. */
+const semPrefixoV4 = (ip) => String(ip ?? "").replace(/^::ffff:(?=\d+\.\d+\.\d+\.\d+$)/, "");
+const ipv4ParaNumero = (ip) => ip.split(".").reduce((n, p) => n * 256 + Number(p), 0);
+
+/** true se o ip está na lista (IPs exatos ou faixas IPv4 em CIDR, ex.: 10.0.0.0/8). */
+export function ipNaLista(ip, lista) {
+  const alvo = semPrefixoV4(ip);
+  if (!isIP(alvo)) return false;
+  return lista.some((item) => {
+    const [base, bits] = item.split("/");
+    if (bits === undefined) return semPrefixoV4(base) === alvo;
+    const b = Number(bits);
+    if (isIP(base) !== 4 || isIP(alvo) !== 4 || !(b >= 0 && b <= 32)) return false;
+    const mascara = b === 0 ? 0 : (0xffffffff << (32 - b)) >>> 0;
+    return ((ipv4ParaNumero(alvo) & mascara) >>> 0) === ((ipv4ParaNumero(base) & mascara) >>> 0);
+  });
+}
+
+let avisoProxy = false;
+export function ipDoCliente(req, proxy = config.proxy) {
+  const conexao = semPrefixoV4(req.socket?.remoteAddress) || "desconhecido";
+  const confiavel = proxy.tunel || ipNaLista(conexao, proxy.confiaveis);
+  const h = req.headers ?? {};
+  if (!confiavel) {
+    if (!avisoProxy && (h["x-forwarded-for"] || h["cf-connecting-ip"] || h["true-client-ip"])) {
+      avisoProxy = true;
+      console.warn(`[ip] cabeçalhos de proxy ignorados (conexão de ${conexao}). Se esse IP é do seu proxy, inclua em TRUSTED_PROXIES.`);
+    }
+    return conexao;
+  }
+  for (const nome of ["cf-connecting-ip", "true-client-ip"]) {
+    const v = semPrefixoV4(String(h[nome] ?? "").trim());
+    if (isIP(v)) return v;
+  }
+  // X-Forwarded-For: da direita para a esquerda, o primeiro endereço que não é um proxy confiável
+  const cadeia = String(h["x-forwarded-for"] ?? "").split(",").map((x) => semPrefixoV4(x.trim())).filter((x) => isIP(x));
+  for (let i = cadeia.length - 1; i >= 0; i--) if (!ipNaLista(cadeia[i], proxy.confiaveis) || i === 0) return cadeia[i];
+  return conexao;
+}
 
 const SEGURANCA = {
   "X-Content-Type-Options": "nosniff",
@@ -190,10 +226,14 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
       interesses: Array.isArray(d.interesses) ? d.interesses.slice(0, 20).map((x) => limpar(String(x), 60)) : [],
       origem: limparOrigem(d.origem),
       canal: "site",
-      // Consentimento de medição de anúncios dado no aviso de cookies (LGPD): sem ele, nada vai para a Meta
-      consentimento_medicao: d.consentimento === true,
+      // Escolha feita no aviso de cookies, guardada junto com o lead (LGPD arts. 7º I e 8º):
+      // sem medicao: true, nada vai para a Meta
+      consentimento: registroConsentimento(d.consentimento),
+      // Receber novidades: opt-in separado, desmarcado por padrão no site
+      aceita_novidades: d.novidades === true,
       registrado_em: new Date().toISOString(),
     };
+    lead.consentimento_medicao = lead.consentimento.medicao;
     if (!lead.telefone && !lead.email) return json(res, 400, { erro: "informe WhatsApp ou e-mail" }, cors);
 
     if (lead.tipo === "parcial") {
@@ -204,7 +244,7 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
     }
     await armazenamento.salvarLead(lead);
     const ip = ipDoCliente(req);
-    if (lead.consentimento_medicao) enviarMeta(lead, { ip, navegador: limpar(req.headers["user-agent"], 400) }).catch(() => {});
+    if (lead.consentimento.medicao) enviarMeta(lead, { ip, navegador: limpar(req.headers["user-agent"], 400) }).catch(() => {});
 
     const forte = lead.tipo !== "parcial" || lead.pontuacao >= LEAD_FORTE;
     if (forte) {
@@ -239,11 +279,12 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
           await enviarTexto(m.de, "Por enquanto consigo ler só mensagens de texto. Pode me contar por escrito como posso ajudar? 🙂");
           continue;
         }
-        const texto = m.texto.slice(0, config.tamanhoMaximoMensagem);
+        const nome = m.nome ? `\n\n(nome no perfil do WhatsApp: ${String(m.nome).slice(0, 60)})` : "";
+        const texto = m.texto.slice(0, config.tamanhoMaximoMensagem - nome.length);
         const { resposta } = await agente.responder({
           idConversa: `wa:${m.de}`,
           canal: "whatsapp",
-          texto: m.nome ? `${texto}\n\n(nome no perfil do WhatsApp: ${m.nome})` : texto,
+          texto: texto + nome,
           telefone: m.de,
         });
         // Resposta em balões, com uma pausa de "digitando" entre eles, como uma pessoa
@@ -322,8 +363,9 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
 /* Inicia o servidor quando executado diretamente: node src/servidor.js */
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const armazenamento = criarArmazenamento(config.pastaDados);
-  const agente = criarAgente({ armazenamento, notificar: notificarEquipe });
-  const agenteDemo = criarAgente({ armazenamento, instrucoes: INSTRUCOES_DEMO, comFerramentas: false });
+  const orcamento = criarOrcamento(); // um teto diário só, somando a Blue e o teste do Atende IA
+  const agente = criarAgente({ armazenamento, notificar: notificarEquipe, orcamento });
+  const agenteDemo = criarAgente({ armazenamento, instrucoes: INSTRUCOES_DEMO, comFerramentas: false, orcamento });
   criarServidor({ agente, agenteDemo, armazenamento }).listen(config.porta, () => {
     console.log(`Blue (Nexor) ouvindo na porta ${config.porta} · modelo ${config.modelo}`);
     if (!whatsappConfigurado()) console.log("WhatsApp não configurado: só o chat do site está ativo.");

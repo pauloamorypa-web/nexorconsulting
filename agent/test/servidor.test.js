@@ -103,13 +103,25 @@ test("lead sem contato ou com tipo inválido é recusado", async () => {
   assert.equal((await lead({ sessao: "x1234567", tipo: "spam", dados: { telefone: "1" } })).status, 400);
 });
 
-test("lead guarda a origem da campanha, calcula a temperatura e vai para a Meta (com consentimento)", async () => {
+test("lead sem consentimento ou com recusa no aviso de cookies não vai para a Meta, e a escolha fica registrada", async () => {
   const antes = paraMeta.length;
   await lead({ id: "sem-consent-1", sessao: "camp9999", tipo: "interesse", dados: { nome: "Ana", telefone: "34977775555" }, pontuacao: 4 });
-  assert.equal(paraMeta.length, antes, "sem consentimento de cookies, nada vai para a Meta");
-  assert.equal(leads.at(-1).consentimento_medicao, false);
+  assert.equal(leads.at(-1).consentimento.medicao, false);
+  await lead({ id: "recusou-1234", sessao: "camp9998", tipo: "interesse", dados: { telefone: "34977775554" }, consentimento: { medicao: false, versao: 2, em: "2026-11-09T10:00:00.000Z" } });
+  const l = leads.at(-1);
+  assert.equal(l.consentimento.medicao, false);
+  assert.equal(l.consentimento.escolhido_em, "2026-11-09T10:00:00.000Z");
+  assert.equal(l.consentimento.origem, "aviso-de-cookies");
+  // valor "truthy" que não é true não conta como consentimento
+  await lead({ id: "texto-sim-12", sessao: "camp9997", tipo: "interesse", dados: { telefone: "34977775553" }, consentimento: { medicao: "sim" } });
+  assert.equal(paraMeta.length, antes, "sem medicao: true, nada vai para a Meta");
+  assert.equal(leads.at(-1).aceita_novidades, false);
+});
+
+test("lead guarda a origem da campanha, calcula a temperatura e vai para a Meta (com consentimento)", async () => {
   const r = await lead({
-    consentimento: true,
+    consentimento: { medicao: true, versao: 2, em: "2026-11-09T12:00:00.000Z" },
+    novidades: true,
     id: "abc-12345678",
     sessao: "camp1234",
     tipo: "interesse",
@@ -124,6 +136,8 @@ test("lead guarda a origem da campanha, calcula a temperatura e vai para a Meta 
   assert.equal(l.temperatura, "quente");
   assert.deepEqual(l.origem, { utm_source: "instagram", utm_medium: "pago", utm_campaign: "teste12h", fbc: "fb.1.1.XYZ" });
   assert.equal(paraMeta.at(-1).l.id, "abc-12345678");
+  assert.deepEqual({ ...l.consentimento, recebido_em: undefined }, { medicao: true, versao: 2, escolhido_em: "2026-11-09T12:00:00.000Z", recebido_em: undefined, origem: "aviso-de-cookies" });
+  assert.equal(l.aceita_novidades, true);
   assert.match(avisos.at(-1).texto, /Quente · origem: instagram \/ pago \/ teste12h/);
 });
 
@@ -150,11 +164,37 @@ test("limitador barra excesso por chave e libera depois da janela", async () => 
   assert.equal(lim("a"), true);
 });
 
-test("ip do cliente prefere o cabeçalho da Cloudflare ao X-Forwarded-For", async () => {
+test("ip do cliente: sem proxy confiável, ignora cabeçalhos forjados e usa o IP da conexão", async () => {
   const { ipDoCliente } = await import("../src/servidor.js");
-  assert.equal(ipDoCliente({ headers: { "true-client-ip": "8.8.8.8", "x-forwarded-for": "1.1.1.1" }, socket: {} }), "8.8.8.8");
-  assert.equal(ipDoCliente({ headers: { "x-forwarded-for": "1.1.1.1, 9.9.9.9" }, socket: {} }), "1.1.1.1");
-  assert.equal(ipDoCliente({ headers: {}, socket: { remoteAddress: "2.2.2.2" } }), "2.2.2.2");
+  const semProxy = { confiaveis: [], tunel: false };
+  const forjado = { "cf-connecting-ip": "8.8.8.8", "true-client-ip": "8.8.4.4", "x-forwarded-for": "1.1.1.1" };
+  assert.equal(ipDoCliente({ headers: forjado, socket: { remoteAddress: "203.0.113.7" } }, semProxy), "203.0.113.7");
+  assert.equal(ipDoCliente({ headers: forjado, socket: { remoteAddress: "::ffff:203.0.113.7" } }, semProxy), "203.0.113.7");
+  // Um proxy na lista não confia em quem está fora dela
+  const outro = { confiaveis: ["10.0.0.0/8"], tunel: false };
+  assert.equal(ipDoCliente({ headers: forjado, socket: { remoteAddress: "198.51.100.9" } }, outro), "198.51.100.9");
+});
+
+test("ip do cliente: atrás de proxy confiável ou túnel, usa os cabeçalhos", async () => {
+  const { ipDoCliente } = await import("../src/servidor.js");
+  const lista = { confiaveis: ["10.0.0.0/8", "127.0.0.1"], tunel: false };
+  const doProxy = (headers) => ({ headers, socket: { remoteAddress: "10.1.2.3" } });
+  assert.equal(ipDoCliente(doProxy({ "cf-connecting-ip": "8.8.8.8", "x-forwarded-for": "1.1.1.1" }), lista), "8.8.8.8");
+  assert.equal(ipDoCliente(doProxy({ "true-client-ip": "8.8.4.4" }), lista), "8.8.4.4");
+  // X-Forwarded-For: o visitante pode pôr o que quiser à esquerda; vale o último antes dos proxies confiáveis
+  assert.equal(ipDoCliente(doProxy({ "x-forwarded-for": "6.6.6.6, 9.9.9.9, 10.0.0.5" }), lista), "9.9.9.9");
+  // Valor que não é IP é ignorado
+  assert.equal(ipDoCliente(doProxy({ "cf-connecting-ip": "<script>", "x-forwarded-for": "lixo" }), lista), "10.1.2.3");
+  // Túnel: toda conexão vem dele (ex.: cloudflared em 127.0.0.1)
+  assert.equal(ipDoCliente({ headers: { "cf-connecting-ip": "8.8.8.8" }, socket: { remoteAddress: "127.0.0.1" } }, { confiaveis: [], tunel: true }), "8.8.8.8");
+});
+
+test("lista de proxies aceita IP exato e faixa CIDR", async () => {
+  const { ipNaLista } = await import("../src/servidor.js");
+  assert.equal(ipNaLista("10.20.30.40", ["10.0.0.0/8"]), true);
+  assert.equal(ipNaLista("11.0.0.1", ["10.0.0.0/8"]), false);
+  assert.equal(ipNaLista("::1", ["::1"]), true);
+  assert.equal(ipNaLista("não-é-ip", ["0.0.0.0/0"]), false);
 });
 
 test("respostas da API saem com cabeçalhos de segurança", async () => {

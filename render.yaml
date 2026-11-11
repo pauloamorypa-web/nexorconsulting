@@ -34,6 +34,15 @@ services:
         sync: false
       - key: TEAM_WHATSAPP
         value: "5534997337499"
+      # IPs/faixas do proxy na frente do servidor. Sem isso, os cabeçalhos de IP são ignorados e
+      # todos os visitantes contam como o IP do proxy nos limites por IP. Veja agent/README.md.
+      - key: TRUSTED_PROXIES
+        sync: false
+      # Teto diário de gasto com IA (Blue + teste do Atende IA + WhatsApp)
+      - key: IA_LIMITE_DIA_CHAMADAS
+        value: "1500"
+      - key: IA_LIMITE_DIA_TOKENS
+        value: "3000000"
 
   # Nexor Atende IA: painel + webhook da WhatsApp Cloud API (pasta atende/)
   - type: web
