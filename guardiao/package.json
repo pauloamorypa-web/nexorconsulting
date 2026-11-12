@@ -1,0 +1,22 @@
+{
+  "name": "nexor-guardiao",
+  "version": "1.0.0",
+  "description": "Nexor Guardião: cofre em nuvem para imagens de DVR, NVR e câmeras IP — cifra no local, retenção por plano, cadeia de custódia e laudo de integridade",
+  "type": "module",
+  "private": true,
+  "main": "src/servidor.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/servidor.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/servidor.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-timeout=120000 test/*.test.js",
+    "demo": "DEMO=1 DEMO_RESET=1 node --disable-warning=ExperimentalWarning src/servidor.js",
+    "trocar-chave-mestra": "node --disable-warning=ExperimentalWarning scripts/trocar-chave-mestra.js",
+    "verificar-cadeia": "node --disable-warning=ExperimentalWarning scripts/verificar-cadeia.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}
