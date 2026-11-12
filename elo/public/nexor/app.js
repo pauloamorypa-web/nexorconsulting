@@ -53,7 +53,8 @@ function primeiroAcesso(estado, iniciar) {
     { nome: "senha", rotulo: "Senha", tipo: "senha", obrigatorio: true, largura: 2, autocomplete: "new-password", ajuda: "Pelo menos 8 caracteres." },
   ].filter(Boolean));
   const enviar = h("button", { type: "submit", class: "btn btn-primario btn-grande" }, "Criar o primeiro operador");
-  const form = h("form", { class: "cartao pilha", style: { maxWidth: "520px", margin: "8vh auto" }, novalidate: true }, h("h1", {}, "Primeiro acesso da operação"), h("p", { class: "suave" }, "Ainda não há operador Nexor nesta instalação. Crie o primeiro acesso."), f.el, enviar);
+  const form = h("form", { class: "cartao pilha", novalidate: true }, h("h1", {}, "Primeiro acesso da operação"), h("p", { class: "suave" }, "Ainda não há operador Nexor nesta instalação. Crie o primeiro acesso."), f.el, enviar);
+  const telaAcesso = h("div", { class: "nx-tela-acesso" }, form);
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     acao(enviar, async () => {
@@ -62,7 +63,7 @@ function primeiroAcesso(estado, iniciar) {
       iniciar();
     });
   });
-  limpar(document.getElementById("app"), h("main", { class: "pagina" }, form));
+  limpar(document.getElementById("app"), telaAcesso);
 }
 
 /* ---------- Métricas ---------- */

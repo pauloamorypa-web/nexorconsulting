@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PUBLICO = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
-const ESTATICOS = { "/": ["index.html", "text/html; charset=utf-8"], "/painel.js": ["painel.js", "text/javascript; charset=utf-8"], "/painel.css": ["painel.css", "text/css; charset=utf-8"], "/demo-faixa.js": ["demo-faixa.js", "text/javascript; charset=utf-8"] };
+const ESTATICOS = { "/": ["index.html", "text/html; charset=utf-8"], "/painel.js": ["painel.js", "text/javascript; charset=utf-8"], "/painel.css": ["painel.css", "text/css; charset=utf-8"], "/demo-faixa.js": ["demo-faixa.js", "text/javascript; charset=utf-8"], "/acesso/fundo-rede.js": ["acesso/fundo-rede.js", "text/javascript; charset=utf-8"], "/acesso/acesso.css": ["acesso/acesso.css", "text/css; charset=utf-8"] };
 const CSP_PAGINA = "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 const COOKIE = "nxa_sessao";
 const DURACAO_MS = 12 * 3600_000;

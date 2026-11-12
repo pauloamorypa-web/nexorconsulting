@@ -1,0 +1,82 @@
+/* Padrão Nexor das telas de acesso: fundo de rede animado (fundo-rede.js) e caixas de vidro.
+   Fonte única: assets/acesso/ (copie para o produto com tools/acesso.sh; não edite as cópias).
+   A classe nx-acesso é posta pelo fundo-rede.js na tela de acesso de cada sistema. */
+.nx-acesso {
+  --nx-vidro: rgba(10, 22, 48, 0.42);
+  --nx-vidro-forte: rgba(10, 22, 48, 0.58);
+  --nx-borda: rgba(120, 170, 255, 0.26);
+  --nx-texto: #ebf1f9;
+  --nx-texto-2: #b3c1d9;
+  /* as variáveis dos painéis passam a valer no escuro só dentro da tela de acesso */
+  --texto: var(--nx-texto); --texto-2: var(--nx-texto-2); --texto-3: #93a4c0; --suave: var(--nx-texto-2);
+  --superficie: rgba(255, 255, 255, 0.07); --superficie-2: rgba(255, 255, 255, 0.05); --superficie-3: rgba(255, 255, 255, 0.1);
+  --linha: rgba(120, 170, 255, 0.18); --linha-forte: rgba(120, 170, 255, 0.34); --borda: rgba(120, 170, 255, 0.3);
+  --fundo: transparent;
+  position: relative; isolation: isolate; min-height: 100vh; min-height: 100dvh;
+  background: #010524; color: var(--nx-texto);
+}
+.nx-acesso > canvas { z-index: 0; }
+.nx-acesso > *:not(canvas) { position: relative; z-index: 1; }
+
+/* Tela de acesso simples (uma caixa no centro): use a classe nx-tela-acesso no elemento de fora */
+.nx-tela-acesso { display: grid; place-items: center; padding: 24px 16px; }
+.nx-tela-acesso > .cartao, .nx-tela-acesso > form { width: min(520px, 100%); margin: 0 !important; padding: 30px 28px; }
+/* Enquanto a tela de acesso está aberta, o resto da página acompanha o escuro */
+html.nx-acesso-aberto, html.nx-acesso-aberto body { background: #010524; }
+html.nx-acesso-aberto .topo { background: rgba(1, 5, 36, 0.86); color: #ebf1f9; border-color: rgba(120, 170, 255, 0.2); }
+html.nx-acesso-aberto .topo * { color: inherit; }
+
+/* Caixas de vidro */
+.nx-acesso .login-form,
+.nx-acesso .cartao,
+.nx-acesso .nx-vidro,
+.nx-acesso > form {
+  background: var(--nx-vidro);
+  -webkit-backdrop-filter: blur(16px) saturate(150%); backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid var(--nx-borda); border-radius: 20px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--nx-texto);
+}
+.nx-acesso .login-form, .nx-acesso > form { padding: 30px 28px; }
+.nx-acesso > .cartao { padding: 28px 26px; }
+.nx-acesso .cartao .cartao, .nx-acesso .cartao form, .nx-acesso .login-form .cartao {
+  background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; box-shadow: none; padding: 0;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nx-acesso .login-form, .nx-acesso .cartao, .nx-acesso .nx-vidro, .nx-acesso > form { background: var(--nx-vidro-forte); }
+}
+
+/* Painel de duas colunas dos sistemas (vitrine + formulário) */
+.nx-acesso.login, .nx-acesso .login-vitrine, .nx-acesso .login-painel { background: transparent; }
+.nx-acesso.login { background: #010524; }
+.nx-acesso .login-destaques li {
+  background: rgba(10, 22, 48, 0.3); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border: 1px solid rgba(120, 170, 255, 0.16); border-radius: 16px; padding: 14px 16px;
+}
+.nx-acesso .login-destaques p, .nx-acesso .login-rodape, .nx-acesso .suave, .nx-acesso small { color: var(--nx-texto-2); }
+.nx-acesso h1, .nx-acesso h2, .nx-acesso h3, .nx-acesso strong, .nx-acesso label { color: var(--nx-texto); }
+.nx-acesso a { color: #7fb8ff; }
+
+/* Campos e botões */
+.nx-acesso input:not([type="checkbox"]):not([type="radio"]), .nx-acesso select, .nx-acesso textarea, .nx-acesso .entrada {
+  background: rgba(255, 255, 255, 0.07); color: var(--nx-texto);
+  border: 1px solid rgba(120, 170, 255, 0.34); border-radius: 12px;
+}
+.nx-acesso input::placeholder, .nx-acesso textarea::placeholder { color: #8094b5; }
+.nx-acesso input:focus, .nx-acesso select:focus, .nx-acesso textarea:focus, .nx-acesso .entrada:focus {
+  outline: none; border-color: #00e1fb; box-shadow: 0 0 0 3px rgba(0, 225, 251, 0.2);
+}
+.nx-acesso input:-webkit-autofill { -webkit-text-fill-color: #ebf1f9; box-shadow: 0 0 0 1000px rgba(16, 32, 66, 0.96) inset; caret-color: #ebf1f9; }
+.nx-acesso select option { color: #0f172a; background: #fff; }
+.nx-acesso .btn-primario, .nx-acesso button.primario, .nx-acesso .btn-cor {
+  background: linear-gradient(135deg, #0058fa, #00b4ff); color: #fff; border: 0;
+  box-shadow: 0 10px 28px rgba(0, 88, 250, 0.42);
+}
+.nx-acesso .btn-fantasma, .nx-acesso .btn-secundario, .nx-acesso button.link, .nx-acesso .link { color: #9cc6ff; }
+.nx-acesso .btn-fantasma, .nx-acesso .btn-secundario { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(120, 170, 255, 0.28); }
+.nx-acesso .erro, .nx-acesso [role="alert"] { color: #ffb4a8; }
+
+@media (max-width: 900px) {
+  .nx-acesso .login-form, .nx-acesso > form { padding: 24px 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .nx-acesso * { transition: none !important; } }
