@@ -107,6 +107,25 @@ export function assinarS3({ metodo, host, caminho, consulta = "", cabecalhos = {
   return cab;
 }
 
+/**
+ * URL pré-assinada (SigV4 na query) para a ponte enviar o trecho DIRETO ao armazenamento, sem passar pelo servidor.
+ * Validade curta; o tamanho (content-length) e o SHA-256 (x-amz-content-sha256) entram nos cabeçalhos assinados:
+ * a URL só serve para enviar exatamente aquele arquivo.
+ */
+export function preAssinarS3({ metodo = "PUT", protocolo, host, caminho, cabecalhos = {}, hashCorpo = "UNSIGNED-PAYLOAD", validadeS = 300, regiao, chaveAcesso, chaveSecreta, agora = new Date() }) {
+  const data = agora.toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const dia = data.slice(0, 8);
+  const escopo = `${dia}/${regiao}/s3/aws4_request`;
+  const cab = { ...Object.fromEntries(Object.entries(cabecalhos).map(([k, v]) => [k.toLowerCase(), String(v).trim()])), host };
+  const nomes = Object.keys(cab).sort();
+  const consulta = [["X-Amz-Algorithm", "AWS4-HMAC-SHA256"], ["X-Amz-Credential", `${chaveAcesso}/${escopo}`], ["X-Amz-Date", data], ["X-Amz-Expires", String(validadeS)], ["X-Amz-SignedHeaders", nomes.join(";")]].map(([k, v]) => `${codificar(k)}=${codificar(v)}`).join("&");
+  const canonica = [metodo, caminho, consulta, nomes.map((n) => `${n}:${cab[n]}\n`).join(""), nomes.join(";"), hashCorpo].join("\n");
+  const chave = hmac(hmac(hmac(hmac(`AWS4${chaveSecreta}`, dia), regiao), "s3"), "aws4_request");
+  const assinatura = hmac(chave, ["AWS4-HMAC-SHA256", data, escopo, hex(canonica)].join("\n")).toString("hex");
+  const { host: _h, ...enviar } = cab;
+  return { url: `${protocolo}//${host}${caminho}?${consulta}&X-Amz-Signature=${assinatura}`, cabecalhos: enviar, expira_em: agora.getTime() + validadeS * 1000 };
+}
+
 export function criarS3({ endpoint, regiao = "us-east-1", bucket, chaveAcesso, chaveSecreta, prefixo = "", agora = () => new Date() }) {
   if (!endpoint || !bucket || !chaveAcesso || !chaveSecreta) throw new Error("Armazenamento S3: informe S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY e S3_SECRET_KEY.");
   const base = new URL(endpoint);
@@ -136,6 +155,9 @@ export function criarS3({ endpoint, regiao = "us-east-1", bucket, chaveAcesso, c
 
   const s3 = {
     tipo: "s3",
+    /** Envio direto: devolve { url, cabecalhos, expira_em } para um PUT daquele arquivo exato (tamanho e SHA-256 amarrados) */
+    urlDeEnvio: (chave, { tamanho, sha256, validadeS = 300 }) =>
+      preAssinarS3({ protocolo: base.protocol, host: base.host, caminho: caminhoDe(chave), cabecalhos: { "content-length": tamanho, "x-amz-content-sha256": sha256 }, hashCorpo: sha256, validadeS, regiao, chaveAcesso, chaveSecreta, agora: agora() }),
     /** Envio em fluxo. Com o SHA-256 informado (a ponte sempre informa), ele vai na assinatura e o S3 confere; sem ele, o corpo vai sem assinatura de conteúdo (só por HTTPS). */
     async gravar(chave, fluxo, { tamanho, sha256 } = {}) {
       if (!Number.isInteger(tamanho)) throw new Error("Armazenamento S3: o tamanho do arquivo é obrigatório para enviar em fluxo.");
