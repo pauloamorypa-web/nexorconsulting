@@ -12,7 +12,6 @@ Para achar sem procurar. Atualizado em 12/11/2026.
 | Nexor Barber | `barber/` | 8795 | `sistema-para-barbearia` | Nota 9 | Pronto para produção |
 | Nexor Elo | `elo/` | 8796 | `rede-fornecedores-instaladores` | Nota 9,0 | Pronto para piloto |
 | Nexor Service Desk | (versão Nexor a criar em `servicedesk/`) | 8797 | `sistema-de-chamados` | Nota 8,0 (na ferramenta do cliente, v1.12) | Página e campanha no ar; demonstração pausada |
-| Nexor Guardião | `guardiao/` | 8798 | A criar | A rodar | Em construção |
 | Portal da demonstração | `demo/` | 8780 | | | Pronto |
 
 Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-erp` (Gestão), `software-sob-medida`, `criacao-de-sites` (Site Pro), `loja-virtual` (Commerce), `automacao-de-processos-com-ia`, `cofre-de-senhas` (Cofre), `inventario-de-ti` (IT Platform).
@@ -32,6 +31,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Páginas de produto (geradas) | `tools/paginas.py` → `solucoes/<slug>/index.html` |
 | Cards de soluções | `assets/js/solucoes.js` |
 | Telas dos produtos | `assets/img/<produto>/` · vídeos em `assets/video/` |
+| Padrão das telas de acesso | `assets/acesso/` (fonte) e `tools/acesso.sh` (copia para os produtos) |
 | Rastreio de campanha | `assets/js/rastreio.js` |
 | Sitemap e privacidade | `sitemap.xml`, `privacidade.html` |
 
@@ -40,7 +40,6 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 |---|---|
 | Planos, preços, fundadores, comissões | `comercial/PLANOS-E-PRECOS.md` e `central/src/planos.js` |
 | Elo: preços e prospecção em Araguari | `comercial/ELO-PRECOS.md`, `comercial/ELO-ARAGUARI.md` |
-| Guardião: mercado, preços, proposta | `comercial/GUARDIAO-MERCADO.md`, `comercial/GUARDIAO-PRECOS.md`, `comercial/proposta-guardiao/` |
 | Peças prontas | `marketing/pecas/` (fonte em `marketing/fonte/pecas.html`) |
 | Textos por canal | `marketing/CANAIS.md`, `marketing/README.md`, `marketing/ELO-MARKETING.md` |
 | Campanhas, projeção e simulador | `marketing/campanhas/` |
