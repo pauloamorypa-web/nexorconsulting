@@ -7,20 +7,19 @@ Sistema real funcionando com dados fictícios (empresa **Padaria Pão Dourado**)
 ```bash
 cd rh
 npm install        # só na primeira vez
-npm run demo       # = DEMO=1 DEMO_RESET=1 node src/servidor.js
+npm run demo       # dados fictícios persistem em ./data-demo-local
 ```
 
-Abra **http://127.0.0.1:8791/demo/entrar?papel=admin**. No Windows (PowerShell), use
-`$env:DEMO="1"; $env:DEMO_RESET="1"; node src/servidor.js`.
+Abra **http://127.0.0.1:8792/demo/entrar?papel=admin**. O mesmo comando funciona no Windows, macOS e Linux. Para voltar a demonstração ao estado inicial, pare o servidor e execute `npm run demo:reiniciar`.
 
 - Escuta só em `127.0.0.1`. O servidor só aceita outras máquinas com `DEMO_PUBLICO=1`, que é para a versão online atrás do Cloudflare Access.
 - Nenhuma chamada externa. O eSocial (produção restrita), a Gupy e a Nexor Central respondem por simuladores locais, e o `fetch` do servidor bloqueia qualquer host fora do localhost. As fontes do Google também saem das páginas.
 - A licença aparece como "Demonstração": todos os módulos liberados, sem prazo e sem bloqueio.
-- Os dados ficam em `./data-demo`. Com `DEMO_RESET=1`, que já vem no `npm run demo`, cada subida começa do zero. Sem ele, o banco só é semeado quando está vazio.
+- Os dados ficam em `./data-demo-local`. A demonstração preserva alterações entre inicializações; para voltar ao estado original, pare o servidor e use `npm run demo:reiniciar`.
 - Todas as datas acompanham o dia de hoje: ponto de hoje com batidas, pendências dos últimos dias, histórico de 2 meses, folha do mês passado para fechar.
 - O botão **Reiniciar demonstração**, na faixa laranja do topo, volta tudo ao estado original. Ele também existe como `POST /api/demo/reiniciar`.
 - Para trocar de papel sem sair, use o seletor "Ver como…" na faixa.
-- `PORT` continua valendo (padrão 8791).
+- A demonstração usa `PORT=8792` e `DATA_DIR=./data-demo-local` por padrão para não interferir na instalação normal nem no banco `data-demo` que acompanha o pacote. Você pode substituir essas variáveis.
 
 ## Papéis
 
@@ -91,3 +90,4 @@ Fale: *"A vaga vira página no Google, e o contratado já entra como colaborador
 Mostre o fixado do feriado com "lido por". *"Você sabe quem leu o aviso, e ninguém diz que não sabia."*
 
 **Fechamento (30 s).** "Tudo o que você viu é o sistema real. Para a sua empresa, a gente importa os funcionários e você bate o primeiro ponto ainda esta semana." Depois clique em **Reiniciar demonstração** para deixar tudo pronto para o próximo cliente.
+

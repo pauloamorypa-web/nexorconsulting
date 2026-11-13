@@ -15,7 +15,7 @@ Node.js 22 sem framework, banco SQLite nativo do Node, interface em JavaScript p
 | **Férias e ausências** | Períodos aquisitivos e concessivos com alerta de férias em dobro, programação com validação da CLT (art. 134 §3º), abono pecuniário, recibo, pedidos pelo app, atestados com foto pelo app, afastamentos com motivos do eSocial. |
 | **Folha** | Mensal, 13º (1ª e 2ª parcelas), férias e rescisão (5 motivos, aviso proporcional, multa do FGTS). INSS progressivo, IRRF com desconto simplificado e a redução da Lei 15.270/2025, FGTS, salário-família, VT 6%, insalubridade, periculosidade, DSR, lançamentos variáveis. Holerite no app. Exportação de pagamentos (CSV). |
 | **eSocial (leiaute S-1.3)** | Eventos gerados sozinhos a cada fato: S-1000, S-1005, S-1010, S-1020, S-2200, S-2205, S-2206, S-2230, S-2299, S-1200, S-1210, S-1299. Assinatura XMLDSig com certificado A1, envio em lotes ao webservice oficial (produção restrita ou produção) e consulta do retorno com recibos. |
-| **App nativo (iOS e Android)** | App "Meu Ponto" em `mobile/` (Capacitor): biometria com a chave do ponto presa ao chip de segurança (Android Keystore/StrongBox e Secure Enclave do iPhone), liberada só pela digital ou rosto do dono, leitor de QR nativo, GPS e o QR do quiosque abrindo direto o app. Compilado pelo GitHub Actions. Ver `mobile/README.md`. |
+| **App nativo (iOS e Android)** | App "Meu Ponto" em `mobile/` (Capacitor): biometria com a chave do ponto presa ao chip de segurança (Android Keystore/StrongBox e Secure Enclave do iPhone), leitor de QR nativo e GPS. O GitHub Actions gera APK de teste para Android e build para simulador iOS; instalar em iPhone exige IPA assinado. Ver `mobile/README.md`. |
 | **Recrutamento** | Vagas, página pública de candidatura com upload de currículo e consentimento LGPD, funil de arrastar e soltar. |
 | **Integrações de recrutamento** | Página de cada vaga com dados para o Google Vagas (schema.org/JobPosting); feed XML para agregadores (Indeed, Jooble, Talent.com, Careerjet, Adzuna…); links por canal com origem (LinkedIn, WhatsApp, Facebook, Indeed, InfoJobs, Catho, Vagas.com); API da Gupy (vagas e candidaturas); webhook para Gupy, Solides, Zapier/Make; importação de planilha CSV de qualquer plataforma; relatório de candidatos e contratações por origem. |
 | **Comunicados** | Publicados no app com confirmação de leitura. |
@@ -48,8 +48,10 @@ Para ver o sistema funcionando com dados fictícios (Padaria Pão Dourado), use 
 (só em 127.0.0.1, nenhuma chamada externa, faixa "Demonstração" no topo). Papéis, logins e roteiro em [DEMO.md](DEMO.md):
 
 ```bash
-npm run demo              # http://127.0.0.1:8791/demo/entrar?papel=admin
+npm run demo              # http://127.0.0.1:8792/demo/entrar?papel=admin
 ```
+
+No Windows, o mesmo comando funciona no PowerShell. A demonstração usa o banco fictício isolado `data-demo-local`; para reiniciá-lo, pare o servidor e execute `npm run demo:reiniciar`.
 
 Testes (fluxo completo + cálculos + biometria com autenticador simulado):
 
@@ -111,3 +113,4 @@ rh/
 ├── src/demo/                # Modo Demonstração (DEMO=1): simuladores, rotas /demo, faixa e roteiro de dados
 └── test/                     # testes (node --test)
 ```
+

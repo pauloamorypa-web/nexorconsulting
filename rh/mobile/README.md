@@ -29,10 +29,12 @@ Para o Android também dá para distribuir o APK direto (sem loja), pela página
 O workflow `.github/workflows/app-meu-ponto.yml` compila nos servidores do GitHub:
 
 1. Para o **app genérico das lojas**, não configure `NEXOR_RH_URL`. Só crie essa variável para gerar um app com a marca de **um** cliente, com o endereço embutido.
-2. Em **Actions → App Meu Ponto → Run workflow**.
+2. Envie as alterações do projeto ao GitHub e abra **Actions → App Meu Ponto → Run workflow**.
 3. No fim, baixe os arquivos em **Artifacts**:
-   - Sem chaves configuradas: `meu-ponto-teste.apk`, que instala em qualquer Android para teste. O iOS só confere se compila.
-   - Com as chaves (abaixo): `meu-ponto.apk` e `meu-ponto.aab` assinados (o `.aab` é o que vai para o Google Play) e `App.ipa` para a App Store.
+   - `meu-ponto-android`: sem assinatura, contém `meu-ponto-teste.apk` para instalar no Android; com assinatura configurada, contém `meu-ponto.apk` e `meu-ponto.aab` para publicação.
+   - `meu-ponto-ios`: só é gerado com os secrets Apple configurados e contém o `.ipa` para TestFlight/App Store. Sem assinatura, o workflow apenas confirma que o projeto iOS compila.
+
+O APK de teste não é assinado para publicação na Play Store. Para obter o `.ipa`, são obrigatórios certificado, perfil de provisionamento e conta Apple Developer; configure os secrets descritos abaixo. O workflow já exporta o `.ipa` quando esses dados estão configurados.
 
 ### Chave de assinatura do Android (uma vez só, guarde para sempre)
 
@@ -92,3 +94,4 @@ npm run icones    # gera ícones e tela de abertura a partir de assets/
 ```
 
 Para outro nome ou identificador (app com a marca do cliente): defina `APP_NAME` e `APP_ID` antes do `sync` e ajuste o `applicationId` em `android/app/build.gradle` e o *Bundle Identifier* no Xcode.
+
