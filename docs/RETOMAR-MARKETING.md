@@ -17,3 +17,6 @@ Pausado a pedido do dono. Retomar só quando ele pedir para "voltar para a estru
 
 ## O que já existia (não refazer)
 54 peças em `marketing/pecas/`, `marketing/CANAIS.md`, 8 campanhas em `marketing/campanhas/`, 5 vídeos automáticos, telas de Atende, Barber, Contábil, RH e Service Desk, marca e uniformes.
+
+## Atualização de 16/11/2026
+As fotos e peças foram concluídas: 38 imagens novas geradas, carrossel do LinkedIn em PDF e índice em `marketing/KIT-COMPLETO.md`. Continuam pendentes: fichas de marketplaces (Capterra, GetApp, B2B Stack), roteiros de vídeo e demonstração do Service Desk.

@@ -41,6 +41,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Planos, preços, fundadores, comissões | `comercial/PLANOS-E-PRECOS.md` e `central/src/planos.js` |
 | Elo: preços e prospecção em Araguari | `comercial/ELO-PRECOS.md`, `comercial/ELO-ARAGUARI.md` |
 | Peças prontas | `marketing/pecas/` (fonte em `marketing/fonte/pecas.html`) |
+| Índice de todas as imagens por canal | `marketing/KIT-COMPLETO.md` (92 peças: Instagram, LinkedIn, Google Meu Negócio, Google Ads, Meta Ads, WhatsApp, impresso) |
 | Textos por canal | `marketing/CANAIS.md`, `marketing/README.md`, `marketing/ELO-MARKETING.md` |
 | Campanhas, projeção e simulador | `marketing/campanhas/` |
 | Marca e uniformes | `marketing/marca/`, `marketing/uniformes/` |
