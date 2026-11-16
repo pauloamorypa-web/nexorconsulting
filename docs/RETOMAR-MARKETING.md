@@ -20,3 +20,6 @@ Pausado a pedido do dono. Retomar só quando ele pedir para "voltar para a estru
 
 ## Atualização de 16/11/2026
 As fotos e peças foram concluídas: 38 imagens novas geradas, carrossel do LinkedIn em PDF e índice em `marketing/KIT-COMPLETO.md`. Continuam pendentes: fichas de marketplaces (Capterra, GetApp, B2B Stack), roteiros de vídeo e demonstração do Service Desk.
+
+## Atualização de 16/11/2026 (2)
+Roteiros de vídeo concluídos (16 roteiros, 27 pranchas e plano de gravação) e fichas de marketplaces prontas em `marketing/marketplaces/`. Do pedido original, falta só a demonstração do Service Desk. Os vídeos automáticos do Elo e do Service Desk não foram renderizados.

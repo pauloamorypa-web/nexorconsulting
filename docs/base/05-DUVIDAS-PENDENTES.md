@@ -11,6 +11,7 @@ O que falta o dono decidir, conferir ou autorizar. Ao resolver, mova para `02-DE
 | Service Desk v1.12 no cliente | Aprovar cada computador uma vez, dar a permissão de comando remoto a quem precisa, preencher o `.env`, testar os agentes em Windows e Mac reais |
 | Banca nas outras páginas | Citar a Banca também nas páginas dos outros produtos? |
 | Texto base de 16 px | Os painéis usam 14,5 px. A regra de tipografia recomenda 16 px no texto principal; mudar altera todas as telas. Subir para 16 px? |
+| Preço nas plataformas de software | Capterra, GetApp e B2B Stack pedem preço. Informar só "sob consulta", o "a partir de" ou só nos produtos de entrada? Opções em `marketing/marketplaces/README.md` |
 | Preço no site | Confirmar que a regra "site não publica mensalidade" vale para todos os produtos |
 
 ## Trabalho pausado ou em andamento
