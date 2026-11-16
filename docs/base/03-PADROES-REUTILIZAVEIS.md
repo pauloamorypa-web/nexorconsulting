@@ -62,6 +62,11 @@ Use como está. Só mude um padrão se o dono pedir. Atualizado em 12/11/2026.
 - Textos por canal em `marketing/CANAIS.md` (Google Meu Negócio, LinkedIn, WhatsApp Business, Instagram e Facebook).
 - Campanha por produto em `marketing/campanhas/<produto>.md`: público, ganchos, anúncios Meta e Google, palavras-chave e negativas, filtros, cadência, objeções, roteiro de demonstração, links com UTM. Projeção em `PROJECAO.md` e `simulador.html`.
 - Vídeos automáticos: gerador em `marketing/videos/gerador/`.
+- **Vídeos com locução (desde 16/11/2026):** projeto Remotion em `marketing/videos/remotion/` (modelo: `src/NexorBarber.tsx`).
+  - Locução do ElevenLabs, modelo `eleven_v4`, voz **Cajó** (`gHd1exuPmjC5yOMlzA9t`, masculina, natural, português do Brasil). Texto do roteiro de `marketing/videos/roteiros/`, com reticências entre as frases para pausas naturais.
+  - Baixe o mp3 para `public/<produto>/locucao.mp3` (o ambiente `nexorconsulting` libera `elevenlabsusercontent.com`) e meça as pausas com `ffmpeg -af silencedetect=noise=-30dB:d=0.1`. As cenas e as legendas seguem esses tempos: o áudio nunca é acelerado.
+  - Telas sempre inteiras na moldura; depois de 35% da cena, aproximação lenta (1,4 s) da área citada na fala.
+  - Renderizar: `npx remotion render <id> ../<arquivo>.mp4 --browser-executable=<chromium do Playwright>`.
 
 ## Prospecção e vendas
 - Blue (pasta `agent/`): identifica a campanha pela `utm_campaign`, pontua o contato de 0 a 100 (quente a partir de 70, morno de 40 a 69), filtra curioso, concorrente e estudante, faz a cadência e envia os eventos ao Meta e ao Google.
