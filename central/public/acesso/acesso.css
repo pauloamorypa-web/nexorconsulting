@@ -26,6 +26,10 @@ html.nx-acesso-aberto, html.nx-acesso-aberto body { background: #010524; }
 html.nx-acesso-aberto .topo { background: rgba(1, 5, 36, 0.86); color: #ebf1f9; border-color: rgba(120, 170, 255, 0.2); }
 html.nx-acesso-aberto .topo * { color: inherit; }
 
+/* App do colaborador (RH): tela de ativação em coluna, com a caixa de vidro no formulário */
+.nx-acesso.ativacao { display: grid; align-content: center; justify-items: center; gap: 12px; padding: 28px 18px; text-align: center; }
+.nx-acesso.ativacao > form { width: min(420px, 100%); text-align: left; }
+
 /* Caixas de vidro */
 .nx-acesso .login-form,
 .nx-acesso .cartao,
@@ -80,3 +84,35 @@ html.nx-acesso-aberto .topo * { color: inherit; }
   .nx-acesso .login-form, .nx-acesso > form { padding: 24px 20px; }
 }
 @media (prefers-reduced-motion: reduce) { .nx-acesso * { transition: none !important; } }
+
+/* ---------- Vidro dentro dos painéis ----------
+   As caixas (.cartao), a barra lateral (.lateral) e as janelas (.modal) de cada sistema usam
+   background: var(--vidro, var(--superficie)). Aqui definimos o vidro e um fundo com luz suave,
+   para a transparência aparecer. Vale no tema claro e no escuro, porque parte da cor do próprio tema. */
+:root {
+  --vidro: color-mix(in srgb, var(--superficie, var(--sup, #ffffff)) 62%, transparent);
+  --vidro-forte: color-mix(in srgb, var(--superficie, var(--sup, #ffffff)) 86%, transparent);
+}
+html:not(.nx-acesso-aberto) body {
+  background:
+    radial-gradient(900px 520px at 88% -8%, rgba(0, 88, 250, 0.16), transparent 62%),
+    radial-gradient(760px 520px at -6% 104%, rgba(0, 225, 251, 0.13), transparent 60%),
+    radial-gradient(620px 420px at 46% 52%, rgba(139, 92, 246, 0.07), transparent 65%),
+    var(--fundo, #f4f6fb);
+  background-attachment: fixed;
+}
+.cartao, .lateral, .modal {
+  -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%);
+}
+.cartao { border-color: color-mix(in srgb, var(--linha-forte, var(--linha, #cbd5e1)) 55%, transparent); }
+.cartao .cartao, .modal .cartao { -webkit-backdrop-filter: none; backdrop-filter: none; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --vidro: var(--superficie, var(--sup, #ffffff)); --vidro-forte: var(--superficie, var(--sup, #ffffff)); }
+}
+
+/* ---------- Tipografia: no máximo três pesos (400, 500 e 600) ----------
+   Títulos e negritos do navegador viriam em 700; aqui ficam em 600. O :where não ganha de
+   nenhuma regra do sistema, então só vale onde o sistema não definiu o peso. */
+:where(h1, h2, h3, h4, h5, h6, strong, b, th, dt) { font-weight: 600; }
+/* Nenhum texto abaixo de 12 px: <small> e <sub>/<sup> do navegador encolhem demais */
+:where(small, sub, sup) { font-size: max(12px, 0.86em); }

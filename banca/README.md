@@ -36,7 +36,9 @@ Cinco agentes especialistas que testam aplicações, sites, sistemas e APIs como
 - Depois de qualquer incidente de segurança.
 
 ## Relatórios
-- [Novembro de 2026 · Nexor Barber](relatorios/2026-11-barber/)
+- [Novembro de 2026 · Nexor Barber](relatorios/2026-11-barber/) · nota 9
+- [Novembro de 2026 · Nexor Elo](relatorios/2026-11-elo/) · nota 9,0
+- [Novembro de 2026 · Central de Chamados TI (base do Nexor Service Desk)](relatorios/2026-11-chamados-ti/) · nota 8,0
 
 ## Como produto
 - [Avaliação: vender a Banca como serviço do Nexor Shield](AVALIACAO-PRODUTO.md)

@@ -26,9 +26,10 @@ Use como está. Só mude um padrão se o dono pedir. Atualizado em 12/11/2026.
 - **Telas de acesso (login, primeiro acesso, portal):** padrão único desde 12/11/2026. Fundo navy com a rede animada de pontos (`fundo-rede.js`) e caixas de vidro (transparentes, com desfoque), definidas em `acesso.css`.
   - Fonte única em `assets/acesso/`. Depois de mudar, rode `tools/acesso.sh`, que copia para `<produto>/public/acesso/`. Não edite as cópias.
   - Em cada página com tela de acesso: `<link rel="stylesheet" href="/acesso/acesso.css">` e `<script src="/acesso/fundo-rede.js" defer></script>`.
-  - O script acha a tela sozinho pelas classes `.login`, `.p-login`, `.tela-entrar`, `.entrar`, `#entrada.entrada`. Tela nova: use a estrutura `.login` de `elo/public/comum/casca.js` ou envolva a caixa em `<div class="nx-tela-acesso">`.
+  - O script acha a tela sozinho pelas classes `.login`, `.p-login`, `.tela-entrar`, `.ativacao`, `#entrada.entrada`. Tela nova: use a estrutura `.login` de `elo/public/comum/casca.js` ou envolva a caixa em `<div class="nx-tela-acesso">`.
   - Cores da rede: linhas azul `59,141,255`, destaque ciano `0,225,251`. Respeita "reduzir animações" do aparelho.
-- **Caixas com efeito de vidro:** nas telas de acesso, todas. Dentro dos painéis (tema claro), ainda não aplicado; ver pendências.
+- **Caixas com efeito de vidro:** em todas as telas, desde 16/11/2026. Dentro dos painéis, `.cartao`, `.lateral` e `.modal` usam `background: var(--vidro, var(--superficie))` (janelas usam `--vidro-forte`). O vidro e o fundo com luz suave ficam em `acesso.css`. Caixa nova: use `.cartao`; não ponha fundo opaco por cima.
+- **Tipografia:** só três pesos (400, 500 e 600; nada de 700 ou mais). Nenhum texto abaixo de 12 px. Texto base dos painéis: 14,5 px, com entrelinha 1,5; títulos com entrelinha 1,2. Hierarquia por tamanho e espaço, não por peso.
 - Telas responsivas: sem rolagem lateral em 360 e 390 px. Conferir com Playwright em 390 e 1280 px.
 - Logos oficiais: `marketing/marca/` e `assets/img/logo-*.webp`.
 

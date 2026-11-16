@@ -140,7 +140,7 @@ A mensagem central agora é **a IA faz o trabalho pesado e o time Nexor cuida de
 > #testegratis #IA #automacao #whatsappbusiness #nexorconsulting
 
 ### `fundadores.png` e `story-fundadores.png` — Programa de fundadores
-> Abrimos as vagas de fundador do Nexor Contábil, do Nexor Barber e do Nexor Agente. 🔥
+> Abrimos as vagas de fundador do Nexor Contábil, do Nexor Barber, do Nexor Agente, do Nexor Elo e do Nexor Service Desk. 🔥
 >
 > Quem entra primeiro tem 40% de desconto na mensalidade por 12 meses, 50% na implantação e preço travado por 24 meses. Em troca, conta para a gente o que funciona e dá um depoimento.
 >

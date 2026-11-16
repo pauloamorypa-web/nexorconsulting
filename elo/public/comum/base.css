@@ -158,18 +158,18 @@ textarea.entrada { resize: vertical; min-height: 42px; }
 .clicavel { cursor: pointer; }
 .chip.clicavel:hover { border-color: var(--azul); }
 .chip.ativo { background: var(--azul); color: #fff; }
-.avatar { display: inline-grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 700; flex-shrink: 0; letter-spacing: 0.02em; }
+.avatar { display: inline-grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 600; flex-shrink: 0; letter-spacing: 0.02em; }
 
 /* ---------- Casca ---------- */
 .casca { display: grid; grid-template-columns: var(--lateral) 1fr; height: 100vh; height: 100dvh; }
-.lateral { background: var(--superficie); border-right: 1px solid var(--linha); display: flex; flex-direction: column; padding: 16px 12px; gap: 14px; overflow-y: auto; }
+.lateral { background: var(--vidro, var(--superficie)); border-right: 1px solid var(--linha); display: flex; flex-direction: column; padding: 16px 12px; gap: 14px; overflow-y: auto; }
 .marca { display: flex; align-items: center; gap: 10px; padding: 4px 8px 10px; color: var(--texto); font-family: var(--fonte-titulo); font-size: 17px; text-decoration: none !important; }
 .marca img { border-radius: 8px; }
 .menu { display: grid; gap: 2px; }
 .menu-item { display: flex; align-items: center; gap: 11px; padding: 9px 11px; border-radius: 10px; color: var(--texto-2); font-weight: 500; text-decoration: none !important; position: relative; }
 .menu-item:hover { background: var(--superficie-3); color: var(--texto); }
 .menu-item.ativo { background: color-mix(in srgb, var(--azul) 11%, transparent); color: var(--azul); font-weight: 600; }
-.selo { margin-left: auto; background: var(--vermelho); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+.selo { margin-left: auto; background: var(--vermelho); color: #fff; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 999px; }
 .lateral-rodape { margin-top: auto; border-top: 1px solid var(--linha); padding-top: 12px; display: grid; gap: 10px; }
 .empresa-atual { display: flex; gap: 10px; align-items: center; padding: 0 6px; }
 .empresa-atual strong { display: block; font-size: 13.5px; }
@@ -186,7 +186,7 @@ textarea.entrada { resize: vertical; min-height: 42px; }
 .pagina { padding: 26px 30px 60px; max-width: 1320px; margin: 0 auto; display: grid; gap: 18px; }
 .pagina-topo { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .pagina-topo p { margin-top: 4px; }
-.cartao { background: var(--superficie); border: 1px solid var(--linha); border-radius: var(--raio); padding: 20px; box-shadow: var(--sombra); min-width: 0; }
+.cartao { background: var(--vidro, var(--superficie)); border: 1px solid var(--linha); border-radius: var(--raio); padding: 20px; box-shadow: var(--sombra); min-width: 0; }
 .cartao-interno { padding: 14px; border-radius: 12px; }
 .cartao-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
 .cartao-topo h2 { margin: 0; }
@@ -221,7 +221,7 @@ textarea.entrada { resize: vertical; min-height: 42px; }
 @keyframes entrar { from { opacity: 0; transform: translateY(10px); } }
 .modal-fundo { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.55); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 16px; z-index: 90; animation: aparecer 0.15s; }
 @keyframes aparecer { from { opacity: 0; } }
-.modal { background: var(--superficie); border-radius: 16px; width: 100%; max-height: calc(100vh - 32px); display: flex; flex-direction: column; box-shadow: var(--sombra-forte); animation: entrar 0.2s; border: 1px solid var(--linha); }
+.modal { background: var(--vidro-forte, var(--superficie)); border-radius: 16px; width: 100%; max-height: calc(100vh - 32px); display: flex; flex-direction: column; box-shadow: var(--sombra-forte); animation: entrar 0.2s; border: 1px solid var(--linha); }
 .modal-topo { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--linha); }
 .modal-topo h2 { margin: 0; }
 .modal-corpo { padding: 20px; overflow-y: auto; }
@@ -335,8 +335,8 @@ textarea.entrada { resize: vertical; min-height: 42px; }
 .chip-ok { color: color-mix(in srgb, var(--verde) 72%, var(--texto)); }
 
 /* ---------- Nexor Elo ---------- */
-.marca small { display: block; font-family: var(--fonte); font-size: 11.5px; color: var(--texto-3); font-weight: 500; letter-spacing: 0.02em; }
-.menu-grupo { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--texto-3); padding: 12px 11px 4px; font-weight: 600; }
+.marca small { display: block; font-family: var(--fonte); font-size: 12px; color: var(--texto-3); font-weight: 500; letter-spacing: 0.02em; }
+.menu-grupo { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--texto-3); padding: 12px 11px 4px; font-weight: 600; }
 .filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .filtros .entrada { width: auto; min-width: 0; flex: 1 1 180px; }
 .filtros .entrada.curta { flex: 0 1 220px; }
@@ -349,7 +349,7 @@ textarea.entrada { resize: vertical; min-height: 42px; }
 .linha-tempo li { display: flex; gap: 10px; align-items: center; font-size: 13.5px; }
 .linha-tempo li::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--linha-forte); flex-shrink: 0; }
 .linha-tempo li.feito::before { background: var(--verde); }
-.score { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; font-weight: 700; font-size: 14px; background: conic-gradient(var(--cor, var(--azul)) calc(var(--v, 0) * 1%), var(--superficie-3) 0); position: relative; }
+.score { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; font-weight: 600; font-size: 14px; background: conic-gradient(var(--cor, var(--azul)) calc(var(--v, 0) * 1%), var(--superficie-3) 0); position: relative; }
 .score::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--superficie); }
 .score span { position: relative; }
 .score-grande { width: 92px; height: 92px; font-size: 26px; }

@@ -6,7 +6,7 @@ body.pagina-publica.com-cta { padding-bottom: calc(150px + env(safe-area-inset-b
 .hero .avatar { width: 48px; height: 48px; font-size: 19px; }
 .hero small, .hero .suave { color: #c4d0ee; }
 .hero h1 { font-size: 26px; line-height: 1.15; }
-.hero .valor { font-size: 34px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.hero .valor { font-size: 34px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .selos { display: flex; flex-wrap: wrap; gap: 8px; }
 .selo { display: inline-flex; gap: 6px; align-items: center; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); color: #f4f7ff; border-radius: 99px; padding: 5px 11px; font-size: 13px; font-weight: 600; }
 .produto { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--linha); }
@@ -16,11 +16,11 @@ body.pagina-publica.com-cta { padding-bottom: calc(150px + env(safe-area-inset-b
 .cta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: color-mix(in srgb, var(--sup) 94%, transparent); backdrop-filter: blur(14px); border-top: 1px solid var(--linha); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); }
 .cta-in { max-width: 720px; margin: 0 auto; display: grid; gap: 6px; }
 .formas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.forma { position: relative; display: grid; justify-items: center; gap: 4px; padding: 12px 6px; border-radius: 14px; border: 1.5px solid var(--linha); background: var(--sup); font-weight: 650; font-size: 14px; cursor: pointer; }
+.forma { position: relative; display: grid; justify-items: center; gap: 4px; padding: 12px 6px; border-radius: 14px; border: 1.5px solid var(--linha); background: var(--sup); font-weight: 600; font-size: 14px; cursor: pointer; }
 .forma input { position: absolute; opacity: 0; pointer-events: none; }
 .forma:has(input:checked) { border-color: var(--cor); background: color-mix(in srgb, var(--cor) 10%, var(--sup)); color: var(--cor-texto); }
 .forma:has(input:focus-visible) { outline: 3px solid color-mix(in srgb, var(--cor) 70%, transparent); outline-offset: 2px; }
-.forma small { font-weight: 500; color: var(--texto3); font-size: 11.5px; text-align: center; }
+.forma small { font-weight: 500; color: var(--texto3); font-size: 12px; text-align: center; }
 .sucesso { text-align: center; display: grid; gap: 10px; justify-items: center; padding: 10px 0; }
 .sucesso .check { width: 76px; height: 76px; border-radius: 50%; background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); display: grid; place-items: center; }
 .rodape-publico { text-align: center; color: var(--texto3); font-size: 12.5px; margin-top: 26px; display: grid; gap: 4px; }

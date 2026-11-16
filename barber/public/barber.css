@@ -23,7 +23,7 @@
 .dado small { color: var(--texto-3); font-size: 12px; }
 .dado strong { font-weight: 600; overflow-wrap: anywhere; }
 
-.codigo-grande { font: 700 44px/1 var(--fonte-titulo); letter-spacing: 0.2em; text-align: center; padding: 18px; border-radius: 14px; background: var(--superficie-3); color: var(--azul); }
+.codigo-grande { font: 600 44px/1 var(--fonte-titulo); letter-spacing: 0.2em; text-align: center; padding: 18px; border-radius: 14px; background: var(--superficie-3); color: var(--azul); }
 
 .horas-dia { display: flex; gap: 4px; flex-wrap: wrap; }
 .hora-chip { font: 600 12.5px/1 ui-monospace, Menlo, monospace; padding: 4px 6px; border-radius: 6px; background: var(--superficie-3); color: var(--texto); }
@@ -86,7 +86,7 @@
 .nexor-grupo { display: grid; gap: 8px; }
 .nexor-grupo h3 { margin: 6px 0 2px; font-size: 14px; }
 .marca-oculto { opacity: .55; }
-.selo-nexor { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--azul) 14%, transparent); color: var(--azul); margin-left: 6px; }
+.selo-nexor { font-size: 12px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--azul) 14%, transparent); color: var(--azul); margin-left: 6px; }
 
 /* Nexor Barber */
 .direita { text-align: right; }
@@ -97,7 +97,7 @@
 .linha-tempo { padding: 0; overflow: hidden; }
 .linha-tempo-grade { display: grid; grid-template-columns: 54px; grid-auto-flow: column; grid-auto-columns: minmax(190px, 1fr); overflow-x: auto; max-height: 72vh; overflow-y: auto; }
 .linha-tempo-regua { position: relative; margin-top: 48px; border-right: 1px solid var(--linha); background: var(--superficie); position: sticky; left: 0; z-index: 3; }
-.linha-tempo-regua span { position: absolute; right: 8px; transform: translateY(-50%); font: 600 11.5px/1 var(--fonte); color: var(--texto-3); font-variant-numeric: tabular-nums; }
+.linha-tempo-regua span { position: absolute; right: 8px; transform: translateY(-50%); font: 600 12px/1 var(--fonte); color: var(--texto-3); font-variant-numeric: tabular-nums; }
 .linha-tempo-barbeiro { border-right: 1px solid var(--linha); min-width: 0; }
 .linha-tempo-barbeiro > header { position: sticky; top: 0; z-index: 2; height: 48px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: var(--superficie); border-bottom: 1px solid var(--linha); }
 .linha-tempo-barbeiro > header small { margin-left: auto; color: var(--texto-3); }
@@ -133,7 +133,7 @@
 .novo-cliente[open] summary { margin-bottom: 8px; }
 .comanda-itens { display: grid; gap: 2px; }
 .comanda-linha { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--linha); }
-.comanda-total { font: 700 24px var(--fonte-titulo); }
+.comanda-total { font: 600 24px var(--fonte-titulo); }
 .horario-editor { display: grid; gap: 8px; }
 .horario-linha { display: grid; grid-template-columns: 90px 1fr; gap: 10px; align-items: center; }
 
@@ -143,7 +143,7 @@
 .plano h3 { margin: 0; }
 .plano ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
 .plano.inativo { opacity: .6; }
-.plano-preco { font: 700 28px var(--fonte-titulo); }
+.plano-preco { font: 600 28px var(--fonte-titulo); }
 .plano-preco small { font-size: 14px; color: var(--texto-3); font-weight: 500; }
 .plano-item { display: grid; grid-template-columns: auto 1fr 80px auto; gap: 10px; align-items: center; }
 .dias-semana { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -152,7 +152,7 @@
 .grafico-dias { display: flex; align-items: flex-end; gap: 3px; height: 180px; padding-top: 10px; }
 .grafico-dia { flex: 1; min-width: 6px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
 .grafico-dia i { width: 100%; border-radius: 5px 5px 2px 2px; background: linear-gradient(180deg, var(--ciano), var(--azul)); min-height: 2px; }
-.grafico-dia small { font-size: 10px; color: var(--texto-3); }
+.grafico-dia small { font-size: 12px; color: var(--texto-3); }
 
 @media (max-width: 640px) {
   .linha-tempo-grade { grid-auto-columns: minmax(160px, 78vw); max-height: none; }

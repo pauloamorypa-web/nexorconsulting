@@ -9,7 +9,7 @@ body.app-trabalhador { background: var(--fundo); }
 .selo-btn .selo { position: absolute; top: -2px; right: -4px; }
 
 .cartao-ponto { display: grid; justify-items: center; gap: 12px; padding: 22px 18px; }
-.relogio-grande { font: 700 52px/1 var(--fonte-titulo); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.relogio-grande { font: 600 52px/1 var(--fonte-titulo); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .botao-ponto {
   width: min(230px, 64vw); aspect-ratio: 1; border-radius: 50%; border: none; cursor: pointer; display: grid; place-content: center; justify-items: center; gap: 8px;
   color: #fff; font: 600 16px/1.25 var(--fonte); text-align: center; padding: 18px;
@@ -26,12 +26,12 @@ body.app-trabalhador { background: var(--fundo); }
 
 .linha-tempo { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .linha-tempo li { display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; align-items: center; padding-left: 14px; border-left: 3px solid var(--azul); }
-.linha-tempo strong { font: 700 18px/1 var(--fonte-titulo); font-variant-numeric: tabular-nums; }
+.linha-tempo strong { font: 600 18px/1 var(--fonte-titulo); font-variant-numeric: tabular-nums; }
 
 .comprovante { display: grid; justify-items: center; gap: 8px; text-align: center; }
 .comprovante-ok { width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; background: var(--verde); color: #fff; animation: surgir 0.35s ease-out; }
 @keyframes surgir { from { transform: scale(0.4); opacity: 0; } }
-.comprovante-hora { font: 700 40px/1 var(--fonte-titulo); }
+.comprovante-hora { font: 600 40px/1 var(--fonte-titulo); }
 .comprovante dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; text-align: left; font-size: 13px; margin: 8px 0; width: 100%; }
 .comprovante dt { color: var(--texto-3); }
 .comprovante dd { margin: 0; overflow-wrap: anywhere; }
@@ -39,23 +39,23 @@ body.app-trabalhador { background: var(--fundo); }
 .ativacao { max-width: 420px; margin: 0 auto; padding: calc(48px + env(safe-area-inset-top)) 20px 40px; display: grid; gap: 14px; text-align: center; justify-items: center; }
 .ativacao form { width: 100%; text-align: left; }
 .entrada-grande { font-size: 20px; padding: 14px; text-align: center; }
-.entrada-grande.codigo { letter-spacing: 0.4em; font-weight: 700; }
+.entrada-grande.codigo { letter-spacing: 0.4em; font-weight: 600; }
 
 .abas-app { position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--superficie); border-top: 1px solid var(--linha); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); z-index: 20; }
-.abas-app button { border: none; background: none; display: grid; justify-items: center; gap: 2px; padding: 6px 0; color: var(--texto-3); font: 500 11.5px/1 var(--fonte); border-radius: 10px; }
+.abas-app button { border: none; background: none; display: grid; justify-items: center; gap: 2px; padding: 6px 0; color: var(--texto-3); font: 500 12px/1 var(--fonte); border-radius: 10px; }
 .abas-app button.ativo { color: var(--azul); }
 
 .seletor-mes { display: flex; align-items: center; justify-content: space-between; }
 .seletor-mes .girar svg { transform: rotate(180deg); }
 .mini-totais { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .mini-totais div { background: var(--superficie); border: 1px solid var(--linha); border-radius: 10px; padding: 8px 4px; text-align: center; display: grid; gap: 2px; }
-.mini-totais small { font-size: 10.5px; color: var(--texto-3); }
+.mini-totais small { font-size: 12px; color: var(--texto-3); }
 .mini-totais strong { font-size: 13.5px; }
 .lista-dias { padding: 6px 12px; }
 .dia-app { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--linha); }
 .dia-app:last-child { border-bottom: none; }
 .dia-app-data { display: grid; text-align: center; }
-.dia-app-data small { color: var(--texto-3); font-size: 11px; }
+.dia-app-data small { color: var(--texto-3); font-size: 12px; }
 .dia-app.falta .dia-app-data strong { color: var(--vermelho); }
 .dia-app.folga, .dia-app.feriado { opacity: 0.6; }
 .dia-app-total { color: var(--texto-2); font-variant-numeric: tabular-nums; }
