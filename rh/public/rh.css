@@ -23,7 +23,7 @@
 .dado small { color: var(--texto-3); font-size: 12px; }
 .dado strong { font-weight: 600; overflow-wrap: anywhere; }
 
-.codigo-grande { font: 700 44px/1 var(--fonte-titulo); letter-spacing: 0.2em; text-align: center; padding: 18px; border-radius: 14px; background: var(--superficie-3); color: var(--azul); }
+.codigo-grande { font: 600 44px/1 var(--fonte-titulo); letter-spacing: 0.2em; text-align: center; padding: 18px; border-radius: 14px; background: var(--superficie-3); color: var(--azul); }
 
 .horas-dia { display: flex; gap: 4px; flex-wrap: wrap; }
 .hora-chip { font: 600 12.5px/1 ui-monospace, Menlo, monospace; padding: 4px 6px; border-radius: 6px; background: var(--superficie-3); color: var(--texto); }
@@ -86,4 +86,4 @@
 .nexor-grupo { display: grid; gap: 8px; }
 .nexor-grupo h3 { margin: 6px 0 2px; font-size: 14px; }
 .marca-oculto { opacity: .55; }
-.selo-nexor { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--azul) 14%, transparent); color: var(--azul); margin-left: 6px; }
+.selo-nexor { font-size: 12px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--azul) 14%, transparent); color: var(--azul); margin-left: 6px; }

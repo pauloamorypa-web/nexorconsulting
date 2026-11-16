@@ -33,7 +33,7 @@ Em **Settings → Pages**, escolha **Deploy from a branch**, branch `main` e pas
 - `assets/css/style.css` → cores e visual (variáveis em `:root`)
 
 ## Demonstração dos sistemas (vendas)
-Um comando sobe Barber, RH, Atende, Agente e Contábil com empresas fictícias, só no notebook e sem internet: veja [demo/README.md](demo/README.md).
+Um comando sobe Barber, RH, Atende, Agente, Contábil e Elo com empresas fictícias, só no notebook e sem internet: veja [demo/README.md](demo/README.md).
 
 ## Nexor Atende IA (produto)
 A pasta `atende/` tem o **Nexor Atende IA** completo: atendimento no WhatsApp pela API oficial da Meta com o Claude, painel em tempo real, CRM com funil, agenda, campanhas, copiloto para a equipe e IA que aprende com as correções. Instruções em [`atende/README.md`](atende/README.md).

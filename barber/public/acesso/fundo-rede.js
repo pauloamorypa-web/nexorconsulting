@@ -169,7 +169,7 @@
 
   // Telas de acesso dos sistemas Nexor: são desenhadas pelo JavaScript de cada produto, então
   // observamos a página, ligamos o fundo quando a tela aparece e desligamos quando ela some.
-  var ALVOS = '.login, .p-login, .tela-entrar, .entrar, #entrada.entrada, .nx-tela-acesso';
+  var ALVOS = '.login, .p-login, .tela-entrar, .ativacao, #entrada.entrada, .nx-tela-acesso';
   function acessos() {
     var els = document.querySelectorAll(ALVOS), i, el;
     for (i = 0; i < els.length; i++) {

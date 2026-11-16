@@ -10,8 +10,7 @@ O que falta o dono decidir, conferir ou autorizar. Ao resolver, mova para `02-DE
 | Conversão offline | Colocar o mesmo token em `CONVERSAO_TOKEN` na Central e na Blue, e a `CONVERSAO_URL` na Central |
 | Service Desk v1.12 no cliente | Aprovar cada computador uma vez, dar a permissão de comando remoto a quem precisa, preencher o `.env`, testar os agentes em Windows e Mac reais |
 | Banca nas outras páginas | Citar a Banca também nas páginas dos outros produtos? |
-| Efeito de vidro dentro dos painéis | Hoje vale nas telas de acesso. Aplicar também nas caixas internas dos sistemas (tema claro)? Muda a aparência de todas as telas e precisa de conferência visual produto a produto |
-| Telas de acesso que faltam | App do colaborador do RH, quiosque do RH, portal do parceiro da Central e app do cliente do Barber ainda não foram conferidos com o padrão novo |
+| Texto base de 16 px | Os painéis usam 14,5 px. A regra de tipografia recomenda 16 px no texto principal; mudar altera todas as telas. Subir para 16 px? |
 | Preço no site | Confirmar que a regra "site não publica mensalidade" vale para todos os produtos |
 
 ## Trabalho pausado ou em andamento

@@ -21,6 +21,7 @@ Decididas pelo dono. Não reabrir sem pedido dele. Atualizado em 12/11/2026.
 | Conversão offline | Ligada: a Central avisa a Blue quando o teste é ativado e quando o contrato fecha; a Blue envia ao Meta e ao Google |
 | Nexor Guardião | **Cancelado em 12/11/2026** (o dono não achou viável). Arquivos removidos do repositório; ficam só no histórico do Git |
 | Telas de acesso | Todas com o fundo de rede animado e caixas de vidro (padrão em `assets/acesso/`), decidido em 12/11/2026 |
+| Efeito de vidro nos painéis | Aplicado em todas as caixas dos sistemas (pedido de 12/11/2026) |
 | Lançamento oficial | A Nexor está sendo organizada para lançar no mercado: regras, segurança, design, prospecção e manuais padronizados em `docs/base/` |
 
 ## Método
