@@ -8,6 +8,7 @@ import { VideoContabil, temposContabil } from "./Contabil";
 import { VideoAgente, temposAgente } from "./Agente";
 import { VideoElo, temposElo } from "./Elo";
 import { VideoEloFornecedor, temposEloFornecedor } from "./EloFornecedor";
+import { VideoServiceDesk, temposServiceDesk } from "./ServiceDesk";
 
 export const ANIMADOS: { id: string; componente: React.FC; tempos: Tempos }[] = [
   { id: "NexorBarber30s", componente: VideoBarber, tempos: temposBarber },
@@ -17,4 +18,5 @@ export const ANIMADOS: { id: string; componente: React.FC; tempos: Tempos }[] = 
   { id: "NexorAgente30s", componente: VideoAgente, tempos: temposAgente },
   { id: "NexorElo30s", componente: VideoElo, tempos: temposElo },
   { id: "NexorEloFornecedor", componente: VideoEloFornecedor, tempos: temposEloFornecedor },
+  { id: "NexorServiceDesk30s", componente: VideoServiceDesk, tempos: temposServiceDesk },
 ];
