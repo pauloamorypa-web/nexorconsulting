@@ -95,7 +95,7 @@ const NXT = (() => {
       fbq("track", "PageView");
     }
     const gid = RASTREIO.ga4 || RASTREIO.googleAds;
-    if (gid) {
+    if (gid || RASTREIO.googleTag) {
       window.dataLayer = window.dataLayer || [];
       window.gtag = function () {
         dataLayer.push(arguments);
@@ -104,7 +104,8 @@ const NXT = (() => {
       gtag("js", new Date());
       if (RASTREIO.ga4) gtag("config", RASTREIO.ga4);
       if (RASTREIO.googleAds) gtag("config", RASTREIO.googleAds, { allow_enhanced_conversions: true });
-      carregar(`https://www.googletagmanager.com/gtag/js?id=${gid}`);
+      if (gid) carregar(`https://www.googletagmanager.com/gtag/js?id=${gid}`);
+      if (RASTREIO.googleTag) carregar(`https://www.googletagmanager.com/gtm.js?id=${RASTREIO.googleTag}`);
     }
     fila.splice(0).forEach((f) => f());
   };

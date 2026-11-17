@@ -16,6 +16,7 @@ const NEXOR_EMAIL = "contato@nexorconsultingit.com.br";
 
 // Campanhas: preencha com os códigos das plataformas. Vazio = desligado.
 const RASTREIO = {
+  googleTag: "GTM-KKXB2W8C", // Tag do Google criada pelo Google Ads (contêiner GTM-); carrega as conversões configuradas na conta
   metaPixel: "", //        Gerenciador de Eventos da Meta → ID do conjunto de dados (só números)
   ga4: "", //              Google Analytics → Fluxo de dados → ID da métrica (G-XXXXXXX)
   googleAds: "", //        Google Ads → Metas → Conversões → tag (AW-XXXXXXXXX)
