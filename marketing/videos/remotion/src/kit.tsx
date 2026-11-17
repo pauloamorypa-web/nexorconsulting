@@ -325,3 +325,34 @@ export const Toque: React.FC<{ em: number; x?: number; y?: number }> = ({ em, x,
   if (f < em - 6 || f > em + 16) return null;
   return <div style={{ position: "absolute", left: x === undefined ? "calc(50% - 45px)" : x - 45, top: y === undefined ? "calc(50% - 45px)" : y - 45, width: 90, height: 90, borderRadius: 45, background: "rgba(0,88,250,0.35)", border: "4px solid rgba(0,88,250,0.8)", transform: `scale(${0.6 + p * 0.8})`, opacity: 1 - p * 0.7, zIndex: 9 }} />;
 };
+
+/* Tela de conversa estilo WhatsApp dentro do Celular */
+export const TelaWhats: React.FC<{ nome: string; sub?: string; cor?: string; children: React.ReactNode }> = ({ nome, sub = "online", cor = "#0ea5e9", children }) => (
+  <div style={{ position: "absolute", inset: 0, background: "#efeae2", display: "flex", flexDirection: "column" }}>
+    <div style={{ paddingTop: 66, padding: "66px 26px 20px", background: "#075e54", display: "flex", alignItems: "center", gap: 18 }}>
+      <div style={{ width: 70, height: 70, borderRadius: 35, background: cor, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter", fontWeight: 600, fontSize: 30, color: "#fff" }}>{nome.slice(0, 1)}</div>
+      <div>
+        <div style={{ fontFamily: "Inter", fontWeight: 600, fontSize: 32, color: "#fff" }}>{nome}</div>
+        <div style={{ fontFamily: "Inter", fontWeight: 500, fontSize: 24, color: "rgba(255,255,255,0.75)" }}>{sub}</div>
+      </div>
+    </div>
+    <div style={{ flex: 1, padding: "24px 22px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "flex-end" }}>{children}</div>
+  </div>
+);
+export const MsgWhats: React.FC<{ de: "eu" | "outro"; hora: string; children: React.ReactNode; atraso?: number; lido?: boolean }> = ({ de, hora, children, atraso = 0, lido }) => {
+  const p = useMola(atraso);
+  return (
+    <div style={{ alignSelf: de === "eu" ? "flex-end" : "flex-start", maxWidth: 470, padding: "16px 20px 10px", borderRadius: 18, background: de === "eu" ? "#d9fdd3" : "#fff", boxShadow: "0 2px 4px rgba(0,0,0,0.08)", fontFamily: "Inter", fontWeight: 500, fontSize: 29, lineHeight: 1.32, color: "#111b21", ...pop(p, 24) }}>
+      {children}
+      <div style={{ textAlign: "right", fontSize: 20, color: "#667781", marginTop: 4 }}>{hora}{de === "eu" && <span style={{ color: lido ? "#53bdeb" : "#667781" }}> ✓✓</span>}</div>
+    </div>
+  );
+};
+export const DigitandoWhats: React.FC = () => {
+  const f = useCurrentFrame();
+  return (
+    <div style={{ alignSelf: "flex-start", display: "flex", gap: 9, padding: "22px 24px", borderRadius: 18, background: "#fff" }}>
+      {[0, 1, 2].map((i) => <div key={i} style={{ width: 12, height: 12, borderRadius: 6, background: "#8696a0", transform: `translateY(${Math.sin((f + i * 5) / 3.2) * -5}px)` }} />)}
+    </div>
+  );
+};
