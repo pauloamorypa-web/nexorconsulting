@@ -1,0 +1,208 @@
+/* Configuração dos vídeos verticais de cada produto.
+   frases: o texto falado na locução, um item por trecho separado por "..." no ElevenLabs.
+   cenas: uma por frase (o número da frase diz quando a cena entra). *texto* = destaque em degradê.
+   foco: ponto da tela (x, y em %) e quanto aproximar, para a parte citada na fala. */
+import type { Produto } from "./VideoProduto";
+import tBarber from "./tempos/barber";
+import tAtende from "./tempos/atende";
+import tRh from "./tempos/rh";
+import tContabil from "./tempos/contabil";
+import tAgente from "./tempos/agente";
+import tElo from "./tempos/elo";
+import tServicedesk from "./tempos/servicedesk";
+import tBlue from "./tempos/blue";
+
+export const PRODUTOS: Produto[] = [
+  {
+    id: "NexorBarber30s",
+    nome: "Nexor Barber",
+    pasta: "barber",
+    tempos: tBarber,
+    frases: [
+      "Parou o corte pra atender o telefone?",
+      "No Nexor Barber, o cliente agenda sozinho, em um toque.",
+      "Recebe o lembrete no WhatsApp, entra na lista de espera se alguém cancelar, e ainda pode assinar o clube da barbearia.",
+      "No fim do dia, o caixa e as comissões já estão fechados.",
+      "Você corta. O sistema cuida do resto.",
+      "Teste grátis por trinta dias. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "📞", texto: "Parou o corte pra *atender o telefone?*" },
+      { tipo: "tela", frase: 1, src: "barber/app-agendar.webp", foco: { x: 50, y: 30, escala: 1.55 }, titulo: "O cliente agenda *em um toque.*" },
+      { tipo: "tela", frase: 2, src: "barber/agenda.webp", foco: { x: 40, y: 45, escala: 1.6 }, titulo: "Lembrete no WhatsApp e *lista de espera.*" },
+      { tipo: "tela", frase: 2, inicio: 9.61, src: "barber/clube.webp", foco: { x: 18, y: 32, escala: 1.75 }, titulo: "Clube de *assinatura.*" },
+      { tipo: "tela", frase: 3, src: "barber/caixa.webp", foco: { x: 40, y: 38, escala: 1.6 }, titulo: "Caixa e comissões *já fechados.*" },
+      { tipo: "frase", frase: 4, linha1: "Você corta.", linha2: "*O sistema cuida do resto.*" },
+      { tipo: "final", frase: 5, chamada: "Teste grátis por *30 dias*", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorAtende30s",
+    nome: "Nexor Atende IA",
+    pasta: "atende",
+    tempos: tAtende,
+    frases: [
+      "Dez da noite. Um cliente perguntou o preço no WhatsApp. E ninguém respondeu.",
+      "Com o Nexor Atende IA, a inteligência artificial responde na hora, com os preços e as regras da sua empresa.",
+      "Ela tira as dúvidas, agenda e confirma o horário.",
+      "E passa para a sua equipe quando precisa, com o resumo pronto.",
+      "Cada conversa vira um contato, e você sabe quem está pronto para comprar.",
+      "Seu WhatsApp atendendo vinte e quatro horas.",
+      "Teste grátis por trinta dias. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "🌙", texto: "22h. Cliente perguntou o preço. *Ninguém respondeu.*" },
+      { tipo: "tela", frase: 1, src: "atende/conversa.webp", foco: { x: 50, y: 40, escala: 1.6 }, titulo: "A IA responde *na hora.*" },
+      { tipo: "tela", frase: 2, src: "atende/agenda.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "Tira dúvidas, *agenda e confirma.*" },
+      { tipo: "tela", frase: 3, src: "atende/transferencia.webp", foco: { x: 55, y: 40, escala: 1.6 }, titulo: "Passa para a equipe *com o resumo.*" },
+      { tipo: "tela", frase: 4, src: "atende/funil.webp", foco: { x: 40, y: 40, escala: 1.55 }, titulo: "Quem está *pronto para comprar.*" },
+      { tipo: "frase", frase: 5, linha1: "Seu WhatsApp atendendo", linha2: "*24 horas.*" },
+      { tipo: "final", frase: 6, chamada: "Teste grátis por *30 dias*", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorRH30s",
+    nome: "Nexor RH + Ponto",
+    pasta: "rh",
+    tempos: tRh,
+    frases: [
+      "Dia trinta. E você ainda soma o ponto no papel?",
+      "No Nexor RH, o colaborador bate o ponto pelo celular, com a digital ou o rosto.",
+      "O espelho de ponto sai pronto, dentro da Portaria 671.",
+      "A folha sai calculada, e o holerite chega no aplicativo de cada um.",
+      "E o eSocial vai junto, assinado com o seu certificado.",
+      "Você cuida das pessoas. O sistema cuida das contas.",
+      "Teste grátis por trinta dias. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "🧮", texto: "Dia 30. Ainda somando *ponto no papel?*" },
+      { tipo: "tela", frase: 1, src: "rh/app.webp", foco: { x: 50, y: 35, escala: 1.5 }, titulo: "Ponto pelo *celular.*" },
+      { tipo: "tela", frase: 2, src: "rh/espelho.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "Espelho de ponto *pronto.*" },
+      { tipo: "tela", frase: 3, src: "rh/folha.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "Folha *calculada.*" },
+      { tipo: "tela", frase: 4, src: "rh/esocial.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "eSocial *integrado.*" },
+      { tipo: "frase", frase: 5, linha1: "Você cuida das pessoas.", linha2: "*O sistema cuida das contas.*" },
+      { tipo: "final", frase: 6, chamada: "Teste grátis por *30 dias*", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorContabil30s",
+    nome: "Nexor Contábil",
+    pasta: "contabil",
+    tempos: tContabil,
+    frases: [
+      "Quantas vezes você cobrou o mesmo documento este mês?",
+      "O Nexor Contábil cobra os documentos por você, pelo WhatsApp e pelo e-mail.",
+      "O cliente manda a foto, e a inteligência artificial lê a nota, o extrato ou o recibo.",
+      "Ela sugere o lançamento. E quem confere e aprova é sempre você, contador.",
+      "Os prazos de cada cliente ficam num painel só.",
+      "Menos cobrança. Mais contabilidade.",
+      "São só dez vagas de fundador. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "📄", texto: "Cobrando o *mesmo documento* de novo?" },
+      { tipo: "tela", frase: 1, src: "contabil/cobranca.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "Cobrança *automática.*" },
+      { tipo: "tela", frase: 2, src: "contabil/leitura.webp", foco: { x: 50, y: 40, escala: 1.6 }, titulo: "A IA *lê o documento.*" },
+      { tipo: "tela", frase: 3, src: "contabil/lancamentos.webp", foco: { x: 50, y: 40, escala: 1.6 }, titulo: "Você *confere e aprova.*" },
+      { tipo: "tela", frase: 4, src: "contabil/obrigacoes.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "Prazos num *painel só.*" },
+      { tipo: "frase", frase: 5, linha1: "Menos cobrança.", linha2: "*Mais contabilidade.*" },
+      { tipo: "final", frase: 6, chamada: "Só *10 vagas* de fundador", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorAgente30s",
+    nome: "Nexor Agente",
+    pasta: "agente",
+    tempos: tAgente,
+    frases: [
+      "E se você pudesse perguntar para a sua empresa: quanto vendemos ontem?",
+      "O Nexor Agente é a sua inteligência artificial no WhatsApp, ligada aos sistemas da empresa.",
+      "Ele responde na hora, com as vendas e a meta de cada vendedor.",
+      "Avisa o estoque que vai faltar, e quem parou de comprar.",
+      "E quando é para agir, ele prepara e espera. Nada é feito sem o seu aprovar.",
+      "Sua empresa no seu bolso. Você no comando.",
+      "São só dez vagas de fundador. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "💬", texto: "Quanto *vendemos ontem?*" },
+      { tipo: "tela", frase: 1, src: "agente/vendas.webp", foco: { x: 22, y: 62, escala: 1.7 }, titulo: "A IA da empresa *no WhatsApp.*" },
+      { tipo: "tela", frase: 2, src: "agente/meta.webp", foco: { x: 22, y: 70, escala: 1.7 }, titulo: "Vendas e meta *na hora.*" },
+      { tipo: "tela", frase: 3, src: "agente/estoque.webp", foco: { x: 22, y: 75, escala: 1.7 }, titulo: "Estoque que *vai faltar.*" },
+      { tipo: "tela", frase: 4, src: "agente/aprovacoes.webp", foco: { x: 82, y: 30, escala: 1.8 }, titulo: "Nada sem *o seu aprovar.*" },
+      { tipo: "frase", frase: 5, linha1: "Sua empresa no seu bolso.", linha2: "*Você no comando.*" },
+      { tipo: "final", frase: 6, chamada: "Só *10 vagas* de fundador", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorElo30s",
+    nome: "Nexor Elo",
+    pasta: "elo",
+    tempos: tElo,
+    frases: [
+      "Instalador, você ainda compra o material antes, e fica esperando o cliente pagar?",
+      "No Nexor Elo, o orçamento já sai com o estoque da loja.",
+      "A calculadora mostra os impostos e o seu lucro antes de enviar.",
+      "O cliente aceita e paga no link, no Pix, no boleto ou no cartão.",
+      "E o dinheiro já cai dividido: o material para a loja, o serviço para você.",
+      "E a loja não vê o seu cliente.",
+      "Comece grátis. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "🧰", texto: "Comprando material *antes de receber?*" },
+      { tipo: "tela", frase: 1, src: "elo/propostas-reservas.webp", foco: { x: 55, y: 40, escala: 1.6 }, titulo: "Orçamento com *o estoque da loja.*" },
+      { tipo: "tela", frase: 2, src: "elo/nova-proposta-calculadora.webp", foco: { x: 82, y: 35, escala: 1.9 }, titulo: "Impostos e lucro *antes de enviar.*" },
+      { tipo: "tela", frase: 3, src: "elo/app-propostas.webp", foco: { x: 50, y: 40, escala: 1.15 }, titulo: "O cliente aceita *e paga no link.*", largura: 400, proporcao: 520 / 1126 },
+      { tipo: "tela", frase: 4, src: "elo/financeiro-repasses.webp", foco: { x: 50, y: 22, escala: 1.6 }, titulo: "O dinheiro *já cai dividido.*" },
+      { tipo: "frase", frase: 5, linha1: "E a loja", linha2: "*não vê o seu cliente.*" },
+      { tipo: "final", frase: 6, chamada: "Comece *grátis*", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorServiceDesk30s",
+    nome: "Nexor Service Desk",
+    pasta: "servicedesk",
+    tempos: tServicedesk,
+    frases: [
+      "Pedido pelo corredor, pelo WhatsApp, pelo e-mail. Qual era o urgente mesmo?",
+      "No Nexor Service Desk, todo pedido vira um chamado, com prioridade, prazo e responsável.",
+      "Pediu uma informação ao usuário? O prazo pausa até ele responder.",
+      "Você vê cada computador da empresa, e reinicia ou instala de longe, com permissão e registro.",
+      "O painel mostra os números do mês, e a televisão da sala mostra a fila.",
+      "Tudo no seu servidor, com os dados sob o seu controle.",
+      "Teste grátis por trinta dias. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "🖥️", texto: "Qual era *o urgente* mesmo?" },
+      { tipo: "tela", frase: 1, src: "servicedesk/chamados.webp", foco: { x: 50, y: 35, escala: 1.5 }, titulo: "Todo pedido *vira um chamado.*", nota: "Tela ilustrativa · dados fictícios" },
+      { tipo: "tela", frase: 2, src: "servicedesk/chamado.webp", foco: { x: 88, y: 22, escala: 2.0 }, titulo: "O prazo *pausa sozinho.*", nota: "Tela ilustrativa · dados fictícios" },
+      { tipo: "tela", frase: 3, src: "servicedesk/inventario.webp", foco: { x: 85, y: 70, escala: 1.8 }, titulo: "Cada computador, *de longe.*", nota: "Tela ilustrativa · dados fictícios" },
+      { tipo: "tela", frase: 4, src: "servicedesk/painel.webp", foco: { x: 55, y: 30, escala: 1.5 }, titulo: "Os números *do mês.*", nota: "Tela ilustrativa · dados fictícios" },
+      { tipo: "tela", frase: 4, inicio: 21.6, src: "servicedesk/tv.webp", foco: { x: 40, y: 30, escala: 1.4 }, titulo: "A fila *na televisão.*", nota: "Tela ilustrativa · dados fictícios" },
+      { tipo: "frase", frase: 5, linha1: "Tudo no seu servidor.", linha2: "*Seus dados, seu controle.*" },
+      { tipo: "final", frase: 6, chamada: "Teste grátis por *30 dias*", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorBlue30s",
+    nome: "Blue",
+    pasta: "blue",
+    tempos: tBlue,
+    frases: [
+      "Onze e quarenta e sete da noite. E bateu aquela dúvida sobre a sua empresa?",
+      "Oi! Eu sou a Blue, a assistente de inteligência artificial da Nexor.",
+      "Me conta como é a sua empresa, que eu te mostro o sistema certo.",
+      "Posso liberar um teste grátis de trinta dias, e marcar uma conversa com o nosso time.",
+      "E quando você quiser falar com gente, eles estão lá.",
+      "Inteligência artificial que atende. Gente que cuida.",
+      "Me chama. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "🌙", texto: "23h47. *Bateu a dúvida?*" },
+      { tipo: "tela", frase: 1, src: "blue/blue-conheca.png", foco: { x: 50, y: 40, escala: 1.25 }, titulo: "Oi, eu sou *a Blue.*", largura: 680, proporcao: 0.8, nota: "Assistente de IA da Nexor" },
+      { tipo: "tela", frase: 2, src: "blue/blue-pergunte.png", foco: { x: 60, y: 50, escala: 1.3 }, titulo: "Te mostro *o sistema certo.*", largura: 680, proporcao: 0.8, nota: "Assistente de IA da Nexor" },
+      { tipo: "tela", frase: 3, src: "blue/blue-pergunte.png", foco: { x: 50, y: 72, escala: 1.45 }, titulo: "Teste grátis *e conversa com o time.*", largura: 680, proporcao: 0.8, nota: "Assistente de IA da Nexor" },
+      { tipo: "frase", frase: 4, linha1: "Quer falar com gente?", linha2: "*O time está lá.*" },
+      { tipo: "frase", frase: 5, linha1: "IA que atende.", linha2: "*Gente que cuida.*" },
+      { tipo: "final", frase: 6, chamada: "Me chama *agora*", botao: "Link na bio →" },
+    ],
+  },
+];
