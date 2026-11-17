@@ -6,6 +6,7 @@ import type { Produto } from "./VideoProduto";
 import tBarber from "./tempos/barber";
 import tAtende from "./tempos/atende";
 import tRh from "./tempos/rh";
+import tContabil from "./tempos/contabil";
 
 export const PRODUTOS: Produto[] = [
   {
@@ -77,6 +78,30 @@ export const PRODUTOS: Produto[] = [
       { tipo: "tela", frase: 4, src: "rh/esocial.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "eSocial *integrado.*" },
       { tipo: "frase", frase: 5, linha1: "Você cuida das pessoas.", linha2: "*O sistema cuida das contas.*" },
       { tipo: "final", frase: 6, chamada: "Teste grátis por *30 dias*", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorContabil30s",
+    nome: "Nexor Contábil",
+    pasta: "contabil",
+    tempos: tContabil,
+    frases: [
+      "Quantas vezes você cobrou o mesmo documento este mês?",
+      "O Nexor Contábil cobra os documentos por você, pelo WhatsApp e pelo e-mail.",
+      "O cliente manda a foto, e a inteligência artificial lê a nota, o extrato ou o recibo.",
+      "Ela sugere o lançamento. E quem confere e aprova é sempre você, contador.",
+      "Os prazos de cada cliente ficam num painel só.",
+      "Menos cobrança. Mais contabilidade.",
+      "São só dez vagas de fundador. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "📄", texto: "Cobrando o *mesmo documento* de novo?" },
+      { tipo: "tela", frase: 1, src: "contabil/cobranca.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "Cobrança *automática.*" },
+      { tipo: "tela", frase: 2, src: "contabil/leitura.webp", foco: { x: 50, y: 40, escala: 1.6 }, titulo: "A IA *lê o documento.*" },
+      { tipo: "tela", frase: 3, src: "contabil/lancamentos.webp", foco: { x: 50, y: 40, escala: 1.6 }, titulo: "Você *confere e aprova.*" },
+      { tipo: "tela", frase: 4, src: "contabil/obrigacoes.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "Prazos num *painel só.*" },
+      { tipo: "frase", frase: 5, linha1: "Menos cobrança.", linha2: "*Mais contabilidade.*" },
+      { tipo: "final", frase: 6, chamada: "Só *10 vagas* de fundador", botao: "Link na bio →" },
     ],
   },
 ];
