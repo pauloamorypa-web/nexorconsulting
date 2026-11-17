@@ -27,8 +27,10 @@ Levantamento de todos os produtos e de tudo que a venda precisa em volta deles: 
 | **Contrato** | **Não existe modelo** | Contrato de assinatura, termos de uso e anexo de dados (LGPD), com a cláusula da Nuvem Nexor | Nexor rascunha, **advogado revisa** |
 | **Chaves de IA** | Cada sistema aceita | Chave da Anthropic da Nexor (Blue) e dos clientes (Atende, Contábil) | Dono e clientes |
 | **WhatsApp comercial (Blue)** | Pronto | Número na Meta (WhatsApp Business API) | Dono |
-| **Backup fora da VPS** | Script pronto | Destino externo (outra nuvem ou HD) e backup semanal da Hostinger | Dono |
-| **Monitoramento** | Não configurado | UptimeRobot grátis na Central, na Blue e nos endereços dos clientes | Nexor configura com o dono |
+| **Backup fora da VPS** | **Pronto**: `nuvem/backup-externo.sh`, cifrado com rclone (guia na seção 8) | Criar a conta B2 ou Drive, configurar o rclone e agendar; ligar o backup semanal da Hostinger | Dono, Nexor guia |
+| **Monitoramento** | Guia pronto (seção 9 do `nuvem/README.md`) | Conta no UptimeRobot e um monitor por endereço `/health` | Dono |
+| **Proteção da Central** | **Pronto**: guia do Cloudflare Access (seção 7) e `nuvem/conferir-acesso.sh` | Criar as duas aplicações no Access e rodar o conferidor | Dono |
+| **Separar Nexor e clientes** | **Pronto**: `nuvem/instalar.sh` sozinho cria a VPS Clientes com túnel próprio (seção 6) | Fazer ao fechar o 10º cliente hospedado | Dono, Nexor guia |
 | **Manuais do usuário** | Faltam em 7 produtos | Manual curto de uso por produto | Nexor, quando autorizado |
 
 ## 3. Ordem sugerida (primeiras duas semanas)
