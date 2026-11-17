@@ -43,6 +43,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Elo: preços e prospecção em Araguari | `comercial/ELO-PRECOS.md`, `comercial/ELO-ARAGUARI.md` |
 | Pesquisa de preços do mercado e tabela sugerida | `comercial/PESQUISA-PRECOS-2026.md`, `comercial/PRECOS-SUGERIDOS-2026.md` |
 | O que falta para vender e gerenciar | `comercial/PRONTO-PARA-VENDER.md` |
+| Contrato de assinatura (modelo, fora do repositório) | Claude Docs: https://claude.ai/artifact/EBRx2GvAiKunhjGiMoW2iD |
 | Bancos de Araguari e APIs bancárias | `comercial/PESQUISA-BANCOS-ARAGUARI.md`; código em `assets/bancos/` |
 | Peças prontas | `marketing/pecas/` (fonte em `marketing/fonte/pecas.html`) |
 | Índice de todas as imagens por canal | `marketing/KIT-COMPLETO.md` (92 peças: Instagram, LinkedIn, Google Meu Negócio, Google Ads, Meta Ads, WhatsApp, impresso) |
