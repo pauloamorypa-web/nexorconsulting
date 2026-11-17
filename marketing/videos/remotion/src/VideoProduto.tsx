@@ -14,7 +14,7 @@ export const COR = { navy: "#010524", azul: "#0058FA", azulClaro: "#3B8DFF", cia
 export type Foco = { x: number; y: number; escala: number };
 export type Cena =
   | { tipo: "gancho"; frase: number; emoji: string; texto: string }
-  | { tipo: "tela"; frase: number; inicio?: number; src: string; foco: Foco; titulo: string; nota?: string; proporcao?: number }
+  | { tipo: "tela"; frase: number; inicio?: number; src: string; foco: Foco; titulo: string; nota?: string; proporcao?: number; largura?: number }
   | { tipo: "frase"; frase: number; linha1: string; linha2: string }
   | { tipo: "final"; frase: number; chamada: string; botao: string };
 
@@ -76,25 +76,27 @@ const Tela: React.FC<{ cena: Extract<Cena, { tipo: "tela" }>; duracao: number }>
   const saida = useSaida(duracao);
   const inicio = Math.round(duracao * 0.35);
   const zoom = interpolate(f, [inicio, inicio + 42], [1, cena.foco.escala], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) });
-  const L = 1000;
+  /* largura menor = tela de celular ou peça vertical: sem a barra do navegador e um pouco mais acima */
+  const L = cena.largura ?? 1000;
   const A = L / (cena.proporcao ?? 1.6);
-  const TOPO = 600;
+  const BARRA = cena.largura ? 0 : 44;
+  const TOPO = cena.largura ? 540 : 600;
   return (
     <AbsoluteFill style={{ opacity: saida }}>
       <div style={{ position: "absolute", top: 300, left: 72, right: 72, fontFamily: "Space Grotesk", fontWeight: 600, fontSize: 76, lineHeight: 1.12, letterSpacing: "-0.015em", color: COR.gelo, ...et }}>
         <Rico texto={cena.titulo} />
       </div>
       <div style={{ position: "absolute", top: TOPO, left: (1080 - L) / 2, width: L, borderRadius: 26, overflow: "hidden", background: "rgba(10,22,48,0.6)", border: "1.5px solid rgba(120,170,255,0.28)", boxShadow: "0 40px 90px rgba(0,0,0,0.5)", ...ei }}>
-        <div style={{ height: 44, display: "flex", alignItems: "center", gap: 10, padding: "0 20px", background: "rgba(255,255,255,0.06)" }}>
+        {BARRA > 0 && <div style={{ height: 44, display: "flex", alignItems: "center", gap: 10, padding: "0 20px", background: "rgba(255,255,255,0.06)" }}>
           {["#ff5f57", "#febc2e", "#28c840"].map((c) => (
             <span key={c} style={{ width: 13, height: 13, borderRadius: 7, background: c, opacity: 0.85 }} />
           ))}
-        </div>
+        </div>}
         <div style={{ width: L, height: A, overflow: "hidden" }}>
           <Img src={staticFile(cena.src)} style={{ width: "100%", height: "100%", objectFit: "contain", transform: `scale(${zoom})`, transformOrigin: `${cena.foco.x}% ${cena.foco.y}%` }} />
         </div>
       </div>
-      <div style={{ position: "absolute", top: TOPO + 44 + A + 22, width: "100%", textAlign: "center", fontFamily: "Inter", fontWeight: 500, fontSize: 26, color: COR.suave, ...ei }}>
+      <div style={{ position: "absolute", top: TOPO + BARRA + A + 22, width: "100%", textAlign: "center", fontFamily: "Inter", fontWeight: 500, fontSize: 26, color: COR.suave, ...ei }}>
         {cena.nota ?? "Tela real do sistema · dados fictícios"}
       </div>
     </AbsoluteFill>

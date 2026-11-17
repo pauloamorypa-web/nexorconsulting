@@ -17,7 +17,6 @@ O que falta o dono decidir, conferir ou autorizar. Ao resolver, mova para `02-DE
 ## Trabalho pausado ou em andamento
 | Frente | Estado |
 |---|---|
-| Vídeos com locução (Agente, Elo, Service Desk, Blue) | **Pausado** até o dono assinar o ElevenLabs. Textos e passos em `docs/RETOMAR-MARKETING.md` |
 | Kit de marketing completo, roteiros de vídeo e demonstração do Service Desk | **Pausado** a pedido do dono. Retomar quando ele pedir "voltar para a estruturação". Detalhes em `docs/RETOMAR-MARKETING.md` |
 
 ## Lacunas contra a regra "todo produto tem manuais e marketing"

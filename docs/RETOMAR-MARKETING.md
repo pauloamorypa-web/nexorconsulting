@@ -24,13 +24,12 @@ As fotos e peças foram concluídas: 38 imagens novas geradas, carrossel do Link
 ## Atualização de 16/11/2026 (2)
 Roteiros de vídeo concluídos (16 roteiros, 27 pranchas e plano de gravação) e fichas de marketplaces prontas em `marketing/marketplaces/`. Do pedido original, falta só a demonstração do Service Desk. Os vídeos automáticos do Elo e do Service Desk não foram renderizados.
 
-## Vídeos com locução: pausado em 17/11/2026
-O dono vai assinar um plano pago do ElevenLabs (a fila gratuita recusava as gerações). Ao voltar, gerar as locuções abaixo, uma por produto, com `eleven_v4`.
+## Vídeos com locução: concluídos em 17/11/2026
+Os 8 vídeos verticais foram gerados com o plano pago do ElevenLabs (`eleven_v4`). Os textos abaixo ficam como registro.
 
 | Feito | Vídeo |
 |---|---|
-| Sim | Barber, Atende IA, RH + Ponto, Contábil (`marketing/videos/nexor-*-locucao-vertical.mp4`) |
-| Não | Agente, Elo, Service Desk, Blue |
+| Sim | Barber, Atende IA, RH + Ponto, Contábil, Agente, Elo, Service Desk, Blue (`marketing/videos/nexor-*-locucao-vertical.mp4`, fora do git; renderizar de novo com `npx remotion render <id>`) |
 
 Fluxo de cada um (projeto `marketing/videos/remotion/`):
 1. Gerar a locução e baixar para `public/<pasta>/locucao.mp3`.
