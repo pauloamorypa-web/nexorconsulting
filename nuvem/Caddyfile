@@ -1,0 +1,16 @@
+# HTTPS fica na Cloudflare (túnel). Aqui só HTTP interno, separado por endereço.
+{
+	auto_https off
+	admin localhost:2019
+	servers {
+		# Mantém o IP real do visitante que vem do túnel (os sistemas usam TRUST_PROXY=2)
+		trusted_proxies static private_ranges
+	}
+}
+
+import /etc/caddy/sites/*.caddy
+
+# Endereço que ainda não foi ligado a nenhum sistema
+http:// {
+	respond "Endereço não encontrado. Fale com a Nexor: nexorconsultingit.com.br" 404
+}

@@ -1,0 +1,23 @@
+# Borda da Nuvem Nexor: um Caddy só, que recebe todos os endereços *.nexorconsultingit.com.br
+# (e os domínios próprios dos clientes hospedados) e entrega cada um ao sistema certo.
+# Não abre porta nenhuma: o túnel da Cloudflare do servidor interno (interno/) chega aqui pela rede "nexor-borda".
+# O HTTPS é feito pela Cloudflare. Rotas em sites/*.caddy, criadas pelo subdominio.sh.
+name: nexor-borda
+
+services:
+  borda:
+    image: caddy:2
+    restart: unless-stopped
+    networks:
+      borda:
+        aliases: [borda]
+    volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro", "./sites:/etc/caddy/sites:ro", "caddy-dados:/data"]
+    logging: { driver: json-file, options: { max-size: "10m", max-file: "5" } }
+
+networks:
+  borda:
+    external: true
+    name: nexor-borda
+
+volumes:
+  caddy-dados: {}

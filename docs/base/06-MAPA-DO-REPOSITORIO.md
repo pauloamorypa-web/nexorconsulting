@@ -1,6 +1,6 @@
 # 6. Mapa do repositório e estado dos produtos
 
-Para achar sem procurar. Atualizado em 12/11/2026.
+Para achar sem procurar. Atualizado em 17/11/2026.
 
 ## Produtos
 | Produto | Pasta | Porta da demo | Página no site (`solucoes/…`) | Banca | Estado |
@@ -22,7 +22,8 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Nexor Central | `central/` | Clientes, planos, teste, fundadores, faturas, comissões, licenças, fila de conversão offline |
 | Blue (assistente de vendas) | `agent/` | Atende contatos, pontua, faz cadência, envia eventos ao Meta e ao Google, relatório por campanha |
 | Servidor interno | `interno/` | Central e Blue com túnel, backup e endurecimento |
-| Implantação por empresa | `implantacao/` | Docker, túnel, backup, guia de instalação |
+| Implantação por empresa | `implantacao/` | Docker, túnel, backup, guia de instalação; `nova-empresa.sh <cliente> auto` cria o cliente na Nuvem Nexor |
+| Nuvem Nexor (VPS Hostinger) | `nuvem/` | Borda que entrega `<cliente>.nexorconsultingit.com.br` a cada sistema; guia completo da VPS em `nuvem/README.md` |
 
 ## Site
 | O quê | Onde |
@@ -41,6 +42,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Planos, preços, fundadores, comissões | `comercial/PLANOS-E-PRECOS.md` e `central/src/planos.js` |
 | Elo: preços e prospecção em Araguari | `comercial/ELO-PRECOS.md`, `comercial/ELO-ARAGUARI.md` |
 | Pesquisa de preços do mercado e tabela sugerida | `comercial/PESQUISA-PRECOS-2026.md`, `comercial/PRECOS-SUGERIDOS-2026.md` |
+| O que falta para vender e gerenciar | `comercial/PRONTO-PARA-VENDER.md` |
 | Bancos de Araguari e APIs bancárias | `comercial/PESQUISA-BANCOS-ARAGUARI.md`; código em `assets/bancos/` |
 | Peças prontas | `marketing/pecas/` (fonte em `marketing/fonte/pecas.html`) |
 | Índice de todas as imagens por canal | `marketing/KIT-COMPLETO.md` (92 peças: Instagram, LinkedIn, Google Meu Negócio, Google Ads, Meta Ads, WhatsApp, impresso) |

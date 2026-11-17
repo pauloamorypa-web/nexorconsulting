@@ -15,6 +15,10 @@ O que falta o dono decidir, conferir ou autorizar. Ao resolver, mova para `02-DE
 | Bancos | Antes do primeiro arquivo CNAB real, validar com o gerente do banco. Para a API Pix, cada cliente cria a credencial e o certificado no portal do próprio banco |
 | Preço no site | Confirmar que a regra "site não publica mensalidade" vale para todos os produtos |
 
+| VPS e servidor | Contratar a VPS KVM 2 na Hostinger, passar o DNS para a Cloudflare, criar o túnel com `central`, `api` e `*`, instalar e fazer o primeiro acesso à Central. Passo a passo em `nuvem/README.md`; lista completa em `comercial/PRONTO-PARA-VENDER.md` |
+| Contrato | Não há modelo de contrato de assinatura, termos de uso e anexo LGPD. A Nexor rascunha quando pedido; advogado revisa |
+| Nota fiscal da Nexor | Ativar a NFS-e no Asaas com o contador |
+
 ## Trabalho pausado ou em andamento
 | Frente | Estado |
 |---|---|

@@ -1,0 +1,22 @@
+# Nuvem Nexor: a empresa roda na VPS da Nexor, atrás da borda (nuvem/).
+# Usado sozinho pelos scripts quando o .env da empresa tem NUVEM=1.
+# Cada sistema entra na rede da borda com um apelido único (<empresa>-<sistema>), e o IP real do visitante
+# atravessa dois proxies (túnel da Cloudflare + borda), por isso TRUST_PROXY=2.
+services:
+  rh:
+    environment: { TRUST_PROXY: "2" }
+    networks: { nexor: {}, borda: { aliases: ["${EMPRESA}-rh"] } }
+  contabil:
+    environment: { TRUST_PROXY: "2" }
+    networks: { nexor: {}, borda: { aliases: ["${EMPRESA}-contabil"] } }
+  barber:
+    environment: { TRUST_PROXY: "2" }
+    networks: { nexor: {}, borda: { aliases: ["${EMPRESA}-barber"] } }
+  atende:
+    environment: { TRUST_PROXY: "2" }
+    networks: { nexor: {}, borda: { aliases: ["${EMPRESA}-atende"] } }
+
+networks:
+  borda:
+    external: true
+    name: nexor-borda
