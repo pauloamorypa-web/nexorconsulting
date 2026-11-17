@@ -7,6 +7,8 @@ import { MOTIVOS_AFASTAMENTO } from "../esocial/eventos.js";
 import { dataLocal, diasEntre, somarDias } from "../ponto/calendario.js";
 import { centavos, competencia, data, op, t, validar } from "./validacao.js";
 import { falha } from "./roteador.js";
+import { BANCOS, banco as bancoPorCodigo } from "../bancos/lista.js";
+import { BANCOS_CNAB, remessaPagamentos } from "../bancos/cnab240.js";
 
 const RH = { papeis: ["admin", "rh"] };
 const TODOS = {};
@@ -202,6 +204,47 @@ export function rotasFolha({ r, repo, nucleo, agora, filtroEquipe, exigirColabor
     }
     ctx.res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="pagamentos_${f.competencia}_${f.tipo}.csv"` });
     ctx.res.end("﻿" + linhas.join("\r\n"));
+  });
+
+  /* Banco do colaborador: aceita o código ("756") ou o nome escrito no cadastro ("Sicoob", "Banco do Brasil") */
+  const codigoDoBanco = (texto) => {
+    const t = String(texto ?? "").trim();
+    if (!t) return undefined;
+    if (/^\d{1,3}$/.test(t)) return bancoPorCodigo(t)?.codigo ?? t.padStart(3, "0");
+    const m = /^(\d{3})\b/.exec(t);
+    if (m) return m[1];
+    const sem = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const alvo = sem(t);
+    return BANCOS.find((b) => alvo === sem(b.curto) || alvo === sem(b.nome) || alvo.includes(sem(b.curto)))?.codigo;
+  };
+
+  /** Remessa CNAB 240 da folha: a empresa sobe no internet banking e o banco paga todos de uma vez */
+  r.get("/api/folhas/:id/remessa.rem", RH, (ctx) => {
+    const f = repo.obter("folhas", ctx.empresa.id, ctx.params.id);
+    if (!f) falha(404, "Folha não encontrada.");
+    const pg = ctx.empresa.config.pagamento ?? {};
+    if (!pg.banco || !pg.agencia || !pg.conta) falha(400, "Informe a conta da empresa em Configurações → Pagamentos (banco, agência e conta).");
+    if (!BANCOS_CNAB.includes(String(pg.banco).padStart(3, "0"))) falha(400, `O arquivo do banco ainda não está pronto para ${bancoPorCodigo(pg.banco)?.nome ?? pg.banco}. Use o CSV de pagamentos.`);
+    const dataPg = /^\d{4}-\d{2}-\d{2}$/.test(ctx.query.get("data") ?? "") ? ctx.query.get("data") : f.totais?.data_pagamento ?? hoje();
+    const faltam = [];
+    const pagamentos = [];
+    for (const i of nucleo.itensDaFolha(f.id, ctx.empresa.id)) {
+      if (i.liquido <= 0) continue;
+      const c = repo.obter("colaboradores", ctx.empresa.id, i.colaborador_id);
+      const cod = codigoDoBanco(c.banco?.banco);
+      if (!cod || !c.banco?.agencia || !c.banco?.conta) { faltam.push(c.nome); continue; }
+      pagamentos.push({ nome: c.nome, cpf: c.cpf, banco: cod, agencia: c.banco.agencia, conta: c.banco.conta, valor: i.liquido / 100, seuNumero: `${f.competencia.replace("-", "")}${c.matricula ?? ""}`.slice(0, 20) });
+    }
+    if (faltam.length) falha(400, `Falta banco, agência ou conta no cadastro de: ${faltam.slice(0, 8).join(", ")}${faltam.length > 8 ? ` e mais ${faltam.length - 8}` : ""}.`);
+    let r2;
+    try {
+      r2 = remessaPagamentos({ empresa: { cnpj: ctx.empresa.cnpj, nome: ctx.empresa.razao_social, banco: pg.banco, agencia: pg.agencia, conta: pg.conta, convenio: pg.convenio, endereco: ctx.empresa.endereco?.logradouro, cidade: ctx.empresa.endereco?.cidade, uf: ctx.empresa.endereco?.uf, cep: ctx.empresa.endereco?.cep }, pagamentos, data: dataPg, servico: "salario", sequencia: Number(String(f.competencia).replace("-", "").slice(-2)) || 1, agora: new Date(agora()) });
+    } catch (e) {
+      falha(400, e.message);
+    }
+    auditar(ctx, "folha.remessa_banco", { folha: f.id, quantidade: r2.quantidade, total: r2.total });
+    ctx.res.writeHead(200, { "Content-Type": "text/plain; charset=us-ascii", "Content-Disposition": `attachment; filename="${r2.nomeArquivo}"` });
+    ctx.res.end(r2.texto);
   });
 
   r.get("/api/tabelas", RH, ({ empresa }) => ({ vigentes: tabelasDaEmpresa(empresa), padrao: TABELAS_PADRAO, personalizadas: Boolean(empresa.config.tabelas) }));

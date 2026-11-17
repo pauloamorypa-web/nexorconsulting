@@ -1183,3 +1183,25 @@ test("Reteste U-05: a mensagem não repete o nome do campo (\"CPF inválido\") e
   assert.throws(() => validar(z.object({ cpf }), { cpf: "111.111.111-11" }), (e) => e.message === "CPF inválido");
   assert.throws(() => validar(z.object({ nova: z.string().min(8) }), { nova: "123" }), (e) => /^Nova senha: /.test(e.message));
 });
+
+test("Pix da barbearia: chave conferida, copia e cola com o valor da comanda e QR Code em SVG", async () => {
+  const { lerCopiaECola } = await import("../src/bancos/pix.js");
+  const s = await subir();
+  try {
+    const { dono } = await barbeariaPronta(s);
+    assert.equal((await dono.get("/api/pix?valor=7000")).status, 400, "sem chave cadastrada");
+    assert.equal((await dono.put("/api/config", { pix: { chave: "123" } })).status, 400, "chave inválida");
+    assert.equal((await dono.put("/api/config", { pix: { chave: "(34) 99733-7499", cidade: "Araguari" } })).status, 200);
+    const r = await dono.get("/api/pix?valor=7000&ref=AG1");
+    assert.equal(r.status, 200, JSON.stringify(r.dados));
+    const l = lerCopiaECola(r.dados.copia_e_cola);
+    assert.equal(l.chave, "+5534997337499");
+    assert.equal(l.valor, 70);
+    assert.equal(l.cidade, "ARAGUARI");
+    assert.match(r.dados.svg, /^<svg/);
+    assert.equal((await dono.get("/api/pix?valor=-5")).status, 400);
+    assert.equal((await s.cliente().get("/api/pix?valor=7000")).status, 401, "precisa estar logado");
+  } finally {
+    s.fechar();
+  }
+});

@@ -133,6 +133,30 @@ test("conferência por código: CNPJ inválido e nota de outra empresa", async (
   await eq.post(`/api/documentos/${d.id}/rejeitar`, { motivo: "não é do cliente", reabrir_pendencia: false });
 });
 
+test("extrato OFX do banco vira lançamentos na hora, sem IA", async () => {
+  const antes = s.ia.chamadas?.length ?? 0;
+  const ofx = Buffer.from(`OFXHEADER:100
+DATA:OFXSGML
+CHARSET:1252
+
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><CURDEF>BRL<BANKACCTFROM><BANKID>756<BRANCHID>3070<ACCTID>555-1</BANKACCTFROM>
+<BANKTRANLIST><DTSTART>20261001<DTEND>20261031
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20261003<TRNAMT>1500,00<FITID>F1<MEMO>PIX RECEBIDO CLIENTE
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261010<TRNAMT>-89,90<FITID>F2<MEMO>TARIFA PACOTE
+</BANKTRANLIST><LEDGERBAL><BALAMT>3410,10<DTASOF>20261031</LEDGERBAL></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`, "latin1");
+  const up = await eq.enviar(`/api/documentos?cliente=${cli.id}`, ofx, "application/octet-stream", "extrato-sicoob-outubro.ofx");
+  assert.equal(up.status, 200, JSON.stringify(up.dados));
+  const d = (await eq.get(`/api/documentos/${up.dados.id}`)).dados;
+  assert.equal(d.leitura_status, "lido");
+  assert.equal(d.tipo, "extrato_bancario");
+  assert.equal(d.competencia, "2026-10");
+  assert.match(d.leitura.banco, /Sicoob/);
+  assert.equal(d.lancamentos.length, 2);
+  assert.deepEqual(d.lancamentos.map((l) => l.valor_centavos).sort((a, b) => a - b), [8990, 150000]);
+  assert.equal(s.ia.chamadas?.length ?? 0, antes, "não chamou a IA");
+  await eq.post(`/api/documentos/${d.id}/rejeitar`, { motivo: "teste", reabrir_pendencia: false });
+});
+
 test("falha da IA não perde o documento e dá para ler de novo", async () => {
   s.ia.leituras.push(new Error("Overloaded"));
   const up = await eq.enviar(`/api/documentos?cliente=${cli.id}`, Buffer.concat([PDF, Buffer.from("recibo")]), "application/pdf", "recibo.pdf");

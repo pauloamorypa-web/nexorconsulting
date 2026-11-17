@@ -40,6 +40,8 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 |---|---|
 | Planos, preços, fundadores, comissões | `comercial/PLANOS-E-PRECOS.md` e `central/src/planos.js` |
 | Elo: preços e prospecção em Araguari | `comercial/ELO-PRECOS.md`, `comercial/ELO-ARAGUARI.md` |
+| Pesquisa de preços do mercado e tabela sugerida | `comercial/PESQUISA-PRECOS-2026.md`, `comercial/PRECOS-SUGERIDOS-2026.md` |
+| Bancos de Araguari e APIs bancárias | `comercial/PESQUISA-BANCOS-ARAGUARI.md`; código em `assets/bancos/` |
 | Peças prontas | `marketing/pecas/` (fonte em `marketing/fonte/pecas.html`) |
 | Índice de todas as imagens por canal | `marketing/KIT-COMPLETO.md` (92 peças: Instagram, LinkedIn, Google Meu Negócio, Google Ads, Meta Ads, WhatsApp, impresso) |
 | Textos por canal | `marketing/CANAIS.md`, `marketing/README.md`, `marketing/ELO-MARKETING.md` |

@@ -179,11 +179,26 @@ export async function comanda(ctx, ag, aoSalvar) {
     render();
   });
   const fechar = h("button", { class: "btn btn-sucesso" }, icone("check", 16), "Fechar comanda");
+  /* QR do Pix com a chave da barbearia: o cliente paga no balcão e o dinheiro cai direto na conta */
+  const verPix = h("button", { class: "btn btn-fantasma", type: "button" }, "QR do Pix");
+  verPix.onclick = () =>
+    acao(verPix, async () => {
+      const dd = lerDesconto(desconto.value, subtotalAtual);
+      if (dd.erro) throw new Error(dd.erro);
+      const total = Math.max(0, subtotalAtual - (dd.centavos ?? 0));
+      if (total <= 0) throw new Error("Comanda sem valor a pagar.");
+      const p = await get(`/pix?valor=${total}&ref=${encodeURIComponent(String(ag.id).replace(/[^A-Za-z0-9]/g, "").slice(0, 20))}`);
+      const quadro = h("div", { style: { width: "260px", margin: "0 auto", background: "#fff", padding: "10px", borderRadius: "12px" } });
+      quadro.innerHTML = p.svg; // SVG gerado pelo servidor (biblioteca qrcode), sem texto do usuário
+      const codigo = h("textarea", { class: "entrada", readonly: true, rows: 3, style: { fontSize: "12px" } });
+      codigo.value = p.copia_e_cola;
+      janela({ titulo: `Pix · ${reais(p.valor_centavos)}`, largura: 380, conteudo: h("div", { class: "pilha" }, quadro, h("p", { class: "suave pequeno" }, "O cliente lê o QR Code no app do banco. Confira o Pix recebido antes de fechar a comanda."), codigo, h("button", { class: "btn", type: "button", onclick: () => navigator.clipboard?.writeText(p.copia_e_cola).then(() => aviso("Código copiado.")) }, "Copiar código")) });
+    });
   const j = janela({
     titulo: `Comanda · ${ag.cliente.nome}`,
     largura: 560,
     conteudo: h("div", { class: "pilha" }, h("p", { class: "suave" }, `${ag.servico.nome} com ${ag.barbeiro.nome} · ${ag.hora}`), lista, produtos.length ? selP : null, h("div", { class: "grade-2" }, campo("Desconto (R$ ou %)", h("div", { class: "pilha", style: { gap: "4px" } }, desconto, avisoDesconto)), campo("Total", totalEl)), campo("Forma de pagamento", botoesForma), ag.clube ? h("p", { class: "suave pequeno" }, "O serviço já está coberto pelo clube. Se a comanda tiver só o serviço, ela fecha com valor zero.") : null),
-    acoes: [fechar],
+    acoes: [verPix, fechar],
   });
   fechar.onclick = () =>
     acao(fechar, async () => {

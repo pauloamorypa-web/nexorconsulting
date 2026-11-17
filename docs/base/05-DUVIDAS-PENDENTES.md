@@ -1,17 +1,18 @@
 # 5. Dúvidas e pendências
 
-O que falta o dono decidir, conferir ou autorizar. Ao resolver, mova para `02-DECISOES-APROVADAS.md`. Atualizado em 12/11/2026.
+O que falta o dono decidir, conferir ou autorizar. Ao resolver, mova para `02-DECISOES-APROVADAS.md`. Atualizado em 17/11/2026.
 
 ## Para o dono decidir ou conferir
 | Item | O que falta |
 |---|---|
 | Elo · tarifas do Asaas | Conferir no contrato as tarifas de Pix, boleto e cartão e ajustar `ASAAS_TARIFA_*` (hoje são estimativas) |
 | Elo · modelo de cobrança | Validar: a cobrança sai da conta Asaas da Nexor e a taxa da plataforma é de 2,5% |
-| Conversão offline | Colocar o mesmo token em `CONVERSAO_TOKEN` na Central e na Blue, e a `CONVERSAO_URL` na Central |
 | Service Desk v1.12 no cliente | Aprovar cada computador uma vez, dar a permissão de comando remoto a quem precisa, preencher o `.env`, testar os agentes em Windows e Mac reais |
 | Banca nas outras páginas | Citar a Banca também nas páginas dos outros produtos? |
 | Texto base de 16 px | Os painéis usam 14,5 px. A regra de tipografia recomenda 16 px no texto principal; mudar altera todas as telas. Subir para 16 px? |
-| Preço nas plataformas de software | Capterra, GetApp e B2B Stack pedem preço. Informar só "sob consulta", o "a partir de" ou só nos produtos de entrada? Opções em `marketing/marketplaces/README.md` |
+| Tabela de preços nova | Aprovar ou ajustar `comercial/PRECOS-SUGERIDOS-2026.md` (Ponto mais barato, Agente Start, Service Desk por técnico, implantação grátis no Barber e modalidades novas de parceiro). Depois a Nexor atualiza a Central |
+| Preço nas plataformas de software | Recomendação: caminho misto, em `marketing/marketplaces/README.md`. Confirmar |
+| Bancos | Antes do primeiro arquivo CNAB real, validar com o gerente do banco. Para a API Pix, cada cliente cria a credencial e o certificado no portal do próprio banco |
 | Preço no site | Confirmar que a regra "site não publica mensalidade" vale para todos os produtos |
 
 ## Trabalho pausado ou em andamento

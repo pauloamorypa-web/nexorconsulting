@@ -3,6 +3,8 @@
    barbeiro (a própria agenda, folgas, horário, comandas e comissões). */
 
 import { z } from "zod";
+import { normalizarChave, pixCopiaECola } from "../bancos/pix.js";
+import QRCode from "qrcode";
 import { HORARIO_PADRAO, OCUPA, REGRAS_PADRAO, expediente, ocupacao } from "../regras/agenda.js";
 import { diasEntre, hojeBR, paraMs, somarDias } from "../regras/datas.js";
 import { gerarHashSenha, gerarToken, hashSenha, iguais, precisaRefazerHash, senhaConfere, sha256 } from "../seguranca.js";
@@ -539,6 +541,22 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
 
   /* ---------- Configurações da barbearia ---------- */
   const regras = z.object({ passo_min: z.number().int().refine((v) => [5, 10, 15, 20, 30, 60].includes(v), "5, 10, 15, 20, 30 ou 60"), antecedencia_min: z.number().int().min(0).max(2880), janela_dias: z.number().int().min(1).max(120), cancelamento_horas: z.number().min(0).max(72), lembrete_horas: z.number().min(0).max(48), tolerancia_min: z.number().int().min(0).max(120), lista_espera: z.boolean(), comissao_clube: z.enum(["preco", "nenhuma"]), desconto_teto_barbeiro: pct.nullable(), desconto_teto_recepcao: pct.nullable() }).partial();
+  /** Pix da barbearia (chave própria): copia e cola e QR Code para o cliente pagar no balcão. Cai direto na conta da chave. */
+  r.get("/api/pix", async ({ barbearia, query }) => {
+    const pix = barbearia.config.pix ?? {};
+    if (!pix.chave) falha(400, "Cadastre a chave Pix da barbearia em Configurações.");
+    const centavos = Number(query.get("valor"));
+    if (!Number.isInteger(centavos) || centavos <= 0 || centavos > 10_000_000) falha(400, "Valor inválido.");
+    let codigo;
+    try {
+      codigo = pixCopiaECola({ chave: pix.chave, nome: barbearia.nome, cidade: pix.cidade || "Araguari", valor: centavos / 100, txid: String(query.get("ref") ?? "").slice(0, 25), descricao: "Barbearia" });
+    } catch (e) {
+      falha(400, e.message);
+    }
+    const svg = await QRCode.toString(codigo, { type: "svg", margin: 1, errorCorrectionLevel: "M" });
+    return { copia_e_cola: codigo, svg, valor_centavos: centavos };
+  });
+
   r.get("/api/config", ({ barbearia }) => ({ nome: barbearia.nome, config: configPublica(barbearia.config) }));
   r.put("/api/config", ADM, async (ctx) => {
     const d = validar(
@@ -549,11 +567,19 @@ export function criarApi({ repo, nucleo, cofre, cfg, central, agora = () => Date
         regras: regras.optional(),
         retorno: z.object({ ativo: z.boolean(), margem_dias: z.number().int().min(0).max(30) }).partial().optional(),
         marca: z.object({ cor: cor, slogan: op(120), endereco: op(200), telefone: op(30), instagram: op(60), mapa: z.string().url().max(300).optional().nullable().or(z.literal("")) }).partial().optional(),
+        pix: z.object({ chave: op(120), cidade: op(40) }).partial().optional(),
       }),
       await ctx.corpo(),
     );
     const c = ctx.barbearia.config;
-    const config = { ...c, ...(d.horario ? { horario: d.horario } : {}), ...(d.excecoes ? { excecoes: Object.fromEntries(Object.entries(d.excecoes).filter(([k]) => k >= somarDias(hoje(), -1))) } : {}), regras: { ...c.regras, ...(d.regras ?? {}) }, retorno: { ...c.retorno, ...(d.retorno ?? {}) }, marca: { ...c.marca, ...(d.marca ?? {}) } };
+    if (d.pix?.chave) {
+      try {
+        d.pix.chave = normalizarChave(d.pix.chave).chave;
+      } catch (e) {
+        falha(400, e.message);
+      }
+    }
+    const config = { ...c, ...(d.pix ? { pix: { ...(c.pix ?? {}), ...d.pix } } : {}), ...(d.horario ? { horario: d.horario } : {}), ...(d.excecoes ? { excecoes: Object.fromEntries(Object.entries(d.excecoes).filter(([k]) => k >= somarDias(hoje(), -1))) } : {}), regras: { ...c.regras, ...(d.regras ?? {}) }, retorno: { ...c.retorno, ...(d.retorno ?? {}) }, marca: { ...c.marca, ...(d.marca ?? {}) } };
     auditar(ctx, "config_alterada", { campos: Object.keys(d) });
     const b = repo.atualizar("barbearias", ctx.barbearia.id, { nome: d.nome ?? ctx.barbearia.nome, config });
     return { nome: b.nome, config: configPublica(b.config) };

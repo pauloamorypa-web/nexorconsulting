@@ -9,6 +9,8 @@ O que é **da Nexor** (não dos clientes) roda aqui, num servidor Linux:
 | Túnel Cloudflare | HTTPS sem abrir portas | — | — |
 | Backup diário | Banco da Central, chave das licenças, leads e agenda | `./backups` | — |
 
+**Conversão offline ligada sozinha:** a Central avisa a Blue pela rede interna (`http://assist:8787/api/conversao`) com o `REPORT_TOKEN` que o `instalar.sh` gera. Não precisa copiar token nenhum.
+
 Isto substitui o `central/instalar.sh` (que continua servindo para uma Central sozinha) e o Render para a Blue.
 
 ```bash

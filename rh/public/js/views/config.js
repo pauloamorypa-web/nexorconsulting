@@ -35,6 +35,14 @@ async function empresa() {
     { nome: "exige_biometria", rotulo: "Exigir biometria (digital ou rosto) em toda marcação pelo app", tipo: "check", largura: 2 },
     { nome: "permitir_quiosque_pin", rotulo: "Permitir ponto no quiosque com CPF + PIN (quem está sem celular)", tipo: "check", largura: 2 },
   ], e.config.ponto);
+  const pg = formulario([
+    { nome: "banco", rotulo: "Banco da conta da empresa", tipo: "select", opcoes: [["", "Escolha"], ["001", "Banco do Brasil"], ["104", "Caixa"], ["237", "Bradesco"], ["033", "Santander"], ["756", "Sicoob"], ["748", "Sicredi"], ["077", "Inter"]], largura: 2 },
+    { nome: "agencia", rotulo: "Agência" },
+    { nome: "conta", rotulo: "Conta com dígito", ajuda: "Ex.: 12345-6" },
+    { nome: "convenio", rotulo: "Convênio de pagamentos", ajuda: "Código que o banco dá ao liberar o pagamento de salários por arquivo." },
+  ], e.config.pagamento ?? {});
+  const semPagamento = ctxAtual.oculto("campo.pagamento_banco");
+  const cartaoPagamento = semPagamento ? null : h("form", { class: "cartao", onsubmit: (ev) => (ev.preventDefault(), acao(ev.submitter, async () => (await put("/empresa", { config: { pagamento: pg.ler() } }), aviso("Conta de pagamentos salva.")))) }, h("h2", {}, "Pagamentos pelo banco"), h("p", { class: "suave pequeno" }, "Com esta conta, a folha gera o arquivo do banco (CNAB 240). Você sobe o arquivo no internet banking e o banco paga todos de uma vez. Peça ao gerente para validar o primeiro arquivo."), pg.el, h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "submit" }, "Salvar")));
   const inpi = formulario([{ nome: "registro_inpi", rotulo: "Registro do REP-P no INPI", ajuda: "Exigido pela Portaria 671 para o REP-P. Aparece no comprovante, no AFD e no AEJ." }], e.config);
   // Campos que o Suporte Nexor pode esconder do cliente
   const semDados = ctxAtual.oculto("campo.dados_empresa");
@@ -46,6 +54,7 @@ async function empresa() {
     { class: "grade-form" },
     semDados ? null : h("form", { class: "cartao", onsubmit: (ev) => (ev.preventDefault(), acao(ev.submitter, async () => (await put("/empresa", f.ler()), aviso("Empresa salva."), ctxAtual.recarregarEu()))) }, h("h2", {}, "Dados da empresa"), f.el, h("div", { class: "barra-salvar" }, h("button", { class: "btn btn-primario", type: "submit" }, "Salvar"))),
     cartaoPonto,
+    cartaoPagamento,
     semDados && !cartaoPonto ? h("p", { class: "suave" }, "Os dados da empresa são mantidos pela Nexor.") : null,
     cartaoVincular(),
   );

@@ -33,10 +33,20 @@ Textos e imagens prontos para cadastrar a Nexor e os produtos em **Capterra**, *
 - Coloque o selo da plataforma na página do produto quando houver pelo menos 5 avaliações.
 - Use os links com `utm_source` da tabela de cada ficha, para a Blue e o relatório de campanhas reconhecerem a origem.
 
-## Preço: decisão pendente
-A regra atual é não publicar mensalidade no site. As plataformas pedem um modelo de preço e, em geral, um "a partir de". Três caminhos:
-1. **Informar só o modelo:** "assinatura mensal, com teste grátis de 30 dias" e "preço sob consulta". Mantém a regra; a ficha perde destaque nos filtros de preço.
-2. **Informar o "a partir de"** que já está em `comercial/PLANOS-E-PRECOS.md` (por exemplo, Barber a partir de R$ 89 e Service Desk a partir de R$ 299). Aparece melhor nas buscas; muda a regra só para as plataformas.
-3. **Informar só nos produtos de entrada** (Barber e RH), onde o preço baixo ajuda.
+## Preço: recomendação (17/11/2026)
+**Caminho sugerido: misto.** Mostrar "a partir de" onde o preço Nexor ganha na comparação. Usar "sob consulta" onde o preço depende do projeto. A regra do site (não publicar mensalidade) continua só para o site.
 
-As fichas estão escritas para o caminho 1. Se escolher outro, troque a linha "Preço" de cada ficha.
+| Produto | O que informar na ficha | Motivo |
+|---|---|---|
+| Barber | a partir de R$ 89 por mês, teste grátis de 30 dias | Faixa do mercado: R$ 55 a R$ 220 |
+| RH + Ponto | a partir de R$ 5,90 por colaborador (se a tabela sugerida for aprovada) | Os líderes publicam por colaborador |
+| Service Desk | R$ 99 por técnico (se aprovado) | Metade do Milvus; aparece bem no filtro de preço |
+| Atende IA | a partir de R$ 497 por mês | Dentro da faixa do Blip e do Octadesk |
+| Contábil, Agente e Elo | sob consulta, com teste grátis de 30 dias | Os concorrentes também não publicam; o preço depende da carteira e dos sistemas |
+
+**Como usar as plataformas sem gastar:**
+1. Comece pela ficha grátis. Um cadastro na Capterra alimenta também GetApp e Software Advice. O B2B Stack é um cadastro à parte, também grátis.
+2. Só pense em anúncio pago (custo por clique) depois de ter 5 avaliações no produto. Sem avaliação, o clique pago não converte.
+3. A ordem continua a mesma: Atende IA, RH + Ponto e Service Desk primeiro.
+
+Base dos números: [`comercial/PESQUISA-PRECOS-2026.md`](../../comercial/PESQUISA-PRECOS-2026.md) e [`comercial/PRECOS-SUGERIDOS-2026.md`](../../comercial/PRECOS-SUGERIDOS-2026.md).

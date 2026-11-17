@@ -23,6 +23,7 @@ Use como está. Só mude um padrão se o dono pedir. Atualizado em 12/11/2026.
 ## Design dos produtos
 - **Site e peças de marketing:** fundo navy `#010524`, azul `#0058FA`, azul claro `#3B8DFF`, ciano `#00E1FB`, branco gelo `#EBF1F9`. Fontes: Space Grotesk (títulos), Inter (texto), Michroma (logo), JetBrains Mono (código). Variáveis em `assets/css/style.css`.
 - **Painéis dos sistemas:** tema claro, com os tokens e componentes de `elo/public/comum/` (`base.css`, `ui.js`, `casca.js`, `tema.js`, `demo-faixa.js`). Copie essa pasta.
+- **Bancos (desde 17/11/2026):** código comum em `assets/bancos/`, copiado por `tools/bancos.sh` para `src/bancos/` de RH, Contábil e Barber. Inclui Pix copia e cola com a chave do cliente (qualquer banco), leitura de OFX, remessa CNAB 240 de pagamentos (BB, Caixa, Bradesco, Santander, Sicoob, Sicredi e Inter; o Itaú usa o SISPAG, que é diferente) e cliente da API Pix no padrão do Banco Central. Boleto e cartão continuam pelo Asaas. Testes: `node --test assets/bancos/bancos.test.mjs`.
 - **Telas de acesso (login, primeiro acesso, portal):** padrão único desde 12/11/2026. Fundo navy com a rede animada de pontos (`fundo-rede.js`) e caixas de vidro (transparentes, com desfoque), definidas em `acesso.css`.
   - Fonte única em `assets/acesso/`. Depois de mudar, rode `tools/acesso.sh`, que copia para `<produto>/public/acesso/`. Não edite as cópias.
   - Em cada página com tela de acesso: `<link rel="stylesheet" href="/acesso/acesso.css">` e `<script src="/acesso/fundo-rede.js" defer></script>`.
