@@ -11,6 +11,7 @@ import tAgente from "./tempos/agente";
 import tElo from "./tempos/elo";
 import tServicedesk from "./tempos/servicedesk";
 import tBlue from "./tempos/blue";
+import tEloFornecedor from "./tempos/elo-fornecedor";
 
 export const PRODUTOS: Produto[] = [
   {
@@ -203,6 +204,32 @@ export const PRODUTOS: Produto[] = [
       { tipo: "frase", frase: 4, linha1: "Quer falar com gente?", linha2: "*O time está lá.*" },
       { tipo: "frase", frase: 5, linha1: "IA que atende.", linha2: "*Gente que cuida.*" },
       { tipo: "final", frase: 6, chamada: "Me chama *agora*", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorEloFornecedor",
+    nome: "Nexor Elo · para o fornecedor",
+    pasta: "elo-fornecedor",
+    tempos: tEloFornecedor,
+    frases: [
+      "Fornecedor, o orçamento sai do seu balcão. E você nunca sabe se ele volta.",
+      "No Nexor Elo, os seus instaladores montam a proposta com o seu catálogo, o seu preço e o seu estoque.",
+      "Ao enviar, os itens ficam reservados, com prazo. E você acompanha cada proposta até o pagamento.",
+      "Quando o cliente paga, a sua parte cai direto na sua conta. Sem correr atrás.",
+      "Você vê o score de cada instalador e define o crédito dele. Atrasou um título? As novas reservas são bloqueadas sozinhas.",
+      "E o cliente do instalador fica com ele. Por isso ele confia em você.",
+      "Mais venda. Menos risco.",
+      "São só dez vagas de fundador para fornecedores. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "📦", texto: "O orçamento saiu do balcão. *Ele volta?*" },
+      { tipo: "tela", frase: 1, src: "elo-fornecedor/catalogo.webp", foco: { x: 55, y: 30, escala: 1.6 }, titulo: "Seu catálogo, *seu preço, seu estoque.*" },
+      { tipo: "tela", frase: 2, src: "elo-fornecedor/painel-fornecedor.webp", foco: { x: 60, y: 72, escala: 1.7 }, titulo: "Estoque reservado, *com prazo.*" },
+      { tipo: "tela", frase: 3, src: "elo-fornecedor/financeiro-repasses.webp", foco: { x: 45, y: 20, escala: 1.7 }, titulo: "Sua parte *direto na sua conta.*" },
+      { tipo: "tela", frase: 4, src: "elo-fornecedor/instaladores-credito.webp", foco: { x: 62, y: 28, escala: 1.9 }, titulo: "Score, crédito *e bloqueio automático.*", proporcao: 1600 / 960 },
+      { tipo: "tela", frase: 5, src: "elo-fornecedor/propostas-reservas.webp", foco: { x: 40, y: 10, escala: 2.0 }, titulo: "O cliente *fica com o instalador.*" },
+      { tipo: "frase", frase: 6, linha1: "Mais venda.", linha2: "*Menos risco.*" },
+      { tipo: "final", frase: 7, chamada: "Só *10 vagas* de fundador para fornecedores", botao: "Link na bio →" },
     ],
   },
 ];
