@@ -48,7 +48,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Peças prontas | `marketing/pecas/` (fonte em `marketing/fonte/pecas.html`) |
 | Índice de todas as imagens por canal | `marketing/KIT-COMPLETO.md` (92 peças: Instagram, LinkedIn, Google Meu Negócio, Google Ads, Meta Ads, WhatsApp, impresso) |
 | Textos por canal | `marketing/CANAIS.md`, `marketing/README.md`, `marketing/ELO-MARKETING.md` |
-| Campanhas, projeção e simulador | `marketing/campanhas/` (Google Ads de lançamento: `google-ads-lancamento.json`, criar pausado pelo Windsor) |
+| Campanhas, projeção e simulador | `marketing/campanhas/` (Google Ads de lançamento: `google-ads-lancamento.json`, no ar desde 17/11/2026 pelo Windsor, R$ 20/dia; revisar termos de busca em 7 dias) |
 | Marca e uniformes | `marketing/marca/`, `marketing/uniformes/` |
 | Vídeos e gerador | `marketing/videos/` |
 | Vídeos com locução (Remotion) | `marketing/videos/remotion/` · piloto `marketing/videos/nexor-barber-locucao-vertical.mp4` |
