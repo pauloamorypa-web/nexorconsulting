@@ -2,6 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { FPS, VideoProduto, duracaoEmQuadros } from "./VideoProduto";
 import { PRODUTOS } from "./produtos";
+import { VideoBlue, duracaoBlue } from "./VideoBlue";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -18,6 +19,8 @@ export const RemotionRoot: React.FC = () => {
           height={1920}
         />
       ))}
+      {/* Blue: vídeo próprio, todo animado (sem telas paradas) */}
+      <Composition id="NexorBlue30s" component={VideoBlue} durationInFrames={duracaoBlue} fps={FPS} width={1080} height={1920} />
     </>
   );
 };

@@ -10,7 +10,6 @@ import tContabil from "./tempos/contabil";
 import tAgente from "./tempos/agente";
 import tElo from "./tempos/elo";
 import tServicedesk from "./tempos/servicedesk";
-import tBlue from "./tempos/blue";
 import tEloFornecedor from "./tempos/elo-fornecedor";
 
 export const PRODUTOS: Produto[] = [
@@ -180,30 +179,6 @@ export const PRODUTOS: Produto[] = [
       { tipo: "tela", frase: 4, inicio: 21.6, src: "servicedesk/tv.webp", foco: { x: 40, y: 30, escala: 1.4 }, titulo: "A fila *na televisão.*", nota: "Tela ilustrativa · dados fictícios" },
       { tipo: "frase", frase: 5, linha1: "Tudo no seu servidor.", linha2: "*Seus dados, seu controle.*" },
       { tipo: "final", frase: 6, chamada: "Teste grátis por *30 dias*", botao: "Link na bio →" },
-    ],
-  },
-  {
-    id: "NexorBlue30s",
-    nome: "Blue",
-    pasta: "blue",
-    tempos: tBlue,
-    frases: [
-      "Onze e quarenta e sete da noite. E bateu aquela dúvida sobre a sua empresa?",
-      "Oi! Eu sou a Blue, a assistente de inteligência artificial da Nexor.",
-      "Me conta como é a sua empresa, que eu te mostro o sistema certo.",
-      "Posso liberar um teste grátis de trinta dias, e marcar uma conversa com o nosso time.",
-      "E quando você quiser falar com gente, eles estão lá.",
-      "Inteligência artificial que atende. Gente que cuida.",
-      "Me chama. O link está na bio.",
-    ],
-    cenas: [
-      { tipo: "gancho", frase: 0, emoji: "🌙", texto: "23h47. *Bateu a dúvida?*" },
-      { tipo: "tela", frase: 1, src: "blue/blue-conheca.png", foco: { x: 50, y: 40, escala: 1.25 }, titulo: "Oi, eu sou *a Blue.*", largura: 680, proporcao: 0.8, nota: "Assistente de IA da Nexor" },
-      { tipo: "tela", frase: 2, src: "blue/blue-pergunte.png", foco: { x: 60, y: 50, escala: 1.3 }, titulo: "Te mostro *o sistema certo.*", largura: 680, proporcao: 0.8, nota: "Assistente de IA da Nexor" },
-      { tipo: "tela", frase: 3, src: "blue/blue-pergunte.png", foco: { x: 50, y: 72, escala: 1.45 }, titulo: "Teste grátis *e conversa com o time.*", largura: 680, proporcao: 0.8, nota: "Assistente de IA da Nexor" },
-      { tipo: "frase", frase: 4, linha1: "Quer falar com gente?", linha2: "*O time está lá.*" },
-      { tipo: "frase", frase: 5, linha1: "IA que atende.", linha2: "*Gente que cuida.*" },
-      { tipo: "final", frase: 6, chamada: "Me chama *agora*", botao: "Link na bio →" },
     ],
   },
   {
