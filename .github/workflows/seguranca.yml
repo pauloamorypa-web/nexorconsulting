@@ -1,0 +1,123 @@
+# Segurança e testes a cada PR e a cada push na main:
+#   - npm audit (falha com vulnerabilidade alta ou crítica) e testes de cada produto
+#   - checagem de licenças das dependências de produção (falha com GPL, AGPL ou SSPL)
+#   - varredura de segredos no histórico (gitleaks)
+#   - CodeQL para JavaScript
+# Os testes de isolamento entre empresas (test/isolamento.test.js) rodam junto com os testes de cada produto.
+
+name: Segurança
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 9 * * 1" # segunda-feira: pega vulnerabilidades novas mesmo sem commit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seguranca-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  produtos:
+    name: ${{ matrix.produto }} · audit e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        produto: [rh, atende, barber, contabil, central, agent, nexor-agente]
+    defaults:
+      run:
+        working-directory: ${{ matrix.produto }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            ${{ matrix.produto }}/package-lock.json
+            central/package-lock.json
+      - name: Instalar dependências
+        run: npm ci --no-audit --no-fund
+      # Os testes de licença (test/nexor.test.js, rh/test/vinculo.test.js) sobem a Nexor Central de verdade
+      - name: Instalar dependências da Central (usada nos testes de licença)
+        if: matrix.produto != 'central'
+        working-directory: central
+        run: npm ci --no-audit --no-fund
+      - name: npm audit (alta ou crítica)
+        run: npm audit --audit-level=high
+      - name: Testes
+        run: npm test
+
+  app-mobile:
+    name: rh/mobile · audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: npm audit das dependências do app (sem instalar)
+        working-directory: rh/mobile
+        run: npm audit --omit=dev --audit-level=high
+
+  licencas:
+    name: Licenças (produção)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: node .github/scripts/licencas.mjs rh atende barber contabil central agent nexor-agente rh/mobile
+
+  segredos:
+    name: Segredos (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # histórico inteiro: segredo apagado num commit posterior continua no git
+      - name: gitleaks
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/repo" -w /repo ghcr.io/gitleaks/gitleaks:v8.28.0 \
+            git /repo --config /repo/.github/gitleaks.toml --redact --verbose --exit-code 1 --report-format sarif --report-path /repo/gitleaks.sarif
+      - name: Relatório
+        if: always() && hashFiles('gitleaks.sarif') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks
+          path: gitleaks.sarif
+
+  codeql:
+    name: CodeQL (JavaScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - "**/node_modules/**"
+              - "**/test/**"
+              - "marketing/**"
+              - "assets/**"
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript

@@ -1,0 +1,44 @@
+# Atualizações de segurança e versões das dependências (Dependabot).
+# Cada produto é um pacote npm independente. Versões maiores ficam de fora dos PRs automáticos de rotina:
+# só chegam como alerta de segurança, para alguém revisar a quebra de compatibilidade antes.
+# iOS (rh/mobile/ios/App/CapApp-SPM): o Package.swift é gerado pelo Capacitor ("DO NOT MODIFY") a partir das
+# versões do npm em rh/mobile, por isso não tem entrada própria aqui; não há Podfile (CocoaPods) no repositório.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories: ["/rh", "/atende", "/barber", "/contabil", "/central", "/agent", "/nexor-agente", "/rh/mobile"]
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 10
+    labels: [dependencias, seguranca]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      menores:
+        update-types: [minor, patch]
+
+  - package-ecosystem: gradle
+    directory: /rh/mobile/android
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Sao_Paulo
+    labels: [dependencias, mobile]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Sao_Paulo
+    labels: [dependencias, ci]
+    groups:
+      actions:
+        patterns: ["*"]
