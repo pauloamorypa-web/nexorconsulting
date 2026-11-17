@@ -1,0 +1,138 @@
+{
+  "_leia": "Plano das campanhas de lançamento no Google Ads (crédito de R$ 1.200 ao gastar R$ 1.200). Criado pelo conector Windsor.ai, tudo PAUSADO; só liga com o ok do dono. Orçamento total R$ 20/dia. Lances iniciais em CPC manual (sem conversão medida ainda); trocar para Maximizar conversões depois de 30 conversões. Valores de lance são estimativa inicial: ajustar pela 1ª semana.",
+  "geo": {
+    "idioma_portugues": 1014,
+    "araguari": { "lat": -18.6478, "lng": -48.1873 },
+    "uberlandia": { "lat": -18.9186, "lng": -48.2772 }
+  },
+  "agenda": "segunda a sábado, 7h às 21h",
+  "telefone": { "numero": "+5534997337499", "pais": "BR" },
+  "negativas_comuns": ["curso", "vaga", "emprego", "salario", "como fazer", "download", "crack", "pirata", "apostila", "pdf", "concurso", "github", "tcc", "monografia", "reclame aqui"],
+  "campanhas": [
+    {
+      "id": "barber",
+      "nome": "Nexor · Busca · Barber",
+      "orcamento_dia": 8,
+      "cpc_max": 2.5,
+      "raios": [{ "local": "araguari", "km": 40 }, { "local": "uberlandia", "km": 30 }],
+      "url": "https://nexorconsultingit.com.br/solucoes/sistema-para-barbearia/?utm_source=google&utm_medium=cpc&utm_campaign=barber",
+      "caminho": ["barbearia", "teste-gratis"],
+      "titulos": [
+        "Sistema para Barbearia",
+        "Agenda Online em 1 Toque",
+        "Teste Grátis por 30 Dias",
+        "Sem Taxa de Implantação",
+        "Lembrete no WhatsApp",
+        "Clube de Assinatura",
+        "Comissão e Caixa no App",
+        "Lista de Espera Automática",
+        "App com a Marca da Barbearia",
+        "Atendimento em Araguari",
+        "Suporte com Gente de Verdade",
+        "A partir de R$ 89 por Mês",
+        "Menos Faltas na Agenda",
+        "Pix com QR Code na Comanda",
+        "Vagas de Fundador Abertas"
+      ],
+      "descricoes": [
+        "O cliente agenda sozinho, recebe lembrete no WhatsApp e falta menos. Teste 30 dias grátis.",
+        "Clube de assinatura com cobrança automática, comissões e caixa fechando sozinhos.",
+        "Sem taxa de implantação: nosso time configura junto com você. Araguari e região.",
+        "Agenda, comanda, Pix com QR Code e relatórios num app só. Comece ainda esta semana."
+      ],
+      "palavras": [
+        ["sistema para barbearia", "EXACT"], ["sistema para barbearia", "PHRASE"],
+        ["app para barbearia", "EXACT"], ["aplicativo para barbearia", "PHRASE"],
+        ["aplicativo de agendamento para barbearia", "PHRASE"], ["agenda para barbearia", "PHRASE"],
+        ["software para barbearia", "PHRASE"], ["sistema de barbearia", "PHRASE"],
+        ["agendamento online barbearia", "PHRASE"], ["clube de assinatura barbearia", "PHRASE"],
+        ["programa para barbearia", "PHRASE"]
+      ],
+      "negativas": ["curso de barbeiro", "vaga de barbeiro", "barbearia perto de mim", "corte de cabelo", "preço do corte", "degradê", "máquina de corte", "cadeira de barbeiro", "nome para barbearia", "logo", "decoração", "aluguel de cadeira"],
+      "destaques": ["Teste grátis 30 dias", "Sem taxa de implantação", "Suporte em Araguari", "App do cliente incluso"]
+    },
+    {
+      "id": "rh-ponto",
+      "nome": "Nexor · Busca · RH e Ponto",
+      "orcamento_dia": 7,
+      "cpc_max": 3.5,
+      "raios": [{ "local": "araguari", "km": 40 }, { "local": "uberlandia", "km": 40 }],
+      "url": "https://nexorconsultingit.com.br/solucoes/sistema-de-ponto-eletronico/?utm_source=google&utm_medium=cpc&utm_campaign=rh-ponto",
+      "caminho": ["ponto", "teste-gratis"],
+      "titulos": [
+        "Ponto Eletrônico no Celular",
+        "Ponto com Digital ou Rosto",
+        "Teste Grátis por 30 Dias",
+        "Espelho de Ponto Pronto",
+        "Folha e eSocial Integrados",
+        "Holerite no App da Equipe",
+        "Ponto com GPS e QR Code",
+        "Banco de Horas Automático",
+        "Implantação com Nosso Time",
+        "Atendemos o Triângulo Mineiro",
+        "AFD, AEJ e Espelho de Ponto",
+        "Chega de Ponto no Papel",
+        "Sistema de Ponto e Folha",
+        "Suporte em Araguari",
+        "Pagamento da Folha pelo Banco"
+      ],
+      "descricoes": [
+        "Ponto pelo app com digital, rosto, QR Code e GPS. Espelho, banco de horas e folha prontos.",
+        "Gera AFD, AEJ e espelho de ponto. Teste 30 dias grátis com nosso time configurando junto.",
+        "Do ponto ao eSocial sem digitar de novo. Holerite no app e arquivo de pagamento do banco.",
+        "Atendimento perto de você em Araguari, Uberlândia e região. Fale com a gente no WhatsApp."
+      ],
+      "palavras": [
+        ["sistema de ponto eletrônico", "EXACT"], ["sistema de ponto eletrônico", "PHRASE"],
+        ["ponto eletrônico pelo celular", "PHRASE"], ["aplicativo de ponto eletrônico", "PHRASE"],
+        ["controle de ponto online", "PHRASE"], ["ponto por reconhecimento facial", "PHRASE"],
+        ["sistema de ponto e folha de pagamento", "PHRASE"], ["ponto eletrônico para empresa", "PHRASE"],
+        ["ponto eletrônico uberlândia", "PHRASE"], ["ponto eletrônico araguari", "PHRASE"],
+        ["software de rh com ponto", "PHRASE"], ["app de ponto para funcionários", "PHRASE"]
+      ],
+      "negativas": ["login", "entrar", "acessar", "consultar meu ponto", "meu rh", "segunda via", "holerite online", "relógio de ponto usado", "bobina", "conserto", "assistência técnica"],
+      "destaques": ["Teste grátis 30 dias", "Time implanta com você", "Suporte em Araguari", "Holerite no app"]
+    },
+    {
+      "id": "atende",
+      "nome": "Nexor · Busca · Atende IA",
+      "orcamento_dia": 5,
+      "cpc_max": 3.0,
+      "raios": [{ "local": "uberlandia", "km": 120 }],
+      "url": "https://nexorconsultingit.com.br/solucoes/chatbot-whatsapp-com-ia/?utm_source=google&utm_medium=cpc&utm_campaign=atende",
+      "caminho": ["whatsapp-ia", "teste-gratis"],
+      "titulos": [
+        "Chatbot para WhatsApp com IA",
+        "Atendimento 24h no WhatsApp",
+        "Teste Grátis por 30 Dias",
+        "API Oficial do WhatsApp",
+        "IA que Responde e Agenda",
+        "Passa para a Sua Equipe",
+        "Resumo Pronto da Conversa",
+        "Responde com Seus Preços",
+        "Implantação com Nosso Time",
+        "Nenhum Cliente sem Resposta",
+        "Funil de Vendas Automático",
+        "Atendemos Araguari e Região",
+        "IA com Cuidado Humano",
+        "Agenda e Confirma Horários",
+        "Feito para Pequenas Empresas"
+      ],
+      "descricoes": [
+        "A IA responde na hora com seus preços e regras, agenda e confirma. Teste 30 dias grátis.",
+        "Pela API oficial da Meta, sem risco de bloqueio do número. Nosso time implanta junto.",
+        "Quando precisa, passa para a sua equipe com o resumo pronto. Você só fecha a venda.",
+        "Cada conversa vira contato no funil e você vê quem está pronto para comprar."
+      ],
+      "palavras": [
+        ["chatbot para whatsapp", "EXACT"], ["chatbot para whatsapp", "PHRASE"],
+        ["chatbot whatsapp com ia", "PHRASE"], ["atendimento automático whatsapp", "PHRASE"],
+        ["automação de atendimento whatsapp", "PHRASE"], ["robô de atendimento whatsapp", "PHRASE"],
+        ["ia para atendimento ao cliente", "PHRASE"], ["sistema de atendimento whatsapp", "PHRASE"],
+        ["secretária virtual whatsapp", "PHRASE"], ["chatbot para clínica", "PHRASE"]
+      ],
+      "negativas": ["whatsapp web", "baixar whatsapp", "whatsapp gb", "whatsapp business download", "chatgpt grátis", "como criar chatbot", "python", "typebot", "n8n", "bot grátis"],
+      "destaques": ["Teste grátis 30 dias", "API oficial da Meta", "Time implanta com você", "Suporte em Araguari"]
+    }
+  ]
+}
