@@ -5,6 +5,7 @@
 import type { Produto } from "./VideoProduto";
 import tBarber from "./tempos/barber";
 import tAtende from "./tempos/atende";
+import tRh from "./tempos/rh";
 
 export const PRODUTOS: Produto[] = [
   {
@@ -51,6 +52,30 @@ export const PRODUTOS: Produto[] = [
       { tipo: "tela", frase: 3, src: "atende/transferencia.webp", foco: { x: 55, y: 40, escala: 1.6 }, titulo: "Passa para a equipe *com o resumo.*" },
       { tipo: "tela", frase: 4, src: "atende/funil.webp", foco: { x: 40, y: 40, escala: 1.55 }, titulo: "Quem está *pronto para comprar.*" },
       { tipo: "frase", frase: 5, linha1: "Seu WhatsApp atendendo", linha2: "*24 horas.*" },
+      { tipo: "final", frase: 6, chamada: "Teste grátis por *30 dias*", botao: "Link na bio →" },
+    ],
+  },
+  {
+    id: "NexorRH30s",
+    nome: "Nexor RH + Ponto",
+    pasta: "rh",
+    tempos: tRh,
+    frases: [
+      "Dia trinta. E você ainda soma o ponto no papel?",
+      "No Nexor RH, o colaborador bate o ponto pelo celular, com a digital ou o rosto.",
+      "O espelho de ponto sai pronto, dentro da Portaria 671.",
+      "A folha sai calculada, e o holerite chega no aplicativo de cada um.",
+      "E o eSocial vai junto, assinado com o seu certificado.",
+      "Você cuida das pessoas. O sistema cuida das contas.",
+      "Teste grátis por trinta dias. O link está na bio.",
+    ],
+    cenas: [
+      { tipo: "gancho", frase: 0, emoji: "🧮", texto: "Dia 30. Ainda somando *ponto no papel?*" },
+      { tipo: "tela", frase: 1, src: "rh/app.webp", foco: { x: 50, y: 35, escala: 1.5 }, titulo: "Ponto pelo *celular.*" },
+      { tipo: "tela", frase: 2, src: "rh/espelho.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "Espelho de ponto *pronto.*" },
+      { tipo: "tela", frase: 3, src: "rh/folha.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "Folha *calculada.*" },
+      { tipo: "tela", frase: 4, src: "rh/esocial.webp", foco: { x: 45, y: 40, escala: 1.6 }, titulo: "eSocial *integrado.*" },
+      { tipo: "frase", frase: 5, linha1: "Você cuida das pessoas.", linha2: "*O sistema cuida das contas.*" },
       { tipo: "final", frase: 6, chamada: "Teste grátis por *30 dias*", botao: "Link na bio →" },
     ],
   },
