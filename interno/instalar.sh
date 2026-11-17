@@ -34,6 +34,7 @@ mkdir -p backups dados/assist
 chown -R 1000:1000 backups dados 2>/dev/null || chmod -R 777 backups dados
 
 say "Construindo e subindo"
+docker network create nexor-borda >/dev/null 2>&1 || true  # rede da borda da Nuvem Nexor (nuvem/)
 docker compose up -d --build
 
 say "Conferindo"

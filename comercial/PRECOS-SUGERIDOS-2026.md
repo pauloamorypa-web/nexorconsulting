@@ -79,7 +79,20 @@ Ela continua igual. Ao lado dela, sugiro quatro modalidades novas, para público
 - estorno se o cliente cancelar em até 90 dias;
 - nada sobre o consumo de IA, Meta e SMS.
 
-## 3. Próximo passo
+## 3. Hospedagem na Nuvem Nexor (VPS da Nexor)
+Para o cliente **sem servidor e sem domínio**, o sistema roda na VPS da Nexor, na Hostinger. O guia está em `nuvem/README.md`.
+
+| Item | Preço ao cliente |
+|---|---|
+| Hospedagem, endereço `<cliente>.nexorconsultingit.com.br`, HTTPS, backup diário e atualizações | **Incluída na mensalidade** |
+| Domínio próprio do cliente apontado para a nuvem | Ligação grátis (o domínio é do cliente e pago por ele) |
+| Atende IA e Agente na nuvem | Incluída. Esses dois usam mais servidor, então conte cada um como 3 clientes pequenos no limite da VPS |
+
+**Conta de custo:** uma VPS KVM 2 roda a Central, a Blue e de 15 a 25 clientes pequenos. O custo por cliente fica em poucos reais por mês, bem menos que qualquer mensalidade da tabela. Quando passar de 70% da memória, suba para o KVM 4.
+
+**Na venda:** "Você não precisa de servidor nem de domínio. A Nexor hospeda, faz backup e cuida das atualizações. Se um dia quiser levar para o seu servidor, entregamos tudo."
+
+## 4. Próximo passo
 1. O dono aprova ou ajusta a tabela.
 2. A Nexor atualiza `central/src/planos.js` e `PLANOS-E-PRECOS.md` juntos e cadastra as modalidades novas na Central.
 3. Os clientes fundadores mantêm o preço que já foi travado.

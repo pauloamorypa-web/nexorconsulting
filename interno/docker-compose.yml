@@ -74,8 +74,13 @@ services:
     command: tunnel --no-autoupdate run
     environment: { TUNNEL_TOKEN: "${TUNNEL_TOKEN:?defina TUNNEL_TOKEN}" }
     depends_on: [central, assist]
+    # Também na rede da borda (nuvem/): o mesmo túnel entrega *.nexorconsultingit.com.br aos clientes hospedados
+    networks: [interno, borda]
 
 networks:
   interno: {}
+  borda:
+    external: true
+    name: nexor-borda
 volumes:
   central-dados: {}

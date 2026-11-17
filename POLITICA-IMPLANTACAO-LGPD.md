@@ -11,7 +11,7 @@ Esta regra vale para **todos** os produtos e projetos: Atende IA, RH, Gestão, C
    - atendimento dos direitos dos titulares;
    - segurança do ambiente;
    - comunicação de incidentes à ANPD.
-3. **A Nexor não guarda dados dos clientes.** Em suporte com acesso ao ambiente, a Nexor é **operadora**, só dentro do que o contrato permite.
+3. **A Nexor não guarda dados dos clientes, exceto na Nuvem Nexor.** Em suporte com acesso ao ambiente, a Nexor é **operadora**, só dentro do que o contrato permite. Na **Nuvem Nexor** (cliente sem servidor, hospedado na VPS da Nexor), a Nexor guarda os dados como **operadora** o tempo todo: o contrato precisa do anexo de tratamento de dados, com backup, sigilo, aviso de incidente e devolução dos dados no fim.
 4. **Contas de terceiros ficam em nome do cliente:** chaves de IA (Anthropic, OpenAI), WhatsApp/Meta, provedores de e-mail e de pagamento, certificados digitais. O contrato com esses fornecedores (e a transferência internacional, quando houver) fica no nome do cliente.
 5. **Consultoria de LGPD é um serviço à parte**, vendido separadamente: mapeamento de dados, relatório de impacto, políticas, contratos com fornecedores, treinamento e plano de resposta a incidentes.
 6. **Instâncias da Nexor servem só para demonstração**, com dados fictícios (ex.: `rh.nexorconsultingit.com.br`, testes grátis do site).
