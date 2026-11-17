@@ -30,3 +30,5 @@ Decididas pelo dono. Não reabrir sem pedido dele. Atualizado em 12/11/2026.
 | Banca de Testes | 5 agentes (Hacker, Programador Sênior, Testador, Usuário Confuso, Veredito). O Veredito só corrige com aprovação do dono |
 | Base de conhecimento | Regras, decisões e padrões ficam em `docs/base/`; histórico de conversa é só referência |
 | Marketing por campanha | Uma campanha por público de produto, mais uma campanha geral ("qualquer cenário"), com a Blue qualificando e pontuando os contatos |
+- **17/11/2026 · Barber sem implantação:** os planos Solo e Barbearia do Nexor Barber não cobram implantação (cobrar foge da realidade do mercado e dificulta a venda).
+- **17/11/2026 · Conta principal da Nexor:** Banco C6. Os recebimentos do Asaas e o Pix direto vão para ela (só pela chave CNPJ). Nenhum dado da conta entra no repositório.

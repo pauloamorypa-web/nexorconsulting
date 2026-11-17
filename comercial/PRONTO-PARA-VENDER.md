@@ -24,7 +24,7 @@ Levantamento de todos os produtos e de tudo que a venda precisa em volta deles: 
 | **Cobrança automática** | Central pronta para o Asaas | Conta Asaas PJ, chave de API no `.env` da VPS e webhook | **Dono** |
 | **Nota fiscal da Nexor** | Não está na Central | Ativar a emissão de NFS-e no Asaas (cadastro na prefeitura de Araguari) | **Dono** e contador |
 | **Preços na Central** | Central com a tabela antiga | Aprovar `PRECOS-SUGERIDOS-2026.md`; a Nexor atualiza a Central e cadastra as modalidades novas de parceiro | Dono aprova, Nexor faz |
-| **Contrato** | **Não existe modelo** | Contrato de assinatura, termos de uso e anexo de dados (LGPD), com a cláusula da Nuvem Nexor | Nexor rascunha, **advogado revisa** |
+| **Contrato** | **Modelo pronto** no Claude Docs (link em `docs/base/06`) | Revisão do advogado, nº do REP-P no INPI, chave Pix CNPJ e encarregado (DPO) | **Advogado** e dono |
 | **Chaves de IA** | Cada sistema aceita | Chave da Anthropic da Nexor (Blue) e dos clientes (Atende, Contábil) | Dono e clientes |
 | **WhatsApp comercial (Blue)** | Pronto | Número na Meta (WhatsApp Business API) | Dono |
 | **Backup fora da VPS** | **Pronto**: `nuvem/backup-externo.sh`, cifrado com rclone (guia na seção 8) | Criar a conta B2 ou Drive, configurar o rclone e agendar; ligar o backup semanal da Hostinger | Dono, Nexor guia |

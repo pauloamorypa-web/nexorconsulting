@@ -17,7 +17,7 @@ O que falta o dono decidir, conferir ou autorizar. Ao resolver, mova para `02-DE
 
 | VPS e servidor | Contratar a VPS KVM 2 na Hostinger, passar o DNS para a Cloudflare, criar o túnel com `central`, `api` e `*`, instalar e fazer o primeiro acesso à Central. Passo a passo em `nuvem/README.md`; lista completa em `comercial/PRONTO-PARA-VENDER.md` |
 | Segurança da VPS | Ligar o Cloudflare Access na Central, o backup externo cifrado e o UptimeRobot antes do primeiro cliente (seções 7 a 9 de `nuvem/README.md`) |
-| Contrato | Não há modelo de contrato de assinatura, termos de uso e anexo LGPD. A Nexor rascunha quando pedido; advogado revisa |
+| Contrato | Modelo completo pronto (Claude Docs: https://claude.ai/artifact/EBRx2GvAiKunhjGiMoW2iD), com anexos de proposta, dados (LGPD) e níveis de serviço. Falta revisão do advogado, o nº do registro do REP-P no INPI, a chave Pix CNPJ e o encarregado (DPO) |
 | Nota fiscal da Nexor | Ativar a NFS-e no Asaas com o contador |
 
 ## Trabalho pausado ou em andamento
