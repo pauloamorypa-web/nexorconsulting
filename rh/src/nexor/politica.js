@@ -38,6 +38,7 @@ export const CATALOGO = {
     "campo.regras_ponto": { rotulo: "Regras do ponto (biometria, PIN no quiosque)" },
     "campo.registro_inpi": { rotulo: "Registro do REP-P no INPI" },
     "campo.dados_empresa": { rotulo: "Dados cadastrais da empresa (razão social, CNPJ)" },
+    "campo.pagamento_banco": { rotulo: "Conta da empresa para pagar a folha pelo banco" },
   },
 };
 const TODAS = { ...CATALOGO.modulos, ...CATALOGO.abas, ...CATALOGO.campos };

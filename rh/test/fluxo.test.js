@@ -220,9 +220,27 @@ test("folha mensal, holerite no app e eventos periódicos", async () => {
   assert.equal(item.liquido, item.bruto - item.descontos);
   assert.equal(item.fgts, Math.round(item.base_fgts * 0.08));
   assert.equal((await app.get("/api/app/holerites")).dados.length, 0, "só aparece depois de fechar");
-  r = await rh.post(`/api/folhas/${r.dados.id}/fechar`, { data_pagamento: "2026-11-05" });
+  const folhaId = r.dados.id;
+  r = await rh.post(`/api/folhas/${folhaId}/fechar`, { data_pagamento: "2026-11-05" });
   assert.equal(r.status, 200);
   assert.equal(r.dados.eventos_esocial, 3);
+  // arquivo do banco (CNAB 240): pede a conta da empresa, depois os dados de cada colaborador
+  let rem = await rh.get(`/api/folhas/${folhaId}/remessa.rem`);
+  assert.equal(rem.status, 400);
+  assert.match(rem.dados.erro, /Pagamentos/);
+  await rh.put("/api/empresa", { config: { pagamento: { banco: "756", agencia: "3070", conta: "12345-6", convenio: "999" } } });
+  rem = await rh.get(`/api/folhas/${folhaId}/remessa.rem`);
+  assert.equal(rem.status, 400);
+  assert.match(rem.dados.erro, /Bruno Lima/);
+  await rh.put(`/api/colaboradores/${colab.id}`, { banco: { banco: "Banco do Brasil", agencia: "1234-5", conta: "98765-X" } });
+  rem = await rh.get(`/api/folhas/${folhaId}/remessa.rem`);
+  assert.equal(rem.status, 200, JSON.stringify(rem.dados));
+  assert.match(rem.cabecalhos.get("content-disposition"), /PAG756_20261105/);
+  const linhas = rem.dados.split("\r\n").filter(Boolean);
+  for (const l of linhas) assert.equal(l.length, 240);
+  const segA = linhas.find((l) => l[13] === "A");
+  assert.equal(segA.slice(20, 23), "001", "banco do colaborador pelo nome");
+  assert.equal(Number(segA.slice(119, 134)), item.liquido, "valor líquido em centavos");
   const hs = (await app.get("/api/app/holerites")).dados;
   assert.equal(hs.length, 1);
   const h = (await app.get(`/api/app/holerites/${hs[0].id}`)).dados;

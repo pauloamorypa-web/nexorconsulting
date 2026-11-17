@@ -88,6 +88,7 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
             esocial: z.object({ ativo: z.boolean(), ambiente: z.union([z.literal(1), z.literal(2)]), class_trib: op(2), cnae: op(7), fpas: op(3), cod_tercs: op(4), rat: op(1), fap: op(6), inicio_validade: op(7) }).partial().optional(),
             registro_inpi: op(17),
             transmissor_cnpj: op(18),
+            pagamento: z.object({ banco: op(3), agencia: op(10), conta: op(20), convenio: op(20) }).partial().optional(),
             tabelas: z.record(z.string(), z.unknown()).optional().nullable(),
           })
           .partial()
@@ -104,10 +105,11 @@ export function rotasCadastros({ r, repo, nucleo, cfg, agora, exigirColaborador,
       tentou("campo.registro_inpi", d.config?.registro_inpi !== undefined);
       tentou("config.esocial", d.config?.esocial !== undefined || d.config?.transmissor_cnpj !== undefined);
       tentou("config.tabelas", d.config?.tabelas !== undefined);
+      tentou("campo.pagamento_banco", d.config?.pagamento !== undefined);
     }
     const atual = ctx.empresa.config;
     const config = d.config
-      ? { ...atual, ...d.config, ponto: { ...atual.ponto, ...(d.config.ponto ?? {}) }, esocial: { ...atual.esocial, ...(d.config.esocial ?? {}) }, tabelas: d.config.tabelas === null ? undefined : d.config.tabelas ?? atual.tabelas }
+      ? { ...atual, ...d.config, ponto: { ...atual.ponto, ...(d.config.ponto ?? {}) }, esocial: { ...atual.esocial, ...(d.config.esocial ?? {}) }, pagamento: { ...(atual.pagamento ?? {}), ...(d.config.pagamento ?? {}) }, tabelas: d.config.tabelas === null ? undefined : d.config.tabelas ?? atual.tabelas }
       : undefined;
     const e = repo.atualizar("empresas", null, ctx.empresa.id, { razao_social: d.razao_social, nome_fantasia: d.nome_fantasia, cnpj: d.cnpj || undefined, endereco: d.endereco, config });
     auditar(ctx, "empresa_alterada");

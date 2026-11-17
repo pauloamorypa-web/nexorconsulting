@@ -28,6 +28,10 @@ services:
       ASAAS_API_KEY: ${ASAAS_API_KEY:-}
       ASAAS_URL: ${ASAAS_URL:-https://api.asaas.com/v3}
       ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
+      # Conversão offline ligada sozinha: a Central avisa a Blue pela rede interna,
+      # com o mesmo REPORT_TOKEN que o instalar.sh gerou (a Blue usa ele quando CONVERSAO_TOKEN está vazio).
+      CONVERSAO_URL: ${CONVERSAO_URL:-http://assist:8787/api/conversao}
+      CONVERSAO_TOKEN: ${REPORT_TOKEN:-}
     volumes: [central-dados:/dados]
     ports: ["127.0.0.1:8800:8800"]
 

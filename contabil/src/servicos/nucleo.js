@@ -10,6 +10,7 @@ import { dataBR, diasEntre, hojeBR, horaBR, nomeMes } from "../regras/datas.js";
 import { gerarPendencias, gerarTarefas, semearEscritorio } from "../regras/geracao.js";
 import { contextoCliente, responderCliente } from "../ia/assistente.js";
 import { CUMPRE, MIMES_IA, competenciaDe, conferir, lerDocumento, sugerirLancamentos } from "../ia/leitura.js";
+import { lerOfx } from "../bancos/ofx.js";
 import { criarEmail, criarWhatsApp, mensagensDoWebhook, mesmoFone, normalizarFone } from "./canais.js";
 
 /** Arquivos aceitos: documentos de escritório (o navegador e o WhatsApp mandam estes tipos) */
@@ -91,7 +92,8 @@ export function criarNucleo({ repo, cofre, cfg, clienteIA, fetchFn = fetch, agor
     const tipoMime = validarArquivo({ nome, mime, dados });
     const a = await salvarArquivo(empresa_id, { nome, mime: tipoMime, dados });
     const igual = cliente_id ? repo.um("SELECT nome, criado_em FROM documentos WHERE empresa_id = ? AND cliente_id = ? AND hash = ? LIMIT 1", empresa_id, cliente_id, a.hash) : null;
-    const lerComIA = Boolean(clienteIA) && MIMES_IA.has(tipoMime) && Boolean(cliente_id);
+    const ehOfx = Boolean(cliente_id) && (/\.ofx$/i.test(nome ?? "") || /ofx/.test(tipoMime) || /^\s*(OFXHEADER|<\?xml[^>]*>\s*<\?OFX|<OFX>)/i.test(dados.subarray(0, 200).toString("latin1")));
+    const lerComIA = !ehOfx && Boolean(clienteIA) && MIMES_IA.has(tipoMime) && Boolean(cliente_id);
     const d = repo.inserir("documentos", {
       empresa_id,
       cliente_id,
@@ -103,12 +105,13 @@ export function criarNucleo({ repo, cofre, cfg, clienteIA, fetchFn = fetch, agor
       origem,
       enviado_por,
       competencia,
-      leitura_status: lerComIA ? "pendente" : "sem_ia",
+      leitura_status: lerComIA || ehOfx ? "pendente" : "sem_ia",
       alertas: igual ? [`Arquivo idêntico ao documento "${igual.nome}" já recebido.`] : [],
     });
     if (pendencia_id) marcarPendencia(empresa_id, pendencia_id, d.id, cliente_id);
     repo.auditar(empresa_id, enviado_por ?? origem, "documento_recebido", { documento: d.id, cliente: cliente_id, origem });
-    if (lerComIA) enfileirarLeitura(empresa_id, d.id);
+    if (ehOfx) lerExtratoOfx(empresa_id, d.id, dados);
+    else if (lerComIA) enfileirarLeitura(empresa_id, d.id);
     return repo.obter("documentos", empresa_id, d.id);
   }
 
@@ -164,6 +167,29 @@ export function criarNucleo({ repo, cofre, cfg, clienteIA, fetchFn = fetch, agor
     // Cumpre a pendência do mês, se ainda não estava ligada a uma
     if (!doc.pendencia_id && competencia) {
       const p = repo.lista("pendencias", "WHERE empresa_id = ? AND cliente_id = ? AND competencia = ? AND status = 'pendente' ORDER BY prazo", empresa_id, cliente.id, competencia).find((x) => (CUMPRE[x.tipo] ?? []).includes(l.tipo));
+      if (p) marcarPendencia(empresa_id, p.id, doc.id, cliente.id);
+    }
+    gerarLancamentos(empresa_id, cliente, repo.obter("documentos", empresa_id, doc.id));
+  }
+
+  /** Extrato OFX (arquivo do internet banking): lido direto, sem IA e sem custo, com todos os movimentos */
+  function lerExtratoOfx(empresa_id, documento_id, dados) {
+    const doc = repo.obter("documentos", empresa_id, documento_id);
+    const cliente = repo.obter("clientes", empresa_id, doc.cliente_id);
+    let x;
+    try {
+      x = lerOfx(dados);
+    } catch (e) {
+      return repo.atualizar("documentos", empresa_id, doc.id, { leitura_status: "erro", alertas: [...doc.alertas, `Extrato OFX inválido: ${e.message}`] });
+    }
+    const movimentos = x.movimentos.slice(0, 1000).map((m) => ({ data: m.data, descricao: (m.descricao || m.tipo).slice(0, 200), valor: m.valor }));
+    const conta = [x.banco?.nome, x.agencia && `ag. ${x.agencia}`, x.conta && `conta ${x.conta}`].filter(Boolean).join(" · ").slice(0, 120) || null;
+    const leitura = { tipo: "extrato_bancario", emitente_nome: x.banco?.nome ?? null, emitente_cnpj: null, destinatario_nome: null, destinatario_cnpj: null, numero: null, data_emissao: x.fim ?? movimentos.at(-1)?.data ?? null, data_vencimento: null, valor_total: null, competencia: (x.inicio ?? movimentos[0]?.data)?.slice(0, 7) ?? null, descricao: `Extrato OFX${x.inicio && x.fim ? ` de ${x.inicio} a ${x.fim}` : ""}${x.saldo ? ` · saldo ${x.saldo.valor.toFixed(2)}` : ""}`, banco: conta, movimentos, confianca: "alta", observacoes: x.movimentos.length > 1000 ? "Extrato com mais de 1.000 movimentos: separe por mês." : null };
+    const alertas = [...doc.alertas.filter((a) => a.startsWith("Arquivo idêntico")), ...conferir(leitura, cliente, {})];
+    const competencia = doc.competencia ?? competenciaDe(leitura);
+    repo.atualizar("documentos", empresa_id, doc.id, { leitura_status: "lido", leitura, tipo: "extrato_bancario", competencia, alertas });
+    if (!doc.pendencia_id && competencia) {
+      const p = repo.lista("pendencias", "WHERE empresa_id = ? AND cliente_id = ? AND competencia = ? AND status = 'pendente' ORDER BY prazo", empresa_id, cliente.id, competencia).find((y) => (CUMPRE[y.tipo] ?? []).includes("extrato_bancario"));
       if (p) marcarPendencia(empresa_id, p.id, doc.id, cliente.id);
     }
     gerarLancamentos(empresa_id, cliente, repo.obter("documentos", empresa_id, doc.id));
