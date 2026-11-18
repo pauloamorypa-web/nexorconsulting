@@ -285,7 +285,8 @@ test("cadência dos mornos: D+0, D+2 e D+7 por WhatsApp e e-mail, só sugerida e
   const c = cadenciaDoLead(lead);
   assert.equal(c.envio_automatico, false);
   assert.deepEqual(c.passos.map((p) => [p.dia, p.data]), [["D+0", "2026-11-10"], ["D+2", "2026-11-12"], ["D+7", "2026-11-17"]]);
-  assert.match(c.passos[0].whatsapp, /^Oi, Carla! .*Nexor RH \+ Ponto.*R\$ 9,90/);
+  assert.match(c.passos[0].whatsapp, /^Oi, Carla! .*Nexor RH \+ Ponto.*atendente te passa tudo no WhatsApp/);
+  assert.doesNotMatch(c.passos[0].whatsapp, /R\$|%/);
   assert.match(c.passos[1].email.texto, /Loja Exemplo/);
   assert.ok(c.passos.every((p) => p.whatsapp && p.email.assunto && !/\{\w+\}/.test(p.whatsapp + p.email.texto)));
   const semOptIn = cadenciaDoLead({ ...lead, aceita_contato: false, nome: undefined });

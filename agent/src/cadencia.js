@@ -22,7 +22,8 @@ export function cadenciaDoLead(lead, { inicio } = {}) {
     empresa: lead.empresa ?? "sua empresa",
     produto: lead.produto_indicado ?? (campanha.umbrella ? "um projeto sob medida" : campanha.produto),
     // Preço só entra para quem pediu (tabela comercial em validação: confira antes de enviar)
-    preco: lead.sinais?.pediu_preco ? `Valores de referência: ${campanha.preco}. ` : "",
+    // Regra do dono: nunca enviar valores; preço é com um atendente no WhatsApp
+    preco: lead.sinais?.pediu_preco ? "Os valores dependem do porte da empresa: um atendente te passa tudo no WhatsApp (34) 99733-7499. " : "",
   };
   vars.o_produto = vars.produto.startsWith("um ") ? vars.produto : vars.produto.startsWith("Soluções") ? `as ${vars.produto}` : `o ${vars.produto}`;
   const optIn = lead.aceita_contato === true;

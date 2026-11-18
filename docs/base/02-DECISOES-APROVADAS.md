@@ -32,3 +32,4 @@ Decididas pelo dono. Não reabrir sem pedido dele. Atualizado em 12/11/2026.
 | Marketing por campanha | Uma campanha por público de produto, mais uma campanha geral ("qualquer cenário"), com a Blue qualificando e pontuando os contatos |
 | Barber sem implantação (17/11/2026) | Os planos Solo e Barbearia do Nexor Barber não cobram implantação: cobrar foge da realidade do mercado e dificulta a venda |
 | Conta principal da Nexor (17/11/2026) | Banco C6. Os recebimentos do Asaas e o Pix direto (só pela chave CNPJ) vão para ela. Nenhum dado da conta entra no repositório |
+| Foco em Araguari e preço só no WhatsApp (18/11/2026) | Anúncios do Google em raio de 30 km de Araguari; Instagram e Meta Ads com foco na cidade; nenhum valor publicado, preço sempre com um atendente no WhatsApp |

@@ -16,7 +16,11 @@ export const instagramConfigurado = () => Boolean(config.instagram.token && conf
 export const CONTEXTO_INSTAGRAM =
   "Canal: Direct do Instagram da Nexor (@nexorconsultingit). Foco comercial em Araguari (MG) e região (Uberlândia e Triângulo Mineiro). " +
   "Pergunte cedo a cidade e o ramo da empresa. Para empresas de Araguari, ofereça visita presencial ou diagnóstico gratuito com o time local, além do teste de 30 dias. " +
-  "Mensagens curtas, no máximo 3 frases por balão, tom de conversa de Instagram. Peça o WhatsApp para continuar quando a pessoa demonstrar interesse. Não publique preços.";
+  "Mensagens curtas, no máximo 3 frases por balão, tom de conversa de Instagram. " +
+  "Filtre antes de vender: descubra se é empresa (e não pessoa física, estudante ou concorrente), o ramo e o porte, e confira se o produto combina com o tipo de cliente " +
+  "(Barber para barbearias; RH e Ponto para empresas com equipe; Atende IA para quem atende muito no WhatsApp, como clínicas, imobiliárias e lojas; Contábil para escritórios de contabilidade; Elo para lojas de material elétrico, segurança e solar). " +
+  "Use qualificar_lead a cada informação nova. Curioso ou fora do perfil: responda com gentileza em uma frase e encerre, sem insistir. " +
+  "Nunca informe valores, faixas ou descontos: preço é sempre com um atendente no WhatsApp (34) 99733-7499. Lead com perfil e interesse: peça o WhatsApp e use transferir_para_humano com o resumo, para a equipe abrir a oportunidade.";
 
 /* Palavras-chave dos posts (ver marketing/instagram/PLANO.md). A resposta pública varia para não parecer robô repetido. */
 export const PALAVRAS = [
@@ -25,7 +29,7 @@ export const PALAVRAS = [
   { chave: "barber", produto: "Nexor Barber (app de agenda, clube de assinatura e comissões para barbearia)", publico: ["Te mandei no Direct o teste da sua barbearia ✂️", "Chamei no Direct! ✂️", "Olha o Direct, barbeiro 😉"] },
   { chave: "ia", produto: "Nexor Atende IA (atendimento e vendas 24h no WhatsApp com IA)", publico: ["Te mandei no Direct a demonstração da IA 🤖", "Chamei você no Direct! 🤖", "Olha o Direct 😉"] },
   { chave: "contabil", produto: "Nexor Contábil (cobrança de documentos e leitura de notas com IA para escritórios)", publico: ["Te chamei no Direct, contador! 🧾", "Mandei no seu Direct 🧾", "Olha o Direct 😉"] },
-  { chave: "fundador", produto: "programa de fundadores (40% na mensalidade por 12 meses, 50% na implantação, 10 vagas por produto)", publico: ["Te mandei as condições de fundador no Direct 🔥", "Chamei no Direct! 🔥", "Olha o Direct 😉"] },
+  { chave: "fundador", produto: "programa de fundadores (condição especial de lançamento, 10 vagas por produto; detalhes com um atendente no WhatsApp)", publico: ["Te mandei as condições de fundador no Direct 🔥", "Chamei no Direct! 🔥", "Olha o Direct 😉"] },
   { chave: "elo", produto: "Nexor Elo (rede de fornecedores e instaladores)", publico: ["Te mandei no Direct como funciona o Elo 🔌", "Chamei no Direct! 🔌", "Olha o Direct 😉"] },
   { chave: "diagnostico", produto: "diagnóstico gratuito com o time da Nexor", publico: ["Te chamei no Direct para marcar o diagnóstico 🔎", "Mandei no seu Direct 🔎", "Olha o Direct 😉"] },
   { chave: "lgpd", produto: "consultoria de LGPD", publico: ["Te mandei no Direct o diagnóstico de LGPD ✅", "Chamei no Direct! ✅", "Olha o Direct 😉"] },
