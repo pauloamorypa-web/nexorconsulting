@@ -1,2 +1,2 @@
-// Provisório: estimativa até a locução existir (depois: node scripts/tempos.mjs institucional)
-export default {"duracao":106.14,"frases":[[0.3,7.22],[8.12,16.71],[17.61,21.53],[22.43,28.48],[29.38,34.16],[35.06,44.63],[45.53,60.74],[61.64,69],[69.9,80.77],[81.67,89.93],[90.83,95.18],[96.08,101.73],[102.63,105.24]]} as const;
+// Gerado por scripts/tempos.mjs a partir de public/institucional/locucao.mp3 (não editar à mão)
+export default {"duracao":94.62,"frases":[[0,5.76],[6.76,13.89],[15.39,18.53],[19.74,25],[25.91,29.26],[30.36,39.31],[40.32,54.69],[55.69,61.39],[62.39,71.04],[72.04,79.03],[80.04,83.95],[84.95,89.57],[91.07,94.62]]} as const;

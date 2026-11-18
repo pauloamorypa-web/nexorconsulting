@@ -237,11 +237,13 @@ const PRODUTOS = [
   { nome: "Agente", sub: "para o dono", img: "institucional/agente.webp", foco: "50% 35%" },
   { nome: "Elo", sub: "liga a loja ao instalador", img: "institucional/elo.webp", foco: "50% 30%" },
 ];
-const C7: React.FC<{ d: number }> = ({ d }) => {
+/* Segundos da locução em que cada produto é dito (pausas medidas com silencedetect) */
+const MARCOS = [42.95, 45.0, 47.15, 48.95, 50.75, 52.35];
+const C7: React.FC<{ d: number; inicio: number }> = ({ d, inicio }) => {
   const f = useCurrentFrame();
-  const intro = Math.round(d * 0.12);
-  const slot = (d - intro) / PRODUTOS.length;
-  const atual = Math.min(PRODUTOS.length - 1, Math.max(0, Math.floor((f - intro) / slot)));
+  const marcos = MARCOS.map((s) => quadro(s) - inicio - 4);
+  const intro = marcos[0];
+  const atual = Math.max(0, marcos.filter((m) => f >= m).length - 1);
   return (
     <Cena d={d}>
       {f < intro + 8 ? (
@@ -250,19 +252,20 @@ const C7: React.FC<{ d: number }> = ({ d }) => {
         </div>
       ) : null}
       {PRODUTOS.map((p, i) => {
-        const de = intro + i * slot;
+        const de = marcos[i];
+        const slot = (i + 1 < marcos.length ? marcos[i + 1] : d) - de;
         if (f < de - 2 || f > de + slot + 12) return null;
         const l = f - de;
         const ent = entre(l, 0, 16);
         const sai = 1 - entre(l, slot - 4, slot + 10);
         return (
           <AbsoluteFill key={p.nome} style={{ justifyContent: "center", alignItems: "center", opacity: Math.min(ent, sai) }}>
-            <div style={{ transform: `translateX(${(1 - ent) * 220 - (1 - sai) * 220}px) translateX(220px) translateY(30px)` }}>
-              <Janela src={p.img} largura={1180} rot={-8} d={slot + 12} foco={p.foco} zoom={[1.02, 1.12]} />
+            <div style={{ transform: `translateX(${(1 - ent) * 220 - (1 - sai) * 220}px) translateX(310px) translateY(30px)` }}>
+              <Janela src={p.img} largura={1100} rot={-8} d={slot + 12} foco={p.foco} zoom={[1.02, 1.12]} />
             </div>
             <div style={{ position: "absolute", left: 120, top: 390, transform: `translateY(${(1 - ent) * 40}px)` }}>
               <div style={{ ...TXT(28, 600, COR.ciano), letterSpacing: "0.2em" }}>NEXOR</div>
-              <div style={{ ...TXT(104, 700), letterSpacing: "-0.03em", textShadow: "0 10px 40px rgba(0,0,0,0.6)" }}>{p.nome}</div>
+              <div style={{ ...TXT(92, 700), letterSpacing: "-0.03em", whiteSpace: "nowrap", textShadow: "0 10px 40px rgba(0,0,0,0.6)" }}>{p.nome}</div>
               <div style={{ ...TXT(40, 500, COR.suave), marginTop: 6 }}>{p.sub}</div>
             </div>
           </AbsoluteFill>
@@ -507,7 +510,7 @@ const Legenda: React.FC<{ esconder: number[] }> = ({ esconder }) => {
     const [de, ate] = TEMPOS.frases[i];
     const partes = fala.replace(/\.\.\./g, "…").split(/(?<=[,.?!:…])\s+/).reduce<string[]>((acc, w) => {
       const u = acc[acc.length - 1];
-      if (u && (u + " " + w).length <= 58) acc[acc.length - 1] = u + " " + w;
+      if (u && !/[.?!]$/.test(u) && (u + " " + w).length <= 58) acc[acc.length - 1] = u + " " + w;
       else acc.push(w);
       return acc;
     }, []);
@@ -530,14 +533,14 @@ const Legenda: React.FC<{ esconder: number[] }> = ({ esconder }) => {
 };
 
 /* ---------- vídeo ---------- */
-const CENAS: ((d: number, voz: Voz) => React.ReactNode)[] = [
+const CENAS: ((d: number, voz: Voz, de: number) => React.ReactNode)[] = [
   (d) => <C1 d={d} />,
   (d) => <C2 d={d} />,
   (d) => <C3 d={d} />,
   (d, v) => <C4 d={d} voz={v} />,
   (d) => <C5 d={d} />,
   (d, v) => <C6 d={d} voz={v} />,
-  (d) => <C7 d={d} />,
+  (d, _v, de) => <C7 d={d} inicio={de} />,
   (d, v) => <C8 d={d} voz={v} />,
   (d) => <C9 d={d} />,
   (d) => <C10 d={d} />,
@@ -561,7 +564,7 @@ export const Institucional: React.FC = () => {
         const d = (i + 1 < ini.length ? ini[i + 1] : total) - de;
         return (
           <Sequence key={i} from={de} durationInFrames={d} layout="none">
-            {c(d, voz)}
+            {c(d, voz, de)}
           </Sequence>
         );
       })}
