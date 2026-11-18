@@ -2,42 +2,239 @@
   "_leia": "Calendário do Instagram da Nexor com foco em Araguari (MG). Regra do dono: nenhum valor, desconto ou percentual em legenda, arte ou resposta; preço é sempre com um atendente no WhatsApp (34) 99733-7499. Cada post fala com um tipo de cliente e um produto e termina com uma palavra para comentar (a Blue responde e qualifica no Direct). Publicação pelo Windsor (instagram, conta 17841416941330180) com o ok do dono. Horários de Brasília.",
   "url_base": "https://raw.githubusercontent.com/pauloamorypa-web/nexorconsulting/main/marketing/instagram/jpg/",
   "posts": [
-    {"data": "2026-11-19", "hora": "11:30", "tipo": "imagem", "publico": "todas as empresas de Araguari", "arquivos": ["ia-gente-cuida.jpg"], "fixar": true,
-     "legenda": "Empresário de Araguari: você não precisa escolher entre tecnologia e atendimento de gente. 💙\n\n⚡ A IA faz o trabalho pesado: responde clientes, agenda, lê documentos e cobra, 24 horas.\n🤝 O nosso time, aqui de Araguari, implanta junto, treina a equipe e acompanha de perto.\n\nQuer ver o que dá para automatizar na sua empresa? Comente DIAGNÓSTICO ou chame no WhatsApp (34) 99733-7499.\n\n#araguari #araguarimg #empresasdearaguari #inteligenciaartificial #nexorconsulting"},
-    {"data": "2026-11-19", "hora": "11:40", "tipo": "imagem", "publico": "donos de barbearia", "produto": "Nexor Barber", "arquivos": ["camp-barber.jpg"], "fixar": true,
-     "legenda": "Dono de barbearia em Araguari, essa é para você. ✂️\n\nSe o seu WhatsApp vira agenda o dia inteiro, cliente esquece o horário e a comissão fecha no caderno, o Nexor Barber resolve:\n\n📲 o cliente agenda sozinho pelo app com a marca da sua barbearia\n⏰ lembrete automático e menos faltas\n💈 clube de assinatura, comissões e caixa fechando sozinhos\n\nA gente configura tudo junto com você, aqui na cidade.\n\nComente BARBER que te mostramos funcionando. Para saber o valor, fale com um atendente no WhatsApp (34) 99733-7499.\n\n#barbeariaaraguari #barbearia #barbeiro #araguari #araguarimg"},
-    {"data": "2026-11-19", "hora": "11:50", "tipo": "imagem", "publico": "empresas que querem testar antes", "arquivos": ["teste-30-dias.jpg"], "fixar": true,
-     "legenda": "Teste antes de decidir. 30 dias com o sistema rodando na sua empresa e o nosso time do seu lado. 🎁\n\nRH e Ponto · Atende IA · Contábil · Barber · Agente.\n\nO teste é para empresas. Comente TESTE e a Blue, nossa assistente, te pergunta o ramo da empresa e indica o sistema certo.\n\n#testegratis #araguari #empresasdearaguari #automacao #nexorconsulting"},
-    {"data": "2026-11-20", "hora": "19:00", "tipo": "story", "arquivos": ["story-gente-cuida.jpg"]},
-    {"data": "2026-11-23", "hora": "11:30", "tipo": "imagem", "publico": "comércio, indústria e clínicas com equipe", "produto": "Nexor RH e Ponto", "arquivos": ["camp-rh-ponto.jpg"],
-     "legenda": "Tem equipe com 5 ou mais funcionários em Araguari? Então o ponto em papel está te custando caro. ⏱️\n\nCom o Nexor RH e Ponto, o colaborador bate o ponto pelo celular com digital, rosto, QR Code ou GPS. Espelho, banco de horas e folha saem prontos, dentro da Portaria 671, e o holerite chega no app.\n\nIdeal para lojas, indústrias, clínicas e prestadores de serviço.\n\nComente PONTO e conte quantos funcionários tem. Valores com um atendente no WhatsApp (34) 99733-7499.\n\n#pontoeletronico #departamentopessoal #rh #araguari #empresasdearaguari"},
-    {"data": "2026-11-23", "hora": "19:00", "tipo": "story", "arquivos": ["reels-rh.jpg"]},
-    {"data": "2026-11-25", "hora": "11:30", "tipo": "imagem", "publico": "clínicas, imobiliárias e lojas que atendem no WhatsApp", "produto": "Nexor Atende IA", "arquivos": ["antes-depois.jpg"],
-     "legenda": "Clínica, imobiliária ou loja de Araguari: quantas mensagens ficam sem resposta depois das 18h? 👀\n\nSem IA: o cliente espera, desiste e compra do concorrente.\nCom o Nexor Atende IA: resposta em segundos, horário agendado, dúvida respondida com as suas regras e tudo registrado para a sua equipe.\n\nComente IA e diga o seu ramo. Para valores, um atendente te chama no WhatsApp (34) 99733-7499.\n\n#atendimentoaocliente #whatsappbusiness #clinicaaraguari #imobiliaria #araguari"},
-    {"data": "2026-11-25", "hora": "19:00", "tipo": "story", "arquivos": ["atende-story-teste.jpg"]},
-    {"data": "2026-11-27", "hora": "11:30", "tipo": "imagem", "publico": "clínicas e consultórios", "produto": "Nexor Atende IA", "arquivos": ["camp-atende.jpg"],
-     "legenda": "23h47. O paciente perguntou. A IA respondeu e já marcou o horário. 🌙\n\nPara clínicas, consultórios e estúdios de Araguari que vivem com o WhatsApp lotado: o Nexor Atende IA atende 24 horas pela API oficial da Meta, confirma consultas e passa para a recepção com o resumo pronto quando precisa.\n\nComente IA que te mostramos em uma conversa real. Valores com um atendente no WhatsApp (34) 99733-7499.\n\n#clinica #consultorio #secretariavirtual #araguari #araguarimg"},
-    {"data": "2026-11-27", "hora": "19:00", "tipo": "story", "arquivos": ["blue-story-23h.jpg"]},
-    {"data": "2026-11-30", "hora": "11:30", "tipo": "imagem", "publico": "escritórios de contabilidade", "produto": "Nexor Contábil", "arquivos": ["contabil-dor.jpg"],
-     "legenda": "Contador de Araguari: quantas horas por mês o seu escritório perde cobrando documento de cliente? ⏳\n\nO Nexor Contábil cobra sozinho pelo WhatsApp, lê notas e extratos com IA e entrega os lançamentos prontos para o seu sistema. Com a marca do seu escritório.\n\nVagas de fundador abertas para escritórios da cidade.\n\nComente CONTÁBIL e diga quantas empresas você atende. Condições com um atendente no WhatsApp (34) 99733-7499.\n\n#contabilidade #escritoriocontabil #contadoresaraguari #araguari #contador"},
-    {"data": "2026-11-30", "hora": "19:00", "tipo": "story", "arquivos": ["contabil-story.jpg"]},
-    {"data": "2026-12-02", "hora": "11:30", "tipo": "carrossel", "publico": "lojas de material elétrico, segurança e solar", "produto": "Nexor Elo", "arquivos": ["elo-1-problema.jpg", "elo-2-solucao.jpg", "elo-3-dinheiro.jpg"],
-     "legenda": "Loja de material elétrico, segurança eletrônica ou energia solar em Araguari: o instalador ainda pede orçamento pelo WhatsApp em três lojas? 👉 Arrasta.\n\nCom o Nexor Elo, o orçamento do instalador já sai com o seu estoque e o pagamento cai dividido na hora.\n\nVagas de fundador para fornecedores da cidade.\n\nComente ELO e diga o ramo da sua loja. Condições com um atendente no WhatsApp (34) 99733-7499.\n\n#materialeletrico #energiasolar #segurancaeletronica #araguari #instalador"},
-    {"data": "2026-12-02", "hora": "19:00", "tipo": "story", "arquivos": ["elo-story.jpg"]},
-    {"data": "2026-12-04", "hora": "11:30", "tipo": "imagem", "publico": "empresas que não sabem por onde começar", "arquivos": ["diagnostico.jpg"],
-     "legenda": "Não sabe por onde começar com IA? A gente vai até você. 🔎\n\nPara empresas de Araguari: o nosso time visita, entende como a sua empresa atende, vende e controla, e mostra onde a tecnologia economiza tempo primeiro. Sem compromisso.\n\nComente DIAGNÓSTICO com o ramo da sua empresa ou chame no WhatsApp (34) 99733-7499 para marcar.\n\n#consultoria #gestaoempresarial #empresasdearaguari #araguari #nexorconsulting"},
-    {"data": "2026-12-04", "hora": "19:00", "tipo": "story", "arquivos": ["reels-barber.jpg"]},
-    {"data": "2026-12-07", "hora": "11:30", "tipo": "imagem", "publico": "lojas e prestadores com time de vendas", "produto": "Nexor Atende IA", "arquivos": ["atende-quem-compra.jpg"],
-     "legenda": "Seu vendedor perde tempo com curioso enquanto o cliente pronto para comprar espera? 🔥\n\nO Nexor Atende IA dá uma nota para cada conversa no WhatsApp e mostra quem está quente. Sua equipe liga primeiro para quem vai fechar.\n\nPara lojas, concessionárias, imobiliárias e prestadores de Araguari.\n\nComente IA e diga quantas conversas recebe por dia. Valores com um atendente no WhatsApp (34) 99733-7499.\n\n#vendas #crm #whatsappbusiness #araguari #empresasdearaguari"},
-    {"data": "2026-12-09", "hora": "11:30", "tipo": "carrossel", "publico": "todas as empresas de Araguari", "arquivos": ["li-tudo-1.jpg", "li-tudo-2.jpg", "li-tudo-3.jpg", "li-tudo-4.jpg", "li-tudo-5.jpg", "li-tudo-6.jpg", "li-tudo-7.jpg", "li-tudo-8.jpg"],
-     "legenda": "Tudo o que a Nexor faz, em 8 telas. 👉 Arrasta.\n\nSistemas com IA feitos aqui em Araguari: atendimento no WhatsApp, ponto e folha, contabilidade, barbearias, rede de fornecedores e sistemas sob medida.\n\nQual deles resolve a maior dor da sua empresa hoje? Comente o nome e o seu ramo que a gente te responde no Direct.\n\n#araguari #empresasdearaguari #inteligenciaartificial #automacao #nexorconsulting"},
-    {"data": "2026-12-11", "hora": "11:30", "tipo": "imagem", "publico": "escritórios de contabilidade", "produto": "Nexor Contábil", "arquivos": ["contabil-teste.jpg"],
-     "legenda": "Teste no seu escritório por 30 dias, com o nosso time configurando junto, aqui em Araguari. 🧾\n\nCobrança automática de documentos, leitura de notas e extratos com IA e exportação dos lançamentos.\n\nComente CONTÁBIL ou chame um atendente no WhatsApp (34) 99733-7499.\n\n#contabilidade #contador #escritoriocontabil #araguari #testegratis"},
-    {"data": "2026-12-14", "hora": "11:30", "tipo": "imagem", "publico": "empresas que tratam dados de clientes", "produto": "Consultoria de LGPD", "arquivos": ["lgpd-checklist.jpg"],
-     "legenda": "Clínica, escola, loja ou escritório de Araguari: sua empresa está em dia com a LGPD? ✅\n\nSalve o checklist e marque quantos itens você já cumpre. Ficou abaixo de 5? Vale uma conversa antes que vire problema.\n\nComente LGPD e diga o ramo da empresa. Proposta com um atendente no WhatsApp (34) 99733-7499.\n\n#lgpd #protecaodedados #compliance #araguari #empresasdearaguari"},
-    {"data": "2026-12-16", "hora": "11:30", "tipo": "imagem", "publico": "donos de barbearia", "produto": "Nexor Barber", "arquivos": ["cat-barber.jpg"],
-     "legenda": "Barbeiro de Araguari: a cadeira cheia sem largar a navalha para atender o telefone. ✂️\n\nApp do cliente com a marca da sua barbearia, agenda online, lembrete e clube de assinatura.\n\nComente BARBER que a gente passa aí para mostrar. Valores com um atendente no WhatsApp (34) 99733-7499.\n\n#barbeariaaraguari #barbearia #barbershop #araguari #araguarimg"},
-    {"data": "2026-12-18", "hora": "11:30", "tipo": "imagem", "publico": "rede de contatos de Araguari", "arquivos": ["indicacao.jpg"],
-     "legenda": "Conhece uma empresa de Araguari que perde cliente por demora no WhatsApp ou ainda controla tudo no papel? 🤝\n\nIndique a Nexor. Ela ganha um time local que cuida de perto, e você ganha o nosso agradecimento.\n\nMarque aqui embaixo quem precisa ver isso 👇\n\n#indicacao #networking #araguari #empresasdearaguari #nexorconsulting"}
+    {
+      "data": "2026-11-19",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "todas as empresas de Araguari",
+      "arquivos": [
+        "ia-gente-cuida.jpg"
+      ],
+      "fixar": true,
+      "legenda": "Empresário de Araguari: você não precisa escolher entre tecnologia e atendimento de gente. 💙\n\n⚡ A IA faz o trabalho pesado: responde clientes, agenda, lê documentos e cobra, 24 horas.\n🤝 O nosso time, aqui de Araguari, implanta junto, treina a equipe e acompanha de perto.\n\nQuer ver o que dá para automatizar na sua empresa? Comente DIAGNÓSTICO ou chame no WhatsApp (34) 99733-7499.\n\n#araguari #araguarimg #empresasdearaguari #inteligenciaartificial #nexorconsulting",
+      "publicado": true,
+      "publicado_em": "2026-11-18"
+    },
+    {
+      "data": "2026-11-19",
+      "hora": "11:40",
+      "tipo": "imagem",
+      "publico": "donos de barbearia",
+      "produto": "Nexor Barber",
+      "arquivos": [
+        "camp-barber.jpg"
+      ],
+      "fixar": true,
+      "legenda": "Dono de barbearia em Araguari, essa é para você. ✂️\n\nSe o seu WhatsApp vira agenda o dia inteiro, cliente esquece o horário e a comissão fecha no caderno, o Nexor Barber resolve:\n\n📲 o cliente agenda sozinho pelo app com a marca da sua barbearia\n⏰ lembrete automático e menos faltas\n💈 clube de assinatura, comissões e caixa fechando sozinhos\n\nA gente configura tudo junto com você, aqui na cidade.\n\nComente BARBER que te mostramos funcionando. Para saber o valor, fale com um atendente no WhatsApp (34) 99733-7499.\n\n#barbeariaaraguari #barbearia #barbeiro #araguari #araguarimg",
+      "publicado": true,
+      "publicado_em": "2026-11-18"
+    },
+    {
+      "data": "2026-11-19",
+      "hora": "11:50",
+      "tipo": "imagem",
+      "publico": "empresas que querem testar antes",
+      "arquivos": [
+        "teste-30-dias.jpg"
+      ],
+      "fixar": true,
+      "legenda": "Teste antes de decidir. 30 dias com o sistema rodando na sua empresa e o nosso time do seu lado. 🎁\n\nRH e Ponto · Atende IA · Contábil · Barber · Agente.\n\nO teste é para empresas. Comente TESTE e a Blue, nossa assistente, te pergunta o ramo da empresa e indica o sistema certo.\n\n#testegratis #araguari #empresasdearaguari #automacao #nexorconsulting",
+      "publicado": true,
+      "publicado_em": "2026-11-18"
+    },
+    {
+      "data": "2026-11-20",
+      "hora": "19:00",
+      "tipo": "story",
+      "arquivos": [
+        "story-gente-cuida.jpg"
+      ]
+    },
+    {
+      "data": "2026-11-23",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "comércio, indústria e clínicas com equipe",
+      "produto": "Nexor RH e Ponto",
+      "arquivos": [
+        "camp-rh-ponto.jpg"
+      ],
+      "legenda": "Tem equipe com 5 ou mais funcionários em Araguari? Então o ponto em papel está te custando caro. ⏱️\n\nCom o Nexor RH e Ponto, o colaborador bate o ponto pelo celular com digital, rosto, QR Code ou GPS. Espelho, banco de horas e folha saem prontos, dentro da Portaria 671, e o holerite chega no app.\n\nIdeal para lojas, indústrias, clínicas e prestadores de serviço.\n\nComente PONTO e conte quantos funcionários tem. Valores com um atendente no WhatsApp (34) 99733-7499.\n\n#pontoeletronico #departamentopessoal #rh #araguari #empresasdearaguari"
+    },
+    {
+      "data": "2026-11-23",
+      "hora": "19:00",
+      "tipo": "story",
+      "arquivos": [
+        "reels-rh.jpg"
+      ]
+    },
+    {
+      "data": "2026-11-25",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "clínicas, imobiliárias e lojas que atendem no WhatsApp",
+      "produto": "Nexor Atende IA",
+      "arquivos": [
+        "antes-depois.jpg"
+      ],
+      "legenda": "Clínica, imobiliária ou loja de Araguari: quantas mensagens ficam sem resposta depois das 18h? 👀\n\nSem IA: o cliente espera, desiste e compra do concorrente.\nCom o Nexor Atende IA: resposta em segundos, horário agendado, dúvida respondida com as suas regras e tudo registrado para a sua equipe.\n\nComente IA e diga o seu ramo. Para valores, um atendente te chama no WhatsApp (34) 99733-7499.\n\n#atendimentoaocliente #whatsappbusiness #clinicaaraguari #imobiliaria #araguari"
+    },
+    {
+      "data": "2026-11-25",
+      "hora": "19:00",
+      "tipo": "story",
+      "arquivos": [
+        "atende-story-teste.jpg"
+      ]
+    },
+    {
+      "data": "2026-11-27",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "clínicas e consultórios",
+      "produto": "Nexor Atende IA",
+      "arquivos": [
+        "camp-atende.jpg"
+      ],
+      "legenda": "23h47. O paciente perguntou. A IA respondeu e já marcou o horário. 🌙\n\nPara clínicas, consultórios e estúdios de Araguari que vivem com o WhatsApp lotado: o Nexor Atende IA atende 24 horas pela API oficial da Meta, confirma consultas e passa para a recepção com o resumo pronto quando precisa.\n\nComente IA que te mostramos em uma conversa real. Valores com um atendente no WhatsApp (34) 99733-7499.\n\n#clinica #consultorio #secretariavirtual #araguari #araguarimg"
+    },
+    {
+      "data": "2026-11-27",
+      "hora": "19:00",
+      "tipo": "story",
+      "arquivos": [
+        "blue-story-23h.jpg"
+      ]
+    },
+    {
+      "data": "2026-11-30",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "escritórios de contabilidade",
+      "produto": "Nexor Contábil",
+      "arquivos": [
+        "contabil-dor.jpg"
+      ],
+      "legenda": "Contador de Araguari: quantas horas por mês o seu escritório perde cobrando documento de cliente? ⏳\n\nO Nexor Contábil cobra sozinho pelo WhatsApp, lê notas e extratos com IA e entrega os lançamentos prontos para o seu sistema. Com a marca do seu escritório.\n\nVagas de fundador abertas para escritórios da cidade.\n\nComente CONTÁBIL e diga quantas empresas você atende. Condições com um atendente no WhatsApp (34) 99733-7499.\n\n#contabilidade #escritoriocontabil #contadoresaraguari #araguari #contador"
+    },
+    {
+      "data": "2026-11-30",
+      "hora": "19:00",
+      "tipo": "story",
+      "arquivos": [
+        "contabil-story.jpg"
+      ]
+    },
+    {
+      "data": "2026-12-02",
+      "hora": "11:30",
+      "tipo": "carrossel",
+      "publico": "lojas de material elétrico, segurança e solar",
+      "produto": "Nexor Elo",
+      "arquivos": [
+        "elo-1-problema.jpg",
+        "elo-2-solucao.jpg",
+        "elo-3-dinheiro.jpg"
+      ],
+      "legenda": "Loja de material elétrico, segurança eletrônica ou energia solar em Araguari: o instalador ainda pede orçamento pelo WhatsApp em três lojas? 👉 Arrasta.\n\nCom o Nexor Elo, o orçamento do instalador já sai com o seu estoque e o pagamento cai dividido na hora.\n\nVagas de fundador para fornecedores da cidade.\n\nComente ELO e diga o ramo da sua loja. Condições com um atendente no WhatsApp (34) 99733-7499.\n\n#materialeletrico #energiasolar #segurancaeletronica #araguari #instalador"
+    },
+    {
+      "data": "2026-12-02",
+      "hora": "19:00",
+      "tipo": "story",
+      "arquivos": [
+        "elo-story.jpg"
+      ]
+    },
+    {
+      "data": "2026-12-04",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "empresas que não sabem por onde começar",
+      "arquivos": [
+        "diagnostico.jpg"
+      ],
+      "legenda": "Não sabe por onde começar com IA? A gente vai até você. 🔎\n\nPara empresas de Araguari: o nosso time visita, entende como a sua empresa atende, vende e controla, e mostra onde a tecnologia economiza tempo primeiro. Sem compromisso.\n\nComente DIAGNÓSTICO com o ramo da sua empresa ou chame no WhatsApp (34) 99733-7499 para marcar.\n\n#consultoria #gestaoempresarial #empresasdearaguari #araguari #nexorconsulting"
+    },
+    {
+      "data": "2026-12-04",
+      "hora": "19:00",
+      "tipo": "story",
+      "arquivos": [
+        "reels-barber.jpg"
+      ]
+    },
+    {
+      "data": "2026-12-07",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "lojas e prestadores com time de vendas",
+      "produto": "Nexor Atende IA",
+      "arquivos": [
+        "atende-quem-compra.jpg"
+      ],
+      "legenda": "Seu vendedor perde tempo com curioso enquanto o cliente pronto para comprar espera? 🔥\n\nO Nexor Atende IA dá uma nota para cada conversa no WhatsApp e mostra quem está quente. Sua equipe liga primeiro para quem vai fechar.\n\nPara lojas, concessionárias, imobiliárias e prestadores de Araguari.\n\nComente IA e diga quantas conversas recebe por dia. Valores com um atendente no WhatsApp (34) 99733-7499.\n\n#vendas #crm #whatsappbusiness #araguari #empresasdearaguari"
+    },
+    {
+      "data": "2026-12-09",
+      "hora": "11:30",
+      "tipo": "carrossel",
+      "publico": "todas as empresas de Araguari",
+      "arquivos": [
+        "li-tudo-1.jpg",
+        "li-tudo-2.jpg",
+        "li-tudo-3.jpg",
+        "li-tudo-4.jpg",
+        "li-tudo-5.jpg",
+        "li-tudo-6.jpg",
+        "li-tudo-7.jpg",
+        "li-tudo-8.jpg"
+      ],
+      "legenda": "Tudo o que a Nexor faz, em 8 telas. 👉 Arrasta.\n\nSistemas com IA feitos aqui em Araguari: atendimento no WhatsApp, ponto e folha, contabilidade, barbearias, rede de fornecedores e sistemas sob medida.\n\nQual deles resolve a maior dor da sua empresa hoje? Comente o nome e o seu ramo que a gente te responde no Direct.\n\n#araguari #empresasdearaguari #inteligenciaartificial #automacao #nexorconsulting"
+    },
+    {
+      "data": "2026-12-11",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "escritórios de contabilidade",
+      "produto": "Nexor Contábil",
+      "arquivos": [
+        "contabil-teste.jpg"
+      ],
+      "legenda": "Teste no seu escritório por 30 dias, com o nosso time configurando junto, aqui em Araguari. 🧾\n\nCobrança automática de documentos, leitura de notas e extratos com IA e exportação dos lançamentos.\n\nComente CONTÁBIL ou chame um atendente no WhatsApp (34) 99733-7499.\n\n#contabilidade #contador #escritoriocontabil #araguari #testegratis"
+    },
+    {
+      "data": "2026-12-14",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "empresas que tratam dados de clientes",
+      "produto": "Consultoria de LGPD",
+      "arquivos": [
+        "lgpd-checklist.jpg"
+      ],
+      "legenda": "Clínica, escola, loja ou escritório de Araguari: sua empresa está em dia com a LGPD? ✅\n\nSalve o checklist e marque quantos itens você já cumpre. Ficou abaixo de 5? Vale uma conversa antes que vire problema.\n\nComente LGPD e diga o ramo da empresa. Proposta com um atendente no WhatsApp (34) 99733-7499.\n\n#lgpd #protecaodedados #compliance #araguari #empresasdearaguari"
+    },
+    {
+      "data": "2026-12-16",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "donos de barbearia",
+      "produto": "Nexor Barber",
+      "arquivos": [
+        "cat-barber.jpg"
+      ],
+      "legenda": "Barbeiro de Araguari: a cadeira cheia sem largar a navalha para atender o telefone. ✂️\n\nApp do cliente com a marca da sua barbearia, agenda online, lembrete e clube de assinatura.\n\nComente BARBER que a gente passa aí para mostrar. Valores com um atendente no WhatsApp (34) 99733-7499.\n\n#barbeariaaraguari #barbearia #barbershop #araguari #araguarimg"
+    },
+    {
+      "data": "2026-12-18",
+      "hora": "11:30",
+      "tipo": "imagem",
+      "publico": "rede de contatos de Araguari",
+      "arquivos": [
+        "indicacao.jpg"
+      ],
+      "legenda": "Conhece uma empresa de Araguari que perde cliente por demora no WhatsApp ou ainda controla tudo no papel? 🤝\n\nIndique a Nexor. Ela ganha um time local que cuida de perto, e você ganha o nosso agradecimento.\n\nMarque aqui embaixo quem precisa ver isso 👇\n\n#indicacao #networking #araguari #empresasdearaguari #nexorconsulting"
+    }
   ]
 }
