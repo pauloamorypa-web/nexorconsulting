@@ -203,7 +203,7 @@ export const CenaFinal: React.FC<{ voz: Voz; icone: React.ReactNode; chamada: st
 };
 
 /* Volume real da voz (RMS de 30 ms), normalizado pelo pico da locução */
-const useVoz = (pasta: string): Voz => {
+export const useVoz = (pasta: string): Voz => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
   const audio = useAudioData(staticFile(`${pasta}/locucao.mp3`));
