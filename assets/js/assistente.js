@@ -112,7 +112,12 @@
 
   // Outros pontos do site podem abrir a Blue: <button data-abrir-blue>
   document.addEventListener("click", (e) => {
-    if (e.target.closest("[data-abrir-blue]")) abrir(true);
+    const gatilho = e.target.closest("[data-abrir-blue]");
+    if (!gatilho) return;
+    abrir(true);
+    // data-abrir-blue="pergunta" já manda a pergunta para a Blue
+    const pergunta = (gatilho.dataset.abrirBlue || "").trim();
+    if (pergunta) setTimeout(() => enviar(pergunta.slice(0, 300)), 150);
   });
 
   /* ---------- Atendimento guiado (sem servidor) ---------- */

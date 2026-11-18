@@ -98,14 +98,24 @@
     return li;
   };
 
+  const sec = raiz.closest(".sim");
+  const ordem = abas.map((a) => a.dataset.cena);
+  let atual = ordem[0];
+  let auto = !calmo;
+  let proxima;
+
   function mostrar(id, foco = false) {
     const c = CENAS[id];
     if (!c) return;
     limpar();
+    clearTimeout(proxima);
+    atual = id;
     abas.forEach((a) => {
       const ativo = a.dataset.cena === id;
       a.setAttribute("aria-selected", ativo);
       a.tabIndex = ativo ? 0 : -1;
+      const prog = a.querySelector(".sim-prog");
+      if (prog) { prog.style.animation = "none"; void prog.offsetWidth; prog.style.animation = ""; }
       if (ativo && foco) a.focus();
     });
     titulo.textContent = c.tela;
@@ -115,12 +125,37 @@
     saiba.href = c.link;
     saiba.textContent = `Conhecer o ${c.nome}`;
     feed.innerHTML = "";
-    c.eventos.forEach((ev, i) => {
+    if (calmo) { c.eventos.forEach((ev) => { const li = linha(ev); li.classList.add("visivel"); feed.append(li); }); return; }
+    let t = 300;
+    c.eventos.forEach((ev) => {
+      if (ev[0] === "ia") { // a IA "digita" antes de responder
+        const dig = document.createElement("li");
+        dig.className = "ev ev-digitando";
+        dig.setAttribute("aria-hidden", "true");
+        dig.innerHTML = "<i></i><i></i><i></i>";
+        timers.push(setTimeout(() => { feed.append(dig); requestAnimationFrame(() => dig.classList.add("visivel")); }, t));
+        t += 900;
+        timers.push(setTimeout(() => dig.remove(), t));
+      }
       const li = linha(ev);
-      if (calmo) { li.classList.add("visivel"); feed.append(li); return; }
-      timers.push(setTimeout(() => { feed.append(li); requestAnimationFrame(() => li.classList.add("visivel")); }, 350 + i * 900));
+      timers.push(setTimeout(() => { feed.append(li); requestAnimationFrame(() => li.classList.add("visivel")); }, t));
+      t += 850;
     });
+    const duracao = t + 2600;
+    sec.style.setProperty("--cena-ms", `${duracao}ms`);
+    sec.dataset.auto = auto ? "1" : "0";
+    if (auto) proxima = setTimeout(() => mostrar(ordem[(ordem.indexOf(id) + 1) % ordem.length]), duracao);
   }
+  // A troca automática para quando a pessoa interage com o simulador
+  const parar = () => { if (!auto) return; auto = false; clearTimeout(proxima); sec.dataset.auto = "0"; };
+  raiz.addEventListener("pointerdown", parar);
+  raiz.addEventListener("keydown", parar);
+  // Fora da tela, não gasta: pausa e retoma
+  new IntersectionObserver(([e]) => {
+    if (!auto) return;
+    if (!e.isIntersecting) { limpar(); clearTimeout(proxima); }
+    else mostrar(atual);
+  }, { threshold: 0.2 }).observe(sec);
 
   raiz.addEventListener("click", (e) => {
     const aba = e.target.closest("[data-cena]");
@@ -137,5 +172,102 @@
   // Quem chega por campanha já vê o próprio negócio (utm_campaign=barber, rh-ponto, atende...)
   const utm = new URLSearchParams(location.search).get("utm_campaign") || "";
   const porCampanha = { barber: "barbearia", "rh-ponto": "equipe", rh: "equipe", atende: "clinica", contabil: "contabil", elo: "loja", agente: "dono" };
-  mostrar(porCampanha[utm] || abas[0].dataset.cena);
+  if (porCampanha[utm]) auto = false;
+  mostrar(porCampanha[utm] || ordem[0]);
+})();
+
+/* Faixa "a IA trabalhando": duplica a lista para o trilho não ter emenda */
+(() => {
+  const trilho = document.querySelector("[data-agora]");
+  if (!trilho) return;
+  const copia = trilho.querySelector("ul").cloneNode(true);
+  copia.setAttribute("aria-hidden", "true");
+  trilho.append(copia);
+})();
+
+/* Ecossistema: os sistemas conversam entre si */
+(() => {
+  const mapa = document.querySelector("[data-eco]");
+  if (!mapa) return;
+  const LIGACOES = [
+    ["atende", "agente", "O cliente que chegou pelo WhatsApp aparece nas vendas que o dono consulta no Agente."],
+    ["rh", "contabil", "Ponto e folha fechados no RH chegam prontos para o escritório de contabilidade."],
+    ["barber", "agente", "O faturamento do dia na barbearia chega no WhatsApp do dono."],
+    ["elo", "contabil", "As vendas e repasses do Elo seguem para a contabilidade sem digitar de novo."],
+    ["atende", "rh", "O Atende IA responde dúvidas da equipe sobre ponto, férias e holerite."],
+  ];
+  const TEXTO = {
+    blue: ["Blue, a IA da Nexor", "Ela conversa com os clientes, entende o que cada sistema sabe e chama uma pessoa da equipe quando precisa."],
+    atende: ["Nexor Atende IA", "Atende e vende no WhatsApp 24 horas. Cada conversa vira contato, com nota de interesse."],
+    agente: ["Nexor Agente", "O dono pergunta pelo WhatsApp e recebe vendas, estoque e cobranças de todos os sistemas."],
+    rh: ["Nexor RH e Ponto", "Ponto pelo celular, folha e eSocial. Os dados seguem prontos para a contabilidade."],
+    contabil: ["Nexor Contábil", "Recebe o que vem do RH e do Elo e lê o resto com IA."],
+    barber: ["Nexor Barber", "Agenda, clube e caixa da barbearia, com o resumo do dia no WhatsApp do dono."],
+    elo: ["Nexor Elo", "Orçamento do instalador com o estoque da loja e pagamento dividido na hora."],
+  };
+  const grupo = mapa.querySelector(".eco-linhas");
+  const pos = (id) => {
+    const b = mapa.querySelector(`[data-no="${id}"]`);
+    const cs = getComputedStyle(b);
+    return [parseFloat(cs.getPropertyValue("--x")) * 5.2, parseFloat(cs.getPropertyValue("--y")) * 4.4];
+  };
+  const NS = "http://www.w3.org/2000/svg";
+  const calmo = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const desenhar = (a, b, texto, central) => {
+    const [x1, y1] = pos(a), [x2, y2] = pos(b);
+    const cx = (x1 + x2) / 2 + (central ? 0 : (y2 - y1) * 0.18), cy = (y1 + y2) / 2 - (central ? 0 : (x2 - x1) * 0.18);
+    const g = document.createElementNS(NS, "g");
+    g.dataset.a = a; g.dataset.b = b; if (texto) g.dataset.texto = texto;
+    const path = document.createElementNS(NS, "path");
+    const d = `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`;
+    path.setAttribute("d", d);
+    g.append(path);
+    if (!calmo) { // um pacote de dados correndo pela ligação
+      const dot = document.createElementNS(NS, "circle");
+      dot.setAttribute("r", central ? "2.5" : "3.5");
+      const anim = document.createElementNS(NS, "animateMotion");
+      anim.setAttribute("dur", `${central ? 3 : 4 + Math.random() * 2}s`);
+      anim.setAttribute("repeatCount", "indefinite");
+      anim.setAttribute("path", d);
+      anim.setAttribute("begin", `${Math.random() * 2}s`);
+      dot.append(anim);
+      g.append(dot);
+    }
+    grupo.append(g);
+  };
+  ["atende", "agente", "rh", "contabil", "barber", "elo"].forEach((id) => desenhar("blue", id, "", true));
+  LIGACOES.forEach(([a, b, t]) => desenhar(a, b, t, false));
+
+  const titulo = document.querySelector("[data-eco-titulo]");
+  const texto = document.querySelector("[data-eco-texto]");
+  const focar = (id) => {
+    mapa.dataset.foco = id;
+    mapa.querySelectorAll(".eco-no").forEach((n) => n.classList.toggle("ativo", n.dataset.no === id));
+    const ligadas = [...grupo.children].filter((g) => g.dataset.a === id || g.dataset.b === id);
+    [...grupo.children].forEach((g) => g.classList.toggle("ativo", ligadas.includes(g)));
+    const [t, d] = TEXTO[id];
+    const fluxos = ligadas.map((g) => g.dataset.texto).filter(Boolean);
+    titulo.textContent = t;
+    texto.textContent = fluxos.length ? `${d} ${fluxos[0]}` : d;
+  };
+  mapa.addEventListener("pointerover", (e) => { const n = e.target.closest(".eco-no"); if (n) focar(n.dataset.no); });
+  mapa.addEventListener("focusin", (e) => { const n = e.target.closest(".eco-no"); if (n) focar(n.dataset.no); });
+  mapa.addEventListener("click", (e) => { const n = e.target.closest(".eco-no"); if (n) focar(n.dataset.no); });
+})();
+
+/* Banca de testes: os cinco agentes rodam quando a seção aparece */
+(() => {
+  const lista = document.querySelector("[data-banca]");
+  if (!lista) return;
+  const itens = [...lista.children];
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { itens.forEach((li) => li.classList.add("ok")); return; }
+  let rodou = false;
+  new IntersectionObserver(([e], obs) => {
+    if (!e.isIntersecting || rodou) return;
+    rodou = true; obs.disconnect();
+    itens.forEach((li, i) => {
+      setTimeout(() => li.classList.add("rodando"), i * 900);
+      setTimeout(() => { li.classList.remove("rodando"); li.classList.add("ok"); }, i * 900 + 800);
+    });
+  }, { threshold: 0.4 }).observe(lista);
 })();
