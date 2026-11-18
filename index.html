@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://connect.facebook.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>Nexor Consulting | Software sob medida, sistemas e IA para empresas</title>
-  <meta name="description" content="Desenvolvimento de sites, sistemas ERP e CRM, software sob medida e atendimento com IA no WhatsApp. Teste grátis por 30 dias, sem cartão. Fale com a Nexor.">
+  <title>Nexor Consulting | Sistemas com IA para empresas de Araguari e região</title>
+  <meta name="description" content="Sistemas com IA para barbearias, clínicas, empresas com equipe, escritórios de contabilidade e lojas de Araguari (MG) e região. Teste grátis por 30 dias, com time local que implanta junto.">
   <meta name="keywords" content="desenvolvimento de software sob medida, empresa de software, sistema ERP, CRM, criação de sites, chatbot WhatsApp com IA, automação de processos com IA, software house, service desk, sistema de chamados, help desk, inventário de TI">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="https://nexorconsultingit.com.br/">
@@ -28,6 +28,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Michroma&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/home.css">
 </head>
 <body>
 
@@ -75,519 +76,163 @@
       <span></span><span></span><span></span>
     </button>
     <nav class="nav" id="menu" aria-label="Principal">
-      <a href="#servicos">Soluções</a>
-      <a href="#fundadores">Fundadores</a>
-      <a href="#ti">Para TI</a>
-      <a href="#em-breve">Em breve</a>
-      <a href="#roi">Calcule seu retorno</a>
-      <a href="#vitrine">Modelos</a>
-      <a href="#processo">Processo</a>
-      <a href="#faq">FAQ</a>
-      <a class="btn btn-sm btn-primary" href="#servicos">Testar grátis</a>
+      <a href="#produtos">Produtos</a>
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#sob-medida">Sob medida</a>
+      <a href="#faq">Dúvidas</a>
+      <a class="btn btn-sm btn-primary" href="#topo-simulador">Testar grátis</a>
     </nav>
   </div>
 </header>
 
 <main id="conteudo">
 
-  <!-- ================= HERO ================= -->
-  <section class="hero">
-    <canvas class="hero-canvas" id="neural" aria-hidden="true"></canvas>
-    <div class="hero-grid-bg" aria-hidden="true"></div>
-    <div class="container hero-grid">
-      <div class="hero-copy">
-        <p class="pill"><span class="pulse-dot"></span> IA no WhatsApp · E-commerce · ERP · Sob medida</p>
-        <h1>
-          Desenvolvemos
-          <span class="type-wrap"><span class="typed" id="typed">agentes de IA</span><span class="caret" aria-hidden="true"></span></span>
-          <span class="h1-sub">sob medida para <em class="grad">o seu negócio.</em></span>
-        </h1>
-        <p class="lead"><strong>Atendimento e vendas 24h no WhatsApp com IA</strong>, lojas virtuais integradas aos marketplaces, ERPs que acabam com as planilhas e software sob medida. Tecnologia com retorno mensurável para empresas de pequeno, médio e grande porte.</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary btn-lg" href="#servicos">Testar 30 dias grátis <svg class="ic"><use href="#i-arrow"/></svg></a>
-          <a class="btn btn-ghost btn-lg" href="#roi">Calcular meu retorno</a>
+  <section class="sim" id="topo-simulador" aria-labelledby="sim-h1">
+    <div class="h-wrap sim-grade" data-simulador>
+      <div>
+        <h1 class="sim-h1" id="sim-h1">Escolha o seu negócio e veja a Nexor trabalhando nele.</h1>
+        <p class="sim-sub">Sistemas com inteligência artificial para empresas de Araguari e região. <strong>30 dias para testar</strong>, com o nosso time implantando junto e os seus dados no seu ambiente.</p>
+        <p class="sim-pergunta" id="sim-pergunta">Qual é o seu negócio?</p>
+        <div class="sim-abas" role="tablist" aria-labelledby="sim-pergunta" aria-orientation="vertical">
+          <button class="sim-aba" role="tab" type="button" data-cena="barbearia" aria-controls="sim-tela">Barbearia <small>agenda, clube e comissões</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="clinica" aria-controls="sim-tela">Clínica, loja ou imobiliária <small>WhatsApp com IA 24 horas</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="equipe" aria-controls="sim-tela">Empresa com equipe <small>ponto, folha e holerite</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="contabil" aria-controls="sim-tela">Escritório de contabilidade <small>documentos e lançamentos</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="loja" aria-controls="sim-tela">Loja de material elétrico ou solar <small>orçamento com o seu estoque</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="dono" aria-controls="sim-tela">Minha empresa no meu WhatsApp <small>vendas, estoque e cobranças</small></button>
         </div>
-        <ul class="hero-stats">
-          <li><strong data-count="10" data-prefix="+">+10</strong><span>anos de experiência</span></li>
-          <li><strong data-count="200" data-prefix="+">+200</strong><span>clientes atendidos</span></li>
-          <li><strong data-count="100" data-suffix="%">100%</strong><span>código sob medida</span></li>
-        </ul>
-      </div>
-
-      <div class="hero-visual" aria-hidden="true">
-        <div class="code-window tilt">
-          <div class="win-bar"><i></i><i></i><i></i><span>nexor-ai / agents / automacao.ts</span></div>
-          <pre class="code" id="hero-code"></pre>
+        <div class="h-acoes">
+          <button class="h-btn h-btn-azul" type="button" data-produto-testar data-testar="barber"><svg class="ic"><use href="#i-gift"/></svg> Testar 30 dias grátis</button>
+          <a class="h-btn h-btn-zap" data-whatsapp="Olá! Vim pelo site da Nexor e quero saber valores." href="#final"><svg class="ic"><use href="#i-whatsapp"/></svg> Falar com um atendente</a>
         </div>
-        <div class="float-card fc-1">
-          <span class="fc-icon"><svg class="ic"><use href="#i-brain"/></svg></span>
-          <div><small>Agente IA</small><strong>Processando pedidos</strong>
-            <div class="bar"><i style="--w:78%"></i></div></div>
+        <p class="h-nota">Sem cartão de crédito. Valores com um atendente no WhatsApp.</p>
+      </div>
+
+      <div class="tela" id="sim-tela" role="tabpanel" aria-live="polite">
+        <div class="tela-topo">
+          <span class="tela-titulo" data-tela>Barbearia · hoje</span>
+          <span class="ao-vivo">ao vivo</span>
         </div>
-        <div class="float-card fc-2">
-          <span class="fc-icon green"><svg class="ic"><use href="#i-bolt"/></svg></span>
-          <div><small>Deploy</small><strong>Build concluído <b class="ok">✓</b></strong><small class="mono">v2.4.1 · 38s</small></div>
-        </div>
-        <div class="float-card fc-3">
-          <svg viewBox="0 0 120 40" class="spark"><polyline points="0,32 15,28 30,30 45,20 60,22 75,12 90,15 105,6 120,8"/></svg>
-          <div><small>Produtividade</small><strong class="grad">Processos automatizados</strong></div>
-        </div>
-      </div>
-    </div>
-    <a class="scroll-hint" href="#mercado" aria-label="Rolar para baixo"><span></span></a>
-  </section>
-
-  <!-- ================= TECH MARQUEE ================= -->
-  <section class="tech" id="tech" aria-label="Tecnologias que dominamos">
-    <div class="marquee">
-      <div class="marquee-track" id="marquee"></div>
-    </div>
-  </section>
-
-  <!-- ================= MERCADO ================= -->
-  <section class="section market" id="mercado">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// por que agora</p>
-        <h2>Seus concorrentes <span class="grad">já estão se movendo.</span></h2>
-        <p>Quem automatiza o atendimento e as vendas agora sai na frente. Veja o que está acontecendo no mercado.</p>
-      </div>
-      <div class="stats-grid">
-        <article class="stat-card reveal">
-          <strong>+18,5%</strong>
-          <p>foi o crescimento do mercado de TI no Brasil em 2025, recorde dos últimos anos.</p>
-          <a href="https://itforum.com.br/?p=9620887" target="_blank" rel="noopener">IT Forum · estudo ABES/IDC</a>
-        </article>
-        <article class="stat-card reveal">
-          <strong>4 em 10</strong>
-          <p>empresas já automatizam o WhatsApp. As outras ainda dependem de alguém para responder cada mensagem.</p>
-          <a href="https://www.activecampaign.com/br/blog/apenas-4-em-cada-10-empresas-brasileiras-usam-campanhas-automatizadas-de-whatsapp-aponta-pesquisa" target="_blank" rel="noopener">ActiveCampaign · pesquisa 2025</a>
-        </article>
-        <article class="stat-card reveal">
-          <strong>R$ 125 bi</strong>
-          <p>movimentados pelo e-commerce brasileiro só no 1º semestre de 2026.</p>
-          <a href="https://mercadoeconsumo.com.br/11/08/2026/ecommerce/e-commerce-brasileiro-movimenta-r-125-bilhoes-e-cresce-2437-no-1o-semestre/" target="_blank" rel="noopener">Mercado &amp; Consumo · ABIACOM</a>
-        </article>
-        <article class="stat-card reveal">
-          <strong>+22%</strong>
-          <p>nas buscas por “agentes de IA” no Brasil. Empresas querem IA atendendo e vendendo por elas.</p>
-          <a href="https://www.locaweb.com.br/blog/estudos/agentes-de-ia-mais-pesquisados/" target="_blank" rel="noopener">Locaweb Insights</a>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= SOLUÇÕES ================= -->
-  <section class="section section-alt" id="servicos">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// soluções</p>
-        <h2>Escolha o que sua empresa <span class="grad">precisa resolver.</span></h2>
-        <p>Clique em uma solução para ver os modelos. Gostou? Teste grátis por 30 dias, sem cartão de crédito.</p>
-      </div>
-      <div class="solutions" data-grupo="negocio"></div>
-    </div>
-  </section>
-
-  <!-- ================= JEITO NEXOR + FUNDADORES ================= -->
-  <section class="section fundadores" id="fundadores">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// o jeito nexor</p>
-        <h2>IA que trabalha. <span class="grad">Gente que cuida.</span></h2>
-        <p>A inteligência artificial faz o trabalho pesado. O time da Nexor implanta com você, treina a sua equipe e acompanha os resultados de perto, com nome e WhatsApp.</p>
-      </div>
-      <div class="cuidado-grade">
-        <article class="cuidado reveal"><span class="cuidado-ic"><svg class="ic"><use href="#i-bolt"/></svg></span><h3>A IA faz o trabalho pesado</h3><p>Responde clientes, lê documentos, agenda, cobra e calcula. 24 horas, sem cansar e sem esquecer.</p></article>
-        <article class="cuidado reveal"><span class="cuidado-ic"><svg class="ic"><use href="#i-users"/></svg></span><h3>Gente de verdade do seu lado</h3><p>Uma pessoa da Nexor cuida da sua empresa: implanta junto, treina a equipe e liga quando os números pedem.</p></article>
-        <article class="cuidado reveal"><span class="cuidado-ic"><svg class="ic"><use href="#i-shield"/></svg></span><h3>Quem decide é você</h3><p>A IA prepara, você aprova. O contador confere, o dono aprova a ação, a equipe assume a conversa quando quiser.</p></article>
-      </div>
-      <div class="fund-cartao reveal">
-        <div class="fund-texto">
-          <span class="fund-selo">Programa de fundadores · 10 vagas por produto</span>
-          <h3>Seja um dos primeiros e <span class="grad">pague menos por muito tempo.</span></h3>
-          <ul class="fund-beneficios">
-            <li><b>40%</b><span>de desconto na mensalidade por 12 meses</span></li>
-            <li><b>50%</b><span>de desconto na implantação</span></li>
-            <li><b>24 meses</b><span>de preço travado, sem reajuste</span></li>
-          </ul>
-          <p class="muted">Em troca, você conta para a gente o que funciona e o que pode melhorar, e topa dar um depoimento. Contrato mínimo de 12 meses.</p>
-        </div>
-        <div class="fund-produtos"><article class="fund-produto glow-card reveal" style="--a:#0f766e;--a2:#22d3ee"><h4><svg class="ic"><use href="#i-chart"/></svg>Nexor Contábil</h4><p>Para escritórios de contabilidade: cobrança de documentos, leitura com IA e obrigações.</p><a class="btn btn-sm btn-primary" href="https://wa.me/5534997337499?text=Ol%C3%A1%21%20Quero%20uma%20das%20vagas%20de%20fundador%20do%20Nexor%20Cont%C3%A1bil." target="_blank" rel="noopener" data-lead-origem="fundador-contabil">Quero ser fundador</a></article><article class="fund-produto glow-card reveal" style="--a:#3b8dff;--a2:#a855f7"><h4><svg class="ic"><use href="#i-scissors"/></svg>Nexor Barber</h4><p>Para barbearias: app do cliente, clube de assinatura e produtos no agendamento.</p><a class="btn btn-sm btn-primary" href="https://wa.me/5534997337499?text=Ol%C3%A1%21%20Quero%20uma%20das%20vagas%20de%20fundador%20do%20Nexor%20Barber." target="_blank" rel="noopener" data-lead-origem="fundador-barber">Quero ser fundador</a></article><article class="fund-produto glow-card reveal" style="--a:#7c3aed;--a2:#22d3ee"><h4><svg class="ic"><use href="#i-brain"/></svg>Nexor Agente</h4><p>Para donos: sua IA no WhatsApp que age nos sistemas da empresa com o seu Aprovar.</p><a class="btn btn-sm btn-primary" href="https://wa.me/5534997337499?text=Ol%C3%A1%21%20Quero%20uma%20das%20vagas%20de%20fundador%20do%20Nexor%20Agente." target="_blank" rel="noopener" data-lead-origem="fundador-agente">Quero ser fundador</a></article><article class="fund-produto glow-card reveal" style="--a:#06b6d4;--a2:#3b8dff"><h4><svg class="ic"><use href="#i-plug"/></svg>Nexor Elo</h4><p>Para fornecedores: seus instaladores orçam com o seu estoque e você recebe direto no split, sem calote.</p><a class="btn btn-sm btn-primary" href="https://wa.me/5534997337499?text=Ol%C3%A1%21%20Quero%20uma%20das%20vagas%20de%20fundador%20do%20Nexor%20Elo." target="_blank" rel="noopener" data-lead-origem="fundador-elo">Quero ser fundador</a></article><article class="fund-produto glow-card reveal" style="--a:#2563eb;--a2:#22d3ee"><h4><svg class="ic"><use href="#i-headset"/></svg>Nexor Service Desk</h4><p>Para a TI da empresa: chamados com SLA, inventário dos computadores e ações remotas com permissão.</p><a class="btn btn-sm btn-primary" href="https://wa.me/5534997337499?text=Ol%C3%A1%21%20Quero%20uma%20das%20vagas%20de%20fundador%20do%20Nexor%20Service%20Desk." target="_blank" rel="noopener" data-lead-origem="fundador-servicedesk">Quero ser fundador</a></article></div>
-      </div>
-      <p class="fund-teste reveal"><svg class="ic"><use href="#i-gift"/></svg><span><b>Antes de decidir, teste 30 dias grátis.</b> Algumas funções ficam limitadas no teste; depois, o sistema continua com o plano que você escolher.</span><a class="btn btn-sm btn-ghost" href="#servicos">Escolher solução</a></p>
-    </div>
-  </section>
-
-  <!-- ================= TI ================= -->
-  <section class="section" id="ti">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// para equipes de TI</p>
-        <h2>Sua TI organizada, segura <span class="grad">e no controle.</span></h2>
-        <p>Chamados com SLA, inventário e ações remotas no Nexor Service Desk, senhas no Nexor Cofre e a gestão completa dos computadores na IT Platform. Tudo pronto para usar, instalado no seu servidor e sem licenças pagas de terceiros.</p>
-      </div>
-      <div class="solutions ti" data-grupo="ti"></div>
-    </div>
-  </section>
-
-  <!-- ================= EM BREVE ================= -->
-  <section class="section section-alt" id="em-breve">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// em breve · laboratório nexor</p>
-        <h2>A próxima geração de <span class="grad">soluções com IA.</span></h2>
-        <p>Produtos em desenvolvimento na Nexor. Veja as prévias e entre na lista para ser avisado no lançamento, com condição especial para os primeiros clientes.</p>
-      </div>
-      <div class="breve-grade" data-em-breve></div>
-      <p class="breve-aviso muted">As telas são prévias ilustrativas dos produtos em desenvolvimento, com dados fictícios. Recursos e nomes podem mudar até o lançamento oficial.</p>
-    </div>
-  </section>
-
-  <!-- ================= CALCULADORA ================= -->
-  <section class="section section-alt" id="roi">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// calculadora de retorno</p>
-        <h2>Quanto sua empresa economiza <span class="grad">com IA?</span></h2>
-        <p>Escolha o que quer automatizar e o tamanho da sua operação. O resultado aparece na hora.</p>
-      </div>
-      <div class="calc reveal" id="calc">
-        <div class="calc-entradas">
-          <p class="calc-passo"><span>1</span> O que você quer automatizar?</p>
-          <div class="calc-opcoes">
-            <button type="button" data-tarefa="atendimento" aria-pressed="true">💬 Atendimento no WhatsApp</button>
-            <button type="button" data-tarefa="agendamento" aria-pressed="false">📅 Agendamentos</button>
-            <button type="button" data-tarefa="documentos" aria-pressed="false">🧾 Notas e documentos</button>
-            <button type="button" data-tarefa="cobranca" aria-pressed="false">💸 Cobrança e follow-up</button>
-            <button type="button" data-tarefa="relatorios" aria-pressed="false">📊 Relatórios</button>
-          </div>
-          <p class="calc-passo"><span>2</span> Tamanho da sua operação</p>
-          <div class="calc-opcoes tres">
-            <button type="button" data-porte="pequena" aria-pressed="false">Pequena</button>
-            <button type="button" data-porte="media" aria-pressed="true">Média</button>
-            <button type="button" data-porte="grande" aria-pressed="false">Grande</button>
-          </div>
-          <details class="calc-ajuste" open>
-            <summary><span>3</span> Ajuste com os seus números (opcional)</summary>
-            <label><span>Volume por mês <output id="o-volume"></output></span><input id="calc-volume" type="range" min="10" max="20000" step="10"></label>
-            <label><span>Tempo de cada um <output id="o-minutos"></output></span><input id="calc-minutos" type="range" min="1" max="120" step="1"></label>
-            <label><span>Custo da equipe <output id="o-custo"></output></span><input id="calc-custo" type="range" min="15" max="150" step="5" value="35"></label>
-            <label><span>Quanto a IA assume <output id="o-ia"></output></span><input id="calc-ia" type="range" min="20" max="95" step="5"></label>
-          </details>
-        </div>
-        <div class="calc-resultado" aria-live="polite">
-          <small>Sua empresa pode economizar por ano</small>
-          <strong class="calc-total" id="r-ano">R$ 0</strong>
-          <p class="calc-frase" id="r-frase"></p>
-          <div class="calc-mini">
-            <div><small>Por mês</small><b id="r-mes">R$ 0</b></div>
-            <div><small>Horas livres por mês</small><b id="r-horas">0 h</b></div>
-            <div><small>Equivale a pessoas</small><b id="r-pessoas">0</b></div>
-          </div>
-          <div class="calc-grafico">
-            <div class="calc-grafico-topo"><small>Economia acumulada em 12 meses</small><b id="calc-barras-total"></b></div>
-            <div class="calc-barras" id="calc-barras"></div>
-          </div>
-          <form class="calc-form" id="calc-form" data-form="calculadora">
-            <p><b>Receba o estudo completo no WhatsApp</b>, com o plano para chegar nesse resultado.</p>
-            <div class="calc-form-campos">
-              <input name="nome" data-lead="nome" placeholder="Seu nome" autocomplete="name" aria-label="Seu nome">
-              <input name="telefone" data-lead="telefone" type="tel" placeholder="WhatsApp com DDD" autocomplete="tel" aria-label="WhatsApp com DDD">
-              <button class="btn btn-primary" type="submit">Quero o estudo</button>
-            </div>
-            <p class="form-error" role="alert"></p>
-            <p class="lgpd">Ao enviar, você pede que a Nexor entre em contato sobre este pedido. Seus dados são usados só para isso. <a href="privacidade.html">Política de privacidade</a>.</p>
-          </form>
-          <p class="note">Estimativa calculada com os números escolhidos. O valor exato sai no diagnóstico gratuito.</p>
+        <ul class="feed" data-feed aria-label="O que o sistema está fazendo"></ul>
+        <div class="tela-produto">
+          <h2 data-produto-nome>Nexor Barber</h2>
+          <p data-produto-resumo></p>
+          <a data-produto-link href="/solucoes/sistema-para-barbearia/">Conhecer o Nexor Barber</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ================= PORTE ================= -->
-  <section class="section" id="porte">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// soluções por porte</p>
-        <h2>Do primeiro site ao <span class="grad">ecossistema corporativo.</span></h2>
-      </div>
-      <div class="tabs reveal" role="tablist" aria-label="Porte da empresa">
-        <button role="tab" aria-selected="true" aria-controls="tp-pequeno" id="t-pequeno"><svg class="ic"><use href="#i-store"/></svg> Pequeno porte</button>
-        <button role="tab" aria-selected="false" aria-controls="tp-medio" id="t-medio" tabindex="-1"><svg class="ic"><use href="#i-users"/></svg> Médio porte</button>
-        <button role="tab" aria-selected="false" aria-controls="tp-grande" id="t-grande" tabindex="-1"><svg class="ic"><use href="#i-building"/></svg> Grande porte</button>
-      </div>
-      <div class="tab-panels reveal">
-        <div class="tab-panel" role="tabpanel" id="tp-pequeno" aria-labelledby="t-pequeno">
-          <div>
-            <h3>Presença digital que vende e processos no automático</h3>
-            <p>Para quem quer sair do improviso: um site profissional, catálogo ou loja online e automações simples que economizam horas por semana.</p>
-            <ul class="checks">
-              <li><svg class="ic"><use href="#i-check"/></svg>Atendente de IA no WhatsApp que vende e agenda 24h</li>
-              <li><svg class="ic"><use href="#i-check"/></svg>Site ou landing page de alta conversão</li>
-              <li><svg class="ic"><use href="#i-check"/></svg>Loja virtual com Pix, frete e marketplaces</li>
-              <li><svg class="ic"><use href="#i-check"/></svg>Agenda, orçamentos e cadastro de clientes online</li>
-            </ul>
-          </div>
-          <div class="porte-meter"><span>Escopo típico</span><div class="meter"><i style="--w:33%"></i></div><small>Entrega ágil · investimento enxuto</small></div>
-        </div>
-        <div class="tab-panel" role="tabpanel" id="tp-medio" aria-labelledby="t-medio" hidden>
-          <div>
-            <h3>Sistemas que organizam a operação e escalam o crescimento</h3>
-            <p>Quando planilhas não dão mais conta: centralizamos vendas, financeiro, estoque e atendimento em uma plataforma única, com IA nos pontos de maior esforço.</p>
-            <ul class="checks">
-              <li><svg class="ic"><use href="#i-check"/></svg>ERP / CRM sob medida para o seu fluxo</li>
-              <li><svg class="ic"><use href="#i-check"/></svg>Dashboards de BI em tempo real</li>
-              <li><svg class="ic"><use href="#i-check"/></svg>Automação de documentos, notas e cobranças com IA</li>
-              <li><svg class="ic"><use href="#i-check"/></svg>Integrações com marketplaces, bancos e ERPs</li>
-            </ul>
-          </div>
-          <div class="porte-meter"><span>Escopo típico</span><div class="meter"><i style="--w:66%"></i></div><small>Entregas por módulos · evolução contínua</small></div>
-        </div>
-        <div class="tab-panel" role="tabpanel" id="tp-grande" aria-labelledby="t-grande" hidden>
-          <div>
-            <h3>Arquitetura corporativa, segurança e IA em escala</h3>
-            <p>Projetos críticos com squads dedicadas, microsserviços, alta disponibilidade, governança de dados e agentes de IA integrados aos sistemas legados.</p>
-            <ul class="checks">
-              <li><svg class="ic"><use href="#i-check"/></svg>Squads dedicadas e gestão ágil</li>
-              <li><svg class="ic"><use href="#i-check"/></svg>Microsserviços, Kubernetes e observabilidade</li>
-              <li><svg class="ic"><use href="#i-check"/></svg>LLMs privados, RAG sobre bases internas e LGPD</li>
-              <li><svg class="ic"><use href="#i-check"/></svg>Modernização de sistemas legados</li>
-            </ul>
-          </div>
-          <div class="porte-meter"><span>Escopo típico</span><div class="meter"><i style="--w:100%"></i></div><small>Squads dedicadas · SLA corporativo</small></div>
-        </div>
-      </div>
+  <section class="garantias" aria-label="Por que testar com a Nexor">
+    <div class="h-wrap">
+      <ul>
+        <li><b>Feito em Araguari (MG)</b><span>Time local, que visita e implanta junto com você.</span></li>
+        <li><b>30 dias para testar</b><span>Sem cartão. Você decide depois de ver funcionando.</span></li>
+        <li><b>Seus dados com você</b><span>O sistema roda no seu ambiente ou na nossa nuvem, com backup diário.</span></li>
+        <li><b>Gente de verdade</b><span>A IA faz o trabalho pesado. Quem cuida de você tem nome e WhatsApp.</span></li>
+      </ul>
     </div>
   </section>
 
-  <!-- ================= VITRINE ================= -->
-  <section class="section section-alt" id="vitrine">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// vitrine de projetos</p>
-        <h2>Escolha um modelo. <span class="grad">Nós deixamos com a sua cara.</span></h2>
-        <p>Modelos de projetos prontos para personalizar. Clique em qualquer um para explorar recursos, tecnologia e solicitar o seu.</p>
-      </div>
-      <div class="filters reveal" role="group" aria-label="Filtrar projetos">
-        <button class="chip active" data-filter="all" aria-pressed="true">Todos</button>
-        <button class="chip" data-filter="sites" aria-pressed="false">Sites</button>
-        <button class="chip" data-filter="ecommerce" aria-pressed="false">E-commerce</button>
-        <button class="chip" data-filter="sistemas" aria-pressed="false">Sistemas</button>
-        <button class="chip" data-filter="ia" aria-pressed="false">Inteligência Artificial</button>
-        <button class="chip" data-filter="apps" aria-pressed="false">Apps</button>
-      </div>
-      <div class="showcase" id="showcase"></div>
+  <section class="h-sec produtos" id="produtos" aria-labelledby="prod-h">
+    <div class="h-wrap">
+      <h2 class="h-titulo" id="prod-h">Um sistema para cada tipo de negócio.</h2>
+      <p class="h-lead">Cada produto nasceu de um problema real de empresas como a sua. Escolha o seu, teste por 30 dias e fale com um atendente para saber os valores.</p>
+      <ul class="prod-lista">
+        <li class="prod-linha">
+          <h3 class="prod-nome">Nexor Atende IA<span class="prod-para">Clínicas, lojas, imobiliárias e quem vive no WhatsApp</span></h3>
+          <div><p class="prod-desc">Responde o WhatsApp 24 horas com as suas regras, agenda, confirma e passa para a sua equipe com o resumo pronto. Mostra quem está pronto para comprar.</p>
+            <div class="prod-acoes"><button type="button" data-testar="atende">Testar 30 dias</button><a href="/solucoes/chatbot-whatsapp-com-ia/">Ver como funciona</a></div></div>
+          <img class="prod-img" src="assets/img/atende/conversa.webp" alt="Tela do Atende IA com uma conversa no WhatsApp" width="1280" height="800" loading="lazy">
+        </li>
+        <li class="prod-linha">
+          <h3 class="prod-nome">Nexor RH e Ponto<span class="prod-para">Empresas com equipe, do comércio à indústria</span></h3>
+          <div><p class="prod-desc">Ponto pelo celular com rosto, digital, QR Code ou GPS, dentro da Portaria 671. Espelho, banco de horas, folha, eSocial e holerite no app.</p>
+            <div class="prod-acoes"><button type="button" data-testar="rh">Testar 30 dias</button><a href="/solucoes/sistema-de-ponto-eletronico/">Ver como funciona</a></div></div>
+          <img class="prod-img" src="assets/img/rh/espelho.webp" alt="Espelho de ponto no Nexor RH" width="1280" height="800" loading="lazy">
+        </li>
+        <li class="prod-linha">
+          <h3 class="prod-nome">Nexor Barber<span class="prod-para">Barbearias de um a doze barbeiros</span></h3>
+          <div><p class="prod-desc">App de agendamento com a marca da sua barbearia, lembrete, lista de espera, clube de assinatura, comanda, comissões e caixa. Sem taxa de implantação.</p>
+            <div class="prod-acoes"><button type="button" data-testar="barber">Testar 30 dias</button><a href="/solucoes/sistema-para-barbearia/">Ver como funciona</a></div></div>
+          <img class="prod-img" src="assets/img/barber/agenda.webp" alt="Agenda do Nexor Barber" width="1280" height="800" loading="lazy">
+        </li>
+        <li class="prod-linha">
+          <h3 class="prod-nome">Nexor Contábil<span class="prod-para">Escritórios de contabilidade</span></h3>
+          <div><p class="prod-desc">Cobra os documentos dos clientes pelo WhatsApp, lê notas e extratos com IA e entrega os lançamentos prontos para você conferir.</p>
+            <div class="prod-acoes"><button type="button" data-testar="contabil">Testar 30 dias</button><a href="/solucoes/sistema-para-escritorio-de-contabilidade/">Ver como funciona</a></div></div>
+          <img class="prod-img" src="assets/img/contabil/documentos.webp" alt="Documentos recebidos no Nexor Contábil" width="1280" height="800" loading="lazy">
+        </li>
+        <li class="prod-linha">
+          <h3 class="prod-nome">Nexor Agente<span class="prod-para">Donos que querem a empresa no WhatsApp</span></h3>
+          <div><p class="prod-desc">Pergunte pelo WhatsApp e receba vendas, estoque, cobranças e metas do seu sistema. A IA prepara as ações e só executa com a sua aprovação.</p>
+            <div class="prod-acoes"><button type="button" data-testar="agente">Testar 30 dias</button><a href="/solucoes/agente-de-ia-no-whatsapp/">Ver como funciona</a></div></div>
+          <img class="prod-img" src="assets/img/agente/vendas.webp" alt="Resumo de vendas no Nexor Agente" width="1280" height="800" loading="lazy">
+        </li>
+        <li class="prod-linha">
+          <h3 class="prod-nome">Nexor Elo<span class="prod-para">Lojas de material elétrico, segurança, solar e refrigeração</span></h3>
+          <div><p class="prod-desc">O instalador monta o orçamento com o seu estoque, o cliente paga por um link e o dinheiro cai dividido na hora. Vagas de fundador para lojas da cidade.</p>
+            <div class="prod-acoes"><button type="button" data-testar="elo">Testar 30 dias</button><a href="/solucoes/rede-fornecedores-instaladores/">Ver como funciona</a></div></div>
+          <img class="prod-img" src="assets/img/elo/painel-fornecedor.webp" alt="Painel do fornecedor no Nexor Elo" width="1280" height="800" loading="lazy">
+        </li>
+      </ul>
+      <p class="prod-mais">Tem uma equipe de TI? Conheça o <a href="/solucoes/sistema-de-chamados/">Service Desk</a>, o <a href="/solucoes/cofre-de-senhas/">cofre de senhas</a> e o <a href="/solucoes/inventario-de-ti/">inventário de TI</a>.</p>
     </div>
   </section>
 
-  <!-- ================= INTEGRAÇÕES ================= -->
-  <section class="section integrations" id="integracoes">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// integrações</p>
-        <h2>Funciona com os sistemas <span class="grad">que você já usa.</span></h2>
-        <p>Integramos com a maioria dos sistemas do mercado. Seus programas passam a conversar entre si e com a IA, sem você trocar tudo de uma vez.</p>
-      </div>
-      <div class="int-cats reveal">
-        <div><svg class="ic"><use href="#i-layers"/></svg><b>ERPs e sistemas de gestão</b></div>
-        <div><svg class="ic"><use href="#i-store"/></svg><b>Marketplaces e lojas virtuais</b></div>
-        <div><svg class="ic"><use href="#i-bolt"/></svg><b>Pix, cartão e boleto</b></div>
-        <div><svg class="ic"><use href="#i-users"/></svg><b>CRMs e marketing</b></div>
-        <div><svg class="ic"><use href="#i-whatsapp"/></svg><b>WhatsApp, Instagram e e-mail</b></div>
-        <div><svg class="ic"><use href="#i-chart"/></svg><b>Planilhas, BI e nuvem</b></div>
-      </div>
-      <p class="int-nota reveal">Usa um sistema específico? <button type="button" class="link-btn" data-abrir-blue>Pergunte para a Blue</button> se integramos com ele.</p>
-    </div>
-  </section>
-
-  <!-- ================= IA ================= -->
-  <section class="section section-alt section-ai" id="ia">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// ia em ação</p>
-        <h2>Agentes de IA que <span class="grad">executam o trabalho.</span></h2>
-        <p>Escolha um processo e veja como um agente da Nexor automatiza cada etapa. <small class="demo-tag">Simulação ilustrativa</small></p>
-      </div>
-      <div class="ai-lab reveal">
-        <div class="ai-procs" role="tablist" aria-label="Processos" id="ai-procs"></div>
-        <div class="ai-stage">
-          <div class="pipeline" id="pipeline"></div>
-          <div class="terminal">
-            <div class="win-bar"><i></i><i></i><i></i><span>nexor-agent · logs</span><button class="run-btn" id="ai-run"><svg class="ic"><use href="#i-play"/></svg> Executar</button></div>
-            <pre class="term-body" id="term" aria-live="polite"></pre>
-          </div>
-          <div class="ai-metrics" id="ai-metrics"></div>
-        </div>
-      </div>
-      <div class="gov reveal">
-        <div><svg class="ic"><use href="#i-shield"/></svg><b>LGPD e segurança</b><span>Dados no ambiente da sua empresa, acesso controlado e anonimização quando necessário.</span></div>
-        <div><svg class="ic"><use href="#i-search"/></svg><b>Auditoria completa</b><span>Cada ação do agente fica registrada e pode ser revisada.</span></div>
-        <div><svg class="ic"><use href="#i-users"/></svg><b>Supervisão humana</b><span>Regras claras de quando a IA decide e quando chama sua equipe.</span></div>
-        <div><svg class="ic"><use href="#i-chart"/></svg><b>Indicadores de ROI</b><span>Metas definidas antes do início e acompanhadas em painel.</span></div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ================= ENGENHARIA ================= -->
-  <section class="section section-alt" id="engenharia">
-    <div class="container eng-grid">
-      <div class="reveal">
-        <p class="kicker">// engenharia de verdade</p>
-        <h2>Código limpo, tipado, testado <span class="grad">e pronto para escalar.</span></h2>
-        <p class="lead">Trabalhamos com as linguagens e frameworks mais modernos do mercado. Arquitetura sólida, testes automatizados, revisão de código e CI/CD em todo projeto. O código-fonte é seu.</p>
-        <div class="langs" id="langs"></div>
-      </div>
-      <div class="code-tabs reveal">
-        <div class="code-tab-bar" role="tablist" aria-label="Exemplos de código" id="code-tab-bar"></div>
-        <div class="code-window">
-          <div class="win-bar"><i></i><i></i><i></i><span id="code-file">api.ts</span></div>
-          <pre class="code code-lg" id="code-view"></pre>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= PROCESSO ================= -->
-  <section class="section" id="processo">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// como trabalhamos</p>
-        <h2>Da ideia ao deploy <span class="grad">sem surpresas.</span></h2>
-      </div>
-      <ol class="timeline">
-        <li class="reveal"><span class="t-num">01</span><svg class="ic"><use href="#i-search"/></svg><h3>Imersão</h3><p>Entendemos o negócio, os processos e os gargalos. Diagnóstico gratuito.</p></li>
-        <li class="reveal"><span class="t-num">02</span><svg class="ic"><use href="#i-pen"/></svg><h3>Protótipo</h3><p>UX/UI navegável para validar antes de escrever uma linha de código.</p></li>
-        <li class="reveal"><span class="t-num">03</span><svg class="ic"><use href="#i-code"/></svg><h3>Desenvolvimento</h3><p>Sprints curtas, entregas semanais e acesso ao ambiente de homologação.</p></li>
-        <li class="reveal"><span class="t-num">04</span><svg class="ic"><use href="#i-brain"/></svg><h3>IA &amp; Automação</h3><p>Agentes e integrações treinados com os dados e regras da sua empresa.</p></li>
-        <li class="reveal"><span class="t-num">05</span><svg class="ic"><use href="#i-test"/></svg><h3>Testes &amp; Segurança</h3><p>Testes automatizados, revisão de segurança e recursos de privacidade (LGPD) no sistema.</p></li>
-        <li class="reveal"><span class="t-num">06</span><svg class="ic"><use href="#i-rocket"/></svg><h3>Implantação &amp; Evolução</h3><p>Implantação no servidor ou na nuvem da sua empresa, monitoramento, suporte e melhorias contínuas.</p></li>
+  <section class="h-sec" id="como-funciona" aria-labelledby="como-h">
+    <div class="h-wrap">
+      <h2 class="h-titulo" id="como-h">Do primeiro contato ao sistema rodando na sua empresa.</h2>
+      <ol class="passos">
+        <li><h3>Conversa rápida</h3><p>Pelo WhatsApp ou numa visita em Araguari. Entendemos como a sua empresa trabalha hoje.</p></li>
+        <li><h3>Teste de 30 dias</h3><p>O sistema roda com os dados da sua empresa, sem cartão, com o nosso time ajudando a configurar.</p></li>
+        <li><h3>Implantação junto</h3><p>Cadastramos a equipe, treinamos quem vai usar e deixamos tudo no seu jeito.</p></li>
+        <li><h3>Acompanhamento</h3><p>Suporte com gente de verdade, atualizações e backup. Se precisar, a gente vai até aí.</p></li>
       </ol>
     </div>
   </section>
 
-  <!-- ================= DIFERENCIAIS ================= -->
-  <section class="section section-alt" id="diferenciais">
-    <div class="container bento">
-      <article class="bento-item b-wide reveal">
-        <svg class="ic"><use href="#i-code"/></svg>
-        <h3>100% sob medida, código 100% seu</h3>
-        <p>Nada de templates engessados. Você recebe o código-fonte, a documentação e a liberdade de evoluir como quiser.</p>
-      </article>
-      <article class="bento-item reveal">
-        <svg class="ic"><use href="#i-bolt"/></svg>
-        <h3>Performance extrema</h3>
-        <p>Carregamento rápido, boa nota no Lighthouse e infraestrutura que aguenta crescer.</p>
-      </article>
-      <article class="bento-item reveal">
-        <svg class="ic"><use href="#i-shield"/></svg>
-        <h3>Segurança &amp; LGPD</h3>
-        <p>Criptografia, controle de acesso, logs de auditoria e boas práticas OWASP. Consultoria de LGPD disponível à parte.</p>
-      </article>
-      <article class="bento-item reveal">
-        <svg class="ic"><use href="#i-cloud"/></svg>
-        <h3>Na sua infraestrutura</h3>
-        <p>Implantamos no seu servidor ou na conta de nuvem da sua empresa (AWS, Azure, GCP), com backups e alta disponibilidade. Os dados ficam com você.</p>
-      </article>
-      <article class="bento-item b-wide b-glow reveal">
-        <svg class="ic"><use href="#i-brain"/></svg>
-        <h3>IA aplicada ao que dá resultado</h3>
-        <p>Não vendemos hype: identificamos onde a IA reduz custo e tempo de verdade e entregamos automações mensuráveis.</p>
-      </article>
-      <article class="bento-item reveal">
-        <svg class="ic"><use href="#i-chart"/></svg>
-        <h3>Suporte &amp; evolução</h3>
-        <p>Acompanhamento após a entrega, com melhorias contínuas e SLA.</p>
-      </article>
-    </div>
-  </section>
-
-  <!-- ================= CONFIGURADOR ================= -->
-  <section class="section" id="orcamento">
-    <div class="container">
-      <div class="section-head reveal">
-        <p class="kicker">// monte seu projeto</p>
-        <h2>Configure em 1 minuto. <span class="grad">Receba sua proposta.</span></h2>
-        <p>Selecione o que você precisa e envie o briefing direto para nosso time. Sem compromisso.</p>
+  <section class="h-sec" id="cuidado" aria-labelledby="cuida-h">
+    <div class="h-wrap cuida-grade">
+      <div>
+        <h2 class="h-titulo" id="cuida-h">A IA trabalha. A nossa equipe cuida de você.</h2>
+        <p class="h-lead">Muita empresa tem medo de ficar sozinha com um robô. Aqui é o contrário: a tecnologia tira o trabalho repetitivo e um time de Araguari acompanha cada cliente.</p>
+        <ul class="cuida-lista">
+          <li><svg class="ic"><use href="#i-headset"/></svg><span><b>Atendimento com nome.</b> Você fala com quem implantou o seu sistema, pelo WhatsApp.</span></li>
+          <li><svg class="ic"><use href="#i-shield"/></svg><span><b>Seus dados com você.</b> No seu servidor ou na nossa nuvem, com backup diário e LGPD.</span></li>
+          <li><svg class="ic"><use href="#i-users"/></svg><span><b>Feito para a sua realidade.</b> Configuramos com as regras e o jeito da sua empresa.</span></li>
+        </ul>
       </div>
-      <form class="builder reveal" id="builder" data-form="configurador">
-        <div class="builder-steps">
-          <fieldset>
-            <legend><span>1</span> O que vamos construir?</legend>
-            <div class="opt-grid" data-group="tipo" data-single>
-              <label><input type="radio" name="tipo" value="Atendimento com IA no WhatsApp" checked><span><svg class="ic"><use href="#i-whatsapp"/></svg>IA no WhatsApp</span></label>
-              <label><input type="radio" name="tipo" value="E-commerce"><span><svg class="ic"><use href="#i-store"/></svg>E-commerce</span></label>
-              <label><input type="radio" name="tipo" value="Sistema empresarial (ERP/CRM)"><span><svg class="ic"><use href="#i-layers"/></svg>ERP / CRM</span></label>
-              <label><input type="radio" name="tipo" value="Site / Landing page"><span><svg class="ic"><use href="#i-globe"/></svg>Site / Landing</span></label>
-              <label><input type="radio" name="tipo" value="Automação de processos com IA"><span><svg class="ic"><use href="#i-brain"/></svg>Automação IA</span></label>
-              <label><input type="radio" name="tipo" value="Software sob medida / App"><span><svg class="ic"><use href="#i-code"/></svg>Sob medida / App</span></label>
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend><span>2</span> Porte da empresa</legend>
-            <div class="opt-row">
-              <label><input type="radio" name="porte" value="Pequeno porte" checked><span>Pequeno</span></label>
-              <label><input type="radio" name="porte" value="Médio porte"><span>Médio</span></label>
-              <label><input type="radio" name="porte" value="Grande porte"><span>Grande</span></label>
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend><span>3</span> Recursos desejados</legend>
-            <div class="opt-row wrap">
-              <label><input type="checkbox" name="recursos" value="Área do cliente / login"><span>Área do cliente</span></label>
-              <label><input type="checkbox" name="recursos" value="Pagamentos online"><span>Pagamentos</span></label>
-              <label><input type="checkbox" name="recursos" value="Chatbot com IA"><span>Chatbot IA</span></label>
-              <label><input type="checkbox" name="recursos" value="Dashboard / relatórios"><span>Dashboards</span></label>
-              <label><input type="checkbox" name="recursos" value="Integração com WhatsApp"><span>WhatsApp</span></label>
-              <label><input type="checkbox" name="recursos" value="Integração com ERP/sistemas"><span>Integrações</span></label>
-              <label><input type="checkbox" name="recursos" value="Integração com marketplaces"><span>Marketplaces</span></label>
-              <label><input type="checkbox" name="recursos" value="Emissão de NF-e"><span>NF-e</span></label>
-              <label><input type="checkbox" name="recursos" value="Automação de documentos (OCR)"><span>OCR / documentos</span></label>
-              <label><input type="checkbox" name="recursos" value="Multi-idioma"><span>Multi-idioma</span></label>
-              <label><input type="checkbox" name="recursos" value="SEO avançado"><span>SEO</span></label>
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend><span>4</span> Prazo ideal</legend>
-            <div class="opt-row">
-              <label><input type="radio" name="prazo" value="O quanto antes"><span>Urgente</span></label>
-              <label><input type="radio" name="prazo" value="1 a 3 meses" checked><span>1–3 meses</span></label>
-              <label><input type="radio" name="prazo" value="3 a 6 meses"><span>3–6 meses</span></label>
-              <label><input type="radio" name="prazo" value="Sem pressa"><span>Flexível</span></label>
-            </div>
-          </fieldset>
-          <fieldset class="contact-fields">
-            <legend><span>5</span> Seus dados</legend>
-            <label>Nome<input name="nome" data-lead="nome" autocomplete="name" required></label>
-            <label>Empresa<input name="empresa" data-lead="empresa" autocomplete="organization"></label>
-            <label>WhatsApp<input name="telefone" data-lead="telefone" type="tel" autocomplete="tel" required></label>
-            <label class="full">Conte um pouco sobre a ideia<textarea name="mensagem" rows="3"></textarea></label>
-          </fieldset>
-        </div>
-        <aside class="builder-summary" aria-live="polite">
-          <div class="win-bar"><i></i><i></i><i></i><span>briefing.json</span></div>
-          <pre class="code" id="briefing"></pre>
-          <div class="complexity">
-            <div><span>Complexidade estimada</span><strong id="cx-label">Baixa</strong></div>
-            <div class="meter"><i id="cx-bar" style="--w:20%"></i></div>
-          </div>
-          <p class="form-error" id="form-error" role="alert"></p>
-          <button class="btn btn-whats btn-block" type="submit"><svg class="ic"><use href="#i-whatsapp"/></svg> Enviar briefing pelo WhatsApp</button>
-          <p class="note">Respondemos rápido, com proposta personalizada e diagnóstico gratuito.</p>
-          <p class="lgpd">Ao enviar, você pede que a Nexor entre em contato sobre este pedido. Seus dados são usados só para isso. <a href="privacidade.html">Política de privacidade</a>.</p>
-        </aside>
-      </form>
+      <div class="blue-card">
+        <img src="assets/img/blue-avatar.webp" alt="" width="72" height="72" loading="lazy">
+        <h3>Ficou com dúvida? Pergunte à Blue.</h3>
+        <p>A Blue é a nossa assistente de IA. Ela entende o seu negócio, indica o sistema certo e chama um atendente quando você quiser.</p>
+        <button class="h-btn h-btn-azul" type="button" data-abrir-blue>Conversar com a Blue</button>
+      </div>
     </div>
   </section>
 
-  <!-- ================= FAQ ================= -->
+  <section class="h-sec" id="sob-medida" aria-labelledby="medida-h">
+    <div class="h-wrap">
+      <h2 class="h-titulo" id="medida-h">Precisa de algo que ainda não existe?</h2>
+      <p class="h-lead">Também fazemos sob medida, com o código entregue para a sua empresa.</p>
+      <ul class="medida-lista">
+        <li><a href="/solucoes/criacao-de-sites/">Sites e landing pages <span>rápidos e prontos para o Google</span></a></li>
+        <li><a href="/solucoes/loja-virtual/">Loja virtual <span>Pix, cartão, boleto e marketplaces</span></a></li>
+        <li><a href="/solucoes/sistema-erp/">ERP e CRM <span>financeiro, vendas, estoque e NF-e</span></a></li>
+        <li><a href="/solucoes/automacao-de-processos-com-ia/">Automação com IA <span>documentos, relatórios e cobranças</span></a></li>
+        <li><a href="/solucoes/software-sob-medida/">Software sob medida <span>apps, plataformas e integrações</span></a></li>
+        <li><a data-whatsapp="Olá! Quero saber sobre a consultoria de LGPD da Nexor." href="#final">Consultoria de LGPD <span>mapeamento, políticas e treinamento</span></a></li>
+      </ul>
+    </div>
+  </section>
+
   <section class="section section-alt" id="faq">
     <div class="container faq-grid">
       <div class="reveal">
         <p class="kicker">// dúvidas frequentes</p>
-        <h2>Perguntas <span class="grad">frequentes</span></h2>
-        <p class="lead">Não encontrou o que procurava? Fale com a gente — o diagnóstico é gratuito.</p>
+        <h2>Perguntas frequentes</h2>
+        <p class="lead">Não encontrou o que procurava? Fale com um atendente pelo WhatsApp.</p>
         <a class="btn btn-whats" data-whatsapp="Olá! Tenho uma dúvida sobre um projeto com a Nexor." href="#orcamento"><svg class="ic"><use href="#i-whatsapp"/></svg> Tirar dúvida no WhatsApp</a>
       </div>
       <div class="faq reveal">
@@ -609,16 +254,16 @@
   </section>
 
   <!-- ================= CTA ================= -->
-  <section class="cta-final">
-    <div class="container cta-inner reveal">
-      <img src="assets/img/logo-lockup.webp" alt="Nexor Consulting: Inteligência, Desenvolvimento, Automação" width="1077" height="323" loading="lazy">
+
+  <section class="h-sec final" id="final" aria-labelledby="final-h">
+    <div class="h-wrap final-caixa">
       <div>
-        <h2>Sua próxima vantagem competitiva <span class="grad">começa com uma conversa.</span></h2>
-        <p>Diagnóstico gratuito: entendemos seu desafio e mostramos o caminho — com tecnologia, IA e foco em resultado.</p>
-        <div class="hero-actions">
-          <a class="btn btn-whats btn-lg" data-whatsapp="Olá! Quero agendar um diagnóstico gratuito com a Nexor." href="#orcamento"><svg class="ic"><use href="#i-whatsapp"/></svg> Agendar diagnóstico gratuito</a>
-          <a class="btn btn-ghost btn-lg" href="#vitrine">Rever a vitrine</a>
-        </div>
+        <h2 class="h-titulo" id="final-h">Veja o sistema rodando na sua empresa antes de decidir.</h2>
+        <p class="h-lead">Teste por 30 dias, sem cartão. Para saber os valores, um atendente da Nexor te responde no WhatsApp.</p>
+      </div>
+      <div class="h-acoes">
+        <a class="h-btn h-btn-azul" href="#topo-simulador"><svg class="ic"><use href="#i-gift"/></svg> Escolher meu teste</a>
+        <a class="h-btn h-btn-zap" data-whatsapp="Olá! Vim pelo site da Nexor e quero saber valores." href="#final"><svg class="ic"><use href="#i-whatsapp"/></svg> Falar com um atendente</a>
       </div>
     </div>
   </section>
@@ -654,14 +299,14 @@
     </div>
     <div>
       <h4>Empresa</h4>
-      <a href="#vitrine">Vitrine</a>
-      <a href="#processo">Processo</a>
+      <a href="#produtos">Produtos</a>
+      <a href="#como-funciona">Como funciona</a>
       <a href="#faq">FAQ</a>
-      <a href="#orcamento">Orçamento</a>
+      <a href="#final">Fale com a gente</a>
     </div>
     <div>
       <h4>Contato</h4>
-      <a data-whatsapp="Olá! Vim pelo site da Nexor." href="#orcamento">WhatsApp</a>
+      <a data-whatsapp="Olá! Vim pelo site da Nexor." href="#final">WhatsApp</a>
       <a href="https://www.instagram.com/nexorconsultingit/" target="_blank" rel="noopener">Instagram</a>
       <a href="https://share.google/I8YQGfXr4Fn6bHqcs" target="_blank" rel="noopener">Google</a>
       <a data-email hidden></a>
@@ -676,7 +321,7 @@
   </div>
 </footer>
 
-<a class="whats-float" data-whatsapp="Olá! Vim pelo site e gostaria de falar com a Nexor." href="#orcamento" aria-label="Fale conosco no WhatsApp"><svg class="ic"><use href="#i-whatsapp"/></svg></a>
+<a class="whats-float" data-whatsapp="Olá! Vim pelo site e gostaria de falar com a Nexor." href="#final" aria-label="Fale conosco no WhatsApp"><svg class="ic"><use href="#i-whatsapp"/></svg></a>
 
 <dialog class="modal" id="project-modal" aria-labelledby="pm-title">
   <button class="modal-close" aria-label="Fechar">×</button>
@@ -690,7 +335,7 @@
       <ul class="checks" id="pm-features"></ul>
       <h4>Stack</h4>
       <div class="stack-chips" id="pm-stack"></div>
-      <a class="btn btn-primary btn-block" id="pm-cta" href="#orcamento">Quero um projeto como este <svg class="ic"><use href="#i-arrow"/></svg></a>
+      <a class="btn btn-primary btn-block" id="pm-cta" href="#final">Quero um projeto como este <svg class="ic"><use href="#i-arrow"/></svg></a>
     </div>
   </div>
 </dialog>
@@ -821,13 +466,11 @@
 
 <script src="assets/js/config.js"></script>
 <script src="assets/js/rastreio.js"></script>
-<script src="assets/js/projects.js"></script>
 <script src="assets/js/solucoes.js"></script>
 <script src="assets/js/leads.js"></script>
 <script src="assets/js/main.js"></script>
-<script src="assets/js/em-breve.js"></script>
-<script src="assets/js/calculadora.js"></script>
 <script src="assets/js/teste.js"></script>
 <script src="assets/js/assistente.js"></script>
+<script src="assets/js/home.js"></script>
 </body>
 </html>

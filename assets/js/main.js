@@ -106,7 +106,9 @@ whatsapp.on("mensagem", async (msg) => {
 const heroCode = $("#hero-code");
 const heroLines = highlight(HERO_CODE, "ts").split("\n");
 const lineHTML = (l, i) => `<span class="ln">${String(i + 1).padStart(2, " ")}</span>${l || " "}`;
-if (reduceMotion) {
+if (!heroCode) {
+  /* home sem o editor de código */
+} else if (reduceMotion) {
   heroCode.innerHTML = heroLines.map(lineHTML).join("\n");
 } else {
   let li = 0;
@@ -122,7 +124,7 @@ if (reduceMotion) {
 /* ================= Hero: palavras rotativas ================= */
 const WORDS = ["agentes de IA", "lojas virtuais", "ERPs e CRMs", "sites que vendem", "automações", "apps mobile"];
 const typed = $("#typed");
-if (!reduceMotion) {
+if (typed && !reduceMotion) {
   let w = 0;
   let ch = WORDS[0].length;
   let deleting = true;
@@ -140,6 +142,7 @@ if (!reduceMotion) {
 /* ================= Hero: rede neural em canvas ================= */
 (() => {
   const canvas = $("#neural");
+  if (!canvas) return;
   const ctx = canvas.getContext("2d");
   let W, H, nodes, pulses, dpr, visible = true;
   const mouse = { x: -9999, y: -9999 };
@@ -279,7 +282,7 @@ $$("[data-count]").forEach((el) => counters.observe(el));
 const TECH = ["TypeScript", "JavaScript", "Python", "C# / .NET", "Java", "Go", "PHP", "Kotlin", "Swift", "React", "Next.js", "Vue.js", "Angular", "Node.js", "NestJS", "FastAPI", "Django", "Laravel", "Flutter", "React Native", "PostgreSQL", "MySQL", "SQL Server", "MongoDB", "Redis", "GraphQL", "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud", "LLMs", "LangChain", "RAG", "TensorFlow", "PyTorch", "OpenCV", "CI/CD"];
 const track = $("#marquee");
 const techHTML = TECH.map((t) => `<span>${t}</span>`).join('<i aria-hidden="true">◆</i>');
-track.innerHTML = `<div>${techHTML}<i aria-hidden="true">◆</i></div><div aria-hidden="true">${techHTML}<i>◆</i></div>`;
+if (track) track.innerHTML = `<div>${techHTML}<i aria-hidden="true">◆</i></div><div aria-hidden="true">${techHTML}<i>◆</i></div>`;
 
 /* ================= Abas por porte ================= */
 const tabs = $$('#porte [role="tab"]');
@@ -304,7 +307,7 @@ tabs.forEach((t, i) => {
 
 /* ================= Vitrine ================= */
 const showcase = $("#showcase");
-showcase.innerHTML = PROJECTS.map(
+if (showcase) showcase.innerHTML = PROJECTS.map(
   (p) => `
   <article class="project reveal" data-cats="${p.cats.join(" ")}" style="--a:${p.accent};--a2:${p.accent2}">
     <button class="project-btn" data-id="${p.id}" aria-label="Ver detalhes: ${p.name} — ${p.title}">
@@ -350,7 +353,7 @@ const openProject = (id) => {
   linkWhats($("#pm-cta"), `Olá! Vi o modelo "${p.name} — ${p.title}" no site da Nexor e quero um projeto como este.`);
   modal.showModal();
 };
-showcase.addEventListener("click", (e) => {
+showcase?.addEventListener("click", (e) => {
   const btn = e.target.closest(".project-btn");
   if (btn) openProject(btn.dataset.id);
 });
@@ -496,7 +499,7 @@ const metricsEl = $("#ai-metrics");
 let currentProc = 0;
 let runToken = 0;
 
-procsEl.innerHTML = PROCESSES.map(
+if (procsEl) procsEl.innerHTML = PROCESSES.map(
   (p, i) => `<button role="tab" aria-selected="${i === 0}" data-i="${i}"><svg class="ic"><use href="#${p.icon}"/></svg><span>${p.name}</span></button>`
 ).join("");
 
@@ -527,13 +530,13 @@ const runProcess = async (i) => {
   if (token === runToken) termEl.innerHTML += `<span class="lvl-ok">✓ processo concluído sem intervenção humana</span>\n`;
 };
 
-procsEl.addEventListener("click", (e) => {
+procsEl?.addEventListener("click", (e) => {
   const b = e.target.closest("button");
   if (b) runProcess(+b.dataset.i);
 });
-$("#ai-run").addEventListener("click", () => runProcess(currentProc));
+$("#ai-run")?.addEventListener("click", () => runProcess(currentProc));
 let aiStarted = false;
-new IntersectionObserver(([e], obs) => {
+if ($(".ai-lab")) new IntersectionObserver(([e], obs) => {
   if (e.isIntersecting && !aiStarted) { aiStarted = true; runProcess(0); obs.disconnect(); }
 }, { threshold: 0.3 }).observe($(".ai-lab"));
 
@@ -626,6 +629,8 @@ func Run(ctx context.Context, jobs <-chan Job) {
   },
 ];
 
+/* Engenharia, linguagens e configurador: só rodam se a seção existir na página */
+if ($("#code-tab-bar") && $("#langs") && $("#builder")) {
 const tabBar = $("#code-tab-bar");
 tabBar.innerHTML = SNIPPETS.map((s, i) => `<button role="tab" aria-selected="${i === 0}" data-i="${i}">${s.tab}</button>`).join("");
 const showSnippet = (i) => {
@@ -710,6 +715,7 @@ builder.addEventListener("submit", (e) => {
   ].filter(Boolean).join("\n");
   window.open(whatsUrl(msg), "_blank", "noopener");
 });
+}
 
 /* ================= Animação de entrada ================= */
 if ("IntersectionObserver" in window && !reduceMotion) {
