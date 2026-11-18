@@ -40,3 +40,5 @@ Valem para todo trabalho. Fonte: pedidos diretos do dono. Atualizado em 12/11/20
 ## Marketing e vendas (18/11/2026)
 - Nunca publicar valores, faixas, descontos ou percentuais: em anúncio, post, arte, legenda, e-mail ou resposta da Blue. Preço é sempre com um atendente no WhatsApp (34) 99733-7499, e cada pedido de preço vira uma oportunidade.
 - Foco comercial em Araguari (MG). Cada peça fala com um tipo de cliente e um produto, e filtra curiosos (pessoa física, estudante, concorrente, "só pesquisando").
+- Para o cliente, a Banca de testes é uma "banca de teste de intrusão, com foco em eliminar qualquer risco para a empresa dele". Não contar que os testes são feitos por agentes de IA.
+- Não chamar ideias de "patenteadas" sem patente registrada; usar "ideias exclusivas da Nexor, em desenvolvimento".

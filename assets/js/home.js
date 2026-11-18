@@ -271,3 +271,17 @@
     });
   }, { threshold: 0.4 }).observe(lista);
 })();
+
+
+/* Produtos: miniaturas trocam a tela grande (telas reais dos sistemas) */
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".prod-thumbs [data-tela]");
+  if (!b) return;
+  const gal = b.closest(".prod-galeria");
+  const img = gal.querySelector(".prod-img");
+  gal.querySelectorAll("[data-tela]").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  const trocar = () => { img.src = b.dataset.tela; img.alt = b.getAttribute("aria-label").replace("Ver tela: ", "Tela: "); img.classList.remove("trocando"); };
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return trocar();
+  img.classList.add("trocando");
+  setTimeout(trocar, 200);
+});

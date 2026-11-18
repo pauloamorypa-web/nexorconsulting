@@ -263,3 +263,17 @@
   .sim-prog, .ev-digitando i, .banca-lista li.rodando::before { animation: none !important; }
   #conteudo .reveal { opacity: 1; transform: none; }
 }
+
+/* galeria de telas reais por produto */
+.prod-galeria { display: grid; gap: 8px; }
+.prod-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.prod-thumbs button { padding: 0; border: 1px solid #c9d5e8; border-radius: 6px; overflow: hidden; background: #fff; cursor: pointer; opacity: .6; transition: opacity var(--m2), border-color var(--m2); }
+.prod-thumbs button img { aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; width: 100%; }
+.prod-thumbs button[aria-pressed="true"], .prod-thumbs button:hover { opacity: 1; border-color: #0058fa; }
+.prod-thumbs button:focus-visible { outline: 2px solid #0058fa; outline-offset: 2px; }
+.prod-img { transition: opacity var(--m3) var(--sai), transform var(--m3) var(--sai); }
+.prod-img.trocando { opacity: 0; }
+
+/* em breve */
+.breve-sec .breve-grade { margin-top: 36px; }
+.breve-sec .breve-aviso { margin-top: 20px; font-size: .875rem; }
