@@ -32,6 +32,14 @@ services:
         generateValue: true
       - key: WHATSAPP_APP_SECRET
         sync: false
+      - key: INSTAGRAM_TOKEN
+        sync: false
+      - key: INSTAGRAM_ACCOUNT_ID
+        sync: false
+      - key: INSTAGRAM_VERIFY_TOKEN
+        generateValue: true
+      - key: INSTAGRAM_APP_SECRET
+        sync: false
       - key: TEAM_WHATSAPP
         value: "5534997337499"
 

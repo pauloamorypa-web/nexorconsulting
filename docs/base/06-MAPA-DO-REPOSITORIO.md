@@ -20,7 +20,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Sistema | Pasta | Para quê |
 |---|---|---|
 | Nexor Central | `central/` | Clientes, planos, teste, fundadores, faturas, comissões, licenças, fila de conversão offline |
-| Blue (assistente de vendas) | `agent/` | Atende contatos, pontua, faz cadência, envia eventos ao Meta e ao Google, relatório por campanha |
+| Blue (assistente de vendas) | `agent/` | Atende no site, WhatsApp e Direct do Instagram (comentários com palavra-chave), pontua, faz cadência, envia eventos ao Meta e ao Google, relatório por campanha |
 | Servidor interno | `interno/` | Central e Blue com túnel, backup e endurecimento |
 | Implantação por empresa | `implantacao/` | Docker, túnel, backup, guia de instalação; `nova-empresa.sh <cliente> auto` cria o cliente na Nuvem Nexor |
 | Nuvem Nexor (VPS Hostinger) | `nuvem/` | Borda que entrega `<cliente>.nexorconsultingit.com.br` a cada sistema; guia completo da VPS em `nuvem/README.md` |
@@ -47,6 +47,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Bancos de Araguari e APIs bancárias | `comercial/PESQUISA-BANCOS-ARAGUARI.md`; código em `assets/bancos/` |
 | Peças prontas | `marketing/pecas/` (fonte em `marketing/fonte/pecas.html`) |
 | Índice de todas as imagens por canal | `marketing/KIT-COMPLETO.md` (92 peças: Instagram, LinkedIn, Google Meu Negócio, Google Ads, Meta Ads, WhatsApp, impresso) |
+| Instagram: máquina de vendas | `marketing/instagram/` (PLANO.md, calendario.json com 22 publicações de 19/11 a 18/12, artes em `jpg/`; publica pelo Windsor com o ok do dono) |
 | Textos por canal | `marketing/CANAIS.md`, `marketing/README.md`, `marketing/ELO-MARKETING.md` |
 | Campanhas, projeção e simulador | `marketing/campanhas/` (Google Ads de lançamento: `google-ads-lancamento.json`, no ar desde 17/11/2026 pelo Windsor, R$ 20/dia; revisar termos de busca em 7 dias) |
 | Marca e uniformes | `marketing/marca/`, `marketing/uniformes/` |

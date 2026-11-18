@@ -69,6 +69,15 @@ export const config = {
     numeroEquipe: process.env.TEAM_WHATSAPP ?? "",
   },
 
+  // Instagram (Direct e comentários) pela Instagram API com login do Instagram
+  instagram: {
+    token: process.env.INSTAGRAM_TOKEN ?? "",
+    idConta: process.env.INSTAGRAM_ACCOUNT_ID ?? "",
+    tokenVerificacao: process.env.INSTAGRAM_VERIFY_TOKEN ?? "",
+    segredoApp: process.env.INSTAGRAM_APP_SECRET ?? "",
+    versaoGraph: process.env.INSTAGRAM_GRAPH_VERSION ?? "v21.0",
+  },
+
   // Agenda do diagnóstico gratuito (horário de Brasília, UTC-3)
   agenda: {
     diasDaSemana: [1, 2, 3, 4, 5], // segunda a sexta

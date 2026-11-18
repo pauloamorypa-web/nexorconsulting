@@ -33,3 +33,6 @@ O que falta o dono decidir, conferir ou autorizar. Ao resolver, mova para `02-DE
 | Service Desk | Vem no ZIP do cliente; falta a versão Nexor | Falta |
 
 Fazer esses manuais só quando o dono pedir (não começar por conta própria).
+
+## Atende IA e Instagram
+O site e o kit dizem que o Nexor Atende IA atende no Instagram, mas hoje só a Blue (`agent/`) tem esse canal. Falta o dono decidir se o Atende IA ganha o canal (copiar `agent/src/instagram.js`) ou se o texto de venda muda.
