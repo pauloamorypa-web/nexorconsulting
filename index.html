@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://connect.facebook.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>Nexor Consulting | Sistemas com IA para empresas de Araguari e região</title>
-  <meta name="description" content="Sistemas com IA para barbearias, clínicas, empresas com equipe, escritórios de contabilidade e lojas de Araguari (MG) e região. Teste grátis por 30 dias, com time local que implanta junto.">
+  <title>Nexor Consulting | Sistemas com IA para empresas de todo o Brasil</title>
+  <meta name="description" content="Sistemas com IA para barbearias, clínicas, empresas com equipe, escritórios de contabilidade e lojas de todo o Brasil, feitos em Araguari (MG). Teste grátis por 30 dias, com um time que implanta junto.">
   <meta name="keywords" content="desenvolvimento de software sob medida, empresa de software, sistema ERP, CRM, criação de sites, chatbot WhatsApp com IA, automação de processos com IA, software house, service desk, sistema de chamados, help desk, inventário de TI">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="https://nexorconsultingit.com.br/">
@@ -88,18 +88,19 @@
 <main id="conteudo">
 
   <section class="sim" id="topo-simulador" aria-labelledby="sim-h1">
+    <canvas class="hero-canvas" id="neural" aria-hidden="true"></canvas>
     <div class="h-wrap sim-grade" data-simulador>
       <div>
-        <h1 class="sim-h1" id="sim-h1">Escolha o seu negócio e veja a Nexor trabalhando nele.</h1>
-        <p class="sim-sub">Sistemas com inteligência artificial para empresas de Araguari e região. <strong>30 dias para testar</strong>, com o nosso time implantando junto e os seus dados no seu ambiente.</p>
+        <h1 class="sim-h1" id="sim-h1">Escolha o seu negócio e veja a IA da Nexor trabalhando nele.</h1>
+        <p class="sim-sub">Sistemas com inteligência artificial para empresas de todo o Brasil, feitos em Araguari (MG). <strong>30 dias para testar</strong>, implantação junto com o nosso time e os seus dados no seu ambiente.</p>
         <p class="sim-pergunta" id="sim-pergunta">Qual é o seu negócio?</p>
         <div class="sim-abas" role="tablist" aria-labelledby="sim-pergunta" aria-orientation="vertical">
-          <button class="sim-aba" role="tab" type="button" data-cena="barbearia" aria-controls="sim-tela">Barbearia <small>agenda, clube e comissões</small></button>
-          <button class="sim-aba" role="tab" type="button" data-cena="clinica" aria-controls="sim-tela">Clínica, loja ou imobiliária <small>WhatsApp com IA 24 horas</small></button>
-          <button class="sim-aba" role="tab" type="button" data-cena="equipe" aria-controls="sim-tela">Empresa com equipe <small>ponto, folha e holerite</small></button>
-          <button class="sim-aba" role="tab" type="button" data-cena="contabil" aria-controls="sim-tela">Escritório de contabilidade <small>documentos e lançamentos</small></button>
-          <button class="sim-aba" role="tab" type="button" data-cena="loja" aria-controls="sim-tela">Loja de material elétrico ou solar <small>orçamento com o seu estoque</small></button>
-          <button class="sim-aba" role="tab" type="button" data-cena="dono" aria-controls="sim-tela">Minha empresa no meu WhatsApp <small>vendas, estoque e cobranças</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="barbearia" aria-controls="sim-tela">Barbearia <i class="sim-prog" aria-hidden="true"></i><small>agenda, clube e comissões</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="clinica" aria-controls="sim-tela">Clínica, loja ou imobiliária <i class="sim-prog" aria-hidden="true"></i><small>WhatsApp com IA 24 horas</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="equipe" aria-controls="sim-tela">Empresa com equipe <i class="sim-prog" aria-hidden="true"></i><small>ponto, folha e holerite</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="contabil" aria-controls="sim-tela">Escritório de contabilidade <i class="sim-prog" aria-hidden="true"></i><small>documentos e lançamentos</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="loja" aria-controls="sim-tela">Loja de material elétrico ou solar <i class="sim-prog" aria-hidden="true"></i><small>orçamento com o seu estoque</small></button>
+          <button class="sim-aba" role="tab" type="button" data-cena="dono" aria-controls="sim-tela">Minha empresa no meu WhatsApp <i class="sim-prog" aria-hidden="true"></i><small>vendas, estoque e cobranças</small></button>
         </div>
         <div class="h-acoes">
           <button class="h-btn h-btn-azul" type="button" data-produto-testar data-testar="barber"><svg class="ic"><use href="#i-gift"/></svg> Testar 30 dias grátis</button>
@@ -111,7 +112,7 @@
       <div class="tela" id="sim-tela" role="tabpanel" aria-live="polite">
         <div class="tela-topo">
           <span class="tela-titulo" data-tela>Barbearia · hoje</span>
-          <span class="ao-vivo">ao vivo</span>
+          <span class="ao-vivo">a IA está trabalhando</span>
         </div>
         <ul class="feed" data-feed aria-label="O que o sistema está fazendo"></ul>
         <div class="tela-produto">
@@ -123,10 +124,26 @@
     </div>
   </section>
 
+  <section class="agora" aria-label="Exemplos do que a IA faz nos sistemas Nexor">
+    <p class="agora-rotulo">Enquanto você lê, a IA da Nexor pode estar:</p>
+    <div class="agora-trilho" data-agora>
+      <ul>
+        <li>respondendo um paciente às 23h47 e marcando a consulta</li>
+        <li>lendo uma nota fiscal enviada pelo WhatsApp</li>
+        <li>avisando o barbeiro que a lista de espera preencheu o horário</li>
+        <li>fechando o espelho de ponto do mês</li>
+        <li>mostrando ao vendedor qual cliente está pronto para comprar</li>
+        <li>cobrando os documentos que faltam para o contador</li>
+        <li>montando o orçamento do instalador com o estoque da loja</li>
+        <li>resumindo as vendas de ontem no WhatsApp do dono</li>
+      </ul>
+    </div>
+  </section>
+
   <section class="garantias" aria-label="Por que testar com a Nexor">
     <div class="h-wrap">
       <ul>
-        <li><b>Feito em Araguari (MG)</b><span>Time local, que visita e implanta junto com você.</span></li>
+        <li><b>Brasil inteiro</b><span>Feito em Araguari (MG), com implantação online para todo o país e visita na região.</span></li>
         <li><b>30 dias para testar</b><span>Sem cartão. Você decide depois de ver funcionando.</span></li>
         <li><b>Seus dados com você</b><span>O sistema roda no seu ambiente ou na nossa nuvem, com backup diário.</span></li>
         <li><b>Gente de verdade</b><span>A IA faz o trabalho pesado. Quem cuida de você tem nome e WhatsApp.</span></li>
@@ -171,7 +188,7 @@
         </li>
         <li class="prod-linha">
           <h3 class="prod-nome">Nexor Elo<span class="prod-para">Lojas de material elétrico, segurança, solar e refrigeração</span></h3>
-          <div><p class="prod-desc">O instalador monta o orçamento com o seu estoque, o cliente paga por um link e o dinheiro cai dividido na hora. Vagas de fundador para lojas da cidade.</p>
+          <div><p class="prod-desc">O instalador monta o orçamento com o seu estoque, o cliente paga por um link e o dinheiro cai dividido na hora. Vagas de fundador para as primeiras lojas.</p>
             <div class="prod-acoes"><button type="button" data-testar="elo">Testar 30 dias</button><a href="/solucoes/rede-fornecedores-instaladores/">Ver como funciona</a></div></div>
           <img class="prod-img" src="assets/img/elo/painel-fornecedor.webp" alt="Painel do fornecedor no Nexor Elo" width="1280" height="800" loading="lazy">
         </li>
@@ -180,14 +197,55 @@
     </div>
   </section>
 
+  <section class="h-sec eco" id="ecossistema" aria-labelledby="eco-h">
+    <div class="h-wrap eco-grade">
+      <div>
+        <h2 class="h-titulo reveal" id="eco-h">Os sistemas Nexor conversam entre si.</h2>
+        <p class="h-lead reveal">A maioria das empresas usa um sistema para cada coisa, e ninguém conversa com ninguém. Na Nexor, o que acontece em um sistema chega pronto no outro, e a Blue enxerga tudo.</p>
+        <div class="eco-info" aria-live="polite">
+          <h3 data-eco-titulo>Passe o mouse ou toque em um sistema</h3>
+          <p data-eco-texto>Veja para onde vão os dados de cada um.</p>
+        </div>
+      </div>
+      <div class="eco-mapa" data-eco>
+        <svg viewBox="0 0 520 440" aria-hidden="true">
+          <g class="eco-linhas"></g>
+        </svg>
+        <button class="eco-no eco-centro" type="button" data-no="blue" style="--x:50%;--y:50%"><img src="assets/img/blue-avatar.webp" alt="" width="40" height="40">Blue</button>
+        <button class="eco-no" type="button" data-no="atende" style="--x:18%;--y:16%">Atende IA</button>
+        <button class="eco-no" type="button" data-no="agente" style="--x:82%;--y:16%">Agente</button>
+        <button class="eco-no" type="button" data-no="rh" style="--x:8%;--y:56%">RH e Ponto</button>
+        <button class="eco-no" type="button" data-no="contabil" style="--x:92%;--y:56%">Contábil</button>
+        <button class="eco-no" type="button" data-no="barber" style="--x:26%;--y:90%">Barber</button>
+        <button class="eco-no" type="button" data-no="elo" style="--x:74%;--y:90%">Elo</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="h-sec banca" id="banca" aria-labelledby="banca-h">
+    <div class="h-wrap banca-grade">
+      <div>
+        <h2 class="h-titulo reveal" id="banca-h">Antes de chegar até você, cinco IAs tentam quebrar o sistema.</h2>
+        <p class="h-lead reveal">É a nossa Banca de testes. Cada sistema passa por agentes de IA especializados e só vai para o cliente com nota aprovada. É assim que a gente garante que funciona antes de você usar.</p>
+      </div>
+      <ol class="banca-lista" data-banca>
+        <li><b>Hacker</b><span>tenta invadir, roubar dados e burlar senhas</span></li>
+        <li><b>Usuário confuso</b><span>clica duas vezes, erra, cola textos enormes, usa no celular com rede ruim</span></li>
+        <li><b>Programador sênior</b><span>lê o código linha por linha procurando erro de lógica</span></li>
+        <li><b>Testador</b><span>percorre todas as telas e fluxos de ponta a ponta</span></li>
+        <li><b>Veredito</b><span>confere as provas, dá a nota e só libera depois das correções</span></li>
+      </ol>
+    </div>
+  </section>
+
   <section class="h-sec" id="como-funciona" aria-labelledby="como-h">
     <div class="h-wrap">
       <h2 class="h-titulo" id="como-h">Do primeiro contato ao sistema rodando na sua empresa.</h2>
       <ol class="passos">
-        <li><h3>Conversa rápida</h3><p>Pelo WhatsApp ou numa visita em Araguari. Entendemos como a sua empresa trabalha hoje.</p></li>
+        <li><h3>Conversa rápida</h3><p>Pelo WhatsApp, por vídeo ou numa visita na região de Araguari. Entendemos como a sua empresa trabalha hoje.</p></li>
         <li><h3>Teste de 30 dias</h3><p>O sistema roda com os dados da sua empresa, sem cartão, com o nosso time ajudando a configurar.</p></li>
         <li><h3>Implantação junto</h3><p>Cadastramos a equipe, treinamos quem vai usar e deixamos tudo no seu jeito.</p></li>
-        <li><h3>Acompanhamento</h3><p>Suporte com gente de verdade, atualizações e backup. Se precisar, a gente vai até aí.</p></li>
+        <li><h3>Acompanhamento</h3><p>Suporte com gente de verdade, atualizações e backup, de qualquer lugar do Brasil.</p></li>
       </ol>
     </div>
   </section>
@@ -196,7 +254,7 @@
     <div class="h-wrap cuida-grade">
       <div>
         <h2 class="h-titulo" id="cuida-h">A IA trabalha. A nossa equipe cuida de você.</h2>
-        <p class="h-lead">Muita empresa tem medo de ficar sozinha com um robô. Aqui é o contrário: a tecnologia tira o trabalho repetitivo e um time de Araguari acompanha cada cliente.</p>
+        <p class="h-lead">Muita empresa tem medo de ficar sozinha com um robô. Aqui é o contrário: a tecnologia tira o trabalho repetitivo e um time de verdade acompanha cada cliente, em qualquer lugar do Brasil.</p>
         <ul class="cuida-lista">
           <li><svg class="ic"><use href="#i-headset"/></svg><span><b>Atendimento com nome.</b> Você fala com quem implantou o seu sistema, pelo WhatsApp.</span></li>
           <li><svg class="ic"><use href="#i-shield"/></svg><span><b>Seus dados com você.</b> No seu servidor ou na nossa nuvem, com backup diário e LGPD.</span></li>
@@ -207,6 +265,12 @@
         <img src="assets/img/blue-avatar.webp" alt="" width="72" height="72" loading="lazy">
         <h3>Ficou com dúvida? Pergunte à Blue.</h3>
         <p>A Blue é a nossa assistente de IA. Ela entende o seu negócio, indica o sistema certo e chama um atendente quando você quiser.</p>
+        <div class="blue-chips">
+          <button type="button" data-abrir-blue="Tenho uma barbearia. O que o Nexor Barber faz por mim?">Tenho uma barbearia</button>
+          <button type="button" data-abrir-blue="Minha clínica recebe muita mensagem no WhatsApp. Como a IA ajuda?">Minha clínica vive no WhatsApp</button>
+          <button type="button" data-abrir-blue="Tenho 25 funcionários e controlo o ponto no papel. O que vocês têm?">Ainda uso ponto no papel</button>
+          <button type="button" data-abrir-blue="Sou contador. Como a IA ajuda o meu escritório?">Sou contador</button>
+        </div>
         <button class="h-btn h-btn-azul" type="button" data-abrir-blue>Conversar com a Blue</button>
       </div>
     </div>
