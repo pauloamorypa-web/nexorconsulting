@@ -52,23 +52,6 @@ const Poeira: React.FC<{ n?: number; cor?: string }> = ({ n = 40, cor = COR.cian
   );
 };
 
-/* Tela de sistema numa janela de navegador, com zoom lento */
-const Janela: React.FC<{ src: string; largura?: number; rot?: number; zoom?: [number, number]; d: number; foco?: string }> = ({ src, largura = 1240, rot = 0, zoom = [1, 1.08], d, foco = "50% 40%" }) => {
-  const f = useCurrentFrame();
-  const z = interpolate(f, [0, d], zoom, { extrapolateRight: "clamp" });
-  return (
-    <div style={{ width: largura, borderRadius: 22, overflow: "hidden", background: "#0b1430", boxShadow: "0 50px 120px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(120,170,255,0.25)", transform: `perspective(2200px) rotateY(${rot}deg)` }}>
-      <div style={{ height: 40, display: "flex", alignItems: "center", gap: 10, padding: "0 18px", background: "#101c3d" }}>
-        {["#ff5f57", "#febc2e", "#28c840"].map((c) => <div key={c} style={{ width: 13, height: 13, borderRadius: 7, background: c }} />)}
-        <div style={{ marginLeft: 18, flex: 1, height: 22, borderRadius: 11, background: "rgba(255,255,255,0.07)" }} />
-      </div>
-      <div style={{ width: "100%", aspectRatio: "1.6", overflow: "hidden" }}>
-        <Img src={staticFile(src)} style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${z})`, transformOrigin: foco }} />
-      </div>
-    </div>
-  );
-};
-
 /* ---------- cenas ---------- */
 
 // 1 · O sonho e a rotina
@@ -229,16 +212,88 @@ const Linha: React.FC<{ de: number; children: React.ReactNode }> = ({ de, childr
 };
 
 // 7 · Os sistemas, com telas reais
-const PRODUTOS = [
-  { nome: "Atende IA", sub: "no WhatsApp", img: "institucional/atende.webp", foco: "40% 30%" },
-  { nome: "RH e Ponto", sub: "no celular", img: "institucional/rh.webp", foco: "50% 30%" },
-  { nome: "Contábil", sub: "para o escritório", img: "institucional/contabil.webp", foco: "60% 30%" },
-  { nome: "Barber", sub: "para a barbearia", img: "institucional/barber.webp", foco: "40% 30%" },
-  { nome: "Agente", sub: "para o dono", img: "institucional/agente.webp", foco: "50% 35%" },
-  { nome: "Elo", sub: "liga a loja ao instalador", img: "institucional/elo.webp", foco: "50% 30%" },
+type Destaque = { icone: string; txt: string; lado: "e" | "d"; y: number };
+const PRODUTOS: { nome: string; sub: string; img: string; fx: number; fy: number; cor: string; destaques: Destaque[] }[] = [
+  { nome: "Atende IA", sub: "no WhatsApp", img: "institucional/atende.webp", fx: 0.42, fy: 0.5, cor: "#22c55e", destaques: [{ icone: "💬", txt: "Respondido pela IA em 3 s", lado: "d", y: 0.12 }, { icone: "🔥", txt: "Cliente pronto para comprar", lado: "e", y: 0.72 }] },
+  { nome: "RH e Ponto", sub: "no celular", img: "institucional/rh.webp", fx: 0.45, fy: 0.45, cor: "#3B8DFF", destaques: [{ icone: "✅", txt: "Ponto batido · 07:58", lado: "d", y: 0.14 }, { icone: "📄", txt: "Espelho do mês pronto", lado: "e", y: 0.7 }] },
+  { nome: "Contábil", sub: "para o escritório", img: "institucional/contabil.webp", fx: 0.5, fy: 0.32, cor: "#a78bfa", destaques: [{ icone: "🧾", txt: "Nota lida pela IA", lado: "d", y: 0.16 }, { icone: "⚡", txt: "Lançamento feito sozinho", lado: "e", y: 0.68 }] },
+  { nome: "Barber", sub: "para a barbearia", img: "institucional/barber.webp", fx: 0.4, fy: 0.42, cor: "#f59e0b", destaques: [{ icone: "✂️", txt: "Novo horário · 15:30", lado: "d", y: 0.14 }, { icone: "📲", txt: "Lembrete enviado no WhatsApp", lado: "e", y: 0.7 }] },
+  { nome: "Agente", sub: "para o dono", img: "institucional/agente.webp", fx: 0.45, fy: 0.45, cor: "#00E1FB", destaques: [{ icone: "👍", txt: "Pedido aprovado", lado: "d", y: 0.14 }, { icone: "📊", txt: "Relatório do dia pronto", lado: "e", y: 0.7 }] },
+  { nome: "Elo", sub: "liga a loja ao instalador", img: "institucional/elo.webp", fx: 0.45, fy: 0.4, cor: "#f472b6", destaques: [{ icone: "🤝", txt: "Proposta aceita", lado: "d", y: 0.14 }, { icone: "🚚", txt: "Instalador a caminho", lado: "e", y: 0.7 }] },
 ];
 /* Segundos da locução em que cada produto é dito (pausas medidas com silencedetect) */
 const MARCOS = [42.95, 45.0, 47.15, 48.95, 50.75, 52.35];
+const LJ = 1080, AJ = LJ / 1.6; /* largura e altura da área da tela na janela */
+
+/* Notificação que salta da tela, com mola e flutuação */
+const Pop: React.FC<{ de: number; d: Destaque; cor: string }> = ({ de, d, cor }) => {
+  const f = useCurrentFrame();
+  const p = useMola(de, { damping: 11, mass: 0.55 });
+  const x = d.lado === "d" ? LJ - 560 : -170;
+  return (
+    <div style={{ position: "absolute", left: x, top: 40 + d.y * AJ, display: "flex", alignItems: "center", gap: 16, padding: "18px 26px", borderRadius: 22, background: "rgba(255,255,255,0.97)", boxShadow: `0 24px 60px rgba(0,0,0,0.45), 0 0 0 3px ${cor}`, ...TXT(30, 600, "#0b1733"), whiteSpace: "nowrap", opacity: Math.min(1, p * 1.5), transform: `translate3d(0, ${(1 - p) * 40 + Math.sin((f + de) / 14) * 6}px, 120px) scale(${0.6 + 0.4 * p}) rotate(${(1 - p) * (d.lado === "d" ? 8 : -8)}deg)` }}>
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: `${cor}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }}>{d.icone}</div>
+      {d.txt}
+    </div>
+  );
+};
+
+/* Um produto em cena: janela 3D que entra com chicote, câmera que aproxima, cursor que clica, notificações e brilho */
+const ProdutoVivo: React.FC<{ p: (typeof PRODUTOS)[number]; slot: number }> = ({ p, slot }) => {
+  const f = useCurrentFrame();
+  const ent = interpolate(f, [0, 10], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const sai = interpolate(f, [slot - 2, slot + 8], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.cubic) });
+  const mov = (1 - ent) * 520 - sai * 620;
+  const borrao = (1 - ent) * 14 + sai * 16;
+  const giroY = interpolate(f, [0, slot + 8], [-26, -6]) + sai * -20;
+  const giroX = interpolate(f, [0, slot + 8], [9, 2]);
+  const zoom = interpolate(f, [4, slot + 8], [1, 1.55], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) });
+  const cx = p.fx * LJ, cy = 40 + p.fy * AJ;
+  const clique = Math.round(slot * 0.42);
+  const cur = entre(f, 4, clique);
+  const onda = entre(f, clique, clique + 12);
+  const brilho = ((f * 2.4) % 140) - 20;
+  const t = useMola(2, { damping: 13, mass: 0.6 });
+  const linha = entre(f, 6, 20);
+  return (
+    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+      {/* luz na cor do produto */}
+      <div style={{ position: "absolute", right: 120, top: 120, width: 1100, height: 850, borderRadius: "50%", background: `radial-gradient(circle, ${p.cor}40, transparent 65%)`, opacity: ent }} />
+      <div style={{ position: "absolute", left: 790, top: 175, perspective: 1800 }}>
+        <div style={{ position: "relative", transformStyle: "preserve-3d", transform: `translateX(${mov}px) translateY(${Math.sin(f / 18) * 8}px) rotateY(${giroY}deg) rotateX(${giroX}deg)`, filter: borrao > 0.3 ? `blur(${borrao}px)` : undefined, opacity: 1 - sai }}>
+          <div style={{ width: LJ, borderRadius: 22, overflow: "hidden", background: "#0b1430", boxShadow: `0 60px 140px rgba(0,0,0,0.65), 0 0 0 2px ${p.cor}66, 0 0 80px ${p.cor}33` }}>
+            <div style={{ height: 40, display: "flex", alignItems: "center", gap: 10, padding: "0 18px", background: "#101c3d" }}>
+              {["#ff5f57", "#febc2e", "#28c840"].map((c) => <div key={c} style={{ width: 13, height: 13, borderRadius: 7, background: c }} />)}
+              <div style={{ marginLeft: 18, flex: 1, height: 22, borderRadius: 11, background: "rgba(255,255,255,0.07)" }} />
+            </div>
+            <div style={{ position: "relative", width: LJ, height: AJ, overflow: "hidden" }}>
+              <Img src={staticFile(p.img)} style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${zoom})`, transformOrigin: `${p.fx * 100}% ${p.fy * 100}%` }} />
+              {/* faixa de luz que atravessa a tela */}
+              <div style={{ position: "absolute", top: 0, bottom: 0, left: `${brilho}%`, width: "18%", background: "linear-gradient(100deg, transparent, rgba(255,255,255,0.22), transparent)", transform: "skewX(-18deg)" }} />
+              {/* foco: anel que pulsa no ponto principal */}
+              <div style={{ position: "absolute", left: cx - 70, top: cy - 40 - 70, width: 140, height: 140, borderRadius: 70, border: `4px solid ${p.cor}`, opacity: onda > 0 ? 1 - onda : 0, transform: `scale(${0.4 + onda * 1.4})` }} />
+            </div>
+          </div>
+          {/* cursor que chega e clica */}
+          <div style={{ position: "absolute", left: interpolate(cur, [0, 1], [LJ + 80, cx]), top: interpolate(cur, [0, 1], [AJ + 60, cy]), fontSize: 54, transform: `scale(${f >= clique && f < clique + 5 ? 0.82 : 1})`, filter: "drop-shadow(0 6px 10px rgba(0,0,0,0.5))", opacity: cur > 0 ? 1 : 0 }}>
+            <svg width={40} height={52} viewBox="0 0 20 26"><path d="M1 1 L1 21 L6 16 L10 25 L13 24 L9 15 L16 15 Z" fill="#fff" stroke="#0b1733" strokeWidth={1.6} strokeLinejoin="round" /></svg>
+          </div>
+          {p.destaques.map((x, k) => <Pop key={x.txt} de={clique + 2 + k * 9} d={x} cor={p.cor} />)}
+        </div>
+      </div>
+      {/* nome do produto */}
+      <div style={{ position: "absolute", left: 110, top: 380, width: 640, opacity: 1 - entre(f, slot - 4, slot + 1), transform: `translateX(${-entre(f, slot - 4, slot + 1) * 60}px)` }}>
+        <div style={{ display: "inline-block", padding: "8px 18px", borderRadius: 999, background: `${p.cor}26`, border: `1.5px solid ${p.cor}`, ...TXT(24, 700, p.cor), letterSpacing: "0.18em", ...pop(t, 20) }}>NEXOR</div>
+        <div style={{ overflow: "hidden", marginTop: 14 }}>
+          <div style={{ ...TXT(96, 700), letterSpacing: "-0.03em", whiteSpace: "nowrap", transform: `translateY(${(1 - t) * 110}%)` }}>{p.nome}</div>
+        </div>
+        <div style={{ height: 6, width: 220, borderRadius: 3, background: p.cor, transform: `scaleX(${linha})`, transformOrigin: "left", boxShadow: `0 0 24px ${p.cor}` }} />
+        <div style={{ ...TXT(40, 500, COR.suave), marginTop: 18, opacity: entre(f, 8, 18) }}>{p.sub}</div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 const C7: React.FC<{ d: number; inicio: number }> = ({ d, inicio }) => {
   const f = useCurrentFrame();
   const marcos = MARCOS.map((s) => quadro(s) - inicio - 4);
@@ -247,33 +302,23 @@ const C7: React.FC<{ d: number; inicio: number }> = ({ d, inicio }) => {
   return (
     <Cena d={d}>
       {f < intro + 8 ? (
-        <div style={{ opacity: 1 - entre(f, intro - 2, intro + 8) }}>
+        <div style={{ opacity: 1 - entre(f, intro - 2, intro + 8), transform: `scale(${1 + entre(f, intro - 6, intro + 8) * 0.15})` }}>
           <Titulo texto="Sistemas prontos para *cada* *negócio*" tam={100} />
         </div>
       ) : null}
       {PRODUTOS.map((p, i) => {
         const de = marcos[i];
         const slot = (i + 1 < marcos.length ? marcos[i + 1] : d) - de;
-        if (f < de - 2 || f > de + slot + 12) return null;
-        const l = f - de;
-        const ent = entre(l, 0, 16);
-        const sai = 1 - entre(l, slot - 4, slot + 10);
+        if (f < de - 1 || f > de + slot + 10) return null;
         return (
-          <AbsoluteFill key={p.nome} style={{ justifyContent: "center", alignItems: "center", opacity: Math.min(ent, sai) }}>
-            <div style={{ transform: `translateX(${(1 - ent) * 220 - (1 - sai) * 220}px) translateX(310px) translateY(30px)` }}>
-              <Janela src={p.img} largura={1100} rot={-8} d={slot + 12} foco={p.foco} zoom={[1.02, 1.12]} />
-            </div>
-            <div style={{ position: "absolute", left: 120, top: 390, transform: `translateY(${(1 - ent) * 40}px)` }}>
-              <div style={{ ...TXT(28, 600, COR.ciano), letterSpacing: "0.2em" }}>NEXOR</div>
-              <div style={{ ...TXT(92, 700), letterSpacing: "-0.03em", whiteSpace: "nowrap", textShadow: "0 10px 40px rgba(0,0,0,0.6)" }}>{p.nome}</div>
-              <div style={{ ...TXT(40, 500, COR.suave), marginTop: 6 }}>{p.sub}</div>
-            </div>
-          </AbsoluteFill>
+          <Sequence key={p.nome} from={de} durationInFrames={slot + 10} layout="none">
+            <ProdutoVivo p={p} slot={i + 1 < marcos.length ? slot : slot - 6} />
+          </Sequence>
         );
       })}
       {f >= intro ? (
-        <div style={{ position: "absolute", bottom: 150, display: "flex", gap: 14 }}>
-          {PRODUTOS.map((p, i) => <div key={p.nome} style={{ width: i === atual ? 60 : 16, height: 16, borderRadius: 8, background: i === atual ? GRAD : "rgba(255,255,255,0.25)" }} />)}
+        <div style={{ position: "absolute", bottom: 140, left: 110, display: "flex", gap: 12 }}>
+          {PRODUTOS.map((p, i) => <div key={p.nome} style={{ width: i === atual ? 56 : 14, height: 14, borderRadius: 7, background: i === atual ? p.cor : "rgba(255,255,255,0.25)" }} />)}
         </div>
       ) : null}
     </Cena>
