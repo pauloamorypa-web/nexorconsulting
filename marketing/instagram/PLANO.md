@@ -58,7 +58,7 @@ A Blue faz isso sozinha, 24 horas: responde em público, chama no Direct e conve
 ## 7. Viralizar em Araguari (só orgânico, sem Facebook e sem anúncio pago)
 O alcance vem dos **Reels**, de quem compartilha e das contas locais. A Nexor publica e responde. O dono faz o que a API não permite, 15 minutos por dia:
 1. **Localização "Araguari, Minas Gerais"** em todo post e Reels, logo depois de publicar (editar post → Adicionar local). Isso coloca a Nexor na página do local.
-2. **Áudio em alta:** nos Reels, trocar a trilha por um áudio em alta do Instagram, com volume baixo, pelo app. Isso aumenta a distribuição.
+2. **Manter a narração:** não trocar nem somar áudio nos Reels. A voz explica o produto e é o que vende. O alcance vem da localização, dos compartilhamentos e das respostas rápidas.
 3. **Responder todo comentário em até 1 hora.** A Blue faz isso quando o servidor estiver no ar; até lá, é manual. Comentário respondido rápido faz o post subir.
 4. **Interagir com contas de Araguari:** comentar de verdade (nada de "top 👏") em 10 posts por dia de perfis locais, como a prefeitura, a associação comercial, barbearias, clínicas, contabilidades e lojas.
 5. **Collab:** convidar um cliente ou parceiro de Araguari para um post colaborativo (Collab). O post aparece para os seguidores dos dois.
