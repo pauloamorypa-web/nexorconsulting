@@ -112,7 +112,7 @@ const CenaRecursos: React.FC<{ d: number }> = ({ d }) => {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ ...TXT(34, 600, COR.suave) }}>👑 Clube da barbearia</div>
-            <div style={{ marginTop: 10, ...TXT(52) }}>Cabelo ilimitado · <Rico texto="*R$ 89/mês*" /></div>
+            <div style={{ marginTop: 10, ...TXT(52) }}>Cabelo e barba <Rico texto="*ilimitados*" /></div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ ...TXT(84), color: COR.ciano }}><Contador q0={112} q1={160} ate={47} /></div>
