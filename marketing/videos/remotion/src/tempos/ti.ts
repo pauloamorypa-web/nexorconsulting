@@ -1,2 +1,2 @@
-// Provisório: estimativa até a locução existir (depois: node scripts/tempos.mjs ti)
-export default {"duracao":85.3,"frases":[[0.3,5.28],[6.28,12.52],[13.52,18.92],[19.92,24.08],[25.08,31.75],[32.75,40.65],[41.65,49.13],[50.13,54.72],[55.72,61.55],[62.55,68.38],[69.38,75.22],[76.22,80.8],[81.8,84.3]]} as const;
+// Gerado por scripts/tempos.mjs a partir de public/ti/locucao.mp3 (não editar à mão)
+export default {"duracao":73.27,"frases":[[0,3.65],[4.65,10.18],[11.18,16.82],[18.22,21.14],[22.14,28.41],[29.41,36.29],[37.29,42.48],[43.48,47.58],[48.58,53.46],[54.46,58.93],[59.93,63.81],[64.81,68.31],[69.71,73.27]]} as const;

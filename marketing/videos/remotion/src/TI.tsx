@@ -366,7 +366,7 @@ const T11: React.FC<{ d: number }> = ({ d }) => {
 
 /* ---------- vídeo ---------- */
 /* Segundos da locução onde o painel dá lugar à TV (pausa no meio da frase 7) */
-const TROCA_TV = TEMPOS.frases[6][0] + (TEMPOS.frases[6][1] - TEMPOS.frases[6][0]) * 0.5;
+const TROCA_TV = 39.55; /* medido com silencedetect na locução atual */
 
 const CENAS: ((d: number, voz: Voz, de: number) => React.ReactNode)[] = [
   (d) => <T1 d={d} />,

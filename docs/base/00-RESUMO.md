@@ -48,6 +48,7 @@ Estado em 18/11/2026. Formato chave-valor. Detalhe nos documentos 01 a 07.
 
 ## Vídeos
 - Institucional 16:9 (94 s, voz, trilha, legenda; chamada só "teste grátis por 30 dias", sem falar de cartão): `marketing/videos-finais/nexor-institucional-1080p.mp4`. Roteiro `marketing/videos/roteiros/00-institucional-2026.md`.
+- TI 16:9 (cerca de 77 s: Service Desk, inventário, ações remotas, painel, TV, Cofre, IT Platform): `marketing/videos-finais/nexor-ti-1080p.mp4`. Roteiro `marketing/videos/roteiros/15-ti-2026.md`.
 - Produtos (verticais, narrados): `marketing/videos/nexor-*-locucao-vertical.mp4`.
 
 ## Tarefas agendadas desta conta
