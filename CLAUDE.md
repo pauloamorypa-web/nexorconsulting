@@ -1,6 +1,6 @@
 # Nexor Consulting · instruções permanentes
 
-Leia este arquivo e pare. **Não releia o repositório inteiro, o histórico de conversas nem relatórios fechados.** O que já foi decidido e aprendido está em `docs/base/` (7 documentos curtos). Abra só o documento da base que o pedido toca e só os arquivos que vai alterar.
+Leia este arquivo e pare. **Não releia o repositório inteiro, o histórico de conversas nem relatórios fechados.** Comece por `docs/base/00-RESUMO.md` (estado atual em chave-valor). Só abra outro documento de `docs/base/` se o resumo não bastar, e só os arquivos que vai alterar.
 
 ## Como trabalhar aqui
 1. **Idioma:** tudo em português do Brasil (respostas, código novo, comentários, commits, relatórios de agentes). Linguagem simples, frases curtas.
@@ -14,9 +14,15 @@ Leia este arquivo e pare. **Não releia o repositório inteiro, o histórico de 
 9. **Marca:** não altere a marca Nexor. Cidade: Araguari (MG). Assinatura: "IA com cuidado humano".
 10. **Ao terminar algo que muda uma regra, decisão ou padrão,** atualize o documento certo de `docs/base/` na mesma entrega (uma linha basta). Histórico de conversa não é regra: só entra na base o que o dono confirmou.
 
+## Consulta rápida
+- Pergunta sobre o negócio: resposta direta na 1ª linha (até 15 palavras) e no máximo 3 tópicos curtos.
+- Fonte: `docs/base/`. Se o dado não estiver lá, responda só "Informação não encontrada na base."
+- Ao compactar conhecimento novo: formato `Tópico: dado`, sem enfeite; preserve números, datas, nomes, códigos e decisões.
+
 ## Base de conhecimento
 | Documento | Para quê |
 |---|---|
+| `docs/base/00-RESUMO.md` | Estado atual em uma tela (ler primeiro) |
 | `docs/base/01-REGRAS-VIGENTES.md` | O que vale sempre |
 | `docs/base/02-DECISOES-APROVADAS.md` | O que o dono já decidiu (não reabrir) |
 | `docs/base/03-PADROES-REUTILIZAVEIS.md` | Técnica, segurança, design, demonstração, documentos, marketing, prospecção, auditoria |
