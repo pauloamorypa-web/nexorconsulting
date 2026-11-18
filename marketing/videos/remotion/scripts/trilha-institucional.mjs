@@ -4,7 +4,10 @@
    Uso: node scripts/trilha-institucional.mjs  →  public/institucional/trilha.wav */
 import { readFileSync, writeFileSync } from "node:fs";
 
-const t = JSON.parse(readFileSync("src/tempos/institucional.ts", "utf8").split("export default ")[1].split(" as const")[0]);
+/* Uso: node scripts/trilha-institucional.mjs [id]  (institucional ou ti) */
+const ID = process.argv[2] || "institucional";
+const MAPA = { institucional: { rev: 2, man: 3, bat: 5 }, ti: { rev: 3, man: 3, bat: 4 } }[ID];
+const t = JSON.parse(readFileSync(`src/tempos/${ID}.ts`, "utf8").split("export default ")[1].split(" as const")[0]);
 const ATRASO = 0.4;
 const ini = t.frases.map((x, i) => (i === 0 ? 0 : ATRASO + (t.frases[i - 1][1] + x[0]) / 2));
 const DUR = ATRASO + t.frases[t.frases.length - 1][1] + 3.4;
@@ -36,7 +39,7 @@ function nota(ini0, dur, freq, vol, tipo, pan = 0) {
 /* Harmonia: Lá menor com cor de maior (calma e esperança) */
 const ACORDES = [[57, 64, 69, 72], [53, 60, 65, 69], [48, 55, 60, 64], [55, 62, 67, 71]];
 const BPM = 84, bat = 60 / BPM, comp = 4 * bat;
-const revelacao = ini[2], manifesto = ini[3], batida = ini[5], final = ini[12];
+const revelacao = ini[MAPA.rev], manifesto = ini[MAPA.man], batida = ini[MAPA.bat], final = ini[ini.length - 1];
 
 for (let c = 0, s = 0; s < final; c++, s += comp) {
   const a = ACORDES[c % 4];
@@ -80,5 +83,5 @@ for (let i = 0; i < N; i++) {
   buf.writeInt16LE(Math.round((L[i] / pico) * 0.89 * 32767), 44 + i * 4);
   buf.writeInt16LE(Math.round((R[i] / pico) * 0.89 * 32767), 46 + i * 4);
 }
-writeFileSync("public/institucional/trilha.wav", buf);
+writeFileSync(`public/${ID}/trilha.wav`, buf);
 console.log("trilha", DUR.toFixed(1), "s");

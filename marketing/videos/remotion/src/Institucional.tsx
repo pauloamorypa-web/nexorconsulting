@@ -13,18 +13,18 @@ const CAUDA = 3.2;
 export const duracaoInstitucional = Math.round((ATRASO + TEMPOS.frases[TEMPOS.frases.length - 1][1] + CAUDA) * FPS);
 
 /* ---------- peças ---------- */
-const Cena: React.FC<{ d: number; children: React.ReactNode }> = ({ d, children }) => {
+export const Cena: React.FC<{ d: number; children: React.ReactNode }> = ({ d, children }) => {
   const f = useCurrentFrame();
   const op = Math.min(entre(f, 0, 10), saida(f, d));
   return <AbsoluteFill style={{ opacity: op, justifyContent: "center", alignItems: "center" }}>{children}</AbsoluteFill>;
 };
 
-const Titulo: React.FC<{ texto: string; tam?: number; atraso?: number; passo?: number; estilo?: React.CSSProperties }> = ({ texto, tam = 96, atraso = 0, passo = 5, estilo }) => (
+export const Titulo: React.FC<{ texto: string; tam?: number; atraso?: number; passo?: number; estilo?: React.CSSProperties }> = ({ texto, tam = 96, atraso = 0, passo = 5, estilo }) => (
   <Palavras texto={texto} atraso={atraso} passo={passo} estilo={{ ...TXT(tam), letterSpacing: "-0.025em", lineHeight: 1.06, textAlign: "center", ...estilo }} />
 );
 
 /* Fundo cinematográfico: névoa azul que respira com a voz, grade de pontos e luz que varre */
-const Fundo: React.FC<{ voz: Voz }> = ({ voz }) => {
+export const Fundo: React.FC<{ voz: Voz }> = ({ voz }) => {
   const f = useCurrentFrame();
   return (
     <AbsoluteFill style={{ background: COR.navy }}>
@@ -37,7 +37,7 @@ const Fundo: React.FC<{ voz: Voz }> = ({ voz }) => {
 };
 
 /* Partículas que sobem devagar (profundidade) */
-const Poeira: React.FC<{ n?: number; cor?: string }> = ({ n = 40, cor = COR.ciano }) => {
+export const Poeira: React.FC<{ n?: number; cor?: string }> = ({ n = 40, cor = COR.ciano }) => {
   const f = useCurrentFrame();
   return (
     <AbsoluteFill>
@@ -206,14 +206,15 @@ const C6: React.FC<{ d: number; voz: Voz }> = ({ d, voz }) => {
     </Cena>
   );
 };
-const Linha: React.FC<{ de: number; children: React.ReactNode }> = ({ de, children }) => {
+export const Linha: React.FC<{ de: number; children: React.ReactNode }> = ({ de, children }) => {
   const p = useMola(de);
   return <div style={{ ...VIDRO, borderRadius: 26, padding: "26px 34px", display: "flex", alignItems: "center", gap: 24, opacity: Math.min(1, p * 1.4), transform: `translateX(${(1 - p) * 120}px)` }}>{children}</div>;
 };
 
 // 7 · Os sistemas, com telas reais
-type Destaque = { icone: string; txt: string; lado: "e" | "d"; y: number };
-const PRODUTOS: { nome: string; sub: string; img: string; fx: number; fy: number; cor: string; destaques: Destaque[] }[] = [
+export type Destaque = { icone: string; txt: string; lado: "e" | "d"; y: number };
+export type ProdutoTela = { nome: string; sub: string; img: string; fx: number; fy: number; cor: string; destaques: Destaque[] };
+const PRODUTOS: ProdutoTela[] = [
   { nome: "Atende IA", sub: "no WhatsApp", img: "institucional/atende.webp", fx: 0.42, fy: 0.5, cor: "#22c55e", destaques: [{ icone: "💬", txt: "Respondido pela IA em 3 s", lado: "d", y: 0.12 }, { icone: "🔥", txt: "Cliente pronto para comprar", lado: "e", y: 0.72 }] },
   { nome: "RH e Ponto", sub: "no celular", img: "institucional/rh.webp", fx: 0.45, fy: 0.45, cor: "#3B8DFF", destaques: [{ icone: "✅", txt: "Ponto batido · 07:58", lado: "d", y: 0.14 }, { icone: "📄", txt: "Espelho do mês pronto", lado: "e", y: 0.7 }] },
   { nome: "Contábil", sub: "para o escritório", img: "institucional/contabil.webp", fx: 0.5, fy: 0.32, cor: "#a78bfa", destaques: [{ icone: "🧾", txt: "Nota lida pela IA", lado: "d", y: 0.16 }, { icone: "⚡", txt: "Lançamento feito sozinho", lado: "e", y: 0.68 }] },
@@ -223,10 +224,10 @@ const PRODUTOS: { nome: string; sub: string; img: string; fx: number; fy: number
 ];
 /* Segundos da locução em que cada produto é dito (pausas medidas com silencedetect) */
 const MARCOS = [42.95, 45.0, 47.15, 48.95, 50.75, 52.35];
-const LJ = 1080, AJ = LJ / 1.6; /* largura e altura da área da tela na janela */
+export const LJ = 1080, AJ = LJ / 1.6; /* largura e altura da área da tela na janela */
 
 /* Notificação que salta da tela, com mola e flutuação */
-const Pop: React.FC<{ de: number; d: Destaque; cor: string }> = ({ de, d, cor }) => {
+export const Pop: React.FC<{ de: number; d: Destaque; cor: string }> = ({ de, d, cor }) => {
   const f = useCurrentFrame();
   const p = useMola(de, { damping: 11, mass: 0.55 });
   const x = d.lado === "d" ? LJ - 560 : -170;
@@ -239,7 +240,7 @@ const Pop: React.FC<{ de: number; d: Destaque; cor: string }> = ({ de, d, cor })
 };
 
 /* Um produto em cena: janela 3D que entra com chicote, câmera que aproxima, cursor que clica, notificações e brilho */
-const ProdutoVivo: React.FC<{ p: (typeof PRODUTOS)[number]; slot: number }> = ({ p, slot }) => {
+export const ProdutoVivo: React.FC<{ p: ProdutoTela; slot: number }> = ({ p, slot }) => {
   const f = useCurrentFrame();
   const ent = interpolate(f, [0, 10], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
   const sai = interpolate(f, [slot - 2, slot + 8], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.cubic) });
@@ -376,11 +377,11 @@ const C8: React.FC<{ d: number; voz: Voz }> = ({ d, voz }) => {
   );
 };
 /* mola com atraso fixo, segura para usar em listas de tamanho fixo */
-const useMolaFixa = (de: number) => useMola(de);
+export const useMolaFixa = (de: number) => useMola(de);
 
 // 9 · Banca de teste de intrusão
 const TESTES = ["Tentativas de invasão", "Acesso a dados de terceiros", "Senhas e permissões", "Falhas e travamentos"];
-const C9: React.FC<{ d: number }> = ({ d }) => {
+export const C9: React.FC<{ d: number }> = ({ d }) => {
   const f = useCurrentFrame();
   const varre = (f % 70) / 70;
   const escudo = useMola(4, { damping: 10, mass: 0.8 });
@@ -510,7 +511,7 @@ const C11: React.FC<{ d: number }> = ({ d }) => {
 };
 
 // 12 · Chamada
-const C12: React.FC<{ d: number }> = ({ d }) => {
+export const C12: React.FC<{ d: number }> = ({ d }) => {
   const f = useCurrentFrame();
   const b = useMola(8);
   const w = useMola(Math.round(d * 0.55));
@@ -528,7 +529,7 @@ const C12: React.FC<{ d: number }> = ({ d }) => {
 };
 
 // 13 · Assinatura
-const C13: React.FC<{ d: number }> = ({ d }) => {
+export const C13: React.FC<{ d: number }> = ({ d }) => {
   const f = useCurrentFrame();
   const a = useMola(2, { damping: 16, mass: 1 });
   const s = useMola(20);
@@ -545,13 +546,13 @@ const C13: React.FC<{ d: number }> = ({ d }) => {
 };
 
 /* ---------- legenda ---------- */
-const Legenda: React.FC<{ esconder: number[] }> = ({ esconder }) => {
+export const Legenda: React.FC<{ esconder: number[]; falas?: string[]; tempos?: { frases: readonly (readonly [number, number])[] } }> = ({ esconder, falas = FALAS as string[], tempos = TEMPOS }) => {
   const f = useCurrentFrame();
   const t = f / FPS - ATRASO;
   const pedacos: { de: number; ate: number; txt: string }[] = [];
-  (FALAS as string[]).forEach((fala, i) => {
+  falas.forEach((fala, i) => {
     if (esconder.includes(i)) return;
-    const [de, ate] = TEMPOS.frases[i];
+    const [de, ate] = tempos.frases[i];
     const partes = fala.replace(/\.\.\./g, "…").split(/(?<=[,.?!:…])\s+/).reduce<string[]>((acc, w) => {
       const u = acc[acc.length - 1];
       if (u && !/[.?!]$/.test(u) && (u + " " + w).length <= 58) acc[acc.length - 1] = u + " " + w;
