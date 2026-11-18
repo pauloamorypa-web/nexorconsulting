@@ -518,7 +518,6 @@ const C12: React.FC<{ d: number }> = ({ d }) => {
     <Cena d={d}>
       <div style={{ textAlign: "center" }}>
         <Titulo texto="Experimente *grátis* por *30* *dias*" tam={110} />
-        <div style={{ ...TXT(42, 500, COR.suave), marginTop: 20, opacity: entre(f, 20, 34) }}>sem cartão de crédito</div>
         <div style={{ display: "flex", gap: 30, justifyContent: "center", marginTop: 60 }}>
           <div style={{ padding: "30px 64px", borderRadius: 999, background: GRAD_BOTAO, boxShadow: `0 20px ${50 + Math.sin(f / 6) * 20}px rgba(0,88,250,0.6)`, ...TXT(48, 700, "#fff"), transform: `scale(${b * (1 + Math.sin(f / 6) * 0.025)})` }}>Começar o teste</div>
           <div style={{ padding: "30px 54px", borderRadius: 999, background: "rgba(34,197,94,0.16)", border: `2px solid ${VERDE}`, ...TXT(46, 700, "#dcfce7"), transform: `scale(${w})`, display: "flex", gap: 16, alignItems: "center" }}>💬 (34) 99733-7499</div>

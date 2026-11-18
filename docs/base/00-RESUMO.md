@@ -47,7 +47,7 @@ Estado em 18/11/2026. Formato chave-valor. Detalhe nos documentos 01 a 07.
 - Reels: 6 vídeos em `marketing/instagram/reels/`, mantendo a narração (sem trocar áudio).
 
 ## Vídeos
-- Institucional 16:9 (95 s, voz, trilha, legenda): `marketing/videos-finais/nexor-institucional-1080p.mp4`. Roteiro `marketing/videos/roteiros/00-institucional-2026.md`.
+- Institucional 16:9 (93 s, voz, trilha, legenda; chamada só "teste grátis por 30 dias", sem falar de cartão): `marketing/videos-finais/nexor-institucional-1080p.mp4`. Roteiro `marketing/videos/roteiros/00-institucional-2026.md`.
 - Produtos (verticais, narrados): `marketing/videos/nexor-*-locucao-vertical.mp4`.
 
 ## Tarefas agendadas desta conta
