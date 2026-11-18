@@ -4,13 +4,19 @@
    frase termina pelo tamanho do texto e escolhe, perto de cada estimativa, a maior pausa real
    do áudio (ffmpeg silencedetect). Devolve [início, fim] de cada frase, em segundos do áudio. */
 import { execSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 const id = process.argv[2];
-const fonte = readFileSync("src/produtos.tsx", "utf8");
-const bloco = fonte.split(/\n  \{\n/).find((b) => b.includes(`pasta: "${id}"`));
-if (!bloco) throw new Error(`Produto com pasta "${id}" não achado em src/produtos.tsx`);
-const frases = [...bloco.split("frases: [")[1].split("],")[0].matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+/* Frases: src/tempos/<id>.frases.json (vídeos fora de produtos.tsx) ou o campo frases do produto */
+const json = `src/tempos/${id}.frases.json`;
+let frases;
+if (existsSync(json)) frases = JSON.parse(readFileSync(json, "utf8"));
+else {
+  const fonte = readFileSync("src/produtos.tsx", "utf8");
+  const bloco = fonte.split(/\n  \{\n/).find((b) => b.includes(`pasta: "${id}"`));
+  if (!bloco) throw new Error(`Produto com pasta "${id}" não achado em src/produtos.tsx`);
+  frases = [...bloco.split("frases: [")[1].split("],")[0].matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+}
 const n = frases.length;
 
 const txt = execSync(`ffmpeg -hide_banner -i public/${id}/locucao.mp3 -af silencedetect=noise=-30dB:d=0.1 -f null - 2>&1`, { encoding: "utf8" });

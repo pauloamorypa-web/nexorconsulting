@@ -5,6 +5,7 @@ import { PRODUTOS } from "./produtos";
 import { VideoBlue, duracaoBlue } from "./VideoBlue";
 import { ANIMADOS } from "./animados";
 import { duracaoAnimado } from "./kit";
+import { Institucional, duracaoInstitucional } from "./Institucional";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -26,6 +27,8 @@ export const RemotionRoot: React.FC = () => {
       ))}
       {/* Blue: vídeo próprio, todo animado (sem telas paradas) */}
       <Composition id="NexorBlue30s" component={VideoBlue} durationInFrames={duracaoBlue} fps={FPS} width={1080} height={1920} />
+      {/* Institucional 16:9 */}
+      <Composition id="NexorInstitucional" component={Institucional} durationInFrames={duracaoInstitucional} fps={FPS} width={1920} height={1080} />
     </>
   );
 };
