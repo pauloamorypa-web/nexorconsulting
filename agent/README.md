@@ -175,6 +175,29 @@ Atenção:
 - A Meta cobra por conversa iniciada pela empresa fora da janela de 24 horas. As respostas do agente acontecem dentro da janela, porque é o cliente quem escreve primeiro.
 - Os avisos para `TEAM_WHATSAPP` só chegam se esse número tiver mandado mensagem para o número do agente nas últimas 24 horas. Para avisos sempre garantidos, use `LEAD_WEBHOOK_URL`.
 
+## Ligar ao Instagram (Direct e comentários, 24 horas)
+
+A Blue atende o Direct do @nexorconsultingit com a mesma IA do site e do WhatsApp, com foco em Araguari (MG) e região. Quando alguém comenta uma palavra-chave (TESTE, PONTO, BARBER, IA, CONTÁBIL, FUNDADOR, ELO, DIAGNÓSTICO, LGPD), ela:
+1. responde em público com uma frase curta, que varia para não parecer robô;
+2. chama a pessoa no Direct com uma resposta privada.
+
+Comentário com pergunta ("quanto custa?", "como funciona?") também ganha resposta no Direct. Elogios ficam sem resposta automática.
+
+1. A conta do Instagram precisa ser **Profissional** (Empresa). No mesmo app da Meta, adicione o produto **Instagram** → "API com login do Instagram".
+2. Gere o token da conta (permissões `instagram_business_basic`, `instagram_business_manage_messages` e `instagram_business_manage_comments`). Preencha:
+   - `INSTAGRAM_TOKEN`;
+   - `INSTAGRAM_ACCOUNT_ID` (o ID da conta que aparece ao gerar o token);
+   - `INSTAGRAM_APP_SECRET` (segredo do app do Instagram).
+3. Em Webhooks do Instagram:
+   - use a URL `https://SEU-SERVIDOR/webhook/instagram` e o texto de `INSTAGRAM_VERIFY_TOKEN`;
+   - assine os campos **messages** e **comments**.
+4. No app do Instagram, ative **Configurações → Mensagens → Ferramentas conectadas → Permitir acesso às mensagens**.
+5. Enquanto o app da Meta estiver em modo de desenvolvimento, só contas de teste recebem resposta. Para atender o público, peça a análise do app com as três permissões.
+
+Regras da Meta:
+- o Direct só pode ser respondido em até 24 horas após a última mensagem da pessoa;
+- a resposta privada a um comentário é uma por comentário, em até 7 dias.
+
 ## Custos e ajustes
 
 - Modelo padrão: `claude-opus-5-5`, com esforço `low` (respostas rápidas). Troque por `NEXOR_MODEL` e `NEXOR_EFFORT`.

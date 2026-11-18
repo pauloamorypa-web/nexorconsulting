@@ -20,6 +20,7 @@ import { INSTRUCOES_DEMO } from "./conhecimento.js";
 import { limparOrigem, rotuloOrigem, temperatura } from "./leads.js";
 import { conversaoGoogle, enviarEventosMeta, enviarParaMeta, eventoConversao } from "./meta.js";
 import { gerarRelatorio } from "./relatorio.js";
+import { criarProcessadorInstagram, instagramConfigurado } from "./instagram.js";
 import { assinaturaValida, emBaloes, enviarTexto, extrairMensagens, marcarComoLida, pausaDigitando, whatsappConfigurado } from "./whatsapp.js";
 
 const LIMITE_CORPO = 256 * 1024;
@@ -136,7 +137,8 @@ const tokenConfere = (recebido, esperado) => {
   return a.length === b.length && timingSafeEqual(a, b);
 };
 
-export function criarServidor({ agente, agenteDemo = agente, armazenamento, notificar = notificarEquipe, enviarMeta = enviarParaMeta, clienteRelatorio, fetchConversao = fetch }) {
+export function criarServidor({ agente, agenteDemo = agente, armazenamento, notificar = notificarEquipe, enviarMeta = enviarParaMeta, clienteRelatorio, fetchConversao = fetch, apiInstagram }) {
+  const processarInstagram = criarProcessadorInstagram({ agente, ...(apiInstagram && { api: apiInstagram }) });
   const ultimosParciais = new Map(); // sessão → último lead parcial, para não repetir
   const vistas = new Set(); // ids de mensagens do WhatsApp já processadas (a Meta pode reenviar)
   const limiteChat = criarLimitador(LIMITES.chatPorIp);
@@ -392,6 +394,22 @@ export function criarServidor({ agente, agenteDemo = agente, armazenamento, noti
         }
       }
 
+      if (url.pathname === "/webhook/instagram") {
+        if (req.method === "GET") {
+          const ok = url.searchParams.get("hub.mode") === "subscribe" && tokenConfere(url.searchParams.get("hub.verify_token") ?? "", config.instagram.tokenVerificacao);
+          res.writeHead(ok ? 200 : 403, { ...SEGURANCA, "Content-Type": "text/plain" });
+          return res.end(ok ? url.searchParams.get("hub.challenge") ?? "" : "forbidden");
+        }
+        if (req.method === "POST") {
+          const corpo = await lerCorpo(req);
+          if (!assinaturaValida(corpo, req.headers["x-hub-signature-256"], config.instagram.segredoApp)) {
+            return json(res, 401, { erro: "assinatura inválida" });
+          }
+          json(res, 200, { ok: true });
+          return processarInstagram(JSON.parse(corpo.toString("utf8")));
+        }
+      }
+
       json(res, 404, { erro: "não encontrado" });
     } catch (err) {
       console.error("[servidor]", err);
@@ -409,5 +427,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
     console.log(`Blue (Nexor) ouvindo na porta ${config.porta} · modelo ${config.modelo}`);
     if (!whatsappConfigurado()) console.log("WhatsApp não configurado: só o chat do site está ativo.");
     if (whatsappConfigurado() && !config.whatsapp.segredoApp) console.warn("WHATSAPP_APP_SECRET vazio: o webhook vai recusar todas as mensagens.");
+    console.log(instagramConfigurado() ? "Instagram ativo: Direct e comentários." : "Instagram não configurado.");
+    if (instagramConfigurado() && !config.instagram.segredoApp) console.warn("INSTAGRAM_APP_SECRET vazio: o webhook do Instagram vai recusar todas as mensagens.");
   });
 }
