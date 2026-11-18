@@ -55,8 +55,8 @@ export const config = {
     conversaoContrato: process.env.GOOGLE_CONVERSAO_CONTRATO ?? "Contrato",
   },
 
-  // Campanhas: a Blue pode citar o preço de entrada do produto (tabela comercial em validação)
-  campanhaMostrarPreco: process.env.CAMPANHA_MOSTRAR_PRECO === "1",
+  // Regra do dono: a Blue nunca cita valores (preço é com um atendente no WhatsApp). Fica desligado de propósito.
+  campanhaMostrarPreco: false,
 
   // WhatsApp Cloud API (Meta)
   whatsapp: {

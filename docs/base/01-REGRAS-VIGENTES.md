@@ -36,3 +36,7 @@ Valem para todo trabalho. Fonte: pedidos diretos do dono. Atualizado em 12/11/20
 - Antes de implantar em cliente grande.
 - A cada 3 meses nos produtos em produção.
 - Depois de incidente de segurança.
+
+## Marketing e vendas (18/11/2026)
+- Nunca publicar valores, faixas, descontos ou percentuais: em anúncio, post, arte, legenda, e-mail ou resposta da Blue. Preço é sempre com um atendente no WhatsApp (34) 99733-7499, e cada pedido de preço vira uma oportunidade.
+- Foco comercial em Araguari (MG). Cada peça fala com um tipo de cliente e um produto, e filtra curiosos (pessoa física, estudante, concorrente, "só pesquisando").
