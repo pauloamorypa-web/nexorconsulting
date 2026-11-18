@@ -55,6 +55,17 @@ A Blue faz isso sozinha, 24 horas: responde em público, chama no Direct e conve
 - 10 conversas no Direct ou no WhatsApp vindas do Instagram.
 - 2 testes grátis iniciados.
 
-## 7. Para acelerar (depende do dono)
-- **Meta Ads conectado no Windsor:** impulsionar os 3 melhores posts por semana para Araguari e Uberlândia, com R$ 10 a R$ 15 por dia e objetivo "mensagens no WhatsApp". Sem isso, um perfil com 0 seguidores cresce muito devagar.
-- **Vídeos dos Reels:** os MP4 narrados ficam fora do Git por causa do tamanho. Para publicar, preciso de um link público para cada um, por exemplo YouTube não listado, Google Drive público ou upload no vidIQ.
+## 7. Viralizar em Araguari (só orgânico, sem Facebook e sem anúncio pago)
+O alcance vem dos **Reels**, de quem compartilha e das contas locais. A Nexor publica e responde. O dono faz o que a API não permite, 15 minutos por dia:
+1. **Localização "Araguari, Minas Gerais"** em todo post e Reels, logo depois de publicar (editar post → Adicionar local). Isso coloca a Nexor na página do local.
+2. **Áudio em alta:** nos Reels, trocar a trilha por um áudio em alta do Instagram, com volume baixo, pelo app. Isso aumenta a distribuição.
+3. **Responder todo comentário em até 1 hora.** A Blue faz isso quando o servidor estiver no ar; até lá, é manual. Comentário respondido rápido faz o post subir.
+4. **Interagir com contas de Araguari:** comentar de verdade (nada de "top 👏") em 10 posts por dia de perfis locais, como a prefeitura, a associação comercial, barbearias, clínicas, contabilidades e lojas.
+5. **Collab:** convidar um cliente ou parceiro de Araguari para um post colaborativo (Collab). O post aparece para os seguidores dos dois.
+6. **Stories com enquete e caixa de perguntas** no app, por exemplo "Sua empresa responde o WhatsApp depois das 18h?". As respostas viram conteúdo.
+7. **Compartilhamento:** toda legenda pede para marcar ou mandar para alguém do ramo. Compartilhamento é o que mais espalha um post hoje.
+
+A agenda automática publica feed às 11h22 e Reels e stories às 18h52, até 18/12.
+
+## 8. Para acelerar (depende do dono)
+- **Reels:** os 6 vídeos narrados estão em `reels/`, sem valores, e já entraram no calendário.

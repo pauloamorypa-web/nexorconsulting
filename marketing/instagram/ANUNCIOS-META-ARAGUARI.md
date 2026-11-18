@@ -1,3 +1,5 @@
+> **Fora de uso.** Em 18/11/2026 o dono decidiu ficar só no Instagram orgânico, sem Facebook e sem Meta Ads. Este plano fica guardado para o caso de mudar de ideia.
+
 # Anúncios no Instagram e no Facebook: Araguari
 
 **Objetivo:** leads quentes de empresas de Araguari, sem curiosos.

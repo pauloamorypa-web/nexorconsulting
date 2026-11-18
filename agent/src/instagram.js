@@ -32,6 +32,7 @@ export const PALAVRAS = [
   { chave: "fundador", produto: "programa de fundadores (condição especial de lançamento, 10 vagas por produto; detalhes com um atendente no WhatsApp)", publico: ["Te mandei as condições de fundador no Direct 🔥", "Chamei no Direct! 🔥", "Olha o Direct 😉"] },
   { chave: "elo", produto: "Nexor Elo (rede de fornecedores e instaladores)", publico: ["Te mandei no Direct como funciona o Elo 🔌", "Chamei no Direct! 🔌", "Olha o Direct 😉"] },
   { chave: "diagnostico", produto: "diagnóstico gratuito com o time da Nexor", publico: ["Te chamei no Direct para marcar o diagnóstico 🔎", "Mandei no seu Direct 🔎", "Olha o Direct 😉"] },
+  { chave: "blue", produto: "uma assistente de IA como a Blue para a empresa (Nexor Atende IA)", publico: ["A Blue te chamou no Direct 💙", "Te mandei no Direct! 💙", "Olha o Direct 😉"] },
   { chave: "lgpd", produto: "consultoria de LGPD", publico: ["Te mandei no Direct o diagnóstico de LGPD ✅", "Chamei no Direct! ✅", "Olha o Direct 😉"] },
 ];
 
