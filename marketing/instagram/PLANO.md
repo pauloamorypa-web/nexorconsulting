@@ -41,7 +41,7 @@ Regra: não publicar preço. Falar de "teste grátis de 30 dias", "diagnóstico 
 | BARBER | "Te mandei no Direct o teste da sua barbearia ✂️" | Link do Barber |
 | IA | "Te mandei no Direct a demonstração da IA no WhatsApp 🤖" | Link do Atende IA |
 
-As respostas públicas eu faço pelo conector. O Direct, por enquanto, é manual. Quando a Blue estiver ligada ao Instagram (Atende IA da própria Nexor), ela responde o Direct sozinha.
+A Blue faz isso sozinha, 24 horas: responde em público, chama no Direct e conversa com foco em Araguari (código em `agent/src/instagram.js`, passo a passo em `agent/README.md`, seção "Ligar ao Instagram"). Ela começa a responder quando o token do Instagram estiver no servidor.
 
 ## 5. Rotina semanal
 - **Segunda, quarta e sexta:** 1 post de feed com legenda, às 11h30.
