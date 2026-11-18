@@ -20,7 +20,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Sistema | Pasta | Para quê |
 |---|---|---|
 | Nexor Central | `central/` | Clientes, planos, teste, fundadores, faturas, comissões, licenças, fila de conversão offline |
-| Blue (assistente de vendas) | `agent/` | Atende no site, WhatsApp e Direct do Instagram (comentários com palavra-chave), pontua, faz cadência, envia eventos ao Meta e ao Google, relatório por campanha |
+| Blue (assistente de vendas) | `agent/` | No ar em https://nexor-blue.onrender.com (Render, plano grátis, região Virginia, publica sozinho a cada merge na main). Atende no site, WhatsApp e Direct do Instagram (comentários com palavra-chave), pontua, faz cadência, envia eventos ao Meta e ao Google, relatório por campanha |
 | Servidor interno | `interno/` | Central e Blue com túnel, backup e endurecimento |
 | Implantação por empresa | `implantacao/` | Docker, túnel, backup, guia de instalação; `nova-empresa.sh <cliente> auto` cria o cliente na Nuvem Nexor |
 | Nuvem Nexor (VPS Hostinger) | `nuvem/` | Borda que entrega `<cliente>.nexorconsultingit.com.br` a cada sistema; guia completo da VPS em `nuvem/README.md` |
