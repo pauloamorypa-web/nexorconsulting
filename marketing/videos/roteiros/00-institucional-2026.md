@@ -30,4 +30,4 @@ Substitui o `00-institucional-90s.md` (aquele cita "agentes" na banca, o que nã
 | 12 | Experimente grátis por trinta dias, sem cartão. Ou chame a gente no WhatsApp. | Botão do teste e número do WhatsApp. |
 | 13 | Nexor Consulting. IA com cuidado humano. | Logo e assinatura. |
 
-Arquivos: composição `NexorInstitucional` em `marketing/videos/remotion/src/Institucional.tsx`; vídeo em `marketing/videos/nexor-institucional.mp4`.
+Arquivos: composição `NexorInstitucional` em `marketing/videos/remotion/src/Institucional.tsx`; vídeo em `marketing/videos-finais/nexor-institucional-1080p.mp4`.

@@ -52,7 +52,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | Campanhas, projeção e simulador | `marketing/campanhas/` (Google Ads de lançamento: `google-ads-lancamento.json`, no ar desde 17/11/2026 pelo Windsor, R$ 20/dia; revisar termos de busca em 7 dias) |
 | Marca e uniformes | `marketing/marca/`, `marketing/uniformes/` |
 | Vídeos e gerador | `marketing/videos/` |
-| Vídeos com locução (Remotion) | `marketing/videos/remotion/` · piloto `marketing/videos/nexor-barber-locucao-vertical.mp4` · institucional 16:9 `marketing/videos/nexor-institucional.mp4` |
+| Vídeos com locução (Remotion) | `marketing/videos/remotion/` · piloto `marketing/videos/nexor-barber-locucao-vertical.mp4` · institucional 16:9 `marketing/videos-finais/nexor-institucional-1080p.mp4` |
 | Roteiros de vídeo e storyboards | `marketing/videos/roteiros/` (16 roteiros, 27 pranchas, plano de gravação no `README.md`) |
 | Fichas para Capterra, GetApp e B2B Stack | `marketing/marketplaces/` |
 
