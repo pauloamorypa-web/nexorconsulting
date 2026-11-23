@@ -43,7 +43,7 @@ Estado em 18/11/2026. Formato chave-valor. Detalhe nos documentos 01 a 07.
 ## Instagram (@nexorconsultingit)
 - Só orgânico. Sem Facebook e sem Meta Ads (decisão do dono).
 - Estreia publicada em 18/11 (3 posts). Calendário: `marketing/instagram/calendario.json` até 18/12.
-- Agenda automática: feed às 11h22, Reels e stories às 18h52 (horário de Brasília).
+- Agenda automática: feed às 11h22, Reels e stories às 18h52 (horário de Brasília). Pausada desde 23/11.
 - Reels: 6 vídeos em `marketing/instagram/reels/`, mantendo a narração (sem trocar áudio).
 
 ## Vídeos
@@ -52,8 +52,9 @@ Estado em 18/11/2026. Formato chave-valor. Detalhe nos documentos 01 a 07.
 - Produtos (verticais, narrados): `marketing/videos/nexor-*-locucao-vertical.mp4`.
 
 ## Tarefas agendadas desta conta
-- Instagram: feed (manhã) e Reels/stories (noite), até 18/12.
-- Google Ads: revisão de 7 dias em 24/11.
+- PAUSADAS em 23/11/2026 a pedido do dono ("pausar tudo"). Religar só com ok dele.
+- Instagram: feed (manhã) e Reels/stories (noite), até 18/12. Nada publicado de 19/11 a 23/11.
+- Google Ads: revisão de 7 dias (era 24/11). As 3 campanhas continuam no ar até o dono decidir.
 
 ## Pendências do dono
 - Chave da IA válida no Render (Blue).
