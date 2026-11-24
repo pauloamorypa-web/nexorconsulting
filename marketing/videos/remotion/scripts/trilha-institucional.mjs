@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 /* Uso: node scripts/trilha-institucional.mjs [id]  (institucional ou ti) */
 const ID = process.argv[2] || "institucional";
-const MAPA = { institucional: { rev: 2, man: 3, bat: 5 }, ti: { rev: 3, man: 3, bat: 4 } }[ID];
+const MAPA = { institucional: { rev: 2, man: 3, bat: 5 }, ti: { rev: 3, man: 3, bat: 4 }, vendas: { rev: 1, man: 2, bat: 2 } }[ID];
 const t = JSON.parse(readFileSync(`src/tempos/${ID}.ts`, "utf8").split("export default ")[1].split(" as const")[0]);
 const ATRASO = 0.4;
 const ini = t.frases.map((x, i) => (i === 0 ? 0 : ATRASO + (t.frases[i - 1][1] + x[0]) / 2));

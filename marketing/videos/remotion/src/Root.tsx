@@ -7,6 +7,7 @@ import { ANIMADOS } from "./animados";
 import { duracaoAnimado } from "./kit";
 import { Institucional, duracaoInstitucional } from "./Institucional";
 import { VideoTI, duracaoTI } from "./TI";
+import { VideoVendas, duracaoVendas } from "./Vendas";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -30,6 +31,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="NexorBlue30s" component={VideoBlue} durationInFrames={duracaoBlue} fps={FPS} width={1080} height={1920} />
       {/* Institucional 16:9 */}
       <Composition id="NexorTI" component={VideoTI} durationInFrames={duracaoTI} fps={FPS} width={1920} height={1080} />
+      <Composition id="NexorVendasB2B" component={VideoVendas} durationInFrames={duracaoVendas} fps={FPS} width={1920} height={1080} />
       <Composition id="NexorInstitucional" component={Institucional} durationInFrames={duracaoInstitucional} fps={FPS} width={1920} height={1080} />
     </>
   );

@@ -84,3 +84,4 @@ Use como está. Só mude um padrão se o dono pedir. Atualizado em 12/11/2026.
 - Por empresa: `implantacao/` (Docker, túnel, backup, guia em `GUIA-INSTALACAO.md`).
 - Servidor interno da Nexor (Central e Blue): `interno/`.
 - Política de LGPD na implantação: `POLITICA-IMPLANTACAO-LGPD.md`.
+- Voz dos vídeos (24/11/2026): ElevenLabs, voz Guilherme (`CS07DI8x8kLXeSktyWLG`, modelo eleven_multilingual_v2), texto único. Tempos pela transcrição palavra a palavra (Scribe). Pratos 3D para vídeo: renderizar quadros girando dos .glb do Cardápio 3D (72 quadros por volta).
