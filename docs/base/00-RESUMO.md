@@ -33,6 +33,11 @@ Estado em 18/11/2026. Formato chave-valor. Detalhe nos documentos 01 a 07.
 - Problema em 18/11: `ANTHROPIC_API_KEY` inválida no Render (erro 401). Dono precisa colar chave nova.
 - Testes: 108 passando (`node --test` em `agent/`).
 
+## Vendas B2B (24/11/2026)
+- Plano: `comercial/MAQUINA-DE-VENDAS-B2B.md`. Começa por Araguari. Meta: 10 fundadores em 30 dias.
+- Ordem: restaurantes (Atende IA + Cardápio 3D), contadores (Contábil + indicação), empresas com funcionários (RH e Ponto), clínicas, barbearias.
+- CRM: HubSpot (lista de alvos fica lá, nunca no repositório).
+
 ## Google Ads
 - 3 campanhas de Pesquisa no ar desde 17/11: Barber, RH e Ponto, Atende IA. R$ 20/dia no total.
 - Região: raio de 30 km de Araguari. Anúncio do Barber sem valor (o antigo foi pausado).
