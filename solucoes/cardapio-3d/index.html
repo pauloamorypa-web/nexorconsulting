@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' blob: data:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Cardápio 3D com realidade aumentada para restaurante | Nexor Cardápio 3D</title>
+  <meta name="description" content="Demonstração do Nexor Cardápio 3D: o cliente aponta o celular para o QR da mesa, vê o prato em 3D, coloca na mesa pela câmera e pede pelo WhatsApp. Sem app, em Android e iPhone.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://nexorconsultingit.com.br/solucoes/cardapio-3d/">
+  <meta name="theme-color" content="#010524">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:site_name" content="Nexor Consulting">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nexorconsultingit.com.br/solucoes/cardapio-3d/">
+  <meta property="og:title" content="Nexor Cardápio 3D · o prato em 3D na mesa do cliente">
+  <meta property="og:description" content="Demonstração com restaurante fictício: prato em 3D, realidade aumentada e pedido pelo WhatsApp.">
+  <meta property="og:image" content="https://nexorconsultingit.com.br/assets/img/og-nexor.jpg">
+  <link rel="icon" type="image/png" href="/assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Michroma&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/cardapio.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+  <script src="assets/cardapio.js" defer></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-cubo" viewBox="0 0 24 24"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></symbol>
+    <symbol id="i-mesa" viewBox="0 0 24 24"><path d="M3 9h18M5 9v11M19 9v11M8 9V6.5a4 4 0 0 1 8 0V9"/></symbol>
+    <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-menos" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-fechar" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-sacola" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+    <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM18 14h3M14 18v3"/></symbol>
+    <symbol id="i-dedo" viewBox="0 0 24 24"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5l4.3.9a2 2 0 0 1 1.6 2.2l-.6 5.4A2 2 0 0 1 15.3 20H10a2 2 0 0 1-1.6-.8L5 14.5a1.5 1.5 0 0 1 2.2-2z"/></symbol>
+    <symbol id="i-whatsapp" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12.04 2a9.9 9.9 0 0 0-8.5 14.98L2 22l5.16-1.5A9.9 9.9 0 1 0 12.04 2zm0 18.1a8.2 8.2 0 0 1-4.18-1.14l-.3-.18-3.06.89.9-2.98-.2-.31a8.2 8.2 0 1 1 6.84 3.72zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.16.25-.64.8-.78.97-.15.16-.29.18-.54.06-.25-.12-1.04-.38-1.98-1.22a7.4 7.4 0 0 1-1.37-1.7c-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.56-1.34-.76-1.83-.2-.48-.4-.42-.56-.42h-.47c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07s.89 2.4 1.01 2.57c.13.16 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.6.19 1.13.16 1.56.1.47-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.29z"/></symbol>
+  </defs>
+</svg>
+
+<div class="faixa-demo" role="note">Demonstração · restaurante fictício</div>
+
+<header class="topo">
+  <a class="marca" href="/" aria-label="Nexor Consulting, início"><img src="/assets/img/logo-site.webp" alt="Nexor Consulting" width="1076" height="253"></a>
+  <span class="produto"><svg class="ic"><use href="#i-cubo"/></svg>Cardápio 3D</span>
+</header>
+
+<main id="conteudo">
+  <section class="restaurante" aria-labelledby="nome-rest">
+    <p class="mesa-tag"><svg class="ic"><use href="#i-mesa"/></svg>Você está na mesa 4</p>
+    <h1 id="nome-rest">Cantina Exemplo</h1>
+    <p class="sub">Toque num prato para ver em 3D. Gire com o dedo e coloque na sua mesa pela câmera.</p>
+  </section>
+
+  <nav class="categorias" aria-label="Categorias do cardápio">
+    <a href="#cat-pizzas">Pizzas</a>
+    <a href="#cat-lanches">Lanches</a>
+    <a href="#cat-bebidas">Bebidas</a>
+    <a href="#cat-sobremesas">Sobremesas</a>
+  </nav>
+
+  <div class="cardapio" id="cardapio" aria-live="polite"></div>
+
+  <section class="bloco qr" aria-labelledby="t-qr">
+    <div class="qr-arte" aria-hidden="true">
+      <div class="qr-cartao">
+        <svg class="qr-desenho" viewBox="0 0 21 21" shape-rendering="crispEdges"></svg>
+        <span>Mesa 4 · aponte a câmera</span>
+      </div>
+    </div>
+    <div>
+      <h2 id="t-qr">O cliente aponta o celular para o QR da mesa</h2>
+      <ol class="passos">
+        <li><svg class="ic"><use href="#i-qr"/></svg><span>Cada mesa tem um QR. A câmera do celular abre o cardápio, sem baixar app.</span></li>
+        <li><svg class="ic"><use href="#i-dedo"/></svg><span>Ele vê o prato em 3D, gira com o dedo e coloca na mesa pela câmera.</span></li>
+        <li><svg class="ic"><use href="#i-whatsapp"/></svg><span>Monta o pedido e envia pelo WhatsApp, já com o número da mesa.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="bloco seu" aria-labelledby="t-seu">
+    <h2 id="t-seu">No seu restaurante</h2>
+    <ul class="lista">
+      <li>Seus pratos de verdade em 3D, feitos a partir de fotos tiradas no próprio restaurante.</li>
+      <li>Funciona no navegador, em Android e iPhone.</li>
+      <li>O pedido chega no seu WhatsApp e a IA do Nexor Atende recebe e anota, sem parar a cozinha.</li>
+      <li>Cardápio, fotos e categorias você muda quando quiser.</li>
+    </ul>
+  </section>
+
+  <section class="final" aria-labelledby="t-final">
+    <h2 id="t-final">Gostou? Leve para o seu restaurante.</h2>
+    <p>A Nexor monta o cardápio 3D e liga o pedido à IA do WhatsApp. Feito em Araguari (MG).</p>
+    <a class="btn btn-whats btn-grande" id="cta-final" href="https://wa.me/5534997337499" target="_blank" rel="noopener"><svg class="ic"><use href="#i-whatsapp"/></svg>Quero no meu restaurante</a>
+  </section>
+</main>
+
+<footer class="rodape">
+  <p class="assinatura">Nexor Consulting · IA com cuidado humano</p>
+  <p>Araguari (MG) · <a href="/">nexorconsultingit.com.br</a> · <a href="/privacidade.html">Privacidade</a></p>
+  <p class="aviso">Restaurante, pratos e pedidos desta página são fictícios.</p>
+</footer>
+
+<!-- Barra do pedido -->
+<button class="barra-pedido" id="barra-pedido" type="button" hidden>
+  <span class="bp-qtd" id="bp-qtd">0</span>
+  <span class="bp-txt">Ver meu pedido</span>
+  <svg class="ic"><use href="#i-sacola"/></svg>
+</button>
+
+<!-- Visualizador 3D -->
+<div class="janela" id="janela-3d" role="dialog" aria-modal="true" aria-labelledby="v-nome" hidden>
+  <div class="janela-fundo" data-fechar></div>
+  <div class="janela-caixa caixa-3d">
+    <button class="fechar" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-fechar"/></svg></button>
+    <model-viewer id="visor" camera-controls touch-action="pan-y" auto-rotate auto-rotate-delay="0" rotation-per-second="24deg"
+      ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor" shadow-intensity="1" shadow-softness="0.8"
+      exposure="1.05" environment-image="neutral" interaction-prompt="auto" alt="">
+      <div class="carregando" slot="progress-bar"><span id="progresso"></span></div>
+      <button slot="ar-button" hidden></button>
+    </model-viewer>
+    <div class="visor-info">
+      <p class="v-cat" id="v-cat"></p>
+      <h3 id="v-nome"></h3>
+      <p class="v-desc" id="v-desc"></p>
+      <p class="dica"><svg class="ic"><use href="#i-dedo"/></svg>Arraste para girar · pinça para aproximar</p>
+      <div class="v-acoes">
+        <button class="btn btn-claro" id="btn-ar" type="button"><svg class="ic"><use href="#i-mesa"/></svg>Ver na minha mesa</button>
+        <button class="btn btn-azul" id="btn-add-3d" type="button"><svg class="ic"><use href="#i-mais"/></svg>Adicionar ao pedido</button>
+      </div>
+      <p class="aviso-ar" id="aviso-ar" hidden>Abra esta página no celular para ver o prato em cima da mesa pela câmera.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Pedido -->
+<div class="janela" id="janela-pedido" role="dialog" aria-modal="true" aria-labelledby="p-titulo" hidden>
+  <div class="janela-fundo" data-fechar></div>
+  <div class="janela-caixa caixa-pedido">
+    <button class="fechar" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-fechar"/></svg></button>
+    <h3 id="p-titulo">Seu pedido · mesa 4</h3>
+    <ul class="itens" id="itens"></ul>
+    <p class="vazio" id="vazio">Seu pedido está vazio. Adicione um prato do cardápio.</p>
+    <label class="obs">Observação (opcional)
+      <textarea id="obs" rows="2" maxlength="200" placeholder="Ex.: sem cebola na calabresa"></textarea>
+    </label>
+    <a class="btn btn-whats btn-grande" id="btn-whats" href="https://wa.me/5534997337499" target="_blank" rel="noopener"><svg class="ic"><use href="#i-whatsapp"/></svg>Pedir pelo WhatsApp</a>
+    <p class="ia-nota">No seu restaurante, a IA do Nexor Atende recebe e anota o pedido.</p>
+    <p class="demo-nota">Demonstração: a mensagem vai para o WhatsApp da Nexor e não é um pedido real.</p>
+  </div>
+</div>
+</body>
+</html>

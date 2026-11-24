@@ -30,6 +30,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 |---|---|
 | Página inicial | `index.html`, `assets/css/style.css`, `assets/js/*.js` |
 | Páginas de produto (geradas) | `tools/paginas.py` → `solucoes/<slug>/index.html` |
+| Demo Cardápio 3D (restaurante fictício, feita à mão, fora do `paginas.py`) | `solucoes/cardapio-3d/` (modelos `.glb` gerados em three.js) |
 | Cards de soluções | `assets/js/solucoes.js` |
 | Telas dos produtos | `assets/img/<produto>/` · vídeos em `assets/video/` |
 | Padrão das telas de acesso | `assets/acesso/` (fonte) e `tools/acesso.sh` (copia para os produtos) |
