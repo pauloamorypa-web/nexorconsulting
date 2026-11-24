@@ -162,6 +162,7 @@ const K2: React.FC<P> = ({ d, de }) => {
   const cx = 905, cy = 610, W = interpolate(trava, [0, 1], [1300, 300]), H = interpolate(trava, [0, 1], [760, 300]);
   const holo = f >= qVida;
   const hp = entre(f, qVida, qVida + 20);
+  const rotulo = useMola(qVida + 16);
   return (
     <AbsoluteFill>
       {!holo ? (
@@ -180,7 +181,7 @@ const K2: React.FC<P> = ({ d, de }) => {
               const r = 260 + Math.sin(f / 10 + i) * 30;
               return <div key={i} style={{ position: "absolute", left: 960 + Math.cos(a) * r * 1.4, top: 430 + Math.sin(a) * r * 0.5, width: 6, height: 6, borderRadius: 3, background: i % 2 ? CIANO : MAGENTA, boxShadow: `0 0 12px ${i % 2 ? CIANO : MAGENTA}`, opacity: hp }} />;
             })}
-            <div style={{ position: "absolute", left: 1360, top: 250, ...pop2(useMola(qVida + 16)) }}>
+            <div style={{ position: "absolute", left: 1360, top: 250, ...pop2(rotulo) }}>
               <div style={{ ...MONO, ...TXT(22, 700, CIANO) }}>CARDÁPIO 3D</div>
               <div style={{ ...TXT(52, 700, "#fff") }}>Pizza calabresa</div>
               <div style={{ height: 3, width: 260, background: `linear-gradient(90deg, ${CIANO}, ${MAGENTA})`, marginTop: 10 }} />
