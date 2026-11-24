@@ -36,19 +36,21 @@ Estado em 18/11/2026. Formato chave-valor. Detalhe nos documentos 01 a 07.
 ## Vendas B2B (24/11/2026)
 - Plano: `comercial/MAQUINA-DE-VENDAS-B2B.md`. Começa por Araguari. Meta: 10 fundadores em 30 dias.
 - Ordem: restaurantes (Atende IA + Cardápio 3D), contadores (Contábil + indicação), empresas com funcionários (RH e Ponto), clínicas, barbearias.
-- CRM: HubSpot (lista de alvos fica lá, nunca no repositório).
+- CRM: HubSpot, funil "Nexor B2B Araguari" (Alvo → Contato feito → Demonstração → Teste de 30 dias → Proposta → Fundador fechado/Perdido). 59 empresas e 22 negócios A carregados em 24/11. Lista de alvos fica lá, nunca no repositório.
+- Cardápio 3D: demonstração em `solucoes/cardapio-3d/` (restaurante fictício); geradores dos modelos em `tools/cardapio-3d/`.
 
 ## Google Ads
 - 3 campanhas de Pesquisa no ar desde 17/11: Barber, RH e Ponto, Atende IA. R$ 20/dia no total.
 - Região: raio de 30 km de Araguari. Anúncio do Barber sem valor (o antigo foi pausado).
 - Campanha automática "Soluções em Softwares" (Performance Max): pausada.
+- B2B (24/11): RH e Ponto ganhou 12 palavras B2B (pausadas) e negativas; Atende IA ganhou negativas e o grupo "Restaurantes e delivery" (12 palavras e anúncio do Cardápio 3D, pausados). Ligar depende do ok do dono.
 - Conversões: tag do Google `GTM-KKXB2W8C` no site; conversão de lead do site ainda não ligada.
 - Crédito: R$ 1.200 ao gastar R$ 1.200 (pagamento por Pix).
 
 ## Instagram (@nexorconsultingit)
 - Só orgânico. Sem Facebook e sem Meta Ads (decisão do dono).
 - Estreia publicada em 18/11 (3 posts). Calendário: `marketing/instagram/calendario.json` até 18/12.
-- Agenda automática: feed às 11h22, Reels e stories às 18h52 (horário de Brasília). Pausada desde 23/11.
+- Agenda automática: feed às 11h22, Reels e stories às 18h52 (horário de Brasília). Religada em 24/11 com foco B2B.
 - Reels: 6 vídeos em `marketing/instagram/reels/`, mantendo a narração (sem trocar áudio).
 
 ## Vídeos
@@ -57,7 +59,7 @@ Estado em 18/11/2026. Formato chave-valor. Detalhe nos documentos 01 a 07.
 - Produtos (verticais, narrados): `marketing/videos/nexor-*-locucao-vertical.mp4`.
 
 ## Tarefas agendadas desta conta
-- PAUSADAS em 23/11/2026 a pedido do dono ("pausar tudo"). Religar só com ok dele.
+- Instagram religado em 24/11/2026 com o calendário B2B (ok do dono). Revisão do Google Ads segue desligada.
 - Instagram: feed (manhã) e Reels/stories (noite), até 18/12. Nada publicado de 19/11 a 23/11.
 - Google Ads: revisão de 7 dias (era 24/11). As 3 campanhas continuam no ar até o dono decidir.
 
