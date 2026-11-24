@@ -43,7 +43,7 @@ Estado em 18/11/2026. Formato chave-valor. Detalhe nos documentos 01 a 07.
 - 3 campanhas de Pesquisa no ar desde 17/11: Barber, RH e Ponto, Atende IA. R$ 20/dia no total.
 - Região: raio de 30 km de Araguari. Anúncio do Barber sem valor (o antigo foi pausado).
 - Campanha automática "Soluções em Softwares" (Performance Max): pausada.
-- B2B (24/11): RH e Ponto ganhou 12 palavras B2B (pausadas) e negativas; Atende IA ganhou negativas e o grupo "Restaurantes e delivery" (12 palavras e anúncio do Cardápio 3D, pausados). Ligar depende do ok do dono.
+- B2B (24/11): RH e Ponto ganhou 12 palavras B2B e negativas; Atende IA ganhou negativas e o grupo "Restaurantes e delivery" (12 palavras e anúncio do Cardápio 3D). Tudo ligado em 24/11 com ok do dono, sem mudar o orçamento.
 - Conversões: tag do Google `GTM-KKXB2W8C` no site; conversão de lead do site ainda não ligada.
 - Crédito: R$ 1.200 ao gastar R$ 1.200 (pagamento por Pix).
 
