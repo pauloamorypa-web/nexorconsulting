@@ -2,7 +2,7 @@
    Tudo animado. Cada efeito acontece na palavra dita (tempos da transcrição em src/tempos/vendas.ts).
    Roteiro: marketing/videos/roteiros/16-vendas-b2b-2026.md */
 import React from "react";
-import { AbsoluteFill, Audio, Easing, Img, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Audio, Easing, Img, Loop, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { ATRASO } from "./VideoProduto";
 import { COR, FPS, GRAD, GRAD_BOTAO, VERDE, VIDRO, TXT, Rico, entre, pop, quadro, useMola, useVoz, Voz } from "./kit";
 import { Cena, Titulo, Fundo, Poeira, Legenda, C12, C13, LJ, AJ, Pop, Destaque } from "./Institucional";
@@ -25,11 +25,15 @@ type P = { d: number; de: number };
 const em = (de: number, seg: number) => quadro(seg) - de;
 
 /* ---------- peças ---------- */
-const Giro: React.FC<{ nome: string; tam: number; vel?: number; desde?: number }> = ({ nome, tam, vel = 0.7, desde = 0 }) => {
-  const f = useCurrentFrame();
-  const i = Math.floor(Math.max(0, f - desde) * vel) % 72;
-  return <Img src={staticFile(`vendas/giro/${nome}/${String(i).padStart(2, "0")}.webp`)} style={{ width: tam, height: tam, display: "block" }} />;
-};
+/* Prato real: vídeo gerado a partir de foto realista (public/vendas/reais), câmera girando em volta, bordas fundidas no fundo */
+const REAL: Record<string, string> = { "pizza-calabresa": "pizza", "x-burger": "burger", "suco-laranja": "suco", "bolo-chocolate": "bolo" };
+const Giro: React.FC<{ nome: string; tam: number; vel?: number; desde?: number; borda?: boolean }> = ({ nome, tam, vel = 0.75, borda = true }) => (
+  <div style={{ width: tam, height: tam, overflow: "hidden", borderRadius: borda ? "50%" : 0, WebkitMaskImage: "radial-gradient(circle at 50% 50%, #000 52%, transparent 71%)", maskImage: "radial-gradient(circle at 50% 50%, #000 52%, transparent 71%)" }}>
+    <Loop durationInFrames={Math.floor(150 / vel)} layout="none">
+      <OffthreadVideo src={staticFile(`vendas/reais/${REAL[nome]}.mp4`)} muted playbackRate={vel} style={{ width: tam * 1.78, height: tam, marginLeft: -tam * 0.39, objectFit: "cover" }} />
+    </Loop>
+  </div>
+);
 
 const Celular: React.FC<{ w?: number; children: React.ReactNode; estilo?: React.CSSProperties }> = ({ w = 420, children, estilo }) => (
   <div style={{ width: w, height: w * 2.05, borderRadius: w * 0.13, background: "#0a0f1f", padding: w * 0.035, boxShadow: "0 50px 120px rgba(0,0,0,0.6), 0 0 0 3px rgba(150,190,255,0.25)", ...estilo }}>
