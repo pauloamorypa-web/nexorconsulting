@@ -422,9 +422,9 @@ if __name__ == "__main__":
         d = os.path.join(raiz, "solucoes", p["slug"]); os.makedirs(d, exist_ok=True)
         open(os.path.join(d, "index.html"), "w", encoding="utf-8").write(pagina(p))
     # sitemap
-    urls = [f"{DOM}/"] + [f"{DOM}/solucoes/{p['slug']}/" for p in P] + [f"{DOM}/privacidade.html"]
-    mod = {f"{DOM}/": "2026-11-11", **{f"{DOM}/solucoes/{p['slug']}/": p.get("lastmod", "2026-11-04") for p in P}}
-    pri = {f"{DOM}/": "1.0", f"{DOM}/privacidade.html": "0.3"}
+    urls = [f"{DOM}/"] + [f"{DOM}/solucoes/{p['slug']}/" for p in P] + [f"{DOM}/solucoes/cardapio-3d/", f"{DOM}/privacidade.html"]  # cardapio-3d: demo feita à mão
+    mod = {f"{DOM}/": "2026-11-11", f"{DOM}/solucoes/cardapio-3d/": "2026-11-24", **{f"{DOM}/solucoes/{p['slug']}/": p.get("lastmod", "2026-11-04") for p in P}}
+    pri = {f"{DOM}/": "1.0", f"{DOM}/solucoes/cardapio-3d/": "0.7", f"{DOM}/privacidade.html": "0.3"}
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "".join(
         f'  <url><loc>{u}</loc><lastmod>{mod.get(u, "2026-11-04")}</lastmod><priority>{pri.get(u, "0.8")}</priority></url>\n' for u in urls) + "</urlset>\n"
     open(os.path.join(raiz, "sitemap.xml"), "w").write(sm)

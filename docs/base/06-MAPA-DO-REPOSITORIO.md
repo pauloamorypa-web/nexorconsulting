@@ -30,6 +30,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 |---|---|
 | Página inicial | `index.html`, `assets/css/style.css`, `assets/js/*.js` |
 | Páginas de produto (geradas) | `tools/paginas.py` → `solucoes/<slug>/index.html` |
+| Demo Cardápio 3D (restaurante fictício, feita à mão, fora do `paginas.py`) | `solucoes/cardapio-3d/` (modelos `.glb` gerados em three.js) |
 | Cards de soluções | `assets/js/solucoes.js` |
 | Telas dos produtos | `assets/img/<produto>/` · vídeos em `assets/video/` |
 | Padrão das telas de acesso | `assets/acesso/` (fonte) e `tools/acesso.sh` (copia para os produtos) |
@@ -40,6 +41,7 @@ Outras páginas de serviço (sem sistema próprio na demonstração): `sistema-e
 | O quê | Onde |
 |---|---|
 | Planos, preços, fundadores, comissões | `comercial/PLANOS-E-PRECOS.md` e `central/src/planos.js` |
+| Máquina de vendas B2B (plano de 30 dias, roteiros, Cardápio 3D) | `comercial/MAQUINA-DE-VENDAS-B2B.md` |
 | Elo: preços e prospecção em Araguari | `comercial/ELO-PRECOS.md`, `comercial/ELO-ARAGUARI.md` |
 | Pesquisa de preços do mercado e tabela sugerida | `comercial/PESQUISA-PRECOS-2026.md`, `comercial/PRECOS-SUGERIDOS-2026.md` |
 | O que falta para vender e gerenciar | `comercial/PRONTO-PARA-VENDER.md` |
