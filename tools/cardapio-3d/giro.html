@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+</head><body style="margin:0;background:transparent">
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const T=640;
+const r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+r.setSize(T,T);r.setPixelRatio(1);r.toneMapping=THREE.ACESFilmicToneMapping;r.outputColorSpace=THREE.SRGBColorSpace;r.setClearColor(0x000000,0);
+document.body.appendChild(r.domElement);
+const env=new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(),0.04).texture;
+const ld=new GLTFLoader();
+window.carregar=async(nome)=>{
+  const g=await ld.loadAsync('/glb/'+nome+'.glb');
+  const cena=new THREE.Scene();cena.environment=env;
+  const luz=new THREE.DirectionalLight(0xffffff,1.6);luz.position.set(3,6,4);cena.add(luz);
+  const obj=g.scene;const box=new THREE.Box3().setFromObject(obj);const c=box.getCenter(new THREE.Vector3());const s=box.getSize(new THREE.Vector3());
+  const piv=new THREE.Group();obj.position.set(0,-c.y,0);piv.add(obj);cena.add(piv);
+  const raio=Math.max(s.x,s.y,s.z);
+  const cam=new THREE.PerspectiveCamera(32,1,0.01,100);cam.position.set(0,raio*0.95,raio*1.75);cam.lookAt(0,-raio*0.05,0);
+  window.quadro=(ang)=>{piv.rotation.y=ang;r.render(cena,cam);return r.domElement.toDataURL('image/png');};
+  return true;
+};
+window.pronto=true;
+</script></body></html>
