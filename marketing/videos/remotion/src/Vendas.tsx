@@ -11,7 +11,6 @@ import FALAS from "./tempos/vendas.frases.json";
 
 const PASTA = "vendas";
 const CAUDA = 3.2;
-export const duracaoVendas = Math.round((ATRASO + TEMPOS.frases[TEMPOS.frases.length - 1][1] + CAUDA) * FPS);
 const LARANJA = "#f59e0b", ROSA = "#f472b6", ZAP = "#25d366";
 const CAPITULOS = [
   { n: 1, nome: "Barber", cor: LARANJA, de: 2 },
@@ -20,20 +19,49 @@ const CAPITULOS = [
   { n: 4, nome: "Restaurantes", cor: VERDE, de: 9 },
 ];
 
-/* frame da cena em que uma palavra (segundos do áudio) é dita */
+/* Tempos do vídeo atual: frases, falas e se os segundos fixos (transcrição exata) valem */
+type Ctx = { falas: string[]; frases: readonly (readonly [number, number])[]; exato: boolean; capitulos: boolean };
+const CtxVideo = React.createContext<Ctx>({ falas: [], frases: [], exato: true, capitulos: true });
+const useCtx = () => React.useContext(CtxVideo);
 type P = { d: number; de: number };
-const em = (de: number, seg: number) => quadro(seg) - de;
+const norm = (x: string) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ");
+/* Quadro (relativo à cena) em que a palavra-chave é dita. Com transcrição exata usa o segundo informado;
+   sem ela, acha a palavra na frase e estima pela posição no texto. */
+const useCue = (de: number) => {
+  const c = useCtx();
+  return (chave: string, seg?: number) => {
+    if (c.exato && seg !== undefined) return quadro(seg) - de;
+    const inicio = de / FPS - ATRASO - 0.6;
+    const alvos = chave.split("|").map(norm);
+    for (let i = 0; i < c.falas.length; i++) {
+      const [a, b] = c.frases[i];
+      if (b < inicio) continue;
+      const t = norm(c.falas[i]);
+      for (const alvo of alvos) {
+        const k = (" " + t).indexOf(" " + alvo.trim());
+        if (k >= 0) return quadro(a + ((b - a) * k) / t.length) - de;
+      }
+    }
+    return Math.round(1.2 * FPS);
+  };
+};
 
 /* ---------- peças ---------- */
 /* Prato real: vídeo gerado a partir de foto realista (public/vendas/reais), câmera girando em volta, bordas fundidas no fundo */
 const REAL: Record<string, string> = { "pizza-calabresa": "pizza", "x-burger": "burger", "suco-laranja": "suco", "bolo-chocolate": "bolo" };
-const Giro: React.FC<{ nome: string; tam: number; vel?: number; desde?: number; borda?: boolean }> = ({ nome, tam, vel = 0.75, borda = true }) => (
-  <div style={{ width: tam, height: tam, overflow: "hidden", borderRadius: borda ? "50%" : 0, WebkitMaskImage: "radial-gradient(circle at 50% 50%, #000 52%, transparent 71%)", maskImage: "radial-gradient(circle at 50% 50%, #000 52%, transparent 71%)" }}>
-    <Loop durationInFrames={Math.floor(150 / vel)} layout="none">
-      <OffthreadVideo src={staticFile(`vendas/reais/${REAL[nome]}.mp4`)} muted playbackRate={vel} style={{ width: tam * 1.78, height: tam, marginLeft: -tam * 0.39, objectFit: "cover" }} />
-    </Loop>
-  </div>
-);
+const Giro: React.FC<{ nome: string; tam: number; vel?: number; desde?: number; borda?: boolean }> = ({ nome, tam, vel = 0.75 }) => {
+  const w = tam * 1.5, h = tam;
+  const mascara = "radial-gradient(ellipse 50% 50% at 50% 50%, #000 62%, transparent 100%)";
+  return (
+    <div style={{ width: tam, height: tam, position: "relative" }}>
+      <div style={{ position: "absolute", left: -tam * 0.25, top: 0, width: w, height: h, overflow: "hidden", WebkitMaskImage: mascara, maskImage: mascara }}>
+        <Loop durationInFrames={Math.floor(150 / vel)} layout="none">
+          <OffthreadVideo src={staticFile(`vendas/reais/${REAL[nome]}.mp4`)} muted playbackRate={vel} style={{ width: w, height: h, objectFit: "cover" }} />
+        </Loop>
+      </div>
+    </div>
+  );
+};
 
 const Celular: React.FC<{ w?: number; children: React.ReactNode; estilo?: React.CSSProperties }> = ({ w = 420, children, estilo }) => (
   <div style={{ width: w, height: w * 2.05, borderRadius: w * 0.13, background: "#0a0f1f", padding: w * 0.035, boxShadow: "0 50px 120px rgba(0,0,0,0.6), 0 0 0 3px rgba(150,190,255,0.25)", ...estilo }}>
@@ -118,12 +146,14 @@ const MSGS = [
   { t: "Ainda dá para marcar?", x: 1330, y: 720, r: -5 },
   { t: "Qual o cardápio de hoje?", x: 760, y: 770, r: 3 },
 ];
-const S0: React.FC<P> = ({ d, de }) => {
+type Gancho = { msgs?: typeof MSGS; t1?: string; t2?: string; troca?: string };
+const S0: React.FC<P & Gancho> = ({ d, de, msgs = MSGS, t1 = "Seu cliente *já* *decidiu* comprar.", t2 = "Quem atende *primeiro?*", troca = "pergunta" }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const q = em(de, 2.24);
+  const q = t2 ? cue(troca, troca === "pergunta" ? 2.24 : undefined) : 99999;
   return (
     <Cena d={d}>
-      {MSGS.map((m, i) => {
+      {msgs.map((m, i) => {
         const p = useMola(4 + i * 7, { damping: 11, mass: 0.5 });
         return (
           <div key={i} style={{ position: "absolute", left: m.x, top: m.y, display: "flex", gap: 14, alignItems: "center", padding: "18px 24px", borderRadius: 22, background: "rgba(255,255,255,0.96)", ...TXT(30, 600, "#0b1733"), boxShadow: "0 24px 60px rgba(0,0,0,0.4)", opacity: Math.min(1, p * 1.5) * (1 - entre(f, q - 4, q + 10) * 0.55), transform: `translateY(${(1 - p) * 60 + Math.sin((f + i * 20) / 16) * 8}px) rotate(${m.r}deg) scale(${0.7 + 0.3 * p})` }}>
@@ -133,10 +163,10 @@ const S0: React.FC<P> = ({ d, de }) => {
         );
       })}
       <div style={{ position: "absolute", top: 420, opacity: 1 - entre(f, q - 4, q + 4) }}>
-        <Titulo texto="Seu cliente *já* *decidiu* comprar." tam={92} atraso={2} />
+        <Titulo texto={t1} tam={t1.length > 36 ? 78 : 92} atraso={2} />
       </div>
       <div style={{ position: "absolute", top: 400, opacity: entre(f, q, q + 6) }}>
-        {f >= q ? <Titulo texto="Quem atende *primeiro?*" tam={124} atraso={q} passo={6} /> : null}
+        {f >= q && t2 ? <Titulo texto={t2} tam={118} atraso={q} passo={6} /> : null}
       </div>
     </Cena>
   );
@@ -150,8 +180,9 @@ const FERR = [
   { n: "Atende IA", i: "💬", c: VERDE, a: 140 },
 ];
 const S1: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const q4 = em(de, 6.83), qm = em(de, 8.56);
+  const q4 = cue("quatro", 6.83), qm = cue("máquina", 8.56);
   const logo = useMola(2, { damping: 15, mass: 0.9 });
   const motor = useMola(qm);
   return (
@@ -184,15 +215,20 @@ const S1: React.FC<P> = ({ d, de }) => {
 };
 
 // 2 · Barber: o cliente agenda sozinho pelo app
-const S2: React.FC<P> = ({ d, de }) => (
-  <TelaViva d={d} img="vendas/barber-app.webp" fx={0.18} fy={0.37} cor={LARANJA} selo="1 · NEXOR BARBER" nome="Barbearia" sub="O cliente agenda sozinho, pelo app com a marca da casa."
-    clique={em(de, 12.63)} pops={[{ de: em(de, 12.63) + 6, x: { icone: "📲", txt: "Agendado pelo app", lado: "d", y: 0.12 } }, { de: em(de, 14.52), x: { icone: "🌙", txt: "Horário marcado · 23:14", lado: "e", y: 0.7 } }]} />
-);
+const S2: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
+  const c = useCtx();
+  return (
+  <TelaViva d={d} img="vendas/barber-app.webp" fx={0.18} fy={0.37} cor={LARANJA} selo={`${c.capitulos ? "1 · " : ""}NEXOR BARBER`} nome="Barbearia" sub="O cliente agenda sozinho, pelo app com a marca da casa."
+    clique={cue("agenda", 12.63)} pops={[{ de: cue("agenda", 12.63) + 6, x: { icone: "📲", txt: "Agendado pelo app", lado: "d", y: 0.12 } }, { de: cue("qualquer", 14.52), x: { icone: "🌙", txt: "Horário marcado · 23:14", lado: "e", y: 0.7 } }]} />
+  );
+};
 
 // 3 · Lembrete, cadeira cheia, clube de assinatura
 const S3: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const ql = em(de, 15.75), qc = em(de, 17.57), qb = em(de, 19.47), qm = em(de, 20.76);
+  const ql = cue("lembrete", 15.75), qc = cue("cadeira", 17.57), qb = cue("clube", 19.47), qm = cue("garante", 20.76);
   const n = useMola(ql, { damping: 11, mass: 0.6 });
   const c = useMola(qb);
   const ok = useMola(qm, { damping: 9, mass: 0.5 });
@@ -244,8 +280,9 @@ const S3: React.FC<P> = ({ d, de }) => {
 
 // 4 · O cardápio ganha vida
 const S4: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const qv = em(de, 24.35);
+  const qv = cue("vida", 24.35);
   const sobe = useMola(qv - 4, { damping: 12, mass: 0.8 });
   return (
     <Cena d={d}>
@@ -267,7 +304,7 @@ const S4: React.FC<P> = ({ d, de }) => {
         return <div key={i} style={{ position: "absolute", left: 960 + Math.cos(a) * 330 * p, top: 560 + Math.sin(a) * 200 * p - 60, width: 10, height: 10, borderRadius: 5, background: i % 2 ? ROSA : COR.ciano, opacity: p > 0 && p < 1 ? 1 - p : 0 }} />;
       })}
       <div style={{ position: "absolute", left: 110, top: 380, ...pop(useMola(4), 20) }}>
-        <div style={{ display: "inline-block", padding: "8px 18px", borderRadius: 999, background: `${ROSA}26`, border: `1.5px solid ${ROSA}`, ...TXT(24, 700, ROSA), letterSpacing: "0.18em" }}>2 · CARDÁPIO 3D</div>
+        <div style={{ display: "inline-block", padding: "8px 18px", borderRadius: 999, background: `${ROSA}26`, border: `1.5px solid ${ROSA}`, ...TXT(24, 700, ROSA), letterSpacing: "0.18em" }}>{useCtx().capitulos ? "2 · " : ""}NEXOR CARDÁPIO 3D</div>
       </div>
     </Cena>
   );
@@ -275,8 +312,9 @@ const S4: React.FC<P> = ({ d, de }) => {
 
 // 5 · QR da mesa, prato girando em 3D
 const S5: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const qa = em(de, 26.05), qr = em(de, 27.23), qg = em(de, 29.34), q3 = em(de, 30.4);
+  const qa = cue("aponta", 26.05), qr = cue("QR", 27.23), qg = cue("girando", 29.34), q3 = cue("dimensões", 30.4);
   const cel = useMola(qa - 6, { damping: 15, mass: 0.9 });
   const scan = entre(f, qr, qr + 18);
   const tela = entre(f, qr + 16, qr + 26);
@@ -318,8 +356,9 @@ const S5: React.FC<P> = ({ d, de }) => {
 
 // 6 · Cada conversa vira cliente no CRM
 const S6: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const qv = em(de, 32.86), qc = em(de, 34.56);
+  const qv = cue("conversa", 32.86), qc = cue("CRM", 34.56);
   const voa = entre(f, qv, qv + 24);
   const card = useMola(qv + 18, { damping: 12, mass: 0.6 });
   const crm = useMola(qc - 4);
@@ -327,7 +366,7 @@ const S6: React.FC<P> = ({ d, de }) => {
   return (
     <Cena d={d}>
       <div style={{ position: "absolute", left: 110, top: 160, ...pop(useMola(2), 20) }}>
-        <div style={{ display: "inline-block", padding: "8px 18px", borderRadius: 999, background: `${COR.ciano}26`, border: `1.5px solid ${COR.ciano}`, ...TXT(24, 700, COR.ciano), letterSpacing: "0.18em" }}>3 · CRM DO NEXOR ATENDE</div>
+        <div style={{ display: "inline-block", padding: "8px 18px", borderRadius: 999, background: `${COR.ciano}26`, border: `1.5px solid ${COR.ciano}`, ...TXT(24, 700, COR.ciano), letterSpacing: "0.18em" }}>{useCtx().capitulos ? "3 · " : ""}CRM DO NEXOR ATENDE</div>
       </div>
       {msgs.map((m, i) => {
         const p = useMola(4 + i * 6, { damping: 12, mass: 0.5 });
@@ -358,8 +397,9 @@ const S6: React.FC<P> = ({ d, de }) => {
 // 7 · A IA preenche, dá nota e move o funil
 const COLS = ["Novo", "Qualificado", "Proposta", "Fechado"];
 const S7: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const qp = em(de, 36.68), qn = em(de, 38.57), qf = em(de, 40.0);
+  const qp = cue("preenche", 36.68), qn = cue("nota", 38.57), qf = cue("funil", 40.0);
   const campos = [["Nome", "Mariana Alves"], ["Interesse", "2 pizzas · sábado"], ["Canal", "WhatsApp"]];
   const nota = Math.round(interpolate(f, [qn, qn + 24], [0, 88], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) }));
   const etapa = interpolate(f, [qf, qf + 14, qf + 22, qf + 36], [0, 1, 1, 2], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) });
@@ -415,8 +455,9 @@ const S7: React.FC<P> = ({ d, de }) => {
 // 8 · A equipe liga primeiro para quem está pronto
 const LEADS = [["Mariana Alves", 88], ["Carlos Eduardo", 79], ["Juliana Costa", 64], ["Roberto Santos", 41]] as const;
 const S8: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const ql = em(de, 43.0), qp = em(de, 44.36);
+  const ql = cue("liga", 43.0), qp = cue("pronto", 44.36);
   const liga = useMola(ql);
   return (
     <Cena d={d}>
@@ -447,16 +488,17 @@ const S8: React.FC<P> = ({ d, de }) => {
 };
 
 // 9 · Junte tudo no seu restaurante
-const S9: React.FC<P> = ({ d, de }) => {
+const S9: React.FC<P & { sem?: string }> = ({ d, de, sem }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const qj = em(de, 47.62);
+  const qj = cue("junte|junto", 47.62);
   const junta = entre(f, qj - 6, qj + 16);
   const loja = useMola(qj + 10, { damping: 12, mass: 0.7 });
-  const itens = [{ i: "🍕", t: "Cardápio 3D", c: ROSA, x: -560 }, { i: "💬", t: "Atende IA", c: VERDE, x: 0 }, { i: "📊", t: "CRM", c: COR.ciano, x: 560 }];
+  const itens = (sem ? [{ i: "🍕", t: "Cardápio 3D", c: ROSA, x: -320 }, { i: "💬", t: "Atende IA", c: VERDE, x: 320 }] : [{ i: "🍕", t: "Cardápio 3D", c: ROSA, x: -560 }, { i: "💬", t: "Atende IA", c: VERDE, x: 0 }, { i: "📊", t: "CRM", c: COR.ciano, x: 560 }]);
   return (
     <Cena d={d}>
       <div style={{ position: "absolute", left: 110, top: 160, ...pop(useMola(2), 20) }}>
-        <div style={{ display: "inline-block", padding: "8px 18px", borderRadius: 999, background: `${VERDE}26`, border: `1.5px solid ${VERDE}`, ...TXT(24, 700, VERDE), letterSpacing: "0.18em" }}>4 · RESTAURANTES</div>
+        <div style={{ display: "inline-block", padding: "8px 18px", borderRadius: 999, background: `${VERDE}26`, border: `1.5px solid ${VERDE}`, ...TXT(24, 700, VERDE), letterSpacing: "0.18em" }}>{useCtx().capitulos ? "4 · RESTAURANTES" : "NEXOR ATENDE + CARDÁPIO 3D"}</div>
       </div>
       {itens.map((x, k) => {
         const p = useMola(2 + k * 5);
@@ -482,8 +524,9 @@ const S9: React.FC<P> = ({ d, de }) => {
 
 // 10 · Escolhe no 3D, toca em pedir, a IA anota no WhatsApp
 const S10: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const qe = em(de, 50.69), qt = em(de, 52.95), qi = em(de, 54.53), qa = em(de, 56.17);
+  const qe = cue("escolhe", 50.69), qt = cue("toca", 52.95), qi = cue("IA", 54.53), qa = cue("anota", 56.17);
   const toque = entre(f, qt, qt + 10);
   const zap = useMola(qt + 6, { damping: 14, mass: 0.7 });
   return (
@@ -527,8 +570,9 @@ const S10: React.FC<P> = ({ d, de }) => {
 
 // 11 · Sem parar a cozinha, sem perder pedido, direto com você
 const S11: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
 
-  const qs = [em(de, 58.26), em(de, 59.68), em(de, 61.32)];
+  const qs = [cue("parar", 58.26), cue("perder", 59.68), cue("Direto", 61.32)];
   const itens = [{ i: "👨‍🍳", t: "Sem parar a cozinha", c: LARANJA }, { i: "✅", t: "Sem perder pedido", c: VERDE }, { i: "🤝", t: "Direto com você", c: COR.ciano }];
   const tk = useMola(4, { damping: 13, mass: 0.7 });
   return (
@@ -562,9 +606,10 @@ const S11: React.FC<P> = ({ d, de }) => {
 
 // 12 · A gente instala, configura e treina, aqui de Araguari
 const S12: React.FC<P> = ({ d, de }) => {
+  const cue = useCue(de);
   const f = useCurrentFrame();
-  const qs = [em(de, 63.89), em(de, 64.67), em(de, 65.86)];
-  const qa = em(de, 67.59);
+  const qs = [cue("instala"), cue("configura"), cue("treina")];
+  const qa = cue("equipe");
   const pin = useMola(qa, { damping: 9, mass: 0.6 });
   const passos = [{ i: "🛠️", t: "Instala" }, { i: "⚙️", t: "Configura" }, { i: "🎓", t: "Treina a equipe" }];
   return (
@@ -585,8 +630,8 @@ const S12: React.FC<P> = ({ d, de }) => {
         })}
       </div>
       <div style={{ position: "absolute", bottom: 150, display: "flex", alignItems: "center", gap: 18, padding: "20px 36px", borderRadius: 999, background: "rgba(0,88,250,0.2)", border: `2px solid ${COR.azulClaro}`, ...pop(pin) }}>
-        <div style={{ fontSize: 50, transform: `translateY(${Math.abs(Math.sin(f / 6)) * -10}px)` }}>📍</div>
-        <div style={TXT(44, 700)}>Time aqui de Araguari (MG)</div>
+        <div style={{ fontSize: 50, transform: `translateY(${Math.abs(Math.sin(f / 6)) * -10}px)` }}>🤝</div>
+        <div style={TXT(44, 700)}>Implantação com gente de verdade</div>
       </div>
     </Cena>
   );
@@ -610,54 +655,86 @@ const Capitulos: React.FC<{ ini: number[] }> = ({ ini }) => {
   );
 };
 
-/* ---------- vídeo ---------- */
-const CENAS: ((d: number, de: number) => React.ReactNode)[] = [
-  (d, de) => <S0 d={d} de={de} />,
-  (d, de) => <S1 d={d} de={de} />,
-  (d, de) => <S2 d={d} de={de} />,
-  (d, de) => <S3 d={d} de={de} />,
-  (d, de) => <S4 d={d} de={de} />,
-  (d, de) => <S5 d={d} de={de} />,
-  (d, de) => <S6 d={d} de={de} />,
-  (d, de) => <S7 d={d} de={de} />,
-  (d, de) => <S8 d={d} de={de} />,
-  (d, de) => <S9 d={d} de={de} />,
-  (d, de) => <S10 d={d} de={de} />,
-  (d, de) => <S11 d={d} de={de} />,
-  (d, de) => <S12 d={d} de={de} />,
-  (d) => <C12 d={d} />,
-  (d) => <C13 d={d} />,
-];
+/* ---------- vídeos ---------- */
+type Cfg = { pasta: string; tempos: { frases: readonly (readonly [number, number])[] }; falas: string[]; cenas: ((d: number, de: number) => React.ReactNode)[]; exato: boolean; capitulos: boolean };
+const dur = (t: Cfg["tempos"]) => Math.round((ATRASO + t.frases[t.frases.length - 1][1] + CAUDA) * FPS);
 
-export const VideoVendas: React.FC = () => {
-  const voz: Voz = useVoz(PASTA);
+const Montagem: React.FC<{ cfg: Cfg }> = ({ cfg }) => {
+  const voz: Voz = useVoz(cfg.pasta);
   const f = useCurrentFrame();
-  const total = duracaoVendas;
-  const ini = TEMPOS.frases.map((x, i) => (i === 0 ? 0 : quadro((TEMPOS.frases[i - 1][1] + x[0]) / 2)));
+  const total = dur(cfg.tempos);
+  const fr = cfg.tempos.frases;
+  const ini = fr.map((x, i) => (i === 0 ? 0 : quadro((fr[i - 1][1] + x[0]) / 2)));
   const marca = 1 - entre(f, ini[ini.length - 1] - 10, ini[ini.length - 1]);
   return (
-    <AbsoluteFill style={{ backgroundColor: COR.navy }}>
-      <Fundo voz={voz} />
-      <Poeira n={28} />
-      {CENAS.map((c, i) => {
-        const de = ini[i];
-        const d = (i + 1 < ini.length ? ini[i + 1] : total) - de;
-        return (
-          <Sequence key={i} from={de} durationInFrames={d} layout="none">
-            {c(d, de)}
-          </Sequence>
-        );
-      })}
-      <div style={{ position: "absolute", top: 50, left: 64, display: "flex", alignItems: "center", gap: 14, ...TXT(28, 600), opacity: marca * entre(f, 20, 40) }}>
-        <Img src={staticFile("logo-mark.webp")} style={{ width: 44, height: 44, borderRadius: 11 }} />
-        Nexor Consulting
-      </div>
-      <Capitulos ini={ini} />
-      <Legenda esconder={[14]} falas={FALAS as string[]} tempos={TEMPOS} />
-      <Audio src={staticFile(`${PASTA}/trilha.wav`)} volume={(q) => interpolate(q, [0, 30, total - 60, total], [0, 0.26, 0.26, 0], { extrapolateRight: "clamp" })} />
-      <Sequence from={quadro(0)} layout="none">
-        <Audio src={staticFile(`${PASTA}/locucao.mp3`)} />
-      </Sequence>
-    </AbsoluteFill>
+    <CtxVideo.Provider value={{ falas: cfg.falas, frases: fr, exato: cfg.exato, capitulos: cfg.capitulos }}>
+      <AbsoluteFill style={{ backgroundColor: COR.navy }}>
+        <Fundo voz={voz} />
+        <Poeira n={28} />
+        {cfg.cenas.map((c, i) => {
+          const de = ini[i];
+          const d = (i + 1 < ini.length ? ini[i + 1] : total) - de;
+          return (
+            <Sequence key={i} from={de} durationInFrames={d} layout="none">
+              {c(d, de)}
+            </Sequence>
+          );
+        })}
+        <div style={{ position: "absolute", top: 50, left: 64, display: "flex", alignItems: "center", gap: 14, ...TXT(28, 600), opacity: marca * entre(f, 20, 40) }}>
+          <Img src={staticFile("logo-mark.webp")} style={{ width: 44, height: 44, borderRadius: 11 }} />
+          Nexor Consulting
+        </div>
+        {cfg.capitulos ? <Capitulos ini={ini} /> : null}
+        <Legenda esconder={[fr.length - 1]} falas={cfg.falas} tempos={cfg.tempos} />
+        <Audio src={staticFile(`${cfg.pasta}/trilha.wav`)} volume={(q) => interpolate(q, [0, 30, total - 60, total], [0, 0.26, 0.26, 0], { extrapolateRight: "clamp" })} />
+        <Sequence from={quadro(0)} layout="none">
+          <Audio src={staticFile(`${cfg.pasta}/locucao.mp3`)} />
+        </Sequence>
+      </AbsoluteFill>
+    </CtxVideo.Provider>
   );
 };
+
+const FIM: ((d: number, de: number) => React.ReactNode)[] = [(d, de) => <S12 d={d} de={de} />, (d) => <C12 d={d} />, (d) => <C13 d={d} />];
+
+/* Vídeo completo: Barber → Cardápio 3D → CRM → Restaurantes */
+const CFG_VENDAS: Cfg = { pasta: PASTA, tempos: TEMPOS, falas: FALAS as string[], exato: true, capitulos: true, cenas: [
+  (d, de) => <S0 d={d} de={de} />, (d, de) => <S1 d={d} de={de} />, (d, de) => <S2 d={d} de={de} />, (d, de) => <S3 d={d} de={de} />,
+  (d, de) => <S4 d={d} de={de} />, (d, de) => <S5 d={d} de={de} />, (d, de) => <S6 d={d} de={de} />, (d, de) => <S7 d={d} de={de} />,
+  (d, de) => <S8 d={d} de={de} />, (d, de) => <S9 d={d} de={de} />, (d, de) => <S10 d={d} de={de} />, (d, de) => <S11 d={d} de={de} />, ...FIM] };
+export const duracaoVendas = dur(TEMPOS);
+export const VideoVendas: React.FC = () => <Montagem cfg={CFG_VENDAS} />;
+
+/* Vídeos de cada produto (abertos para qualquer cidade) */
+const MSG_BARBER = [
+  { t: "Tem horário hoje às 18h?", x: 230, y: 210, r: -6 }, { t: "Dá para encaixar um corte?", x: 1250, y: 170, r: 5 },
+  { t: "Vocês abrem sábado?", x: 160, y: 690, r: 4 }, { t: "Quero marcar com o Bruno", x: 1330, y: 720, r: -5 }, { t: "Ainda tem vaga amanhã?", x: 760, y: 770, r: 3 },
+];
+const MSG_REST = [
+  { t: "Quero uma pizza grande 🍕", x: 230, y: 210, r: -6 }, { t: "Vocês entregam no Centro?", x: 1250, y: 170, r: 5 },
+  { t: "Qual o cardápio de hoje?", x: 160, y: 690, r: 4 }, { t: "Tem mesa para 4?", x: 1330, y: 720, r: -5 }, { t: "Demora quanto o pedido?", x: 760, y: 770, r: 3 },
+];
+const MSG_CRM = [
+  { t: "Oi, ainda tem? · há 2 h", x: 230, y: 210, r: -6 }, { t: "Alguém me responde? · há 5 h", x: 1250, y: 170, r: 5 },
+  { t: "Queria um orçamento · ontem", x: 160, y: 690, r: 4 }, { t: "Fechei com outro, obrigado", x: 1330, y: 720, r: -5 }, { t: "Vocês atendem hoje? · há 3 h", x: 760, y: 770, r: 3 },
+];
+import T_BARBER from "./tempos/v-barber";
+import F_BARBER from "./tempos/v-barber.frases.json";
+import T_CARD from "./tempos/v-cardapio";
+import F_CARD from "./tempos/v-cardapio.frases.json";
+import T_CRM from "./tempos/v-crm";
+import F_CRM from "./tempos/v-crm.frases.json";
+import T_REST from "./tempos/v-restaurantes";
+import F_REST from "./tempos/v-restaurantes.frases.json";
+
+const PRODUTOS: Record<string, Cfg> = {
+  barber: { pasta: "v-barber", tempos: T_BARBER, falas: F_BARBER, exato: false, capitulos: false, cenas: [
+    (d, de) => <S0 d={d} de={de} msgs={MSG_BARBER} t1="Sua barbearia vive com o WhatsApp *lotado?*" t2="" />, (d, de) => <S2 d={d} de={de} />, (d, de) => <S3 d={d} de={de} />, ...FIM] },
+  cardapio: { pasta: "v-cardapio", tempos: T_CARD, falas: F_CARD, exato: false, capitulos: false, cenas: [
+    (d, de) => <S0 d={d} de={de} msgs={MSG_REST} t1="Seu cliente escolhe *com* *os* *olhos*" t2="Mostre o prato *antes* do pedido" troca="mostre" />, (d, de) => <S4 d={d} de={de} />, (d, de) => <S5 d={d} de={de} />, (d, de) => <S10 d={d} de={de} />, ...FIM] },
+  crm: { pasta: "v-crm", tempos: T_CRM, falas: F_CRM, exato: false, capitulos: false, cenas: [
+    (d, de) => <S0 d={d} de={de} msgs={MSG_CRM} t1="Quantos clientes você *perde?*" t2="" />, (d, de) => <S6 d={d} de={de} />, (d, de) => <S7 d={d} de={de} />, (d, de) => <S8 d={d} de={de} />, ...FIM] },
+  restaurantes: { pasta: "v-restaurantes", tempos: T_REST, falas: F_REST, exato: false, capitulos: false, cenas: [
+    (d, de) => <S0 d={d} de={de} msgs={MSG_REST} t1="Sexta à noite, o WhatsApp *não* *para*" t2="" />, (d, de) => <S9 d={d} de={de} sem="crm" />, (d, de) => <S10 d={d} de={de} />, (d, de) => <S11 d={d} de={de} />, ...FIM] },
+};
+export const VIDEOS_PRODUTO = Object.entries(PRODUTOS).map(([id, cfg]) => ({ id, duracao: dur(cfg.tempos), Componente: (() => <Montagem cfg={cfg} />) as React.FC }));

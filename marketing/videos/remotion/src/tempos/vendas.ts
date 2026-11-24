@@ -1,2 +1,2 @@
-// Tempos das frases medidos pela transcrição palavra a palavra (ElevenLabs Scribe), com respiro de 0,6 s nas trocas de capítulo
-export default {"duracao": 75.96, "frases": [[0.0, 4.98], [5.49, 9.78], [10.98, 15.28], [15.6, 21.86], [22.78, 25.02], [25.54, 31.48], [32.36, 35.38], [35.89, 41.59], [42.4, 45.56], [46.76, 49.44], [50.05, 57.87], [58.26, 62.28], [63.49, 68.24], [68.52, 72.32], [72.71, 75.96]]} as const;
+// Tempos pela transcrição palavra a palavra (ElevenLabs Scribe), respiro de 0,6 s nas trocas de capítulo; frase 13 regravada sem cidade
+export default {"duracao": 74.06, "frases": [[0.0, 4.98], [5.49, 9.78], [10.98, 15.28], [15.6, 21.86], [22.78, 25.02], [25.54, 31.48], [32.36, 35.38], [35.89, 41.59], [42.4, 45.56], [46.76, 49.44], [50.05, 57.87], [58.26, 62.28], [63.2, 66.13], [66.62, 70.42], [70.81, 74.06]]} as const;

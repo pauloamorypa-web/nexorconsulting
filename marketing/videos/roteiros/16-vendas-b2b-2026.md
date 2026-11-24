@@ -3,8 +3,8 @@
 | Item | Definição |
 |---|---|
 | Objetivo | Vender o motor de vendas da Nexor na sequência pedida pelo dono: Barber → Cardápio 3D → CRM → Restaurantes (Atende IA + Cardápio 3D). |
-| Público | Donos de barbearia, restaurante, pizzaria e lanchonete; empresas que vendem pelo WhatsApp. Foco em Araguari. |
-| Formato | 16:9, 1920×1080, 30 fps, cerca de 79 s. Tudo animado, legenda queimada, capítulos no topo. |
+| Público | Donos de barbearia, restaurante, pizzaria e lanchonete; empresas que vendem pelo WhatsApp. Sem citar cidade: serve para vender em qualquer lugar. |
+| Formato | 16:9, 1920×1080, 30 fps, cerca de 78 s. Tudo animado, legenda queimada, capítulos no topo. |
 | Voz | Guilherme (ElevenLabs, narrador brasileiro, calmo). Tempos palavra a palavra pela transcrição (ElevenLabs Scribe), com respiro de 0,6 s na troca de capítulo. |
 | Regras | Sem preço, sem percentual, sem forma de pagamento. Restaurante e clientes fictícios. Telas reais sem valores. |
 
@@ -23,8 +23,20 @@
 | 10 | Agora, junte tudo no seu restaurante. | Cardápio 3D, Atende IA e CRM se juntam numa fachada. |
 | 11 | O cliente escolhe no cardápio 3D, toca em pedir, e a IA do Nexor Atende anota o pedido no WhatsApp. | Toque em "Pedir pelo WhatsApp"; conversa com a IA anotando o pedido #127. |
 | 12 | Sem parar a cozinha. Sem perder pedido. Direto com você. | Comanda impressa; três benefícios entrando na palavra. |
-| 13 | A gente instala, configura e treina a sua equipe, aqui de Araguari. | Três cartões com barra; selo "Time aqui de Araguari (MG)". |
+| 13 | A gente instala, configura e treina a sua equipe. | Três cartões com barra; selo "Implantação com gente de verdade". |
 | 14 | Teste grátis por trinta dias. Chame a gente no WhatsApp. | Chamada e WhatsApp (34) 99733-7499. |
 | 15 | Nexor Consulting. IA com cuidado humano. | Logo e assinatura. |
+
+Pratos reais: fotos geradas com IA (Seedream 5 Pro) e animadas (Kling 2.5) no ElevenLabs, em `public/vendas/reais/`.
+
+## Vídeos de cada produto (mesmas cenas, narração própria)
+| Vídeo | Narração | Arquivo |
+|---|---|---|
+| Barber (~31 s) | Sua barbearia vive com o WhatsApp lotado? · agenda pelo app · lembrete, cadeira cheia, clube · implantação · teste · assinatura | `nexor-barber-1080p.mp4` |
+| Cardápio 3D (~40 s) | Seu cliente escolhe com os olhos · o cardápio ganha vida · QR da mesa, prato girando · toca em pedir, a IA anota · implantação · teste · assinatura | `nexor-cardapio-3d-1080p.mp4` |
+| CRM (~36 s) | Quantos clientes você perde? · cada conversa vira cliente · ficha, nota e funil · leads quentes · implantação · teste · assinatura | `nexor-crm-1080p.mp4` |
+| Restaurantes (~38 s) | Sexta à noite, o WhatsApp não para · Cardápio 3D + Atende juntos · pedido anotado pela IA · sem parar a cozinha · implantação · teste · assinatura | `nexor-restaurantes-1080p.mp4` |
+
+Composições `NexorVenda-<id>` em `src/Vendas.tsx` (frases em `src/tempos/v-<id>.frases.json`).
 
 Arquivos: composição `NexorVendasB2B` em `marketing/videos/remotion/src/Vendas.tsx`; pratos 3D em `public/vendas/giro/` (gerados dos modelos do Cardápio 3D); vídeo em `marketing/videos-finais/nexor-vendas-b2b-1080p.mp4`.
