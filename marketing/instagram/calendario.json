@@ -73,7 +73,8 @@
       "arquivos": [
         "cardapio-3d-story.jpg"
       ],
-      "legenda": "Cardápio 3D: o prato gira no celular do cliente. Responda CARDAPIO."
+      "legenda": "Cardápio 3D: o prato gira no celular do cliente. Responda CARDAPIO.",
+      "publicado": true
     },
     {
       "data": "2026-11-27",
